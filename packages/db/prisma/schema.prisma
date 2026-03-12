@@ -1,0 +1,257 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ─── Users & Auth ────────────────────────────────────────
+
+model User {
+  id                 String             @id @default(uuid()) @db.Uuid
+  email              String             @unique
+  name               String
+  avatarUrl          String?            @map("avatar_url")
+  passwordHash       String?            @map("password_hash")
+  unitSystem         String             @default("metric") @map("unit_system")
+  tier               String             @default("athlete")
+  subscriptionStatus String             @default("none") @map("subscription_status")
+  stripeCustomerId   String?            @unique @map("stripe_customer_id")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  accounts           Account[]
+  workouts           Workout[]
+  cardioSessions     CardioSession[]
+  bodyMetrics        BodyMetric[]
+  personalRecords    PersonalRecord[]
+  customExercises    Exercise[]         @relation("CustomExercises")
+  workoutTemplates   WorkoutTemplate[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// ─── Exercises ───────────────────────────────────────────
+
+model Exercise {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String
+  category         String?
+  primaryMuscles   String[] @map("primary_muscles")
+  secondaryMuscles String[] @map("secondary_muscles")
+  equipment        String?
+  instructions     String?
+  imageUrls        String[] @map("image_urls")
+  videoUrls        String[] @map("video_urls")
+  isCustom         Boolean  @default(false) @map("is_custom")
+  createdById      String?  @map("created_by_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  createdBy         User?              @relation("CustomExercises", fields: [createdById], references: [id], onDelete: SetNull)
+  workoutExercises  WorkoutExercise[]
+  templateExercises TemplateExercise[]
+  personalRecords   PersonalRecord[]
+
+  @@map("exercises")
+}
+
+// ─── Strength Training ───────────────────────────────────
+
+model Workout {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  name            String?
+  startedAt       DateTime  @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationSeconds Int?      @map("duration_seconds")
+  notes           String?
+  templateId      String?   @map("template_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template         WorkoutTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  workoutExercises WorkoutExercise[]
+
+  @@index([userId, startedAt])
+  @@map("workouts")
+}
+
+model WorkoutExercise {
+  id         String  @id @default(uuid()) @db.Uuid
+  workoutId  String  @map("workout_id") @db.Uuid
+  exerciseId String  @map("exercise_id") @db.Uuid
+  order      Int
+  notes      String?
+
+  workout  Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  sets     ExerciseSet[]
+
+  @@map("workout_exercises")
+}
+
+model ExerciseSet {
+  id                String   @id @default(uuid()) @db.Uuid
+  workoutExerciseId String   @map("workout_exercise_id") @db.Uuid
+  setNumber         Int      @map("set_number")
+  type              String   @default("working")
+  weightKg          Decimal? @map("weight_kg") @db.Decimal(7, 2)
+  reps              Int?
+  rpe               Decimal? @db.Decimal(3, 1)
+  restSeconds       Int?     @map("rest_seconds")
+  completed         Boolean  @default(false)
+
+  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  personalRecords PersonalRecord[]
+
+  @@map("exercise_sets")
+}
+
+// ─── Cardio ──────────────────────────────────────────────
+
+model CardioSession {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  type            String
+  source          String    @default("manual")
+  startedAt       DateTime  @map("started_at")
+  durationSeconds Int       @map("duration_seconds")
+  distanceMeters  Decimal?  @map("distance_meters") @db.Decimal(10, 2)
+  elevationGainM  Decimal?  @map("elevation_gain_m") @db.Decimal(8, 2)
+  avgHeartRate    Int?      @map("avg_heart_rate")
+  maxHeartRate    Int?      @map("max_heart_rate")
+  calories        Int?
+  routeFileUrl    String?   @map("route_file_url")
+  externalId      String?   @map("external_id")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routePoints RoutePoint[]
+  laps        Lap[]
+
+  @@index([userId, startedAt])
+  @@map("cardio_sessions")
+}
+
+model RoutePoint {
+  id          String   @id @default(uuid()) @db.Uuid
+  sessionId   String   @map("session_id") @db.Uuid
+  latitude    Decimal  @db.Decimal(10, 7)
+  longitude   Decimal  @db.Decimal(10, 7)
+  elevationM  Decimal? @map("elevation_m") @db.Decimal(8, 2)
+  heartRate   Int?     @map("heart_rate")
+  timestamp   DateTime
+
+  session CardioSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, timestamp])
+  @@map("route_points")
+}
+
+model Lap {
+  id              String  @id @default(uuid()) @db.Uuid
+  sessionId       String  @map("session_id") @db.Uuid
+  lapNumber       Int     @map("lap_number")
+  distanceMeters  Decimal @map("distance_meters") @db.Decimal(10, 2)
+  durationSeconds Int     @map("duration_seconds")
+  avgHeartRate    Int?    @map("avg_heart_rate")
+
+  session CardioSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("laps")
+}
+
+// ─── Templates ───────────────────────────────────────────
+
+model WorkoutTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateExercises TemplateExercise[]
+  workouts          Workout[]
+
+  @@map("workout_templates")
+}
+
+model TemplateExercise {
+  id         String  @id @default(uuid()) @db.Uuid
+  templateId String  @map("template_id") @db.Uuid
+  exerciseId String  @map("exercise_id") @db.Uuid
+  order      Int
+  notes      String?
+
+  template     WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise     Exercise        @relation(fields: [exerciseId], references: [id])
+  templateSets TemplateSet[]
+
+  @@map("template_exercises")
+}
+
+model TemplateSet {
+  id                 String   @id @default(uuid()) @db.Uuid
+  templateExerciseId String   @map("template_exercise_id") @db.Uuid
+  setNumber          Int      @map("set_number")
+  targetReps         Int?     @map("target_reps")
+  targetWeightKg     Decimal? @map("target_weight_kg") @db.Decimal(7, 2)
+  type               String   @default("working")
+
+  templateExercise TemplateExercise @relation(fields: [templateExerciseId], references: [id], onDelete: Cascade)
+
+  @@map("template_sets")
+}
+
+// ─── Body Metrics ────────────────────────────────────────
+
+model BodyMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  date         DateTime @db.Date
+  weightKg     Decimal? @map("weight_kg") @db.Decimal(5, 2)
+  bodyFatPct   Decimal? @map("body_fat_pct") @db.Decimal(4, 1)
+  measurements Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("body_metrics")
+}
+
+model PersonalRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  exerciseId String   @map("exercise_id") @db.Uuid
+  type       String
+  value      Decimal  @db.Decimal(10, 2)
+  achievedAt DateTime @map("achieved_at")
+  setId      String?  @map("set_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise    @relation(fields: [exerciseId], references: [id])
+  set      ExerciseSet? @relation(fields: [setId], references: [id], onDelete: SetNull)
+
+  @@index([userId, exerciseId, type])
+  @@map("personal_records")
+}
