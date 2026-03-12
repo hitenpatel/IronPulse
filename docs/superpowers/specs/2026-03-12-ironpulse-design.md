@@ -224,7 +224,7 @@ Templates are normalised into separate tables (not JSON) so PowerSync can sync i
 - Weight stored in kg internally, converted to user's unit preference at display time.
 - RoutePoints use PostGIS on the server but are stored as plain lat/lng decimals in local SQLite. They are not synced via PowerSync — uploaded on session completion and fetched on-demand via tRPC.
 - PersonalRecord is auto-calculated from Set data but denormalised for fast lookups.
-- Exercise database seeded from wger open data, users can add custom exercises for themselves.
+- Exercise database seeded from wrkout/exercises.json (2,500+ exercises, Public Domain, includes 10,000+ images and 3,500+ videos showing muscles worked). Users can add custom exercises for themselves.
 - WorkoutTemplates are normalised (TemplateExercise + TemplateSet tables) rather than using JSON columns, enabling proper CRDT sync via PowerSync.
 
 ## tRPC Router Overview (MVP)
@@ -275,7 +275,7 @@ All tRPC procedures validate inputs with Zod schemas from `packages/shared`. All
 
 **Auth & Onboarding**: Email/password, Google OAuth, Apple Sign In, unit preference, 14-day free trial, Stripe subscription (web only).
 
-**Strength Training**: Exercise database (seeded from wger), custom exercises, workout logging (exercises → sets with weight/reps/RPE), set types (working/warmup/dropset/failure), rest timer, workout templates (create/edit/start from template), workout history & detail view, personal records (auto-detected 1RM and volume PRs).
+**Strength Training**: Exercise database (seeded from wrkout/exercises.json), custom exercises, workout logging (exercises → sets with weight/reps/RPE), set types (working/warmup/dropset/failure), rest timer, workout templates (create/edit/start from template), workout history & detail view, personal records (auto-detected 1RM and volume PRs).
 
 **Cardio**: Manual cardio logging (type, duration, distance), GPS live tracking (run/cycle/walk) via phone, route map display (Mapbox or Leaflet), GPX file import, pace/distance/elevation stats, cardio session history.
 
@@ -329,7 +329,7 @@ Users provide their own domain, TLS termination (reverse proxy), and backups. Do
 
 ## Seed Data & Migrations
 
-- Exercise database seeded from wger's open API data, exported as a static JSON file at `packages/db/seeds/exercises.json`.
+- Exercise database sourced from `wrkout/exercises.json` (Public Domain, 2,500+ exercises with images and videos). Data exported as a static JSON file at `packages/db/seeds/exercises.json`, with media assets referenced by URL or bundled in `packages/db/seeds/media/`.
 - Seed data is versioned in the repo. Updates to the exercise database are shipped as new seed files in future releases — existing user data is not overwritten, only new exercises are added.
 - Docker Compose runs Prisma migrations and seeds on first boot via an entrypoint script: `npx prisma migrate deploy && npx prisma db seed`.
 - For subsequent updates, `docker compose pull && docker compose up -d` applies new migrations automatically.
