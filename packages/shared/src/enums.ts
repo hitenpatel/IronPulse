@@ -94,6 +94,7 @@ export type CardioType = (typeof CardioType)[keyof typeof CardioType];
 export const CardioSource = {
   MANUAL: "manual",
   GPS: "gps",
+  GPX: "gpx",
   GARMIN: "garmin",
   STRAVA: "strava",
 } as const;
