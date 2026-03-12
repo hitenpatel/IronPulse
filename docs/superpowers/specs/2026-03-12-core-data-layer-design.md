@@ -189,4 +189,6 @@ TDD against real PostgreSQL, same approach as foundation.
 - `fast-xml-parser` — GPX parsing in `@ironpulse/api`
 - `tsx` — running seed script in `@ironpulse/db`
 
-**No schema changes needed** — the Prisma schema from foundation already covers all models used here.
+**Shared package change:** Add `GPX: "gpx"` to the `CardioSource` enum in `@ironpulse/shared` to support the `cardio.importGpx` source value.
+
+**No Prisma schema changes needed** — the Prisma schema from foundation already covers all models used here.
