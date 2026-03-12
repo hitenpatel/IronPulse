@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AppLayout({
   children,
@@ -11,12 +12,5 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="border-b bg-white px-6 py-4">
-        <span className="text-xl font-bold">IronPulse</span>
-      </nav>
-      <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 }
