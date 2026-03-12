@@ -16,10 +16,10 @@ Exercise seed data, workout/cardio/analytics tRPC routers, and supporting Zod sc
 | wrkout field | Prisma Exercise field | Notes |
 |---|---|---|
 | name | name | Direct |
-| mechanic (compound/isolation) | category | Map to ExerciseCategory enum |
+| mechanic (compound/isolation) | category | Map to ExerciseCategory enum. If null/missing, default to `COMPOUND`. |
 | primaryMuscles | primaryMuscles | Direct (string[]) |
 | secondaryMuscles | secondaryMuscles | Direct (string[]) |
-| equipment | equipment | Map to Equipment enum |
+| equipment | equipment | Map to Equipment enum. If null or unrecognized value, default to `NONE`. |
 | instructions (string[]) | instructions | Join with newlines |
 | images/ directory | imageUrls | GitHub raw URLs |
 | — | videoUrls | Empty array (wrkout has no videos) |
@@ -46,17 +46,17 @@ All procedures are protected and enforce `userId` scoping server-side.
 
 | Procedure | Type | Description |
 |---|---|---|
-| `workout.create` | mutation | Start a new workout (name, optional templateId). If templateId provided, copies template exercises and sets. |
-| `workout.getById` | query | Full workout with exercises, sets nested. Scoped to userId. |
-| `workout.list` | query | Paginated history with summary stats (exercise count, total volume, duration). Cursor-based on `startedAt`. |
-| `workout.update` | mutation | Update workout metadata (name, notes) |
-| `workout.addExercise` | mutation | Append exercise to workout |
-| `workout.updateSet` | mutation | Update set data (weight, reps, RPE, type, completed) |
-| `workout.addSet` | mutation | Add a set to a workout exercise |
-| `workout.deleteSet` | mutation | Remove a set |
-| `workout.complete` | mutation | Mark complete, calculate duration, run PR detection. Returns new PRs. |
+| `workout.create` | mutation | Start a new workout (name, optional templateId). If templateId provided, copies template exercises and sets. **Temporary** — moves to PowerSync. |
+| `workout.getById` | query | Full workout with exercises, sets nested. Scoped to userId. **Permanent.** |
+| `workout.list` | query | Paginated history with summary stats (exercise count, total volume, duration). Cursor-based on `startedAt`. **Permanent.** |
+| `workout.update` | mutation | Update workout metadata (name, notes). **Temporary** — moves to PowerSync. |
+| `workout.addExercise` | mutation | Append exercise to workout. **Temporary** — moves to PowerSync. |
+| `workout.updateSet` | mutation | Update set data (weight, reps, RPE, type, completed). **Temporary** — moves to PowerSync. |
+| `workout.addSet` | mutation | Add a set to a workout exercise. **Temporary** — moves to PowerSync. |
+| `workout.deleteSet` | mutation | Remove a set. **Temporary** — moves to PowerSync. |
+| `workout.complete` | mutation | Mark complete, calculate duration, run PR detection. Returns new PRs. **Permanent.** |
 
-**Temporary scope:** Full CRUD via tRPC for pre-PowerSync development. When PowerSync ships, creation/editing moves to sync; tRPC keeps `complete`, `list`, `getById`.
+**Temporary scope:** Procedures marked **Temporary** exist for pre-PowerSync development. When PowerSync ships, creation/editing moves to local-first sync; procedures marked **Permanent** remain as server-authoritative endpoints.
 
 ### `cardio` Router
 
@@ -94,16 +94,18 @@ All procedures are protected and enforce `userId` scoping server-side.
 
 Triggered by `workout.complete`:
 
-1. Fetch all completed sets in the workout (`completed = true`, `reps > 0`)
+1. Fetch all completed sets in the workout (`completed = true`, `reps > 0`, `weight > 0` — skip bodyweight-only sets)
 2. Group by `exerciseId`
 3. For each exercise, calculate:
    - **1RM** — estimated via Epley formula: `weight × (1 + reps / 30)` for sets with reps ≤ 10. For single-rep sets, use actual weight.
    - **Volume** — highest single-set volume: `weight × reps`
-4. Compare against existing `PersonalRecord` rows for that user + exercise + type
-5. If new value exceeds existing record (or no record exists), upsert `PersonalRecord` with `setId` reference
+4. Compare against the user's current best `PersonalRecord` for that exercise + type (query with `orderBy: { value: 'desc' }, take: 1`)
+5. If new value exceeds existing best (or no record exists), **INSERT** a new `PersonalRecord` row with `setId` reference and `achievedAt` set to the workout's `completedAt` timestamp. Records are never overwritten — each PR is a historical entry.
 6. Return list of new PRs in the response
 
 **Scope:** Only 1RM and volume PRs. 3RM/5RM detection deferred (requires analyzing consecutive sets).
+
+**Note:** `analytics.personalRecords` returns the full PR history for an exercise, ordered by `achievedAt`, allowing users to see their progression over time.
 
 ## GPX Import
 
@@ -124,6 +126,9 @@ Triggered by `workout.complete`:
 - Reject files with no track points
 - Handle missing elevation gracefully (set to null)
 - Cap at 50,000 points per import (safety limit)
+- GPX string content capped at 10 MB (`importGpxSchema` validates `gpxContent.max(10_000_000)`)
+- `fast-xml-parser` configured with `processEntities: false` and `allowBooleanAttributes: false` to mitigate XXE-style risks
+- Coordinate validation: lat must be in [-90, 90], lon in [-180, 180] — invalid points are silently dropped
 
 ## Zod Schemas
 
@@ -139,12 +144,13 @@ New schemas in `@ironpulse/shared`:
 - `addExerciseSchema` — workoutId, exerciseId
 - `addSetSchema` — workoutExerciseId, weight, reps, type, rpe (all optional except workoutExerciseId)
 - `updateSetSchema` — setId, weight, reps, rpe, type, completed (all optional except setId)
-- `completeWorkoutSchema` — workoutId
+- `deleteSetSchema` — setId
+- `completeWorkoutSchema` — workoutId, completedAt (optional, for retroactive logging; defaults to `new Date()`)
 
 **Cardio:**
 - `createCardioSchema` — type, startedAt, durationSeconds, distanceMeters, elevationGainM, avgHeartRate, maxHeartRate, calories, notes (most optional)
-- `completeGpsSessionSchema` — type, startedAt, routePoints array (lat, lng, elevation, timestamp)
-- `importGpxSchema` — gpxContent (string), type (optional override)
+- `completeGpsSessionSchema` — type, startedAt, routePoints array (lat [-90,90], lng [-180,180], elevation, timestamp)
+- `importGpxSchema` — gpxContent (string, max 10 MB), type (optional override)
 
 **Body metrics:**
 - `createBodyMetricSchema` — date, weightKg, bodyFatPct, measurements (all optional except date)
