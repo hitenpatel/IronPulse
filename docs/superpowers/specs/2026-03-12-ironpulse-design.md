@@ -32,7 +32,7 @@ Fixed infrastructure costs: ~£95/mo (VPS, PowerSync, S3, domain).
 | Growing | 200 | 10 | £3,300 | £450 | £2,850 | £34,200 |
 | Established | 500 | 25 | £8,250 | £900 | £7,350 | £88,200 |
 
-Costs include Stripe fees (2.9% + 20p) and app store fees (15% Small Business Program rate). Assumes 60% web / 40% mobile subscriptions.
+Costs include Stripe fees (2.9% + 20p) and app store fees (15% Small Business Program rate). Assumes 60% web / 40% mobile subscriptions. All figures are rounded estimates — actual costs vary with payment mix and infrastructure scaling.
 
 ## Architecture
 
@@ -118,11 +118,53 @@ PowerSync provides CRDT-based bi-directional sync between local SQLite (on devic
 - The app works fully offline — all data is cached locally with bi-directional sync.
 - PowerSync is self-hostable, fitting the open-core model.
 
+### Data Flow Boundary (PowerSync vs tRPC)
+
+**PowerSync handles** all user-generated content that needs offline support:
+- Workouts, WorkoutExercises, Sets
+- CardioSessions (metadata only — not RoutePoints)
+- WorkoutTemplates (normalised — see TemplateExercise/TemplateSet below)
+- BodyMetrics, PersonalRecords
+- Exercises (global database + user custom exercises)
+
+**tRPC handles** operations that require server-side logic or don't need offline support:
+- Authentication (sign up, sign in, OAuth flows)
+- Stripe billing (checkout, subscription management, webhooks)
+- GPX/FIT file upload and parsing (files uploaded to S3, server parses and creates CardioSession + RoutePoints)
+- RoutePoint queries (fetched on-demand for route map rendering — not synced via PowerSync)
+- Analytics aggregations (server-side computed queries for charts and dashboards)
+- File uploads (profile images, GPX/FIT files → S3/MinIO)
+
+This boundary ensures PowerSync sync stays lean (no large RoutePoint datasets) while tRPC handles operations requiring server resources.
+
+### Sync Rules
+
+PowerSync sync rules define which rows sync to which clients:
+
+- **User data**: Users sync all rows where `user_id = current_user.id` (workouts, sets, cardio sessions, body metrics, templates, personal records).
+- **Exercises**: Global exercises (`is_custom = false`) sync to all users. Custom exercises (`is_custom = true`) sync only to their creator (`created_by = current_user.id`).
+- **Coach scope** (post-MVP): Coach users additionally sync workout and cardio session data for athletes in their active ProgramAssignments.
+- **Social data** (post-MVP): ActivityFeedItems sync for followed users where `visibility` is `public` or `followers`.
+
+### GPS Tracking Architecture
+
+GPS live tracking uses the Expo Location API with the following design:
+
+- **Location API**: `expo-location` with `Accuracy.High` (GPS + network).
+- **Sampling interval**: One point every 3-5 seconds during active tracking (configurable). Adaptive — increases interval when stationary to save battery.
+- **Background tracking**: Uses `Location.startLocationUpdatesAsync` with `TaskManager` for iOS/Android background execution. Registers as a background location task so tracking continues when the app is backgrounded or screen is locked.
+- **iOS restrictions**: Configured with `UIBackgroundModes: ["location"]` in `app.json`. Shows blue status bar indicator while tracking. Battery optimization via `deferredUpdatesInterval`.
+- **Data buffering**: RoutePoints are buffered in local SQLite during the session. On session completion, the full track is uploaded to the server via a tRPC mutation (`cardio.completeGpsSession`), which stores points in PostgreSQL with PostGIS geometry types.
+- **Real-time display**: The route map renders from the local SQLite buffer during tracking — no server round-trip needed.
+- **Signal loss**: If GPS signal is lost, the app continues recording with the last known position flagged as stale. Gaps are shown visually on the route map.
+- **App killed mid-session**: The background task persists the current session state to SQLite. On next app open, the user is prompted to resume or discard the incomplete session.
+- **Battery impact**: Estimated 5-10% per hour of active GPS tracking. The app displays a battery warning if level drops below 15% during tracking.
+
 ## Data Model
 
 ### Users & Auth
 
-**User**: id (UUID PK), email (unique), name, avatar_url, unit_system (metric|imperial), tier (free|pro|coach), created_at.
+**User**: id (UUID PK), email (unique), name, avatar_url, unit_system (metric|imperial), tier (athlete|coach), subscription_status (trialing|active|past_due|cancelled|none), created_at. Self-hosted deployments set `subscription_status = none` and ignore tier-based feature gating — all features are unlocked. Cloud deployments gate features based on `tier` and require `subscription_status` to be `trialing` or `active`.
 
 **Account**: id (UUID PK), user_id (FK → User), provider (email|google|apple), provider_account_id, passkey_credential_id.
 
@@ -142,13 +184,19 @@ PowerSync provides CRDT-based bi-directional sync between local SQLite (on devic
 
 **CardioSession**: id (UUID PK), user_id (FK → User), type (run|cycle|swim|hike|...), source (manual|gps|garmin|strava), started_at, duration_seconds, distance_meters (decimal), elevation_gain_m (decimal, optional), avg_heart_rate (int, optional), max_heart_rate (int, optional), calories (int, optional), route_file_url (S3 path, optional), external_id (Strava/Garmin ID, optional), notes.
 
-**RoutePoint**: id (UUID PK), session_id (FK → CardioSession), latitude (decimal), longitude (decimal), elevation_m (decimal, optional), heart_rate (int, optional), timestamp. Stored using PostGIS for efficient geo queries and route rendering.
+**RoutePoint**: id (UUID PK), session_id (FK → CardioSession), latitude (decimal), longitude (decimal), elevation_m (decimal, optional), heart_rate (int, optional), timestamp. Stored in PostgreSQL with PostGIS geometry types on the server. RoutePoints are NOT synced via PowerSync — they are too large (thousands of points per session). During GPS tracking, points are buffered in local SQLite as plain lat/lng decimals. On session completion, they are uploaded to the server via tRPC, which converts them to PostGIS geometries. Route maps for historical sessions are fetched on-demand via a tRPC query (`cardio.getRoutePoints`).
 
 **Lap**: id (UUID PK), session_id (FK → CardioSession), lap_number (int), distance_meters, duration_seconds, avg_heart_rate (int, optional).
 
 ### Templates & Programs
 
-**WorkoutTemplate**: id (UUID PK), user_id (FK → User), name, exercises (JSON — exercise + target sets/reps).
+**WorkoutTemplate**: id (UUID PK), user_id (FK → User), name, created_at.
+
+**TemplateExercise**: id (UUID PK), template_id (FK → WorkoutTemplate), exercise_id (FK → Exercise), order (int), notes (optional).
+
+**TemplateSet**: id (UUID PK), template_exercise_id (FK → TemplateExercise), set_number (int), target_reps (int, optional), target_weight_kg (decimal, optional), type (working|warmup|dropset|failure).
+
+Templates are normalised into separate tables (not JSON) so PowerSync can sync individual rows and handle concurrent edits from multiple devices without losing data.
 
 **Program** (post-MVP): id (UUID PK), coach_id (FK → User), name, description, duration_weeks (int), schedule (JSON — week → day → template).
 
@@ -174,9 +222,44 @@ PowerSync provides CRDT-based bi-directional sync between local SQLite (on devic
 
 - All IDs are UUIDs — essential for offline-first (clients generate IDs without server).
 - Weight stored in kg internally, converted to user's unit preference at display time.
-- RoutePoints use PostGIS geometry types for efficient spatial queries and route rendering.
+- RoutePoints use PostGIS on the server but are stored as plain lat/lng decimals in local SQLite. They are not synced via PowerSync — uploaded on session completion and fetched on-demand via tRPC.
 - PersonalRecord is auto-calculated from Set data but denormalised for fast lookups.
 - Exercise database seeded from wger open data, users can add custom exercises for themselves.
+- WorkoutTemplates are normalised (TemplateExercise + TemplateSet tables) rather than using JSON columns, enabling proper CRDT sync via PowerSync.
+
+## tRPC Router Overview (MVP)
+
+### `auth` Router
+- `auth.signUp` (mutation) — email/password registration
+- `auth.signIn` (mutation) — email/password login
+- `auth.getSession` (query) — current session info
+
+### `workout` Router
+- `workout.complete` (mutation) — finalise a workout (PowerSync handles creation/editing)
+- `workout.list` (query) — paginated workout history with summary stats
+- `workout.getById` (query) — full workout detail with exercises and sets
+
+### `cardio` Router
+- `cardio.completeGpsSession` (mutation) — upload buffered RoutePoints after GPS tracking ends
+- `cardio.getRoutePoints` (query) — fetch RoutePoints for route map rendering
+- `cardio.importGpx` (mutation) — upload and parse GPX file, create CardioSession + RoutePoints
+- `cardio.list` (query) — paginated cardio session history
+
+### `analytics` Router
+- `analytics.weeklyVolume` (query) — volume by muscle group for the past N weeks
+- `analytics.personalRecords` (query) — PR history for an exercise
+- `analytics.bodyWeightTrend` (query) — body weight over time
+
+### `stripe` Router
+- `stripe.createCheckoutSession` (mutation) — initiate Stripe Checkout for subscription
+- `stripe.createPortalSession` (mutation) — link to Stripe Customer Portal for managing subscription
+- `stripe.webhookHandler` — (Next.js API route, not tRPC) handles Stripe webhook events
+
+### `user` Router
+- `user.updateProfile` (mutation) — name, avatar, unit preference
+- `user.uploadAvatar` (mutation) — upload profile image to S3
+
+All tRPC procedures validate inputs with Zod schemas from `packages/shared`. All data-access procedures enforce `user_id` scoping server-side — no client-provided user ID is trusted.
 
 ## Authentication
 
@@ -220,7 +303,7 @@ PowerSync provides CRDT-based bi-directional sync between local SQLite (on devic
 - No integrations in MVP — GPX import covers the gap until Garmin/Strava APIs are connected.
 - No social in MVP — focus on personal tracking first; social needs a user base to be valuable.
 - No coaching in MVP — launch with Athlete tier only; add Coach tier when the product is proven.
-- Stripe web-only for MVP — App Store billing adds complexity; launch on TestFlight initially.
+- Stripe web-only for MVP — App Store billing adds complexity; launch on TestFlight initially. Note: TestFlight is limited to 10,000 users with 90-day build expiry. Mobile is effectively a beta channel until App Store in-app purchases ship in Phase 6. Apple requires IAP for subscriptions on published iOS apps, so App Store submission is blocked until Phase 6.
 
 ## Self-Hosting
 
@@ -243,6 +326,31 @@ Users provide their own domain, TLS termination (reverse proxy), and backups. Do
 - Integration tests for tRPC routers against a real PostgreSQL database.
 - E2E tests for critical user flows (sign up, log workout, log cardio session, view history).
 - Mobile testing via Expo's testing tools and Detox for E2E.
+
+## Seed Data & Migrations
+
+- Exercise database seeded from wger's open API data, exported as a static JSON file at `packages/db/seeds/exercises.json`.
+- Seed data is versioned in the repo. Updates to the exercise database are shipped as new seed files in future releases — existing user data is not overwritten, only new exercises are added.
+- Docker Compose runs Prisma migrations and seeds on first boot via an entrypoint script: `npx prisma migrate deploy && npx prisma db seed`.
+- For subsequent updates, `docker compose pull && docker compose up -d` applies new migrations automatically.
+
+## Security & Rate Limiting
+
+- All tRPC procedures enforce `user_id` scoping server-side. The authenticated user's ID comes from the session — never from client input.
+- All tRPC inputs validated with Zod schemas from `packages/shared`.
+- API rate limiting: 100 requests/minute per authenticated user, 10 file uploads/hour, 5 auth attempts/minute per IP.
+- Rate limiting implemented via Redis sliding window counters.
+- Stripe webhooks verified with webhook signing secret.
+- OAuth tokens (DeviceConnection) encrypted at rest using application-level encryption.
+- CORS configured to allow only the web app origin and mobile app.
+
+## Observability
+
+- Structured JSON logging (request ID, user ID, duration) for all API requests.
+- Health check endpoint at `GET /api/health` — returns DB connectivity, Redis status, PowerSync status.
+- Docker Compose includes healthchecks for all services (postgres, redis, minio, powersync).
+- Cloud deployment: application metrics (request latency, error rates, active users) — tooling TBD based on hosting provider.
+- Self-hosted: health check endpoint is sufficient; users can integrate with their own monitoring (Uptime Kuma, Prometheus, etc.).
 
 ## Error Handling
 
