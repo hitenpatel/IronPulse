@@ -2935,13 +2935,13 @@ export const analyticsRouter = createTRPCRouter({
         const volume = Number(set.weightKg) * (set.reps ?? 0);
         const week = getWeekStart(set.workoutExercise.workout.completedAt!);
         for (const muscle of set.workoutExercise.exercise.primaryMuscles) {
-          const key = `${week}_${muscle}`;
+          const key = `${week}|${muscle}`;
           volumeMap.set(key, (volumeMap.get(key) ?? 0) + volume);
         }
       }
 
       const data = Array.from(volumeMap.entries()).map(([key, totalVolume]) => {
-        const [week, muscleGroup] = key.split("_");
+        const [week, muscleGroup] = key.split("|");
         return { week: week!, muscleGroup: muscleGroup!, totalVolume };
       });
 
