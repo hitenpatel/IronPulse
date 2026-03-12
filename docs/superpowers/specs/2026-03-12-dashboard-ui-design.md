@@ -8,6 +8,22 @@
 
 ---
 
+## Setup Prerequisites
+
+Before building components, these setup steps are required:
+
+1. **Initialize shadcn/ui:** Run `npx shadcn@latest init` with `new-york` style, dark theme defaults. This modifies `tailwind.config.ts` (adds CSS variable support, content paths) and `globals.css` (adds CSS variable definitions). Configure `components.json` to output to `src/components/ui/`.
+
+2. **Install shadcn/ui components:** `npx shadcn@latest add button card sheet separator avatar badge`
+
+3. **Dependencies added automatically by shadcn/ui:** `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, `@radix-ui/react-dialog`, `@radix-ui/react-avatar`, `@radix-ui/react-separator`.
+
+4. **Rewrite existing `(app)/layout.tsx`:** The current layout has a light-themed top navbar (`bg-white`, `bg-gray-50`). This is fully replaced with the dark-themed AppShell (bottom nav + sidebar). This is a breaking change to the existing layout.
+
+5. **Create new route directories:** `/stats`, `/exercises`, `/profile` are new pages under `(app)/`.
+
+---
+
 ## Scope
 
 ### In Scope
@@ -52,7 +68,7 @@ Each out-of-scope item gets its own spec/plan cycle.
 Responsive layout wrapping all `(app)` route group pages:
 
 - **Mobile (< 768px):** Content area + fixed bottom tab bar. The "+" FAB in the center opens a Sheet (shadcn/ui) to choose Workout or Cardio.
-- **Desktop (>= 768px):** Left sidebar with icon + label nav items. Content area with max-width constraint. The "+" becomes a prominent button in the sidebar.
+- **Desktop (>= 768px):** Left sidebar with icon + label nav items. Content area with max-width constraint. The "+" button in the sidebar opens the same Sheet as mobile.
 
 **Tab bar items (5):**
 
@@ -68,17 +84,17 @@ Placeholder routes render a simple "Coming soon" page for now.
 
 ### Dark Theme
 
-CSS variables in `globals.css` following shadcn/ui's theming convention:
+CSS variables in `globals.css` following shadcn/ui's theming convention. Values are in HSL format (hue saturation% lightness%) — hex values in comments are for reference only.
 
 ```
---background: 240 10% 6%        (#0f0f17)
+--background: 240 10% 6%        /* #0f0f17 */
 --foreground: 0 0% 98%
 --card: 240 15% 10%
 --card-foreground: 0 0% 98%
---primary: 348 83% 60%           (#e94560 — workout red)
---secondary: 199 89% 48%         (#0ea5e9 — cardio blue)
---accent: 142 71% 45%            (#22c55e — success green)
---warning: 38 92% 50%            (#f59e0b — PR gold)
+--primary: 348 83% 60%           /* #e94560 — workout red */
+--secondary: 199 89% 48%         /* #0ea5e9 — cardio blue */
+--accent: 142 71% 45%            /* #22c55e — success green */
+--warning: 38 92% 50%            /* #f59e0b — PR gold */
 --muted: 240 10% 16%
 --muted-foreground: 240 5% 55%
 --border: 240 10% 14%
@@ -124,8 +140,8 @@ src/
 
 ### 1. Greeting
 
-- Left: "Good morning/afternoon/evening, {firstName}" based on time of day. Date below in muted text (e.g., "Thursday, Mar 12").
-- Right: User avatar (initials fallback if no avatarUrl).
+- Left: "Good morning/afternoon/evening, {firstName}" based on time of day. Extract first name by splitting `session.user.name` on first space; fallback to full name if single word, or "there" if name is null. Date below in muted text (e.g., "Thursday, Mar 12").
+- Right: User avatar (initials fallback — first letter of first and last name — if no avatarUrl).
 - Data: `session.user.name` from NextAuth session.
 
 ### 2. Quick-Start Cards
@@ -135,7 +151,7 @@ Two side-by-side cards with gradient backgrounds:
 **Start Workout** (red gradient `#e94560` → `#c23152`):
 - Label: "Start"
 - Title: "Workout"
-- Subtitle: contextual hint — if templates exist, show next template name; otherwise "Empty workout"
+- Subtitle: "Empty workout" (template browsing is future work — no `workoutTemplate.list` endpoint exists yet)
 - On click: navigate to `/workouts/new` (placeholder for now)
 
 **Start Cardio** (blue gradient `#0ea5e9` → `#0284c7`):
@@ -146,20 +162,20 @@ Two side-by-side cards with gradient backgrounds:
 
 ### 3. Weekly Stats Bar
 
-Single row inside a subtle card, 4 metrics evenly spaced:
+Single row inside a subtle card, 4 metrics evenly spaced. On screens narrower than 375px, switch to a 2×2 grid to avoid cramped text.
 
 | Metric | Color | Source |
 |--------|-------|--------|
-| Workouts this week | Primary red | Count from `workout.list` where `completedAt` is within current ISO week |
-| Cardio this week | Secondary blue | Count from `cardio.list` where `startedAt` is within current ISO week |
-| Total volume (kg) | Accent green | Sum from `analytics.weeklyVolume({ weeks: 1 })` across all muscle groups |
-| New PRs | Warning gold | Count of PRs with `achievedAt` within current ISO week (derived from workout completion data) |
+| Workouts this week | Primary red | Client-side: fetch `workout.list({ limit: 50 })`, filter where `completedAt` falls within current ISO week, count results |
+| Cardio this week | Secondary blue | Client-side: fetch `cardio.list({ limit: 50 })`, filter where `startedAt` falls within current ISO week, count results |
+| Total volume (kg) | Accent green | `analytics.weeklyVolume({ weeks: 1 })` — response is `{ data: [{ week, muscleGroup, totalVolume }] }`, sum all `totalVolume` values |
+| New PRs | Warning gold | Hardcoded to 0 for MVP (see note below) |
 
-**Implementation note for PR count:** There's no dedicated "PRs this week" endpoint. Two options:
-1. Derive from the `analytics.personalRecords` endpoint by filtering recent entries — but this requires knowing all exerciseIds.
-2. Add a simple count query. For MVP, hardcode to 0 and add a proper endpoint later.
+**Implementation note — "this week" counts:** Both `workout.list` and `cardio.list` use cursor pagination with no date-range filter. For MVP, fetch with `limit: 50` and filter client-side by checking if `completedAt`/`startedAt` falls within the current ISO week (Monday–Sunday). This is acceptable because the dashboard only needs a count, not the full list, and 50 is a reasonable upper bound for one week's activity. Adding server-side date-range filtering is a follow-up optimization.
 
-Recommended: option 2 — show the stat slot but display 0 until a `analytics.weeklyPRCount` query is added. This avoids an N+1 query problem on the dashboard.
+**Implementation note — PR count:** There's no `analytics.weeklyPRCount` endpoint. Deriving from `analytics.personalRecords` requires knowing all exerciseIds (N+1 problem). For MVP, display 0 and add a dedicated endpoint later.
+
+**Implementation note — response shapes:** `workout.list` and `cardio.list` both return `{ data: [...], nextCursor: string | null }`. Access the `.data` property for the array of items.
 
 ### 4. Activity Feed
 
@@ -186,6 +202,18 @@ const cardio = trpc.cardio.list.useQuery({ limit: 10 });
 Merge results client-side, sort by `startedAt` descending, take first 10.
 
 **Empty state:** Centered illustration-free message: "No activity yet. Start your first workout!" with a CTA button linking to the quick-start action.
+
+---
+
+## Loading States
+
+The dashboard makes 3 parallel tRPC queries. While data is loading:
+
+- **Weekly stats bar:** Show 4 skeleton pulse blocks matching the metric dimensions.
+- **Activity feed:** Show 3 skeleton rows with pulse animation (icon placeholder + two text line placeholders).
+- **Greeting and quick-start cards:** Render immediately (greeting uses session data already available; quick-start cards are static).
+
+Use Tailwind's `animate-pulse` on `bg-muted` elements for skeleton shimmer. No external skeleton library needed.
 
 ---
 
@@ -230,7 +258,7 @@ Each is a simple centered heading. They exist so the nav items have valid destin
 
 ## New Session Sheet
 
-When the user taps the "+" FAB, a Sheet (shadcn/ui) slides up from the bottom (mobile) or appears as a dialog (desktop) with two options:
+When the user taps the "+" FAB, a Sheet (shadcn/ui) slides up from the bottom on all screen sizes with two options:
 
 - **Start Workout** — same styling as the quick-start card, navigates to `/workouts/new`
 - **Log Cardio** — same styling as the quick-start card, navigates to `/cardio/new`
