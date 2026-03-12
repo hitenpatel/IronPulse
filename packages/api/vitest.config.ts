@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     include: ["__tests__/**/*.test.ts"],
     testTimeout: 10000,
+    fileParallelism: false,
   },
   resolve: {
     extensions: [".ts", ".js"],
