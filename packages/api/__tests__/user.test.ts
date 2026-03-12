@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { PrismaClient } from "@ironpulse/db";
-import { createTRPCContext, createCallerFactory } from "../src/trpc.js";
-import { createTestUser } from "./helpers.js";
-import { userRouter } from "../src/routers/user.js";
+import { createTRPCContext, createCallerFactory } from "../src/trpc";
+import { createTestUser } from "./helpers";
+import { userRouter } from "../src/routers/user";
 
 const db = new PrismaClient();
 const createCaller = createCallerFactory(userRouter);

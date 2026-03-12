@@ -1,6 +1,6 @@
 import { type PrismaClient } from "@ironpulse/db";
-import { createTRPCContext, createCallerFactory } from "../src/trpc.js";
-import { createTRPCRouter } from "../src/trpc.js";
+import { createTRPCContext, createCallerFactory } from "../src/trpc";
+import { createTRPCRouter } from "../src/trpc";
 import type { SessionUser } from "@ironpulse/shared";
 
 // Uses a real DB — DATABASE_URL must point to a test database.

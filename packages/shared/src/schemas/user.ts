@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UnitSystem } from "../enums.js";
+import { UnitSystem } from "../enums";
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),

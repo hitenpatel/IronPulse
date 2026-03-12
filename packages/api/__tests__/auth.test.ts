@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { PrismaClient } from "@ironpulse/db";
-import { createTRPCContext, createCallerFactory } from "../src/trpc.js";
-import { createTestUser } from "./helpers.js";
+import { createTRPCContext, createCallerFactory } from "../src/trpc";
+import { createTestUser } from "./helpers";
 
 // Import the auth router directly for isolated testing
-import { authRouter } from "../src/routers/auth.js";
+import { authRouter } from "../src/routers/auth";
 
 const db = new PrismaClient();
 const createCaller = createCallerFactory(authRouter);
