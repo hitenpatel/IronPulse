@@ -13,9 +13,9 @@ import { SetRow } from "./set-row";
 interface ExerciseSet {
   id: string;
   setNumber: number;
-  weightKg: number | null;
+  weightKg: number | { toNumber(): number } | null;
   reps: number | null;
-  rpe: number | null;
+  rpe: number | { toNumber(): number } | null;
   completed: boolean;
 }
 
@@ -24,7 +24,7 @@ interface WorkoutExerciseData {
   exercise: {
     id: string;
     name: string;
-    category: string;
+    category: string | null;
     equipment: string | null;
   };
   sets: ExerciseSet[];
@@ -83,9 +83,9 @@ export function ExerciseCard({
           key={set.id}
           setId={set.id}
           setNumber={set.setNumber}
-          weightKg={set.weightKg}
+          weightKg={set.weightKg != null ? Number(set.weightKg) : null}
           reps={set.reps}
-          rpe={set.rpe}
+          rpe={set.rpe != null ? Number(set.rpe) : null}
           completed={set.completed}
           onCompleted={onSetCompleted}
           onMutationSuccess={onMutationSuccess}

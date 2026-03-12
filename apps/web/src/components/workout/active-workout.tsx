@@ -61,9 +61,21 @@ export function ActiveWorkout({
       exerciseNames[we.exercise.id] = we.exercise.name;
     }
 
+    const completedWorkout = {
+      ...workout.data.workout,
+      workoutExercises: workout.data.workout.workoutExercises.map((we) => ({
+        exercise: { name: we.exercise.name },
+        sets: we.sets.map((s) => ({
+          weightKg: s.weightKg != null ? Number(s.weightKg) : null,
+          reps: s.reps,
+          completed: s.completed,
+        })),
+      })),
+    };
+
     return (
       <CompletionSummary
-        workout={workout.data.workout}
+        workout={completedWorkout}
         newPRs={completionPRs}
         exerciseNames={exerciseNames}
         onDone={() => router.push("/dashboard")}
