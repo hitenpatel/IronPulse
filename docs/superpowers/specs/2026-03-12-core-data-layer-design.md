@@ -16,10 +16,10 @@ Exercise seed data, workout/cardio/analytics tRPC routers, and supporting Zod sc
 | wrkout field | Prisma Exercise field | Notes |
 |---|---|---|
 | name | name | Direct |
-| mechanic (compound/isolation) | category | Map to ExerciseCategory enum. If null/missing, default to `COMPOUND`. |
+| mechanic (compound/isolation) | category | Map to ExerciseCategory enum. If null/missing, default to `COMPOUND`. The wrkout `category` field (e.g. "strength", "stretching") is intentionally ignored — `mechanic` is the more useful signal for our enum. |
 | primaryMuscles | primaryMuscles | Direct (string[]) |
 | secondaryMuscles | secondaryMuscles | Direct (string[]) |
-| equipment | equipment | Map to Equipment enum. If null or unrecognized value, default to `NONE`. |
+| equipment | equipment | Map to Equipment enum. If null or unrecognized value, set to `null` (field is nullable in Prisma). |
 | instructions (string[]) | instructions | Join with newlines |
 | images/ directory | imageUrls | GitHub raw URLs |
 | — | videoUrls | Empty array (wrkout has no videos) |
@@ -64,12 +64,12 @@ All procedures are protected and enforce `userId` scoping server-side.
 
 | Procedure | Type | Description |
 |---|---|---|
-| `cardio.create` | mutation | Log manual cardio session (type, duration, distance, etc.) |
+| `cardio.create` | mutation | Log manual cardio session (type, duration, distance, etc.). Sets `source = "manual"`. |
 | `cardio.list` | query | Paginated cardio history. Cursor-based on `startedAt`. |
 | `cardio.getById` | query | Session details without route points |
 | `cardio.getRoutePoints` | query | Fetch route points for map rendering (separate to keep responses lean) |
-| `cardio.completeGpsSession` | mutation | Upload buffered route points after GPS tracking, create/finalize CardioSession |
-| `cardio.importGpx` | mutation | Parse GPX XML string, create CardioSession + RoutePoints, calculate stats |
+| `cardio.completeGpsSession` | mutation | Upload buffered route points after GPS tracking, create/finalize CardioSession. Sets `source = "gps"`. |
+| `cardio.importGpx` | mutation | Parse GPX XML string, create CardioSession + RoutePoints, calculate stats. Sets `source = "gpx"`. |
 
 ### `bodyMetric` Router
 
@@ -97,7 +97,7 @@ Triggered by `workout.complete`:
 1. Fetch all completed sets in the workout (`completed = true`, `reps > 0`, `weight > 0` — skip bodyweight-only sets)
 2. Group by `exerciseId`
 3. For each exercise, calculate:
-   - **1RM** — estimated via Epley formula: `weight × (1 + reps / 30)` for sets with reps ≤ 10. For single-rep sets, use actual weight.
+   - **1RM** — estimated via Epley formula: `weight × (1 + reps / 30)` for sets with reps ≤ 10. For single-rep sets, use actual weight. Sets with reps > 10 are excluded from 1RM calculation (formula becomes unreliable at high reps).
    - **Volume** — highest single-set volume: `weight × reps`
 4. Compare against the user's current best `PersonalRecord` for that exercise + type (query with `orderBy: { value: 'desc' }, take: 1`)
 5. If new value exceeds existing best (or no record exists), **INSERT** a new `PersonalRecord` row with `setId` reference and `achievedAt` set to the workout's `completedAt` timestamp. Records are never overwritten — each PR is a historical entry.
@@ -113,7 +113,7 @@ Triggered by `workout.complete`:
 
 **Flow:**
 1. `cardio.importGpx` receives a GPX XML string (web app reads file client-side, sends content as string — no multipart upload)
-2. Parse `<trkpt>` elements for: `lat`, `lon`, `ele` (elevation), `time` (timestamp)
+2. Parse `<trkpt>` elements for: `lat`, `lng` (from GPX `lon` attribute), `ele` (elevation), `time` (timestamp)
 3. Calculate derived stats:
    - **Distance** — Haversine formula between consecutive points, summed
    - **Elevation gain** — sum of positive elevation deltas
@@ -136,10 +136,10 @@ New schemas in `@ironpulse/shared`:
 
 **Exercise:**
 - `createExerciseSchema` — name, category, muscles, equipment, instructions
-- `listExercisesSchema` — optional filters (muscleGroup, equipment, category, search, cursor, limit)
+- `listExercisesSchema` — extends `cursorPaginationSchema` with optional filters (muscleGroup, equipment, category, search)
 
 **Workout:**
-- `createWorkoutSchema` — name (optional), templateId (optional)
+- `createWorkoutSchema` — name (optional), templateId (optional). Server auto-sets `startedAt = new Date()` (offline start-time handled by PowerSync later).
 - `updateWorkoutSchema` — name, notes (both optional)
 - `addExerciseSchema` — workoutId, exerciseId
 - `addSetSchema` — workoutExerciseId, weight, reps, type, rpe (all optional except workoutExerciseId)
