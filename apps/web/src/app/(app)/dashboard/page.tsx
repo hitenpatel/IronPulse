@@ -1,8 +1,15 @@
+import { Greeting } from "@/components/dashboard/greeting";
+import { QuickStart } from "@/components/dashboard/quick-start";
+import { WeeklyStats } from "@/components/dashboard/weekly-stats";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+
 export default function DashboardPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <p className="mt-2 text-gray-600">Welcome to IronPulse.</p>
+    <div className="space-y-6">
+      <Greeting />
+      <QuickStart />
+      <WeeklyStats />
+      <ActivityFeed />
     </div>
   );
 }
