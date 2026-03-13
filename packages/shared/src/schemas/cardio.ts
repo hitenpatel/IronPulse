@@ -44,3 +44,8 @@ export const importGpxSchema = z.object({
   type: cardioTypeEnum.optional(),
 });
 export type ImportGpxInput = z.infer<typeof importGpxSchema>;
+
+export const previewGpxSchema = z.object({
+  gpxContent: z.string().max(10_000_000),
+});
+export type PreviewGpxInput = z.infer<typeof previewGpxSchema>;

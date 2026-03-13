@@ -4,6 +4,7 @@ import {
   createCardioSchema,
   completeGpsSessionSchema,
   importGpxSchema,
+  previewGpxSchema,
   cursorPaginationSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -161,6 +162,19 @@ export const cardioRouter = createTRPCRouter({
       });
 
       return { session };
+    }),
+
+  previewGpx: protectedProcedure
+    .input(previewGpxSchema)
+    .mutation(async ({ input }) => {
+      const gpxData = parseGpx(input.gpxContent);
+      return {
+        points: gpxData.points,
+        distanceMeters: gpxData.distanceMeters,
+        elevationGainM: gpxData.elevationGainM,
+        durationSeconds: gpxData.durationSeconds,
+        startedAt: gpxData.startedAt,
+      };
     }),
 
   importGpx: protectedProcedure
