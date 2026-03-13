@@ -36,6 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           tier: user.tier,
           subscriptionStatus: user.subscriptionStatus,
           unitSystem: user.unitSystem,
+          onboardingComplete: user.onboardingComplete,
         };
       },
     }),
@@ -59,6 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.tier = (user as any).tier;
           token.subscriptionStatus = (user as any).subscriptionStatus;
           token.unitSystem = (user as any).unitSystem;
+          token.onboardingComplete = (user as any).onboardingComplete ?? true;
         }
       }
 
@@ -66,13 +68,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id && !token.tier) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { tier: true, subscriptionStatus: true, unitSystem: true },
+          select: { tier: true, subscriptionStatus: true, unitSystem: true, onboardingComplete: true },
         });
         if (dbUser) {
           token.tier = dbUser.tier;
           token.subscriptionStatus = dbUser.subscriptionStatus;
           token.unitSystem = dbUser.unitSystem;
+          token.onboardingComplete = dbUser.onboardingComplete;
         }
+      }
+
+      if (token.onboardingComplete === undefined) {
+        token.onboardingComplete = true;
       }
 
       return token;
@@ -83,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).tier = token.tier;
         (session.user as any).subscriptionStatus = token.subscriptionStatus;
         (session.user as any).unitSystem = token.unitSystem;
+        (session.user as any).onboardingComplete = token.onboardingComplete as boolean;
       }
       return session;
     },

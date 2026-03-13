@@ -96,7 +96,11 @@ export function ActivityFeed() {
       ) : (
         <div className="space-y-2">
           {feed.map((item) => (
-            <Card key={item.id} className="flex items-center gap-3 p-3">
+            <Link
+              key={item.id}
+              href={item.kind === "workout" ? `/workouts/${item.id}` : `/cardio/${item.id}`}
+            >
+            <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/50">
               {item.kind === "workout" ? (
                 <>
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -141,6 +145,7 @@ export function ActivityFeed() {
                 {formatRelativeDate(item.startedAt)}
               </span>
             </Card>
+            </Link>
           ))}
         </div>
       )}

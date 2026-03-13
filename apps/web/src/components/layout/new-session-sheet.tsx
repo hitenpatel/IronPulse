@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Dumbbell, Activity } from "lucide-react";
+import { Dumbbell, Activity, ClipboardList } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -46,6 +46,20 @@ export function NewSessionSheet({ open, onOpenChange }: NewSessionSheetProps) {
             </div>
           </Link>
         </div>
+
+        <Link
+          href="/templates"
+          onClick={() => onOpenChange(false)}
+          className="flex items-center gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/50"
+        >
+          <ClipboardList className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">From Template</p>
+            <p className="text-xs text-muted-foreground">
+              Start a workout from a saved template
+            </p>
+          </div>
+        </Link>
       </SheetContent>
     </Sheet>
   );

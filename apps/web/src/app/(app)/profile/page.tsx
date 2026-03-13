@@ -1,10 +1,181 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { trpc } from "@/lib/trpc/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signOut } from "next-auth/react";
+import { User, Settings, LogOut, Check } from "lucide-react";
+
 export default function ProfilePage() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Profile</h1>
-        <p className="mt-2 text-muted-foreground">Coming soon</p>
+  const utils = trpc.useUtils();
+  const { data, isLoading } = trpc.user.me.useQuery();
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => {
+      utils.user.me.invalidate();
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    },
+  });
+
+  const [name, setName] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
+
+  const user = data?.user;
+
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user?.name]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+        <div className="space-y-4">
+          <div className="h-[200px] animate-pulse rounded-xl bg-muted" />
+          <div className="h-[160px] animate-pulse rounded-xl bg-muted" />
+          <div className="h-[80px] animate-pulse rounded-xl bg-muted" />
+        </div>
       </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const nameChanged = name.trim() !== (user.name ?? "");
+
+  function handleSaveName() {
+    if (!nameChanged) return;
+    setSaveStatus("saving");
+    updateProfile.mutate({ name: name.trim() });
+  }
+
+  function handleUnitToggle(unitSystem: "metric" | "imperial") {
+    if (unitSystem === user!.unitSystem) return;
+    setSaveStatus("saving");
+    updateProfile.mutate({ unitSystem });
+  }
+
+  const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Profile</h1>
+
+      {/* User Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Account
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="name">Name</Label>
+            <div className="flex gap-2">
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+              />
+              <Button
+                size="sm"
+                disabled={!nameChanged || updateProfile.isPending}
+                onClick={handleSaveName}
+                className="shrink-0"
+              >
+                {saveStatus === "saved" ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Saved!
+                  </>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Email</Label>
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Tier</span>
+            <span className="font-medium capitalize">{user.tier}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Member since</span>
+            <span className="font-medium">{memberSince}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Unit System</Label>
+            <div className="flex gap-2">
+              <Button
+                variant={
+                  user.unitSystem === "metric" ? "default" : "outline"
+                }
+                size="sm"
+                onClick={() => handleUnitToggle("metric")}
+                disabled={updateProfile.isPending}
+              >
+                Metric (kg/km)
+              </Button>
+              <Button
+                variant={
+                  user.unitSystem === "imperial" ? "default" : "outline"
+                }
+                size="sm"
+                onClick={() => handleUnitToggle("imperial")}
+                disabled={updateProfile.isPending}
+              >
+                Imperial (lb/mi)
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sign Out */}
+      <Card>
+        <CardContent className="pt-6">
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

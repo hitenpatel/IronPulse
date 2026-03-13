@@ -1,4 +1,4 @@
-import { updateProfileSchema } from "@ironpulse/shared";
+import { completeOnboardingSchema, updateProfileSchema } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const userRouter = createTRPCRouter({
@@ -37,6 +37,27 @@ export const userRouter = createTRPCRouter({
           unitSystem: true,
           tier: true,
           subscriptionStatus: true,
+        },
+      });
+
+      return { user };
+    }),
+
+  completeOnboarding: protectedProcedure
+    .input(completeOnboardingSchema)
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          name: input.name,
+          unitSystem: input.unitSystem,
+          onboardingComplete: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          unitSystem: true,
+          onboardingComplete: true,
         },
       });
 

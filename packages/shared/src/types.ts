@@ -5,4 +5,5 @@ export interface SessionUser {
   tier: string;
   subscriptionStatus: string;
   unitSystem: string;
+  onboardingComplete: boolean;
 }

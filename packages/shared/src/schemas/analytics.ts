@@ -14,3 +14,9 @@ export const bodyWeightTrendSchema = z.object({
   days: z.number().int().min(1).max(365).default(30),
 });
 export type BodyWeightTrendInput = z.infer<typeof bodyWeightTrendSchema>;
+
+export const activityCalendarSchema = z.object({
+  month: z.number().int().min(1).max(12),
+  year: z.number().int().min(2020).max(2100),
+});
+export type ActivityCalendarInput = z.infer<typeof activityCalendarSchema>;

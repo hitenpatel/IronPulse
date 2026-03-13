@@ -21,10 +21,12 @@ model User {
   tier               String             @default("athlete")
   subscriptionStatus String             @default("none") @map("subscription_status")
   stripeCustomerId   String?            @unique @map("stripe_customer_id")
+  onboardingComplete Boolean            @default(false) @map("onboarding_complete")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
 
   accounts           Account[]
+  passwordResetTokens PasswordResetToken[]
   workouts           Workout[]
   cardioSessions     CardioSession[]
   bodyMetrics        BodyMetric[]
@@ -46,6 +48,29 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
+}
+
+model MagicLinkToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("magic_link_tokens")
 }
 
 // ─── Exercises ───────────────────────────────────────────

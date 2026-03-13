@@ -2,6 +2,7 @@ import {
   weeklyVolumeSchema,
   personalRecordsSchema,
   bodyWeightTrendSchema,
+  activityCalendarSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -114,5 +115,58 @@ export const analyticsRouter = createTRPCRouter({
       });
 
       return { data };
+    }),
+
+  activityCalendar: protectedProcedure
+    .input(activityCalendarSchema)
+    .query(async ({ ctx, input }) => {
+      const start = new Date(input.year, input.month - 1, 1);
+      const end = new Date(input.year, input.month, 0, 23, 59, 59);
+
+      const [workouts, cardioSessions] = await Promise.all([
+        ctx.db.workout.findMany({
+          where: {
+            userId: ctx.user.id,
+            startedAt: { gte: start, lte: end },
+          },
+          select: {
+            id: true,
+            name: true,
+            startedAt: true,
+            durationSeconds: true,
+          },
+        }),
+        ctx.db.cardioSession.findMany({
+          where: {
+            userId: ctx.user.id,
+            startedAt: { gte: start, lte: end },
+          },
+          select: {
+            id: true,
+            type: true,
+            startedAt: true,
+            durationSeconds: true,
+          },
+        }),
+      ]);
+
+      const days: Record<
+        string,
+        { workouts: typeof workouts; cardio: typeof cardioSessions }
+      > = {};
+
+      for (const w of workouts) {
+        const key = w.startedAt.toISOString().split("T")[0]!;
+        if (!days[key]) days[key] = { workouts: [], cardio: [] };
+        days[key].workouts.push(w);
+      }
+
+      for (const c of cardioSessions) {
+        const key = c.startedAt.toISOString().split("T")[0]!;
+        if (!days[key]) days[key] = { workouts: [], cardio: [] };
+        days[key].cardio.push(c);
+      }
+
+      return { days };
     }),
 });

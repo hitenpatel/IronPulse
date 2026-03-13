@@ -23,6 +23,7 @@ const handler = async (req: Request) => {
                 subscriptionStatus:
                   (session.user as any).subscriptionStatus ?? "none",
                 unitSystem: (session.user as any).unitSystem ?? "metric",
+                onboardingComplete: (session.user as any).onboardingComplete ?? true,
               },
             }
           : null,

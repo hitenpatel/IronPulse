@@ -6,6 +6,7 @@ import { workoutRouter } from "./routers/workout";
 import { cardioRouter } from "./routers/cardio";
 import { bodyMetricRouter } from "./routers/body-metric";
 import { analyticsRouter } from "./routers/analytics";
+import { templateRouter } from "./routers/template";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
   cardio: cardioRouter,
   bodyMetric: bodyMetricRouter,
   analytics: analyticsRouter,
+  template: templateRouter,
 });
 
 export type AppRouter = typeof appRouter;
