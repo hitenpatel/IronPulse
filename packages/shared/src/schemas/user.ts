@@ -6,3 +6,8 @@ export const updateProfileSchema = z.object({
   unitSystem: z.enum([UnitSystem.METRIC, UnitSystem.IMPERIAL]).optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const uploadAvatarSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+export type UploadAvatarInput = z.infer<typeof uploadAvatarSchema>;

@@ -1,4 +1,9 @@
-import { completeOnboardingSchema, updateProfileSchema } from "@ironpulse/shared";
+import {
+  completeOnboardingSchema,
+  updateProfileSchema,
+  uploadAvatarSchema,
+} from "@ironpulse/shared";
+import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const userRouter = createTRPCRouter({
@@ -62,5 +67,20 @@ export const userRouter = createTRPCRouter({
       });
 
       return { user };
+    }),
+
+  uploadAvatar: protectedProcedure
+    .input(uploadAvatarSchema)
+    .mutation(async ({ ctx, input }) => {
+      const ext = input.contentType.split("/")[1];
+      const key = `avatars/${ctx.user.id}.${ext}`;
+      const uploadUrl = await getPresignedUploadUrl(key, input.contentType);
+
+      await ctx.db.user.update({
+        where: { id: ctx.user.id },
+        data: { avatarUrl: key },
+      });
+
+      return { uploadUrl, key };
     }),
 });

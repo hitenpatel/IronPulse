@@ -9,3 +9,4 @@ export * from "./schemas/cardio";
 export * from "./schemas/body-metric";
 export * from "./schemas/analytics";
 export * from "./schemas/template";
+export * from "./schemas/stripe";

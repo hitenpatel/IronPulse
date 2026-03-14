@@ -21,6 +21,7 @@ export function createTestUser(overrides?: Partial<SessionUser>): SessionUser {
     tier: "athlete",
     subscriptionStatus: "none",
     unitSystem: "metric",
+    onboardingComplete: false,
     ...overrides,
   };
 }
