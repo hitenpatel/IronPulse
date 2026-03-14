@@ -186,7 +186,21 @@ New package `packages/sync/` defines the PowerSync client-side SQLite schema. Po
 
 ### Nullable Fields
 
-All PowerSync `column.*` types accept null values. Columns that are nullable in the Prisma schema (marked with `?`) will sync as `null` in SQLite. This includes: `name` (Workout), `completed_at`, `duration_seconds`, `notes`, `template_id`, `weight_kg`, `reps`, `rpe`, `rest_seconds`, `category`, `equipment`, `instructions`, `created_by_id`, `distance_meters`, `elevation_gain_m`, `avg_heart_rate`, `max_heart_rate`, `calories`, `route_file_url`, `external_id`, `target_reps`, `target_weight_kg`, `body_fat_pct`, `measurements`, `set_id`.
+All PowerSync `column.*` types accept null values in SQLite. Columns that are nullable in Prisma (marked with `?`) will sync as `null`. Per-table nullable columns:
+
+| Table | Nullable Columns |
+|-------|-----------------|
+| workouts | `name`, `completed_at`, `duration_seconds`, `notes`, `template_id` |
+| workout_exercises | `notes` |
+| exercise_sets | `weight_kg`, `reps`, `rpe`, `rest_seconds` |
+| cardio_sessions | `distance_meters`, `elevation_gain_m`, `avg_heart_rate`, `max_heart_rate`, `calories`, `route_file_url`, `external_id`, `notes` |
+| laps | `avg_heart_rate` |
+| workout_templates | _(none)_ |
+| template_exercises | `notes` |
+| template_sets | `target_reps`, `target_weight_kg` |
+| body_metrics | `weight_kg`, `body_fat_pct`, `measurements` |
+| personal_records | `set_id` |
+| exercises | `category`, `equipment`, `instructions`, `created_by_id` |
 
 ### Table Definitions
 
@@ -576,15 +590,7 @@ postgres:
   command: ["postgres", "-c", "wal_level=logical"]
 ```
 
-Create publication (via migration or entrypoint):
-
-```sql
-CREATE PUBLICATION powersync FOR TABLE
-  "Workout", "WorkoutExercise", "ExerciseSet",
-  "CardioSession", "Lap",
-  "WorkoutTemplate", "TemplateExercise", "TemplateSet",
-  "BodyMetric", "PersonalRecord", "Exercise";
-```
+The publication is created via a Prisma raw SQL migration (same as defined in the Sync Rules section above).
 
 ### JWKS Endpoint
 
