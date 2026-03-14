@@ -80,6 +80,8 @@ Integrate PowerSync into the IronPulse web app for offline-first data sync. Clie
 
 ### Sync Rules (Sync Streams edition 3)
 
+All table and column names use the actual PostgreSQL names (snake_case, as defined by Prisma `@@map` / `@map`), not the Prisma model names.
+
 ```yaml
 config:
   edition: 3
@@ -87,78 +89,80 @@ config:
 streams:
   user_workouts:
     auto_subscribe: true
-    query: SELECT * FROM "Workout" WHERE user_id = auth.user_id()
+    query: SELECT * FROM workouts WHERE user_id = token_parameters.user_id
 
   user_workout_exercises:
     auto_subscribe: true
     query: |
-      SELECT we.* FROM "WorkoutExercise" we
-      INNER JOIN "Workout" w ON we.workout_id = w.id
-      WHERE w.user_id = auth.user_id()
+      SELECT we.* FROM workout_exercises we
+      INNER JOIN workouts w ON we.workout_id = w.id
+      WHERE w.user_id = token_parameters.user_id
 
   user_sets:
     auto_subscribe: true
     query: |
-      SELECT s.* FROM "ExerciseSet" s
-      INNER JOIN "WorkoutExercise" we ON s.workout_exercise_id = we.id
-      INNER JOIN "Workout" w ON we.workout_id = w.id
-      WHERE w.user_id = auth.user_id()
+      SELECT s.* FROM exercise_sets s
+      INNER JOIN workout_exercises we ON s.workout_exercise_id = we.id
+      INNER JOIN workouts w ON we.workout_id = w.id
+      WHERE w.user_id = token_parameters.user_id
 
   user_cardio_sessions:
     auto_subscribe: true
-    query: SELECT * FROM "CardioSession" WHERE user_id = auth.user_id()
+    query: SELECT * FROM cardio_sessions WHERE user_id = token_parameters.user_id
 
   user_laps:
     auto_subscribe: true
     query: |
-      SELECT l.* FROM "Lap" l
-      INNER JOIN "CardioSession" cs ON l.session_id = cs.id
-      WHERE cs.user_id = auth.user_id()
+      SELECT l.* FROM laps l
+      INNER JOIN cardio_sessions cs ON l.session_id = cs.id
+      WHERE cs.user_id = token_parameters.user_id
 
   user_templates:
     auto_subscribe: true
-    query: SELECT * FROM "WorkoutTemplate" WHERE user_id = auth.user_id()
+    query: SELECT * FROM workout_templates WHERE user_id = token_parameters.user_id
 
   user_template_exercises:
     auto_subscribe: true
     query: |
-      SELECT te.* FROM "TemplateExercise" te
-      INNER JOIN "WorkoutTemplate" wt ON te.template_id = wt.id
-      WHERE wt.user_id = auth.user_id()
+      SELECT te.* FROM template_exercises te
+      INNER JOIN workout_templates wt ON te.template_id = wt.id
+      WHERE wt.user_id = token_parameters.user_id
 
   user_template_sets:
     auto_subscribe: true
     query: |
-      SELECT ts.* FROM "TemplateSet" ts
-      INNER JOIN "TemplateExercise" te ON ts.template_exercise_id = te.id
-      INNER JOIN "WorkoutTemplate" wt ON te.template_id = wt.id
-      WHERE wt.user_id = auth.user_id()
+      SELECT ts.* FROM template_sets ts
+      INNER JOIN template_exercises te ON ts.template_exercise_id = te.id
+      INNER JOIN workout_templates wt ON te.template_id = wt.id
+      WHERE wt.user_id = token_parameters.user_id
 
   user_body_metrics:
     auto_subscribe: true
-    query: SELECT * FROM "BodyMetric" WHERE user_id = auth.user_id()
+    query: SELECT * FROM body_metrics WHERE user_id = token_parameters.user_id
 
   user_personal_records:
     auto_subscribe: true
-    query: SELECT * FROM "PersonalRecord" WHERE user_id = auth.user_id()
+    query: SELECT * FROM personal_records WHERE user_id = token_parameters.user_id
 
   global_exercises:
     auto_subscribe: true
-    query: SELECT * FROM "Exercise" WHERE is_custom = false
+    query: SELECT * FROM exercises WHERE is_custom = false
 
   user_exercises:
     auto_subscribe: true
-    query: SELECT * FROM "Exercise" WHERE is_custom = true AND created_by = auth.user_id()
+    query: SELECT * FROM exercises WHERE is_custom = true AND created_by_id = token_parameters.user_id
 ```
 
 ### PostgreSQL Publication
 
+Created via a Prisma raw SQL migration (`prisma migrate dev --create-only` then add raw SQL):
+
 ```sql
 CREATE PUBLICATION powersync FOR TABLE
-  "Workout", "WorkoutExercise", "ExerciseSet",
-  "CardioSession", "Lap",
-  "WorkoutTemplate", "TemplateExercise", "TemplateSet",
-  "BodyMetric", "PersonalRecord", "Exercise";
+  workouts, workout_exercises, exercise_sets,
+  cardio_sessions, laps,
+  workout_templates, template_exercises, template_sets,
+  body_metrics, personal_records, exercises;
 ```
 
 Required PostgreSQL config: `wal_level=logical`.
@@ -166,6 +170,23 @@ Required PostgreSQL config: `wal_level=logical`.
 ## Client-Side Schema
 
 New package `packages/sync/` defines the PowerSync client-side SQLite schema. PowerSync supports three column types: `text`, `integer`, `real`. The `id` column is automatic (text UUID).
+
+### Data Type Mapping
+
+| PostgreSQL Type | PowerSync Type | Notes |
+|-----------------|---------------|-------|
+| `uuid` | `text` | Stored as UUID string |
+| `text`, `varchar` | `text` | |
+| `integer`, `int` | `integer` | |
+| `decimal`, `numeric` | `real` | Prisma `Decimal` → SQLite `real` |
+| `boolean` | `integer` | `0` = false, `1` = true |
+| `timestamp`, `date` | `text` | ISO 8601 string |
+| `text[]` (PostgreSQL array) | `text` | JSON-stringified array; hooks must `JSON.parse()` to deserialize |
+| `json`, `jsonb` | `text` | JSON-stringified; hooks must `JSON.parse()` |
+
+### Nullable Fields
+
+All PowerSync `column.*` types accept null values. Columns that are nullable in the Prisma schema (marked with `?`) will sync as `null` in SQLite. This includes: `name` (Workout), `completed_at`, `duration_seconds`, `notes`, `template_id`, `weight_kg`, `reps`, `rpe`, `rest_seconds`, `category`, `equipment`, `instructions`, `created_by_id`, `distance_meters`, `elevation_gain_m`, `avg_heart_rate`, `max_heart_rate`, `calories`, `route_file_url`, `external_id`, `target_reps`, `target_weight_kg`, `body_fat_pct`, `measurements`, `set_id`.
 
 ### Table Definitions
 
@@ -180,6 +201,7 @@ const workouts = new Table({
   duration_seconds: column.integer,
   notes: column.text,
   template_id: column.text,
+  created_at: column.text,
 }, { indexes: { user: ['user_id'] } });
 
 const workout_exercises = new Table({
@@ -214,6 +236,7 @@ const cardio_sessions = new Table({
   route_file_url: column.text,
   external_id: column.text,
   notes: column.text,
+  created_at: column.text,
 }, { indexes: { user: ['user_id'] } });
 
 const laps = new Table({
@@ -250,7 +273,8 @@ const body_metrics = new Table({
   date: column.text,
   weight_kg: column.real,
   body_fat_pct: column.real,
-  measurements: column.text,
+  measurements: column.text,   // JSON-stringified object
+  created_at: column.text,
 }, { indexes: { user: ['user_id'] } });
 
 const personal_records = new Table({
@@ -260,17 +284,21 @@ const personal_records = new Table({
   value: column.real,
   achieved_at: column.text,
   set_id: column.text,
+  created_at: column.text,
 }, { indexes: { user: ['user_id'], exercise: ['exercise_id'] } });
 
 const exercises = new Table({
   name: column.text,
   category: column.text,
-  primary_muscles: column.text,
-  secondary_muscles: column.text,
+  primary_muscles: column.text,   // JSON-stringified string array
+  secondary_muscles: column.text,  // JSON-stringified string array
   equipment: column.text,
   instructions: column.text,
+  image_urls: column.text,         // JSON-stringified string array
+  video_urls: column.text,         // JSON-stringified string array
   is_custom: column.integer,
-  created_by: column.text,
+  created_by_id: column.text,
+  created_at: column.text,
 });
 
 export const AppSchema = new Schema({
@@ -292,7 +320,7 @@ export type Database = (typeof AppSchema)['types'];
 
 ### Table Naming Convention
 
-PowerSync tables use snake_case (SQLite convention). Prisma/PostgreSQL uses PascalCase. The sync rules query from PascalCase (`"Workout"`) and the client schema defines snake_case (`workouts`). PowerSync maps between them via the stream definitions.
+Both PostgreSQL (via Prisma `@@map`) and the PowerSync client schema use snake_case table names. The sync rules, the publication, and the client schema all reference the same snake_case names (`workouts`, `exercise_sets`, etc.), so no name mapping is needed.
 
 ## Package Structure
 
@@ -310,11 +338,12 @@ packages/sync/
 
 ### Auth Flow
 
-1. Client calls `sync.getToken` tRPC mutation
+1. Client calls `sync.getToken` tRPC **query** (no side effects — reads session, signs JWT)
 2. Server signs a JWT with RSA private key: `{ sub: userId, aud: "powersync", exp: now + 5min }`
 3. Returns `{ endpoint: POWERSYNC_URL, token: jwt }`
 4. PowerSync Service validates via JWKS at `/api/auth/powersync/keys`
 5. Token refreshes automatically — PowerSync SDK calls `fetchCredentials()` before expiry
+6. Using a query (not mutation) is intentional — it allows tRPC deduplication but the short TTL prevents stale token issues
 
 ### Upload Queue Processing
 
@@ -348,17 +377,32 @@ async uploadData(database: AbstractPowerSyncDatabase): Promise<void> {
 A dedicated `sync` router handles upload queue operations. These are separate from existing routers because the upload queue sends individual row operations, while existing routers do complex orchestration (e.g., `workout.create` creates workout + exercises + sets + detects PRs).
 
 ```
-sync.getToken   — signs and returns a PowerSync JWT
-sync.apply      — upsert a row into any synced table (validates table name, enforces user_id scoping)
-sync.update     — partial update a row (validates ownership)
-sync.delete     — delete a row (validates ownership)
+sync.getToken   — (query) signs and returns a PowerSync JWT
+sync.apply      — (mutation) upsert a row into any synced table (validates table name, enforces user_id scoping)
+sync.update     — (mutation) partial update a row (validates ownership)
+sync.delete     — (mutation) delete a row (validates ownership)
 ```
 
 The `apply`, `update`, and `delete` mutations accept a `table` parameter and dynamically route to the correct Prisma model. Each mutation enforces that the `user_id` on the record matches the authenticated user.
 
 ### Error Handling
 
-Upload endpoints return 2xx always. If validation fails (e.g., foreign key violation), the error is logged and the transaction is completed to avoid blocking the queue. The server-side data will be corrected on next sync.
+Error handling distinguishes between retryable and permanent failures:
+
+- **Retryable errors** (network failure, transient DB errors, 5xx): Do NOT call `transaction.complete()`. PowerSync will automatically retry with exponential backoff.
+- **Permanent errors** (validation failure, FK violation, auth mismatch): Log the failed operation to a `sync_errors` table for debugging, then call `transaction.complete()` to unblock the queue. The user sees the data locally but it won't persist server-side — a sync status warning surfaces this.
+
+Upload endpoints return 2xx for successful persistence. Validation errors throw tRPC errors which the connector catches and handles as permanent failures.
+
+### Conflict Resolution
+
+Conflict resolution uses **last-write-wins at the row level**. When two devices modify the same row offline and both upload, the second upload's `sync.update` overwrites the first. This is acceptable for IronPulse because:
+
+- Workouts are typically edited on one device at a time
+- Sets are individual rows — editing different sets in the same workout does not conflict
+- PowerSync's CRDT layer handles the sync ordering; the upload queue handles server persistence
+
+Field-level merging is not implemented for MVP. If this proves insufficient (e.g., two devices editing different fields of the same workout simultaneously), field-level merge can be added to the `sync.update` mutation later.
 
 ## Dual-Layer Hooks
 
@@ -497,6 +541,29 @@ powersync:
   ports:
     - "8080:80"
   restart: unless-stopped
+```
+
+### PowerSync Service Configuration (`docker/powersync.yaml`)
+
+```yaml
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_DATA_SOURCE_URI
+      sslmode: disable
+
+storage:
+  type: mongodb
+  uri: !env PS_MONGO_URI
+
+client_auth:
+  jwks_uri: http://ironpulse:3000/api/auth/powersync/keys
+  audience: ["powersync"]
+
+sync_config:
+  path: /app/config/sync-rules.yaml
+
+port: 80
 ```
 
 ### PostgreSQL Changes
