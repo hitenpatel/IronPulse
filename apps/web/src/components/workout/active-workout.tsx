@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
-import { useWorkoutExercises, useWorkoutSets } from "@/hooks/use-workout-detail";
+import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { useQuery } from "@powersync/react";
 import { WorkoutHeader } from "./workout-header";
 import { ExerciseCard } from "./exercise-card";

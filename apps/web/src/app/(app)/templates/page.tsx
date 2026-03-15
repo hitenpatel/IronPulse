@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ClipboardList, Play, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { usePowerSync } from "@powersync/react";
-import { useTemplates } from "@/hooks/use-templates";
+import { useTemplates } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 

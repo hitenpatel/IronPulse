@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { usePowerSync } from "@powersync/react";
-import { useBodyMetrics } from "@/hooks/use-body-metrics";
+import { useBodyMetrics } from "@ironpulse/sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

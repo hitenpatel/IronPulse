@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Dumbbell, Clock } from "lucide-react";
-import { useWorkouts } from "@/hooks/use-workouts";
+import { useWorkouts } from "@ironpulse/sync";
 import { formatRelativeDate, formatDuration } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 

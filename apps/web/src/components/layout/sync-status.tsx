@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncStatus } from "@/hooks/use-sync-status";
+import { useSyncStatus } from "@ironpulse/sync";
 import { Wifi, WifiOff, RefreshCw } from "lucide-react";
 
 export function SyncStatus() {

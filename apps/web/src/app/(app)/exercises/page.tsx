@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Dumbbell, X } from "lucide-react";
-import { useExercises } from "@/hooks/use-exercises";
+import { useExercises } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

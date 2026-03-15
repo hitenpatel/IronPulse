@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@powersync/react";
 
 export interface WorkoutRow {

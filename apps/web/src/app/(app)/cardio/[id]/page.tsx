@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { useCardioSession } from "@/hooks/use-cardio-detail";
+import { useCardioSession } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import {
   formatDuration,

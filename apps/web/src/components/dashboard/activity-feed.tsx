@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { Dumbbell, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useWorkouts } from "@/hooks/use-workouts";
-import { useCardioSessions } from "@/hooks/use-cardio-sessions";
+import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
 import {
   formatDuration,
   formatDistance,

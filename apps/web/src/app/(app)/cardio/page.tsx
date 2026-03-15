@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Activity } from "lucide-react";
-import { useCardioSessions } from "@/hooks/use-cardio-sessions";
+import { useCardioSessions } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {

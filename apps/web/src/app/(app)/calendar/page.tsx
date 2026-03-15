@@ -3,8 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Activity } from "lucide-react";
-import { useWorkouts } from "@/hooks/use-workouts";
-import { useCardioSessions } from "@/hooks/use-cardio-sessions";
+import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDuration } from "@/lib/format";

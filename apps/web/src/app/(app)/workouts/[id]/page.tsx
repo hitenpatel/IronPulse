@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Dumbbell, BarChart3, Target, ClipboardList, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { useWorkoutExercises, useWorkoutSets } from "@/hooks/use-workout-detail";
+import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { formatDuration, formatVolume } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
