@@ -1,6 +1,6 @@
 # Expo Mobile App Foundation — Design Specification
 
-Scaffold the IronPulse Expo mobile app with navigation, authentication, PowerSync offline-first sync, dark theme, placeholder screens with real synced data, and Detox E2E tests. This is sub-project 1 of 4 for the mobile app.
+Scaffold the IronPulse Expo mobile app with navigation, authentication, PowerSync offline-first sync, dark theme, placeholder screens with real synced data, and Maestro E2E tests. This is sub-project 1 of 4 for the mobile app.
 
 ## Scope
 
@@ -10,7 +10,7 @@ Scaffold the IronPulse Expo mobile app with navigation, authentication, PowerSyn
 - 4-tab navigation + center FAB, matching web app structure
 - NativeWind dark theme matching web app CSS variables
 - Placeholder screens with real synced data
-- Detox E2E tests for auth, navigation, sync, and offline flows
+- Maestro E2E tests for auth, navigation, sync, and offline flows
 
 ## Out of Scope (Later Sub-Projects)
 
@@ -31,6 +31,15 @@ apps/mobile/
     @ironpulse/shared  → Zod schemas, enums, types
     @ironpulse/api     → AppRouter type (for tRPC client typing)
 ```
+
+### Metro Configuration
+
+Metro requires explicit configuration for Turborepo monorepo resolution. `metro.config.js` must set:
+- `watchFolders`: point to root `node_modules/` and shared `packages/` directories
+- `nodeModulesPaths`: include root `node_modules/` for hoisted dependencies
+- `extraNodeModules`: alias `@ironpulse/*` packages for Metro resolution
+
+This is a known pain point with Expo in monorepos — the config prevents "module not found" errors for workspace dependencies.
 
 ### App Structure
 
@@ -68,74 +77,52 @@ apps/mobile/
 │   ├── auth.tsx                     # AuthProvider context + secure storage
 │   ├── trpc.ts                      # tRPC client with EXPO_PUBLIC_API_URL
 │   └── powersync.ts                 # PowerSync database init for RN
-├── e2e/
-│   ├── auth.test.ts                 # Sign up, sign in, sign out flows
-│   ├── navigation.test.ts           # Tab switching, screen rendering
-│   └── sync.test.ts                 # Data appears, offline resilience
-└── .detoxrc.js                      # Detox config (iOS + Android)
+└── e2e/                             # Maestro E2E flows
+    ├── auth-signup.yaml
+    ├── auth-signin.yaml
+    ├── auth-signout.yaml
+    ├── navigation-tabs.yaml
+    └── sync-offline.yaml
 ```
 
-## Authentication
+## Shared Package Migration (`packages/sync`)
 
-Auth uses the existing tRPC `auth` router — no new backend work.
+### Problem
 
-### Sign-In Flow
+The `packages/sync/` package currently imports from `@powersync/web`, which bundles WASM/IndexedDB code that fails on React Native. To share the package between web and mobile, imports must be platform-agnostic.
 
-1. User enters email/password on login screen
-2. App calls `trpc.auth.signIn.mutate({ email, password })`
-3. Server returns session data (`SessionUser`: id, name, email, tier, unitSystem, etc.)
-4. App stores session token in `expo-secure-store` (encrypted, per-device)
-5. Subsequent tRPC calls include the token via an `Authorization` header
-6. PowerSync connector calls `trpc.sync.getToken.query()` which returns the PowerSync JWT
+### Solution
 
-### Sign-Up Flow
+Migrate `packages/sync` imports from `@powersync/web` to `@powersync/common`:
 
-Same pattern: `trpc.auth.signUp.mutate(...)` → store token → navigate to tabs.
+**schema.ts:** Change `import { column, Schema, Table } from "@powersync/web"` to `import { column, Schema, Table } from "@powersync/common"`. These types are defined in `@powersync/common` and re-exported by both `@powersync/web` and `@powersync/react-native`.
 
-### OAuth
+**connector.ts:** Change `import { AbstractPowerSyncDatabase, PowerSyncBackendConnector, UpdateType } from "@powersync/web"` to import from `@powersync/common`. The `BackendConnector` interface is platform-agnostic — only the database construction differs.
 
-Deferred. Login screen shows email/password only. Google/Apple OAuth buttons added in a follow-up once `expo-auth-session` is wired. Server-side OAuth already exists.
+**package.json:** Replace `@powersync/web` dependency with `@powersync/common`. Web app adds `@powersync/web` as its own dependency; mobile adds `@powersync/react-native`.
 
-### Session Persistence
+This is a non-breaking change — `@powersync/common` is already installed as a transitive dependency of `@powersync/web`.
 
-On app launch, check `expo-secure-store` for a stored token. If valid, skip login and go to tabs. If expired/missing, show login screen.
+### Connector Auth Token Injection
 
-### Sign-Out
+The current connector relies on browser cookie-based auth (relative `/api/trpc` URL, cookies sent automatically). Mobile has no cookies — it uses bearer tokens stored in `expo-secure-store`.
 
-Clear stored token → disconnect PowerSync → navigate to login screen.
-
-### Auth Context
-
-`AuthProvider` wraps the app, providing:
-
-```typescript
-interface AuthContextValue {
-  user: SessionUser | null;
-  isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-}
-```
-
-The root layout checks `user` and renders either `(auth)` or `(tabs)` route group.
-
-## PowerSync on Mobile
-
-### Shared Package Change
-
-Modify `packages/sync/src/connector.ts` to accept an optional base URL:
+The connector must accept both a `baseUrl` and an `authTokenGetter` for injecting the bearer token:
 
 ```typescript
 export class BackendConnector implements PowerSyncBackendConnector {
   private trpc;
 
-  constructor(baseUrl?: string) {
+  constructor(opts?: { baseUrl?: string; getAuthToken?: () => Promise<string | null> }) {
     this.trpc = createTRPCClient<AppRouter>({
       links: [
         httpBatchLink({
-          url: `${baseUrl ?? ""}/api/trpc`,
+          url: `${opts?.baseUrl ?? ""}/api/trpc`,
           transformer: superjson,
+          headers: async () => {
+            const token = await opts?.getAuthToken?.();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          },
         }),
       ],
     });
@@ -143,11 +130,77 @@ export class BackendConnector implements PowerSyncBackendConnector {
 }
 ```
 
-Web continues passing nothing (relative URL). Mobile passes `EXPO_PUBLIC_API_URL`.
+Web passes nothing (relative URL, cookie auth). Mobile passes `{ baseUrl: EXPO_PUBLIC_API_URL, getAuthToken: () => SecureStore.getItemAsync("auth-token") }`.
+
+### PowerSync Hooks
+
+The PowerSync hooks (`useWorkouts`, `useCardioSessions`, `useExercises`, etc.) currently live in `apps/web/src/hooks/`. Since they are just SQL queries over the PowerSync database using `useQuery` from `@powersync/react` (which is platform-agnostic), they should be moved to `packages/sync/src/hooks/` so both web and mobile can import them.
+
+The hooks files move from `apps/web/src/hooks/use-workouts.ts` etc. to `packages/sync/src/hooks/use-workouts.ts` etc. The web app updates its imports from `@/hooks/use-workouts` to `@ironpulse/sync`.
+
+## Authentication
+
+### Server-Side Changes
+
+The existing `auth.signIn` and `auth.signUp` tRPC mutations use NextAuth session cookies on web. Mobile needs bearer token auth. Required backend changes:
+
+1. **New tRPC mutations**: `auth.mobileSignIn` and `auth.mobileSignUp` — same validation as existing mutations but return a signed JWT bearer token instead of setting a cookie. The JWT contains the `SessionUser` payload and is signed with `NEXTAUTH_SECRET`.
+
+2. **New middleware**: A `bearerAuthProcedure` in `trpc.ts` that extracts the `Authorization: Bearer <token>` header, verifies the JWT, and populates `ctx.session.user`. This sits alongside the existing cookie-based `protectedProcedure`. Routes used by both web and mobile (like `sync.getToken`) use whichever auth method is present.
+
+3. **Token format**: `{ sub: userId, user: SessionUser, exp: 30d }`. Long expiry since mobile apps stay signed in. The token is opaque to the client — stored and forwarded as-is.
+
+### Mobile Auth Flow
+
+1. User enters email/password on login screen
+2. App calls `trpc.auth.mobileSignIn.mutate({ email, password })`
+3. Server validates credentials, returns `{ token: string, user: SessionUser }`
+4. App stores token in `expo-secure-store` under key `"auth-token"`
+5. App stores serialized user in `expo-secure-store` under key `"auth-user"`
+6. tRPC client includes `Authorization: Bearer <token>` on all subsequent requests
+7. PowerSync connector calls `trpc.sync.getToken.query()` (authenticated via bearer token) which returns the PowerSync JWT
+
+### Session Persistence & Expiry
+
+On app launch:
+1. Read token and user from `expo-secure-store`
+2. If both exist, call `trpc.auth.getSession.query()` to verify the token is still valid
+3. If valid → set user in auth context, connect PowerSync, show tabs
+4. If expired/invalid (401) → clear stored token, show login screen
+5. If network unavailable → use stored user optimistically, PowerSync works offline
+
+### Token Expiry Mid-Session
+
+If any tRPC call returns 401 during use (token expired while app was backgrounded):
+- Clear stored token and user
+- Disconnect PowerSync
+- Navigate to login screen
+- Show a toast: "Session expired, please sign in again"
+
+This is handled by a tRPC link that intercepts 401 responses.
+
+### Sign-Out
+
+Clear token + user from secure store → disconnect PowerSync → navigate to login.
+
+### Auth Context
+
+```typescript
+interface AuthContextValue {
+  user: SessionUser | null;
+  token: string | null;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (name: string, email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+```
+
+## PowerSync on Mobile
 
 ### Mobile PowerSync Database
 
-Uses `@powersync/react-native` instead of `@powersync/web`. The SQLite adapter uses native SQLite, not WASM:
+Uses `@powersync/react-native` instead of `@powersync/web`. Native SQLite, not WASM:
 
 ```typescript
 import { PowerSyncDatabase } from "@powersync/react-native";
@@ -161,13 +214,14 @@ const db = new PowerSyncDatabase({
 
 ### Hook Compatibility
 
-`useQuery`, `useStatus`, `usePowerSync` from `@powersync/react` work identically on React Native — the hooks are platform-agnostic, only the database implementation differs.
+`useQuery`, `useStatus`, `usePowerSync` from `@powersync/react` work identically on React Native — the hooks are platform-agnostic, only the database implementation differs. The shared hooks from `packages/sync/src/hooks/` work on both platforms.
 
 ### Init Flow
 
-1. App launches → check auth token in secure store
-2. If authenticated → create `PowerSyncDatabase` + `BackendConnector(EXPO_PUBLIC_API_URL)` → `db.connect(connector)`
-3. Data syncs automatically → screens show real synced data
+1. App launches → read auth token from secure store
+2. If authenticated → create `PowerSyncDatabase` + `BackendConnector({ baseUrl: EXPO_PUBLIC_API_URL, getAuthToken })` → `db.connect(connector)`
+3. `fetchCredentials()` calls `sync.getToken` (authenticated via bearer token) → returns PowerSync JWT
+4. Data syncs automatically → screens show real synced data
 
 ## Navigation
 
@@ -188,7 +242,7 @@ A "+" button overlaid at the center of the tab bar. Opens a bottom sheet (`@gorh
 
 ### Stack Navigation
 
-Each tab can push detail screens onto a stack via Expo Router nested layouts. For the foundation, only tab screens exist. Detail screens (workout detail, exercise detail, etc.) are added in later sub-projects.
+Each tab can push detail screens onto a stack via Expo Router nested layouts. For the foundation, only tab screens exist. Detail screens are added in later sub-projects.
 
 ## Dark Theme
 
@@ -230,7 +284,7 @@ These mirror the web app's shadcn/ui components in API shape but use RN primitiv
 Functional placeholder proving sync works:
 - Greeting: "Good morning, {name}" (from auth context)
 - Quick-start cards: "Start Workout" / "Log Cardio" (navigate to placeholder)
-- Recent activity list: last 5 workouts + last 5 cardio sessions from PowerSync hooks (`useWorkouts()`, `useCardioSessions()`)
+- Recent activity list: last 5 workouts + last 5 cardio sessions from PowerSync hooks (`useWorkouts()`, `useCardioSessions()` from `@ironpulse/sync`)
 - Shows real synced data, validating the full stack
 
 ### Stats (`(tabs)/stats.tsx`)
@@ -254,43 +308,122 @@ Functional:
 - Unit system display
 - Sign out button
 
-## E2E Testing (Detox)
+## E2E Testing (Maestro)
 
-### Framework Setup
+### Why Maestro
 
-- Detox with `jest-circus` test runner
-- iOS Simulator and Android Emulator configurations in `.detoxrc.js`
-- Tests at `apps/mobile/e2e/`
+Maestro over Detox for simplicity: YAML-based flows, no native build configuration, works with any Expo build, readable by non-developers. Maestro drives the app via the accessibility tree (black-box) which is more resilient to implementation changes.
+
+### Setup
+
+Install: `brew install maestro` (or `curl -Ls "https://get.maestro.mobile.dev" | bash`)
+
+No project-level config file needed. Flows reference the app by bundle ID from `app.json`.
 
 ### Test Flows
 
-| Test File | Flows | What It Validates |
-|-----------|-------|-------------------|
-| `auth.test.ts` | Sign up → dashboard; Sign in → dashboard; Sign out → login | Auth works, token stored/cleared, PowerSync connects/disconnects |
-| `navigation.test.ts` | Tap each tab, verify screen renders | All 4 tabs render without crash, tab bar works |
-| `sync.test.ts` | Sign in → data appears on dashboard; Kill network → app still shows data; Reconnect → data syncs | PowerSync offline-first works on real device |
-
-### Test Structure
-
 ```
 apps/mobile/e2e/
-├── auth.test.ts
-├── navigation.test.ts
-└── sync.test.ts
+├── auth-signup.yaml          # Sign up → lands on dashboard
+├── auth-signin.yaml          # Sign in → lands on dashboard
+├── auth-signout.yaml         # Sign out → lands on login
+├── navigation-tabs.yaml      # Tap each tab, verify screen renders
+└── sync-offline.yaml         # Sign in → data appears → airplane mode → data persists
 ```
 
-### CI Consideration
+#### auth-signup.yaml
+```yaml
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Sign Up"
+- tapOn: "Name"
+- inputText: "Test User"
+- tapOn: "Email"
+- inputText: "test-signup@example.com"
+- tapOn: "Password"
+- inputText: "Password123!"
+- tapOn: "Create Account"
+- assertVisible: "Good morning"
+```
 
-Detox tests require a simulator (macOS runners). For now these run locally via `detox test`. CI integration deferred until a macOS GitHub Actions runner is configured.
+#### auth-signin.yaml
+```yaml
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Good morning"
+```
+
+#### auth-signout.yaml
+```yaml
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Profile"
+- tapOn: "Sign Out"
+- assertVisible: "Sign In"
+```
+
+#### navigation-tabs.yaml
+```yaml
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Good morning"
+- tapOn: "Stats"
+- assertVisible: "Stats"
+- tapOn: "Exercises"
+- assertVisible: "Exercises"
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- tapOn: "Dashboard"
+- assertVisible: "Good morning"
+```
+
+#### sync-offline.yaml
+```yaml
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Good morning"
+- toggleAirplaneMode
+- assertVisible: "Good morning"
+- toggleAirplaneMode
+```
+
+### Test Environment
+
+E2E tests require a running backend with seeded data. For local testing:
+1. Run `docker compose up` (starts PostgreSQL, Redis, MinIO, PowerSync)
+2. Run `pnpm --filter @ironpulse/web dev` (starts the API server)
+3. Seed a test user via `prisma db seed` or a setup script
+4. Run `maestro test apps/mobile/e2e/`
+
+CI integration deferred — Maestro tests require a macOS runner with a simulator. Maestro Cloud offers managed runners as a future option.
 
 ## Environment Variables
 
 ```env
-# Required: API server URL
+# Required: API server URL (absolute — no relative URLs on mobile)
 EXPO_PUBLIC_API_URL=http://192.168.1.x:3000
-
-# Required: PowerSync service URL
-EXPO_PUBLIC_POWERSYNC_URL=http://192.168.1.x:8080
 ```
 
-For production builds, these point to the cloud deployment URLs.
+Note: `EXPO_PUBLIC_POWERSYNC_URL` is NOT needed as a separate env var. The PowerSync URL is returned by the `sync.getToken` server endpoint, which already knows the correct URL. This keeps configuration centralized on the server.
+
+For production builds, `EXPO_PUBLIC_API_URL` points to the cloud deployment URL.
