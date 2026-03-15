@@ -1,0 +1,243 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Keyboard,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { usePowerSync, useQuery } from "@powersync/react";
+import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import * as Haptics from "expo-haptics";
+import { Plus } from "lucide-react-native";
+
+import { WorkoutHeader } from "../../components/workout/workout-header";
+import { ExerciseCard } from "../../components/workout/exercise-card";
+import { RestTimer } from "../../components/workout/rest-timer";
+import { RpePicker } from "../../components/workout/rpe-picker";
+import { calculateVolume } from "../../lib/workout-utils";
+import { trpc } from "../../lib/trpc";
+
+const colors = {
+  background: "hsl(224, 71%, 4%)",
+  foreground: "hsl(213, 31%, 91%)",
+  muted: "hsl(223, 47%, 11%)",
+  mutedFg: "hsl(215, 20%, 65%)",
+  primary: "hsl(210, 40%, 98%)",
+  accent: "hsl(216, 34%, 17%)",
+};
+
+export default function ActiveWorkoutScreen() {
+  const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
+  const router = useRouter();
+  const db = usePowerSync();
+
+  // Workout data
+  const { data: workoutRows } = useQuery(
+    "SELECT * FROM workouts WHERE id = ?",
+    [workoutId ?? ""]
+  );
+  const workout = workoutRows?.[0] as
+    | { id: string; name: string; started_at: string }
+    | undefined;
+
+  // Exercises and sets
+  const { data: exercises } = useWorkoutExercises(workoutId);
+  const { data: sets } = useWorkoutSets(workoutId);
+
+  // Group sets by workout_exercise_id
+  const setsByExercise = useMemo(() => {
+    const map = new Map<string, typeof sets>();
+    for (const set of sets ?? []) {
+      const key = set.workout_exercise_id;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(set);
+    }
+    return map;
+  }, [sets]);
+
+  // Keyboard height tracking
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardWillShow", (e) =>
+      setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener("keyboardWillHide", () =>
+      setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  // Rest timer state
+  const [restTimerVisible, setRestTimerVisible] = useState(false);
+
+  // RPE picker state
+  const [rpePicker, setRpePicker] = useState<{
+    open: boolean;
+    setId: string;
+    rpe: number | null;
+  }>({ open: false, setId: "", rpe: null });
+
+  const handleSetComplete = useCallback(() => {
+    setRestTimerVisible(true);
+  }, []);
+
+  const handleRpePick = useCallback((setId: string, rpe: number | null) => {
+    setRpePicker({ open: true, setId, rpe });
+  }, []);
+
+  const handleNameChange = useCallback(
+    async (name: string) => {
+      await db.execute("UPDATE workouts SET name = ? WHERE id = ?", [
+        name,
+        workoutId,
+      ]);
+    },
+    [db, workoutId]
+  );
+
+  const handleCancel = useCallback(() => {
+    Alert.alert("Cancel Workout", "Are you sure? All data will be lost.", [
+      { text: "Keep Going", style: "cancel" },
+      {
+        text: "Cancel Workout",
+        style: "destructive",
+        onPress: async () => {
+          // Delete in order: sets -> exercises -> workout
+          await db.execute(
+            `DELETE FROM exercise_sets WHERE workout_exercise_id IN
+             (SELECT id FROM workout_exercises WHERE workout_id = ?)`,
+            [workoutId]
+          );
+          await db.execute(
+            "DELETE FROM workout_exercises WHERE workout_id = ?",
+            [workoutId]
+          );
+          await db.execute("DELETE FROM workouts WHERE id = ?", [workoutId]);
+          router.back();
+        },
+      },
+    ]);
+  }, [db, workoutId, router]);
+
+  const handleFinish = useCallback(async () => {
+    if (!workout) return;
+
+    const startedAt = new Date(workout.started_at).getTime();
+    const durationSeconds = Math.floor((Date.now() - startedAt) / 1000);
+
+    // Update workout with completion data
+    await db.execute(
+      "UPDATE workouts SET completed_at = ?, duration_seconds = ? WHERE id = ?",
+      [new Date().toISOString(), durationSeconds, workoutId]
+    );
+
+    // Try to sync via tRPC (tolerate offline failures)
+    let prs: unknown[] = [];
+    try {
+      const result = await trpc.workout.complete.mutate({ id: workoutId! });
+      prs = (result as any)?.prs ?? [];
+    } catch {
+      // Offline — will sync later
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    router.replace({
+      pathname: "/workout/complete",
+      params: {
+        workoutId: workoutId!,
+        prs: JSON.stringify(prs),
+      },
+    });
+  }, [workout, db, workoutId, router]);
+
+  const handleAddExercise = useCallback(() => {
+    router.push({
+      pathname: "/workout/add-exercise",
+      params: { workoutId: workoutId! },
+    });
+  }, [router, workoutId]);
+
+  if (!workout) return null;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <WorkoutHeader
+        workoutId={workout.id}
+        name={workout.name}
+        startedAt={workout.started_at}
+        onCancel={handleCancel}
+        onFinish={handleFinish}
+        onNameChange={handleNameChange}
+      />
+
+      <FlatList
+        data={exercises ?? []}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{
+          paddingTop: 8,
+          paddingBottom: keyboardHeight + 120,
+        }}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item, index }) => (
+          <ExerciseCard
+            exerciseId={item.exercise_id}
+            workoutExerciseId={item.id}
+            exerciseName={item.exercise_name}
+            sets={(setsByExercise.get(item.id) ?? []) as any}
+            exerciseIndex={index}
+            workoutId={workoutId!}
+            onSetComplete={handleSetComplete}
+            onRpePick={handleRpePick}
+          />
+        )}
+        ListFooterComponent={
+          <Pressable
+            testID="add-exercise-button"
+            onPress={handleAddExercise}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              marginHorizontal: 16,
+              marginTop: 4,
+              paddingVertical: 14,
+              backgroundColor: colors.accent,
+              borderRadius: 12,
+            }}
+          >
+            <Plus size={20} color={colors.primary} />
+            <Text
+              style={{
+                color: colors.primary,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Add Exercise
+            </Text>
+          </Pressable>
+        }
+      />
+
+      <RestTimer
+        visible={restTimerVisible}
+        onDismiss={() => setRestTimerVisible(false)}
+      />
+
+      <RpePicker
+        open={rpePicker.open}
+        setId={rpePicker.setId}
+        currentRpe={rpePicker.rpe}
+        onClose={() => setRpePicker({ open: false, setId: "", rpe: null })}
+      />
+    </View>
+  );
+}
