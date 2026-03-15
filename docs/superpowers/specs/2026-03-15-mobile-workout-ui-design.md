@@ -53,11 +53,11 @@ Three zones, designed for one-handed gym use:
 - **Set rows:** horizontal layout within each card
   - Weight input (`TextInput`, `keyboardType="decimal-pad"`, placeholder "kg")
   - Reps input (`TextInput`, `keyboardType="number-pad"`, placeholder "reps")
-  - RPE picker (tappable, opens a small picker with values 1–10 in 0.5 increments)
+  - RPE picker (tappable, opens a small picker with values 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0 — Borg CR10 subset for strength training)
   - Completion checkmark (toggle button, `Pressable`)
   - All touch targets minimum 44pt (Apple HIG)
 - **"Add Set" button** at the bottom of each exercise card
-- **Keyboard-aware scrolling:** when an input is focused, `FlatList` scrolls to keep the focused row visible above the keyboard. Use `KeyboardAvoidingView` or `react-native-keyboard-aware-scroll-view`.
+- **Keyboard-aware scrolling:** `FlatList` uses `keyboardShouldPersistTaps="handled"` to allow tapping other inputs without dismissing the keyboard. On input focus, call `flatListRef.scrollToIndex()` to keep the focused row visible. Do NOT use `KeyboardAvoidingView` wrapping `FlatList` (causes layout issues). Instead, use `FlatList` with `contentContainerStyle={{ paddingBottom: keyboardHeight }}` derived from the `Keyboard` event listener.
 
 ### Bottom Zone — Actions
 
@@ -71,11 +71,11 @@ Three zones, designed for one-handed gym use:
 - Tapping the checkmark marks the set complete (`completed = 1`)
 - Completed sets remain editable (inputs don't lock)
 - Changes are written to PowerSync immediately via `db.execute(UPDATE exercise_sets ...)`
-- Debounce writes by 300ms to avoid excessive SQLite operations during rapid typing
+- Debounce writes by 500ms to match web implementation and avoid excessive SQLite operations during rapid typing
 
 ## Swipe-to-Delete
 
-- Exercise cards: swipe left reveals a red "Delete" button. Tapping deletes the `workout_exercises` row (cascade deletes its sets).
+- Exercise cards: swipe left reveals a red "Delete" button. Tapping performs a two-step delete: first `DELETE FROM exercise_sets WHERE workout_exercise_id = ?`, then `DELETE FROM workout_exercises WHERE id = ?`. PowerSync/SQLite does not support `ON DELETE CASCADE` foreign keys, so both deletes must be explicit.
 - Individual sets: no swipe delete. A "−" button appears on each set row (next to the checkmark) that deletes the set row.
 
 ## Haptic Feedback
@@ -164,6 +164,46 @@ All writes via `usePowerSync()` → `db.execute()`, identical to web:
 Reads use shared hooks from `@ironpulse/sync`: `useWorkoutExercises(workoutId)`, `useWorkoutSets(workoutId)`, `useExercises({ search })`, `useTemplates()`.
 
 Server call: `trpc.workout.complete.mutate({ id })` for PR detection (via mobile tRPC client with bearer auth).
+
+## FAB Integration
+
+The existing `NewSessionSheet` component stays. When the user taps "Start Workout" inside that sheet, it opens the template picker as a second bottom sheet (or navigates to the template picker screen). "Log Cardio" remains as a placeholder until sub-project 3.
+
+## Routing
+
+Workout screens live under `app/workout/` which is outside the `(tabs)` group. This means the tab bar is automatically hidden when the workout stack is active. `app/workout/_layout.tsx` uses `<Stack screenOptions={{ headerShown: false, presentation: 'fullScreenModal' }}>` for a fullscreen feel. Navigation from tabs: `router.push("/workout/active")`.
+
+## App Backgrounding & Resume
+
+All workout data (sets, exercises) is written to PowerSync immediately during the workout. If the app is killed mid-workout, the data survives in SQLite. On next app launch, detect any workout where `completed_at IS NULL` and `started_at` exists — offer the user a choice to "Resume" or "Discard" via an alert. The elapsed timer reconstructs from the `started_at` field in the database, not from component state.
+
+## Template Hooks
+
+The template picker needs to read `template_exercises` and `template_sets` to hydrate a workout from a template. These hooks don't exist yet in `packages/sync/src/hooks/`. Create two new hooks:
+
+- `useTemplateExercises(templateId)` — `SELECT te.*, e.name as exercise_name FROM template_exercises te LEFT JOIN exercises e ON te.exercise_id = e.id WHERE te.template_id = ? ORDER BY te."order"`
+- `useTemplateSets(templateExerciseId)` — `SELECT * FROM template_sets WHERE template_exercise_id = ? ORDER BY set_number`
+
+These are added to `packages/sync/src/hooks/` and exported from `@ironpulse/sync`.
+
+## Sync Timing on Completion
+
+When the user taps "Finish," the local write (`completed_at`, `duration_seconds`) is applied immediately to SQLite. The server call `trpc.workout.complete.mutate({ id })` runs PR detection by reading from PostgreSQL. The sets and exercises were synced to PostgreSQL continuously during the workout via PowerSync's upload queue. In the rare edge case where the user completes a workout immediately after going online (sets haven't synced yet), the server may miss some sets for PR calculation. This is acceptable — PRs will be recalculated on the next sync cycle. No explicit "wait for sync" step is needed.
+
+## Empty Template State
+
+If the user has zero saved templates, the template picker bottom sheet shows only "Empty Workout" (the template list section is hidden). No empty state message needed — the user simply taps "Empty Workout" directly.
+
+## TestID Convention
+
+All interactive components must include `testID` props for Maestro E2E tests:
+
+- FAB button: `testID="fab-button"`
+- Set weight input: `testID="weight-input-{exerciseIndex}-{setIndex}"`
+- Set reps input: `testID="reps-input-{exerciseIndex}-{setIndex}"`
+- Set complete button: `testID="complete-set-{exerciseIndex}-{setIndex}"`
+- Add exercise button: `testID="add-exercise-button"`
+- Finish button: `testID="finish-button"`
 
 ## File Structure
 
