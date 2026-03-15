@@ -1,0 +1,25 @@
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Good morning"
+- tapOn:
+    id: "fab-button"
+- tapOn: "Log Cardio"
+- tapOn: "Run"
+- tapOn: "Log Manually"
+- tapOn:
+    id: "duration-minutes"
+- inputText: "30"
+- tapOn:
+    id: "distance-input"
+- inputText: "5.0"
+- tapOn:
+    id: "save-cardio"
+- assertVisible: "Run"
+- tapOn: "Done"
+- assertVisible: "Good morning"
