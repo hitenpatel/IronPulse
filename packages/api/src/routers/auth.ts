@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
+import type { SessionUser } from "@ironpulse/shared";
 import {
   signUpSchema,
   signInSchema,
@@ -9,7 +10,8 @@ import {
   resetPasswordSchema,
 } from "@ironpulse/shared";
 import { sendMagicLinkEmail, sendPasswordResetEmail } from "../lib/email";
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { signMobileToken } from "../lib/mobile-auth";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 
 export const authRouter = createTRPCRouter({
   signUp: publicProcedure.input(signUpSchema).mutation(async ({ ctx, input }) => {
@@ -83,9 +85,90 @@ export const authRouter = createTRPCRouter({
     };
   }),
 
-  getSession: publicProcedure.query(({ ctx }) => {
+  getSession: protectedProcedure.query(({ ctx }) => {
     return { session: ctx.session };
   }),
+
+  mobileSignIn: publicProcedure
+    .input(signInSchema)
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { email: input.email },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          passwordHash: true,
+          tier: true,
+          subscriptionStatus: true,
+          unitSystem: true,
+          onboardingComplete: true,
+        },
+      });
+
+      if (!user || !user.passwordHash) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
+        });
+      }
+
+      const valid = await bcrypt.compare(input.password, user.passwordHash);
+      if (!valid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
+        });
+      }
+
+      const { passwordHash: _, ...sessionUser } = user;
+      const token = signMobileToken(sessionUser as SessionUser);
+
+      return { token, user: sessionUser };
+    }),
+
+  mobileSignUp: publicProcedure
+    .input(signUpSchema)
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.user.findUnique({
+        where: { email: input.email },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Email already registered",
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(input.password, 12);
+
+      const user = await ctx.db.user.create({
+        data: {
+          email: input.email,
+          name: input.name,
+          passwordHash,
+          accounts: {
+            create: {
+              provider: "email",
+              providerAccountId: input.email,
+            },
+          },
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          tier: true,
+          subscriptionStatus: true,
+          unitSystem: true,
+          onboardingComplete: true,
+        },
+      });
+
+      const token = signMobileToken(user as SessionUser);
+      return { token, user };
+    }),
 
   sendMagicLink: publicProcedure
     .input(sendMagicLinkSchema)

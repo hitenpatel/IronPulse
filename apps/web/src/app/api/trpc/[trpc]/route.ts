@@ -27,6 +27,7 @@ const handler = async (req: Request) => {
               },
             }
           : null,
+        authHeader: req.headers.get("authorization") ?? undefined,
       }),
   });
 };

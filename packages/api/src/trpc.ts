@@ -3,11 +3,13 @@ import superjson from "superjson";
 import type { PrismaClient } from "@ironpulse/db";
 import type { SessionUser } from "@ironpulse/shared";
 import { checkRateLimit, RATE_LIMITS } from "./lib/rate-limit";
+import { verifyMobileToken } from "./lib/mobile-auth";
 
 export interface CreateContextOptions {
   db: PrismaClient;
   session: { user: SessionUser } | null;
   clientIp?: string;
+  authHeader?: string;
 }
 
 export const createTRPCContext = (opts: CreateContextOptions) => {
@@ -15,6 +17,7 @@ export const createTRPCContext = (opts: CreateContextOptions) => {
     db: opts.db,
     session: opts.session,
     clientIp: opts.clientIp,
+    authHeader: opts.authHeader,
   };
 };
 
@@ -30,15 +33,26 @@ export const createTRPCRouter = t.router;
 export const publicProcedure = t.procedure;
 
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+  // Cookie session (web)
+  if (ctx.session?.user) {
+    return next({
+      ctx: { session: ctx.session, user: ctx.session.user },
+    });
   }
-  return next({
-    ctx: {
-      session: ctx.session,
-      user: ctx.session.user,
-    },
-  });
+
+  // Bearer token (mobile)
+  const authHeader = (ctx as any).authHeader as string | undefined;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const user = verifyMobileToken(token);
+    if (user) {
+      return next({
+        ctx: { session: { user }, user },
+      });
+    }
+  }
+
+  throw new TRPCError({ code: "UNAUTHORIZED" });
 });
 
 export const rateLimitedProcedure = protectedProcedure.use(
