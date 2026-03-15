@@ -1,11 +1,39 @@
-import { View, Text } from "react-native";
+import { View, Text, Pressable, Alert, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ChevronRight } from "lucide-react-native";
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateUser } = useAuth();
+
+  const handleEditName = () => {
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Edit Name",
+        "Enter your name",
+        async (text) => {
+          if (text?.trim()) {
+            await trpc.user.updateProfile.mutate({ name: text.trim() });
+            await updateUser({ name: text.trim() });
+          }
+        },
+        "plain-text",
+        user?.name,
+      );
+    } else {
+      // Android fallback — Alert.prompt is iOS only
+      Alert.alert("Edit Name", "Use the web app to update your name.");
+    }
+  };
+
+  const handleUnitToggle = async (unit: "metric" | "imperial") => {
+    if (unit === user?.unitSystem) return;
+    await trpc.user.updateProfile.mutate({ unitSystem: unit });
+    await updateUser({ unitSystem: unit });
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }}>
@@ -22,21 +50,33 @@ export default function ProfileScreen() {
         </Text>
 
         <Card style={{ gap: 16, marginBottom: 24 }}>
-          <View>
-            <Text
+          <Pressable onPress={handleEditName}>
+            <View
               style={{
-                fontSize: 10,
-                color: "hsl(215, 20%, 65%)",
-                textTransform: "uppercase",
-                letterSpacing: 1,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              Name
-            </Text>
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 18 }}>
-              {user?.name}
-            </Text>
-          </View>
+              <View>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    color: "hsl(215, 20%, 65%)",
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Name
+                </Text>
+                <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 18 }}>
+                  {user?.name}
+                </Text>
+              </View>
+              <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
+            </View>
+          </Pressable>
+
           <View>
             <Text
               style={{
@@ -50,6 +90,7 @@ export default function ProfileScreen() {
             </Text>
             <Text style={{ color: "hsl(213, 31%, 91%)" }}>{user?.email}</Text>
           </View>
+
           <View>
             <Text
               style={{
@@ -57,18 +98,43 @@ export default function ProfileScreen() {
                 color: "hsl(215, 20%, 65%)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
+                marginBottom: 8,
               }}
             >
               Units
             </Text>
-            <Text
-              style={{
-                color: "hsl(213, 31%, 91%)",
-                textTransform: "capitalize",
-              }}
-            >
-              {user?.unitSystem}
-            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {(["metric", "imperial"] as const).map((unit) => {
+                const isActive = user?.unitSystem === unit;
+                return (
+                  <Pressable
+                    key={unit}
+                    onPress={() => handleUnitToggle(unit)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      alignItems: "center",
+                      backgroundColor: isActive
+                        ? "hsl(210, 40%, 98%)"
+                        : "hsl(216, 34%, 17%)",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: "600",
+                        textTransform: "capitalize",
+                        color: isActive
+                          ? "hsl(222.2, 47.4%, 11.2%)"
+                          : "hsl(215, 20%, 65%)",
+                      }}
+                    >
+                      {unit}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </Card>
 

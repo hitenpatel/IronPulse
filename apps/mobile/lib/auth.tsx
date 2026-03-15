@@ -16,6 +16,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (updates: Partial<SessionUser>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -87,9 +88,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback(async (updates: Partial<SessionUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      SecureStore.setItemAsync("auth-user", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, signIn, signUp, signOut }}
+      value={{ user, token, isLoading, signIn, signUp, signOut, updateUser }}
     >
       {children}
     </AuthContext.Provider>
