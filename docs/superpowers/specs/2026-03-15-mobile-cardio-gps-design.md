@@ -37,7 +37,7 @@ Cardio screens live under `app/cardio/` (outside tabs, fullscreen stack). Back g
 
 ## FAB Integration
 
-Wire the existing `NewSessionSheet` component's "Log Cardio" button to navigate to `/cardio/type-picker`. Add an `onLogCardio` callback prop to `NewSessionSheet`, similar to `onStartWorkout`.
+Wire the existing `NewSessionSheet` component's "Log Cardio" button. Add an `onLogCardio` callback prop (same pattern as `onStartWorkout`). The tab layout provides the callback which calls `router.push("/cardio/type-picker")`. The sheet itself only calls `onClose()` then `onLogCardio?.()`.
 
 ## Type Picker
 
@@ -136,8 +136,26 @@ Add to `app.json` plugins:
   "locationAlwaysAndWhenInUsePermission": "IronPulse needs your location to track runs, rides, and hikes.",
   "isIosBackgroundLocationEnabled": true,
   "isAndroidBackgroundLocationEnabled": true
-}]
+}],
+"expo-task-manager"
 ```
+
+The `expo-location` plugin automatically sets `UIBackgroundModes: ["location"]` on iOS when `isIosBackgroundLocationEnabled` is true. `expo-task-manager` must also be in the plugins array for background task registration.
+
+### Android Google Maps API Key
+
+`react-native-maps` requires a Google Maps API key on Android. Add to `app.json`:
+```json
+"android": {
+  "config": {
+    "googleMaps": {
+      "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+    }
+  }
+}
+```
+
+On iOS, Apple Maps is used by default (no API key needed). The API key should be provided via an environment variable in production builds.
 
 ## Route Point Buffering
 
@@ -156,7 +174,7 @@ CREATE TABLE IF NOT EXISTS _gps_buffer (
 )
 ```
 
-Created on app startup via `db.execute()`. Points accumulate during tracking. On session completion, points are read, uploaded via tRPC, then deleted.
+Created on app startup via `PowerSyncDatabase.execute()` (the same SQLite database PowerSync manages — the `_gps_buffer` prefix avoids collision with PowerSync's internal `ps_` tables). In foreground, use the PowerSync db instance. In the background task (after app kill), use `expo-sqlite` directly to open the same database file (`ironpulse.db`), since the PowerSync singleton may not be initialized.
 
 ### Buffer Operations (`lib/gps-buffer.ts`)
 
@@ -187,7 +205,7 @@ Created on app startup via `db.execute()`. Points accumulate during tracking. On
 2. `Location.stopLocationUpdatesAsync(TASK_NAME)`
 3. Remove foreground watch subscription
 4. Calculate final duration and distance
-5. Update cardio session: `UPDATE cardio_sessions SET completed_at = ?, duration_seconds = ?, distance_meters = ?`
+5. Update cardio session: `UPDATE cardio_sessions SET duration_seconds = ?, distance_meters = ?` (note: `cardio_sessions` has no `completed_at` column — completion is inferred from `duration_seconds > 0`)
 6. Read buffer: `getBufferPoints(db, sessionId)`
 7. Upload to server: `trpc.cardio.completeGpsSession.mutate({ sessionId, routePoints })` (try/catch for offline)
 8. Clear buffer: `clearBuffer(db, sessionId)`
@@ -199,8 +217,13 @@ Created on app startup via `db.execute()`. Points accumulate during tracking. On
 If `completeGpsSession` fails (offline):
 - Do NOT delete the buffer
 - Store `sessionId` in secure store under `"pending-gps-upload"`
-- On next app launch with connectivity, retry the upload
-- After successful retry, clear buffer and pending flag
+- On next app launch, check for `"pending-gps-upload"`:
+  1. Attempt the upload via `trpc.cardio.completeGpsSession.mutate()`
+  2. If success: clear buffer + pending flag
+  3. If fail (still offline): leave pending flag, try again on next launch
+  4. No exponential backoff — just one attempt per app launch
+- The user sees the cardio session locally (it's in PowerSync) but without route data on the server until the upload succeeds
+- No user notification for pending uploads — this is transparent background behavior
 
 ## App Kill Recovery
 
@@ -226,8 +249,12 @@ Fullscreen form with fields:
 "Save" button at bottom:
 1. Convert duration fields to total seconds
 2. Convert distance to meters (if user entered miles, multiply by 1609.34)
-3. `db.execute(INSERT INTO cardio_sessions ...)` with `source = 'manual'`
+3. `db.execute(INSERT INTO cardio_sessions ...)` with `source = 'manual'`, `started_at = new Date().toISOString()` (current time — manual sessions don't have a meaningful start time, this is just the recording timestamp)
 4. Navigate to summary
+
+### Unit Preference
+
+Distance display (km vs mi) and input labels read the user's `unitSystem` from the auth context (`useAuth().user.unitSystem`). This value comes from the `SessionUser` stored in `expo-secure-store` at sign-in. All internal storage is in metric (meters, kg). Conversion to imperial happens only at display time.
 
 ## Cardio Summary
 
@@ -357,6 +384,8 @@ appId: com.ironpulse.app
 - tapOn: "Log Cardio"
 - tapOn: "Run"
 - tapOn: "Track with GPS"
+- allowPermission           # Handle iOS/Android location permission dialog
+- allowPermission           # Handle background permission dialog (if prompted separately)
 - assertVisible: "Stop"
 ```
 
