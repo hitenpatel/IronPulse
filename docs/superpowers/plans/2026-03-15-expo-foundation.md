@@ -571,6 +571,10 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 This way all existing protected routes (sync, workout, cardio, etc.) automatically work with mobile bearer auth.
 
+- [ ] **Step 3b: Update `getSession` to use `protectedProcedure`**
+
+The existing `auth.getSession` uses `publicProcedure` and reads `ctx.session`. For mobile bearer auth to work (the mobile app calls `getSession` on launch to verify the token), it must use `protectedProcedure` so the bearer token middleware runs and populates `ctx.session`. Update the `getSession` route in `packages/api/src/routers/auth.ts` to use `protectedProcedure` instead of `publicProcedure`.
+
 - [ ] **Step 4: Add mobileSignIn and mobileSignUp to auth router**
 
 Add to `packages/api/src/routers/auth.ts`:
@@ -692,7 +696,7 @@ Run: `cd apps && npx create-expo-app@latest mobile --template blank-typescript &
 
 Run:
 ```bash
-pnpm --filter @ironpulse/mobile add expo-router expo-secure-store expo-linking expo-constants expo-status-bar @powersync/react-native @powersync/react @gorhom/bottom-sheet react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-screens @ironpulse/sync @ironpulse/shared @trpc/client superjson nativewind tailwindcss @expo/vector-icons
+pnpm --filter @ironpulse/mobile add expo-router expo-secure-store expo-linking expo-constants expo-status-bar @powersync/react-native @powersync/react @gorhom/bottom-sheet react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-screens @ironpulse/sync @ironpulse/shared @trpc/client superjson nativewind tailwindcss lucide-react-native
 ```
 
 - [ ] **Step 3: Update app.json**
@@ -990,8 +994,35 @@ import type { AppRouter } from "@ironpulse/api";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
+// Custom link to intercept 401 responses and clear auth state
+import { TRPCClientError } from "@trpc/client";
+import { observable } from "@trpc/server/observable";
+import type { TRPCLink } from "@trpc/client";
+
+const authInterceptLink: TRPCLink<AppRouter> = () => {
+  return ({ next, op }) => {
+    return observable((observer) => {
+      const unsubscribe = next(op).subscribe({
+        next: observer.next,
+        error: async (err) => {
+          if (err instanceof TRPCClientError && err.data?.code === "UNAUTHORIZED") {
+            // Token expired mid-session — clear stored credentials
+            await SecureStore.deleteItemAsync("auth-token");
+            await SecureStore.deleteItemAsync("auth-user");
+            // The AuthProvider will detect the missing token on next render
+          }
+          observer.error(err);
+        },
+        complete: observer.complete,
+      });
+      return unsubscribe;
+    });
+  };
+};
+
 export const trpc = createTRPCClient<AppRouter>({
   links: [
+    authInterceptLink,
     httpBatchLink({
       url: `${API_URL}/api/trpc`,
       transformer: superjson,
@@ -1183,9 +1214,11 @@ function RootNavigator() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  // Use Slot (not Redirect) so PowerSyncContext.Provider wraps the rendered child screens.
+  // Expo Router will render the (tabs) group as the default route.
   return (
     <PowerSyncContext.Provider value={db}>
-      <Redirect href="/(tabs)" />
+      <Slot />
     </PowerSyncContext.Provider>
   );
 }
@@ -1832,6 +1865,12 @@ Create `apps/mobile/e2e/auth-signout.yaml`:
 appId: com.ironpulse.app
 ---
 - launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Good morning"
 - tapOn: "Profile"
 - tapOn: "Sign Out"
 - assertVisible: "Sign In"
