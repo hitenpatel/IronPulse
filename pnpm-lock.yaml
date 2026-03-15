@@ -29,6 +29,15 @@ importers:
       '@ironpulse/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@ironpulse/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
+      '@powersync/react':
+        specifier: ^1.9.0
+        version: 1.9.0(@powersync/common@1.49.0)(react@19.2.4)
+      '@powersync/web':
+        specifier: ^1.0.0
+        version: 1.36.0(@journeyapps/wa-sqlite@1.5.0)(@powersync/common@1.49.0)
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -950,6 +959,12 @@ packages:
 
   '@powersync/common@1.49.0':
     resolution: {integrity: sha512-g6uonubvtmtyx8hS/G5trg9LsBvzHY3tAKHiV7SIQV3Xyz9ONM6NNnjDMP2vcLZVmsOSi8x/QJZmy/ig1YtBMg==}
+
+  '@powersync/react@1.9.0':
+    resolution: {integrity: sha512-FypJ1RSQXhbpLJ1WOSLi1ph+q6JXAX5GHqXhczaOr0dhngsr1zHIsFTANh6N0tfx838SM+MDgYO1d0LZxv1WWw==}
+    peerDependencies:
+      '@powersync/common': ^1.47.0
+      react: '*'
 
   '@powersync/web@1.36.0':
     resolution: {integrity: sha512-ZURHZ52gqMmPdKwXQJ36+LNmDyXxyPeInZaxn46OJXeYisLslAXjYlm+NcGYlPnxtIgMYbBmnJdd89ARdtYUKg==}
@@ -3962,6 +3977,11 @@ snapshots:
     dependencies:
       async-mutex: 0.5.0
       event-iterator: 2.0.0
+
+  '@powersync/react@1.9.0(@powersync/common@1.49.0)(react@19.2.4)':
+    dependencies:
+      '@powersync/common': 1.49.0
+      react: 19.2.4
 
   '@powersync/web@1.36.0(@journeyapps/wa-sqlite@1.5.0)(@powersync/common@1.49.0)':
     dependencies:

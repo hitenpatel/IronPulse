@@ -7,3 +7,4 @@ dist/
 *.tsbuildinfo
 .superpowers/
 .worktrees/
+apps/web/public/@powersync/
