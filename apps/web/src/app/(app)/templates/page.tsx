@@ -3,18 +3,16 @@
 import { useRouter } from "next/navigation";
 import { ClipboardList, Play, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
+import { useTemplates } from "@/hooks/use-templates";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const utils = trpc.useUtils();
+  const db = usePowerSync();
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    trpc.template.list.useInfiniteQuery(
-      { limit: 20 },
-      { getNextPageParam: (last) => last.nextCursor }
-    );
+  const { data: templatesData, isLoading } = useTemplates();
 
   const startWorkout = trpc.workout.create.useMutation({
     onSuccess: (result) => {
@@ -22,17 +20,11 @@ export default function TemplatesPage() {
     },
   });
 
-  const deleteTemplate = trpc.template.delete.useMutation({
-    onSuccess: () => {
-      utils.template.list.invalidate();
-    },
-  });
+  const templates = templatesData ?? [];
 
-  const templates = data?.pages.flatMap((p) => p.data) ?? [];
-
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Delete template "${name}"? This cannot be undone.`)) {
-      deleteTemplate.mutate({ templateId: id });
+      await db.execute("DELETE FROM workout_templates WHERE id = ?", [id]);
     }
   };
 
@@ -92,13 +84,13 @@ export default function TemplatesPage() {
               <p className="font-medium truncate">{template.name}</p>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span>
-                  {template._count.templateExercises}{" "}
-                  {template._count.templateExercises === 1
+                  {template.exercise_count ?? 0}{" "}
+                  {(template.exercise_count ?? 0) === 1
                     ? "exercise"
                     : "exercises"}
                 </span>
                 <span>
-                  {new Date(template.createdAt).toLocaleDateString()}
+                  {new Date(template.created_at).toLocaleDateString()}
                 </span>
               </div>
             </div>
@@ -118,7 +110,6 @@ export default function TemplatesPage() {
                 size="icon"
                 variant="ghost"
                 onClick={() => handleDelete(template.id, template.name)}
-                disabled={deleteTemplate.isPending}
                 aria-label="Delete template"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -127,18 +118,6 @@ export default function TemplatesPage() {
           </Card>
         ))}
       </div>
-
-      {hasNextPage && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? "Loading..." : "Load more"}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

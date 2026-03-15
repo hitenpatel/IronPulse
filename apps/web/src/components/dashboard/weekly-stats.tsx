@@ -3,6 +3,8 @@
 import { Dumbbell, Activity, Weight, Trophy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc/client";
+import { useWorkouts } from "@/hooks/use-workouts";
+import { useCardioSessions } from "@/hooks/use-cardio-sessions";
 import { formatVolume } from "@/lib/format";
 
 function getISOWeekBounds(): { start: Date; end: Date } {
@@ -48,20 +50,20 @@ function StatItem({
 export function WeeklyStats() {
   const { start, end } = getISOWeekBounds();
 
-  const workouts = trpc.workout.list.useQuery({ limit: 50 });
-  const cardio = trpc.cardio.list.useQuery({ limit: 50 });
+  const workouts = useWorkouts();
+  const cardio = useCardioSessions();
   const volume = trpc.analytics.weeklyVolume.useQuery({ weeks: 1 });
 
   const workoutCount =
-    workouts.data?.data.filter((w) => {
-      if (!w.completedAt) return false;
-      const d = new Date(w.completedAt);
+    workouts.data?.filter((w) => {
+      if (!w.completed_at) return false;
+      const d = new Date(w.completed_at);
       return d >= start && d <= end;
     }).length ?? 0;
 
   const cardioCount =
-    cardio.data?.data.filter((c) => {
-      const d = new Date(c.startedAt);
+    cardio.data?.filter((c) => {
+      const d = new Date(c.started_at);
       return d >= start && d <= end;
     }).length ?? 0;
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Activity } from "lucide-react";
-import { trpc } from "@/lib/trpc/client";
+import { useWorkouts } from "@/hooks/use-workouts";
+import { useCardioSessions } from "@/hooks/use-cardio-sessions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDuration } from "@/lib/format";
@@ -38,18 +39,55 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
+interface DayActivity {
+  workouts: { id: string; name: string | null; durationSeconds: number | null }[];
+  cardio: { id: string; type: string; durationSeconds: number }[];
+}
+
 export default function CalendarPage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const { data, isLoading } = trpc.analytics.activityCalendar.useQuery({
-    month,
-    year,
-  });
+  const { data: workoutsData, isLoading: workoutsLoading } = useWorkouts();
+  const { data: cardioData, isLoading: cardioLoading } = useCardioSessions();
 
-  const days = data?.days ?? {};
+  const isLoading = workoutsLoading || cardioLoading;
+
+  // Group workouts and cardio by date key (YYYY-MM-DD)
+  const days = useMemo(() => {
+    const map: Record<string, DayActivity> = {};
+
+    if (workoutsData) {
+      for (const w of workoutsData) {
+        const d = new Date(w.started_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        if (!map[key]) map[key] = { workouts: [], cardio: [] };
+        map[key].workouts.push({
+          id: w.id,
+          name: w.name,
+          durationSeconds: w.duration_seconds,
+        });
+      }
+    }
+
+    if (cardioData) {
+      for (const c of cardioData) {
+        const d = new Date(c.started_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        if (!map[key]) map[key] = { workouts: [], cardio: [] };
+        map[key].cardio.push({
+          id: c.id,
+          type: c.type,
+          durationSeconds: c.duration_seconds,
+        });
+      }
+    }
+
+    return map;
+  }, [workoutsData, cardioData]);
+
   const cells = getMonthGrid(year, month);
 
   function prevMonth() {

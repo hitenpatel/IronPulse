@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Dumbbell, X } from "lucide-react";
-import { trpc } from "@/lib/trpc/client";
+import { useExercises } from "@/hooks/use-exercises";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,19 +120,14 @@ export default function ExercisesPage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    trpc.exercise.list.useInfiniteQuery(
-      {
-        limit: 20,
-        search: debouncedSearch || undefined,
-        muscleGroup,
-        equipment,
-        category,
-      },
-      { getNextPageParam: (last) => last.nextCursor }
-    );
+  const { data: exercisesData, isLoading } = useExercises({
+    search: debouncedSearch || undefined,
+    muscle: muscleGroup,
+    equipment,
+    category,
+  });
 
-  const exercises = data?.pages.flatMap((p) => p.data) ?? [];
+  const exercises = exercisesData ?? [];
 
   const hasActiveFilters = muscleGroup || equipment || category;
 
@@ -216,63 +211,57 @@ export default function ExercisesPage() {
       {/* Exercise list */}
       {exercises.length > 0 && (
         <div className="space-y-3">
-          {exercises.map((exercise) => (
-            <Card
-              key={exercise.id}
-              className="p-4 transition-colors hover:bg-accent/50"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
-                  <Dumbbell className="h-5 w-5 text-secondary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{exercise.name}</span>
-                    {exercise.isCustom && (
-                      <Badge variant="outline" className="shrink-0 text-[10px]">
-                        Custom
-                      </Badge>
-                    )}
-                  </div>
+          {exercises.map((exercise) => {
+            const primaryMuscles = exercise.primary_muscles
+              ? exercise.primary_muscles.split(",").map((s) => s.trim()).filter(Boolean)
+              : [];
 
-                  {exercise.primaryMuscles.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {exercise.primaryMuscles.map((muscle) => (
-                        <Badge
-                          key={muscle}
-                          variant="secondary"
-                          className="text-[10px]"
-                        >
-                          {formatLabel(muscle)}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-1.5 flex gap-3 text-sm text-muted-foreground">
-                    {exercise.equipment && (
-                      <span>{formatLabel(exercise.equipment)}</span>
-                    )}
-                    {exercise.category && (
-                      <span>{formatLabel(exercise.category)}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-
-          {hasNextPage && (
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="outline"
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
+            return (
+              <Card
+                key={exercise.id}
+                className="p-4 transition-colors hover:bg-accent/50"
               >
-                {isFetchingNextPage ? "Loading..." : "Load more"}
-              </Button>
-            </div>
-          )}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
+                    <Dumbbell className="h-5 w-5 text-secondary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{exercise.name}</span>
+                      {exercise.is_custom === 1 && (
+                        <Badge variant="outline" className="shrink-0 text-[10px]">
+                          Custom
+                        </Badge>
+                      )}
+                    </div>
+
+                    {primaryMuscles.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {primaryMuscles.map((muscle) => (
+                          <Badge
+                            key={muscle}
+                            variant="secondary"
+                            className="text-[10px]"
+                          >
+                            {formatLabel(muscle)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-1.5 flex gap-3 text-sm text-muted-foreground">
+                      {exercise.equipment && (
+                        <span>{formatLabel(exercise.equipment)}</span>
+                      )}
+                      {exercise.category && (
+                        <span>{formatLabel(exercise.category)}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

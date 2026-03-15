@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
+import { useBodyMetrics } from "@/hooks/use-body-metrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,10 +168,10 @@ function formatWeekLabel(weekStr: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// --- Body Weight Trend ---
+// --- Body Weight Trend (uses local PowerSync data) ---
 
 function BodyWeightTrend() {
-  const { data, isLoading } = trpc.analytics.bodyWeightTrend.useQuery({ days: 90 });
+  const { data: metrics, isLoading } = useBodyMetrics();
 
   if (isLoading) {
     return (
@@ -187,7 +189,11 @@ function BodyWeightTrend() {
     );
   }
 
-  const points = data?.data ?? [];
+  // Filter to entries with weight, sort ascending by date for chart
+  const points = (metrics ?? [])
+    .filter((m) => m.weight_kg != null)
+    .map((m) => ({ date: m.date, weightKg: Number(m.weight_kg) }))
+    .reverse(); // useBodyMetrics returns DESC, we need ASC for chart
 
   if (points.length === 0) {
     return (
@@ -207,7 +213,7 @@ function BodyWeightTrend() {
     );
   }
 
-  const weights = points.map((p) => Number(p.weightKg));
+  const weights = points.map((p) => p.weightKg);
   const minW = Math.min(...weights);
   const maxW = Math.max(...weights);
   const range = maxW - minW || 1;
@@ -219,7 +225,7 @@ function BodyWeightTrend() {
   const polylinePoints = points
     .map((p, i) => {
       const x = points.length === 1 ? chartW / 2 : (i / (points.length - 1)) * chartW;
-      const y = chartH - ((Number(p.weightKg) - (minW - padding)) / (range + 2 * padding)) * chartH;
+      const y = chartH - ((p.weightKg - (minW - padding)) / (range + 2 * padding)) * chartH;
       return `${x},${y}`;
     })
     .join(" ");
@@ -302,24 +308,41 @@ function BodyWeightTrend() {
   );
 }
 
-// --- Body Weight Log Form ---
+// --- Body Weight Log Form (PowerSync local write) ---
 
 function BodyWeightLogForm() {
   const [weight, setWeight] = useState("");
-  const utils = trpc.useUtils();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const db = usePowerSync();
 
-  const mutation = trpc.bodyMetric.create.useMutation({
-    onSuccess: () => {
-      setWeight("");
-      utils.analytics.bodyWeightTrend.invalidate();
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseFloat(weight);
     if (isNaN(val) || val <= 0) return;
-    mutation.mutate({ date: new Date(), weightKg: val });
+
+    setIsPending(true);
+    setError(false);
+    setSuccess(false);
+
+    try {
+      const id = crypto.randomUUID();
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      await db.execute(
+        `INSERT INTO body_metrics (id, date, weight_kg, created_at) VALUES (?, ?, ?, ?)`,
+        [id, dateStr, val, now.toISOString()]
+      );
+
+      setWeight("");
+      setSuccess(true);
+    } catch {
+      setError(true);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -345,17 +368,17 @@ function BodyWeightLogForm() {
           <Button
             type="submit"
             size="sm"
-            disabled={mutation.isPending || !weight}
+            disabled={isPending || !weight}
           >
-            {mutation.isPending ? "Saving..." : "Save"}
+            {isPending ? "Saving..." : "Save"}
           </Button>
         </form>
-        {mutation.isError && (
+        {error && (
           <p className="text-xs text-destructive mt-2">
             Failed to save. Please try again.
           </p>
         )}
-        {mutation.isSuccess && (
+        {success && (
           <p className="text-xs text-green-600 mt-2">
             Weight logged successfully.
           </p>

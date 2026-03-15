@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Dumbbell, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { trpc } from "@/lib/trpc/client";
+import { useWorkouts } from "@/hooks/use-workouts";
+import { useCardioSessions } from "@/hooks/use-cardio-sessions";
 import {
   formatDuration,
   formatDistance,
@@ -50,35 +51,35 @@ function EmptyState() {
 }
 
 export function ActivityFeed() {
-  const workouts = trpc.workout.list.useQuery({ limit: 10 });
-  const cardio = trpc.cardio.list.useQuery({ limit: 10 });
+  const workouts = useWorkouts();
+  const cardio = useCardioSessions();
 
   const isLoading = workouts.isLoading || cardio.isLoading;
 
   const items: FeedItem[] = [];
 
   if (workouts.data) {
-    for (const w of workouts.data.data) {
+    for (const w of workouts.data) {
       items.push({
         kind: "workout",
         id: w.id,
-        startedAt: new Date(w.startedAt),
+        startedAt: new Date(w.started_at),
         name: w.name,
-        exerciseCount: w._count.workoutExercises,
-        durationSeconds: w.durationSeconds,
+        exerciseCount: w.exercise_count ?? 0,
+        durationSeconds: w.duration_seconds,
       });
     }
   }
 
   if (cardio.data) {
-    for (const c of cardio.data.data) {
+    for (const c of cardio.data) {
       items.push({
         kind: "cardio",
         id: c.id,
-        startedAt: new Date(c.startedAt),
+        startedAt: new Date(c.started_at),
         type: c.type,
-        durationSeconds: c.durationSeconds,
-        distanceMeters: c.distanceMeters ? Number(c.distanceMeters) : null,
+        durationSeconds: c.duration_seconds,
+        distanceMeters: c.distance_meters ? Number(c.distance_meters) : null,
       });
     }
   }
