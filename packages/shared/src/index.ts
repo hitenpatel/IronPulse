@@ -11,3 +11,4 @@ export * from "./schemas/analytics";
 export * from "./schemas/template";
 export * from "./schemas/stripe";
 export * from "./schemas/sync";
+export * from "./schemas/integration";
