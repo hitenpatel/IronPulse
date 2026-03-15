@@ -15,6 +15,7 @@ services:
       NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
       NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
       DEPLOYMENT_MODE: "self-hosted"
+      NEXT_PUBLIC_POWERSYNC_URL: "http://powersync:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,6 +32,7 @@ services:
 
   postgres:
     image: postgis/postgis:16-3.4-alpine
+    command: ["postgres", "-c", "wal_level=logical"]
     environment:
       POSTGRES_USER: ironpulse
       POSTGRES_PASSWORD: ironpulse
@@ -84,7 +86,44 @@ services:
       exit 0
       "
 
+  mongo:
+    image: mongo:7-jammy
+    command: ["--replSet", "rs0"]
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: mongosh --eval "rs.status()" --quiet
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  mongo-init:
+    image: mongo:7-jammy
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: mongosh --host mongo --eval "rs.initiate()"
+    restart: "no"
+
+  powersync:
+    image: journeyapps/powersync-service:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./powersync.yaml:/app/config/powersync.yaml
+      - ./sync-rules.yaml:/app/config/sync-rules.yaml
+    environment:
+      PS_DATA_SOURCE_URI: "postgresql://ironpulse:ironpulse@postgres:5432/ironpulse"
+      PS_MONGO_URI: "mongodb://mongo:27017/powersync"
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
   miniodata:
+  mongodata:

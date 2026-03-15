@@ -1,0 +1,18 @@
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_DATA_SOURCE_URI
+      sslmode: disable
+
+storage:
+  type: mongodb
+  uri: !env PS_MONGO_URI
+
+client_auth:
+  jwks_uri: http://ironpulse:3000/api/auth/powersync/keys
+  audience: ["powersync"]
+
+sync_config:
+  path: /app/config/sync-rules.yaml
+
+port: 80

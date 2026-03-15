@@ -1,0 +1,68 @@
+config:
+  edition: 3
+
+streams:
+  user_workouts:
+    auto_subscribe: true
+    query: SELECT * FROM workouts WHERE user_id = token_parameters.user_id
+
+  user_workout_exercises:
+    auto_subscribe: true
+    query: |
+      SELECT we.* FROM workout_exercises we
+      INNER JOIN workouts w ON we.workout_id = w.id
+      WHERE w.user_id = token_parameters.user_id
+
+  user_sets:
+    auto_subscribe: true
+    query: |
+      SELECT s.* FROM exercise_sets s
+      INNER JOIN workout_exercises we ON s.workout_exercise_id = we.id
+      INNER JOIN workouts w ON we.workout_id = w.id
+      WHERE w.user_id = token_parameters.user_id
+
+  user_cardio_sessions:
+    auto_subscribe: true
+    query: SELECT * FROM cardio_sessions WHERE user_id = token_parameters.user_id
+
+  user_laps:
+    auto_subscribe: true
+    query: |
+      SELECT l.* FROM laps l
+      INNER JOIN cardio_sessions cs ON l.session_id = cs.id
+      WHERE cs.user_id = token_parameters.user_id
+
+  user_templates:
+    auto_subscribe: true
+    query: SELECT * FROM workout_templates WHERE user_id = token_parameters.user_id
+
+  user_template_exercises:
+    auto_subscribe: true
+    query: |
+      SELECT te.* FROM template_exercises te
+      INNER JOIN workout_templates wt ON te.template_id = wt.id
+      WHERE wt.user_id = token_parameters.user_id
+
+  user_template_sets:
+    auto_subscribe: true
+    query: |
+      SELECT ts.* FROM template_sets ts
+      INNER JOIN template_exercises te ON ts.template_exercise_id = te.id
+      INNER JOIN workout_templates wt ON te.template_id = wt.id
+      WHERE wt.user_id = token_parameters.user_id
+
+  user_body_metrics:
+    auto_subscribe: true
+    query: SELECT * FROM body_metrics WHERE user_id = token_parameters.user_id
+
+  user_personal_records:
+    auto_subscribe: true
+    query: SELECT * FROM personal_records WHERE user_id = token_parameters.user_id
+
+  global_exercises:
+    auto_subscribe: true
+    query: SELECT * FROM exercises WHERE is_custom = false
+
+  user_exercises:
+    auto_subscribe: true
+    query: SELECT * FROM exercises WHERE is_custom = true AND created_by_id = token_parameters.user_id
