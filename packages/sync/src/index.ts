@@ -8,6 +8,7 @@ export { useCardioSessions, type CardioSessionRow } from "./hooks/use-cardio-ses
 export { useCardioSession, useCardioLaps, type LapRow } from "./hooks/use-cardio-detail";
 export { useExercises, type ExerciseRow } from "./hooks/use-exercises";
 export { useTemplates, type TemplateRow } from "./hooks/use-templates";
+export { useTemplateExercises, useTemplateSets, type TemplateExerciseRow, type TemplateSetRow } from "./hooks/use-template-detail";
 export { useBodyMetrics, type BodyMetricRow } from "./hooks/use-body-metrics";
 export { usePersonalRecords, type PersonalRecordRow } from "./hooks/use-personal-records";
 export { useSyncStatus } from "./hooks/use-sync-status";
