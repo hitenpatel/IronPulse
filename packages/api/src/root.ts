@@ -8,6 +8,7 @@ import { bodyMetricRouter } from "./routers/body-metric";
 import { analyticsRouter } from "./routers/analytics";
 import { templateRouter } from "./routers/template";
 import { stripeRouter } from "./routers/stripe";
+import { syncRouter } from "./routers/sync";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   analytics: analyticsRouter,
   template: templateRouter,
   stripe: stripeRouter,
+  sync: syncRouter,
 });
 
 export type AppRouter = typeof appRouter;
