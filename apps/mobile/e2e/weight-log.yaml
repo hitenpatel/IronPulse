@@ -1,0 +1,15 @@
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- tapOn: "Stats"
+- tapOn:
+    id: "weight-input"
+- inputText: "75.5"
+- tapOn:
+    id: "log-weight"
+- assertVisible: "75.5"
