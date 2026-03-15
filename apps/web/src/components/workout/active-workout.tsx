@@ -96,6 +96,7 @@ export function ActiveWorkout({
     }
 
     const completedWorkout = {
+      id: workoutId,
       name: initialName,
       startedAt: startedAt.toISOString(),
       durationSeconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
