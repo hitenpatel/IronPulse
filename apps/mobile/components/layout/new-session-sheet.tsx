@@ -6,9 +6,10 @@ import { Dumbbell, Activity } from "lucide-react-native";
 interface Props {
   open: boolean;
   onClose: () => void;
+  onStartWorkout?: () => void;
 }
 
-export function NewSessionSheet({ open, onClose }: Props) {
+export function NewSessionSheet({ open, onClose, onStartWorkout }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function NewSessionSheet({ open, onClose }: Props) {
           }}
           onPress={() => {
             onClose();
+            onStartWorkout?.();
           }}
         >
           <Dumbbell size={24} color="hsl(210, 40%, 98%)" />

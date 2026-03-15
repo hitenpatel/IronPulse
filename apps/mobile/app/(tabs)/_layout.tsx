@@ -3,9 +3,11 @@ import { View } from "react-native";
 import { Tabs } from "expo-router";
 import { Home, BarChart3, Dumbbell, User, Plus } from "lucide-react-native";
 import { NewSessionSheet } from "@/components/layout/new-session-sheet";
+import { TemplatePicker } from "@/components/workout/template-picker";
 
 export default function TabLayout() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
 
   return (
     <>
@@ -80,7 +82,15 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <NewSessionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <NewSessionSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onStartWorkout={() => setTemplatePickerOpen(true)}
+      />
+      <TemplatePicker
+        open={templatePickerOpen}
+        onClose={() => setTemplatePickerOpen(false)}
+      />
     </>
   );
 }
