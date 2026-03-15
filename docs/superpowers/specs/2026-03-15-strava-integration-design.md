@@ -26,13 +26,15 @@ Import Strava activities into IronPulse as cardio sessions with route data. Webh
 
 1. User taps "Connect Strava" on Connected Apps screen
 2. **Web:** Opens Strava OAuth URL in same window. **Mobile:** Opens in system browser via `expo-web-browser`.
-3. URL: `https://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&redirect_uri={callback_url}&scope=activity:read_all&response_type=code&approval_prompt=auto`
-4. User authorizes on Strava → redirected to `/api/strava/callback?code=...`
-5. Server exchanges code for tokens: `POST https://www.strava.com/oauth/token` with `client_id`, `client_secret`, `code`, `grant_type=authorization_code`
-6. Response: `{ access_token, refresh_token, expires_at, athlete: { id, ... } }`
-7. Server creates `DeviceConnection` row with encrypted tokens and Strava athlete ID
-8. Server triggers initial backfill (last 30 activities)
-9. Redirects user back to Connected Apps screen
+3. URL: `https://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&redirect_uri={callback_url}&scope=activity:read_all&response_type=code&approval_prompt=auto&state={random_csrf_token}`
+4. Server generates a random `state` parameter, stores it in the user's session (or a short-lived Redis key). The `state` is verified in the callback to prevent CSRF attacks.
+5. User authorizes on Strava → redirected to `/api/strava/callback?code=...&state=...`
+6. Server verifies `state` matches the stored value. If not, reject the callback.
+7. Server exchanges code for tokens: `POST https://www.strava.com/oauth/token` with `client_id`, `client_secret`, `code`, `grant_type=authorization_code`
+8. Response: `{ access_token, refresh_token, expires_at, athlete: { id, ... } }`
+9. Server creates `DeviceConnection` row with encrypted tokens and Strava athlete ID
+10. Server enqueues initial backfill as a background job (not blocking) — see "Initial Backfill" section
+11. Redirects user back to Connected Apps screen immediately (UI shows "Syncing..." state)
 
 ### Scope
 
@@ -100,6 +102,8 @@ Processing:
 
 Always return 200 to Strava regardless of processing outcome — Strava retries on non-200 responses and will disable the subscription after repeated failures.
 
+**Webhook security:** Strava webhook POST events do NOT include HMAC signatures (unlike Stripe). The endpoint is unauthenticated. Mitigations: (1) verify `subscription_id` matches the app's registered subscription, (2) never trust webhook payload data directly — always fetch the activity from Strava's API using the `object_id` (which the spec already does at step 6), (3) the webhook URL should not be guessable (use a long random path segment if desired, but the standard `/api/strava/webhook` is fine since the data is fetched server-side anyway).
+
 ### Strava Rate Limits
 
 Strava allows 100 requests per 15 minutes, 1000 per day per app. Each activity import uses 2 API calls (activity + streams). This supports ~50 new activities per 15-minute window, which is more than sufficient.
@@ -165,10 +169,21 @@ Route points are stored in PostgreSQL via Prisma (same path as `trpc.cardio.comp
 ### Initial Backfill
 
 On first connection, after OAuth callback:
+
+The backfill runs as a **non-blocking background task** (not inline in the callback). The user is redirected immediately with the UI showing a "Syncing..." state. The backfill runs server-side:
+
 1. Fetch `GET https://www.strava.com/api/v3/athlete/activities?per_page=30&page=1`
 2. For each activity: check dedup → fetch details + streams → create rows
 3. Process sequentially to respect rate limits (2 calls per activity)
 4. This uses ~60 API calls, well within the 100/15min limit
+5. If a 429 (rate limit) is received, pause for the `Retry-After` header duration, then continue
+6. On completion, update `lastSyncedAt` on the DeviceConnection
+
+Implementation: use a simple `Promise` fire-and-forget in the callback handler (no Redis queue needed for this). The function runs in the background while the HTTP response is sent. Errors are logged, not surfaced to the user.
+
+### Known Limitations
+
+- **Activity updates and deletes** are ignored for v1. Strava sends `aspect_type: "update"` and `aspect_type: "delete"` webhook events, but these are acknowledged with 200 and silently dropped. If a user edits or deletes an activity on Strava, IronPulse data becomes stale. A follow-up can handle updates (re-fetch and overwrite) and deletes (mark as deleted or remove).
 
 ## Data Model
 
@@ -188,6 +203,7 @@ model DeviceConnection {
   lastSyncedAt      DateTime? @map("last_synced_at")
   syncEnabled       Boolean  @default(true) @map("sync_enabled")
   createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -198,11 +214,12 @@ model DeviceConnection {
 
 Add `deviceConnections DeviceConnection[]` relation to the `User` model.
 
-### Existing Models Used
+### Changes to Existing Models
 
-- `CardioSession` — `externalId` field stores `"strava:{activity_id}"` for dedup
-- `RoutePoint` — stores imported GPS track
-- `CardioSource` enum — add `"strava"` value (currently has `manual`, `gps`, `gpx`)
+- `CardioSession` — add `@@index([externalId])` for dedup lookups (currently no index on `externalId`, which would cause full table scans)
+- `User` — add `deviceConnections DeviceConnection[]` relation
+- `RoutePoint` — stores imported GPS track (no changes needed)
+- `CardioSource` enum — `"strava"` already exists in `enums.ts` (no change needed)
 
 ## Token Encryption
 
@@ -214,8 +231,9 @@ Create `packages/api/src/lib/encryption.ts`:
 import crypto from "crypto";
 
 function getKey(): Buffer {
-  const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) throw new Error("NEXTAUTH_SECRET is not set");
+  // Use dedicated key to avoid coupling to NEXTAUTH_SECRET rotation
+  const secret = process.env.DEVICE_TOKEN_ENCRYPTION_KEY ?? process.env.NEXTAUTH_SECRET;
+  if (!secret) throw new Error("DEVICE_TOKEN_ENCRYPTION_KEY or NEXTAUTH_SECRET must be set");
   return crypto.createHash("sha256").update(secret).digest();
 }
 
@@ -293,6 +311,7 @@ Add "Connected Apps" navigation link to both web and mobile profile screens.
 STRAVA_CLIENT_ID=""
 STRAVA_CLIENT_SECRET=""
 STRAVA_WEBHOOK_VERIFY_TOKEN=""
+DEVICE_TOKEN_ENCRYPTION_KEY=""    # Optional — falls back to NEXTAUTH_SECRET if not set
 ```
 
 Add to `.env.example` and `docker/.env.example`.
