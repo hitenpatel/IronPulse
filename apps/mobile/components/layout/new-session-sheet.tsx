@@ -7,9 +7,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onStartWorkout?: () => void;
+  onLogCardio?: () => void;
 }
 
-export function NewSessionSheet({ open, onClose, onStartWorkout }: Props) {
+export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export function NewSessionSheet({ open, onClose, onStartWorkout }: Props) {
           }}
           onPress={() => {
             onClose();
+            onLogCardio?.();
           }}
         >
           <Activity size={24} color="hsl(210, 40%, 98%)" />

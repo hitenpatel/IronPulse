@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Home, BarChart3, Dumbbell, User, Plus } from "lucide-react-native";
 import { NewSessionSheet } from "@/components/layout/new-session-sheet";
 import { TemplatePicker } from "@/components/workout/template-picker";
 
 export default function TabLayout() {
+  const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
 
@@ -86,6 +87,7 @@ export default function TabLayout() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onStartWorkout={() => setTemplatePickerOpen(true)}
+        onLogCardio={() => router.push("/cardio/type-picker")}
       />
       <TemplatePicker
         open={templatePickerOpen}
