@@ -1,3 +1,6 @@
+import crypto from "crypto";
+import { encryptToken, decryptToken } from "./encryption";
+
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 
@@ -196,4 +199,113 @@ export async function revokeToken(accessToken: string): Promise<void> {
       `Strava token revocation failed: ${response.status} ${response.statusText}`,
     );
   }
+}
+
+// ─── Token + Import Helpers ────────────────────────────
+
+export async function ensureFreshToken(connection: any, db: any) {
+  if (new Date(connection.tokenExpiresAt) > new Date()) {
+    return decryptToken(connection.accessToken);
+  }
+  const refreshed = await refreshAccessToken(
+    decryptToken(connection.refreshToken),
+  );
+  await db.deviceConnection.update({
+    where: { id: connection.id },
+    data: {
+      accessToken: encryptToken(refreshed.access_token),
+      refreshToken: encryptToken(refreshed.refresh_token),
+      tokenExpiresAt: new Date(refreshed.expires_at * 1000),
+    },
+  });
+  return refreshed.access_token;
+}
+
+export async function importStravaActivity(
+  activityId: number,
+  connection: any,
+  db: any,
+) {
+  const accessToken = await ensureFreshToken(connection, db);
+
+  // Dedup check
+  const existing = await db.cardioSession.findFirst({
+    where: { externalId: `strava:${activityId}` },
+  });
+  if (existing) return null;
+
+  const activity = await getActivity(accessToken, activityId);
+  const mapped = mapStravaActivity(activity, connection.userId);
+
+  const session = await db.cardioSession.create({
+    data: { id: crypto.randomUUID(), ...mapped },
+  });
+
+  // Fetch route streams (best-effort)
+  try {
+    const streams = await getActivityStreams(accessToken, activityId);
+    const points = mapStravaStreamsToRoutePoints(
+      streams,
+      activity.start_date,
+      session.id,
+    );
+    if (points.length > 0) {
+      await db.routePoint.createMany({
+        data: points.map((p: any) => ({
+          id: crypto.randomUUID(),
+          sessionId: session.id,
+          latitude: p.latitude,
+          longitude: p.longitude,
+          elevationM: p.elevationM,
+          heartRate: p.heartRate,
+          timestamp: p.timestamp,
+        })),
+      });
+    }
+  } catch {
+    /* streams not available for all activities */
+  }
+
+  return session;
+}
+
+export async function runStravaBackfill(connectionId: string, db: any) {
+  const connection = await db.deviceConnection.findUnique({
+    where: { id: connectionId },
+  });
+  if (!connection) return;
+
+  const accessToken = await ensureFreshToken(connection, db);
+  const activities = await getAthleteActivities(accessToken, {
+    page: 1,
+    per_page: 30,
+  });
+
+  for (const activity of activities) {
+    try {
+      await importStravaActivity(activity.id, connection, db);
+    } catch (err: any) {
+      if (err instanceof StravaRateLimitError) {
+        const waitMs = err.resetAt.getTime() - Date.now();
+        if (waitMs > 0) {
+          await new Promise((r) => setTimeout(r, Math.min(waitMs, 60_000)));
+        }
+        try {
+          await importStravaActivity(activity.id, connection, db);
+        } catch {
+          /* skip on second failure */
+        }
+      } else {
+        console.error(
+          `Failed to import Strava activity ${activity.id}:`,
+          err,
+        );
+      }
+    }
+  }
+
+  await db.deviceConnection.update({
+    where: { id: connectionId },
+    data: { lastSyncedAt: new Date() },
+  });
 }
