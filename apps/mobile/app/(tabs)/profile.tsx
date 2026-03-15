@@ -5,9 +5,11 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react-native";
+import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const { user, signOut, updateUser } = useAuth();
+  const router = useRouter();
 
   const handleEditName = () => {
     if (Platform.OS === "ios") {
@@ -137,6 +139,23 @@ export default function ProfileScreen() {
             </View>
           </View>
         </Card>
+
+        <Pressable
+          onPress={() => router.push("/settings/integrations")}
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
+              Connected Apps
+            </Text>
+            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
+          </Card>
+        </Pressable>
 
         <Button variant="outline" onPress={signOut}>
           Sign Out

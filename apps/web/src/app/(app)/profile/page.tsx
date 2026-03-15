@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signOut } from "next-auth/react";
-import { User, Settings, LogOut, Check } from "lucide-react";
+import { User, Settings, LogOut, Check, Link2 } from "lucide-react";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const utils = trpc.useUtils();
@@ -160,6 +161,18 @@ export default function ProfilePage() {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Connected Apps */}
+      <Card>
+        <CardContent className="pt-6">
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/settings/integrations">
+              <Link2 className="h-4 w-4" />
+              Connected Apps
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 
