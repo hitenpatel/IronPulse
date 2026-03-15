@@ -1,0 +1,12 @@
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Sign Up"
+- tapOn: "Name"
+- inputText: "Test User"
+- tapOn: "Email"
+- inputText: "test-signup@example.com"
+- tapOn: "Password"
+- inputText: "Password123!"
+- tapOn: "Create Account"
+- assertVisible: "Good morning"
