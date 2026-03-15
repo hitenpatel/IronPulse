@@ -42,7 +42,8 @@
   "devDependencies": {
     "@ironpulse/api": "workspace:^",
     "@types/react": "~19.2.2",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^3.0"
   },
   "private": true
 }
