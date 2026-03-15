@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@ironpulse/api": "workspace:*",
-    "@powersync/web": "^1.0.0",
+    "@powersync/common": "^1.0.0",
+    "@powersync/react": "^1.0.0",
     "@trpc/client": "^11.0",
     "superjson": "^2.2"
   },

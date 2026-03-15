@@ -1,4 +1,4 @@
-import { column, Schema, Table } from "@powersync/web";
+import { column, Schema, Table } from "@powersync/common";
 
 const workouts = new Table(
   {

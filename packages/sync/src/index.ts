@@ -1,2 +1,2 @@
 export { AppSchema, type Database } from "./schema";
-export { BackendConnector } from "./connector";
+export { BackendConnector, type BackendConnectorOptions } from "./connector";

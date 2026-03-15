@@ -2,24 +2,33 @@ import {
   AbstractPowerSyncDatabase,
   PowerSyncBackendConnector,
   UpdateType,
-} from "@powersync/web";
+} from "@powersync/common";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import type { AppRouter } from "@ironpulse/api";
 
-function createSyncTRPCClient() {
-  return createTRPCClient<AppRouter>({
-    links: [
-      httpBatchLink({
-        url: "/api/trpc",
-        transformer: superjson,
-      }),
-    ],
-  });
+export interface BackendConnectorOptions {
+  baseUrl?: string;
+  getAuthToken?: () => Promise<string | null>;
 }
 
 export class BackendConnector implements PowerSyncBackendConnector {
-  private trpc = createSyncTRPCClient();
+  private trpc;
+
+  constructor(opts?: BackendConnectorOptions) {
+    this.trpc = createTRPCClient<AppRouter>({
+      links: [
+        httpBatchLink({
+          url: `${opts?.baseUrl ?? ""}/api/trpc`,
+          transformer: superjson,
+          headers: async () => {
+            const token = await opts?.getAuthToken?.();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          },
+        }),
+      ],
+    });
+  }
 
   async fetchCredentials() {
     const result = await this.trpc.sync.getToken.query();
@@ -59,10 +68,7 @@ export class BackendConnector implements PowerSyncBackendConnector {
       }
       await transaction.complete();
     } catch (error: any) {
-      if (
-        error?.data?.code === "FORBIDDEN" ||
-        error?.data?.code === "BAD_REQUEST"
-      ) {
+      if (error?.data?.code === "FORBIDDEN" || error?.data?.code === "BAD_REQUEST") {
         console.error("PowerSync upload permanent error (discarding):", error);
         await transaction.complete();
       } else {
