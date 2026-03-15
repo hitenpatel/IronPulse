@@ -2,19 +2,12 @@
 
 import Link from "next/link";
 import { Dumbbell, Clock } from "lucide-react";
-import { trpc } from "@/lib/trpc/client";
+import { useWorkouts } from "@/hooks/use-workouts";
 import { formatRelativeDate, formatDuration } from "@/lib/format";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export default function WorkoutsPage() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    trpc.workout.list.useInfiniteQuery(
-      { limit: 20 },
-      { getNextPageParam: (last) => last.nextCursor }
-    );
-
-  const workouts = data?.pages.flatMap((p) => p.data) ?? [];
+  const { data: workouts, isLoading } = useWorkouts();
 
   if (isLoading) {
     return (
@@ -75,18 +68,18 @@ export default function WorkoutsPage() {
                 </p>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span>
-                    {formatRelativeDate(new Date(workout.startedAt))}
+                    {formatRelativeDate(new Date(workout.started_at))}
                   </span>
                   <span>
-                    {workout._count.workoutExercises}{" "}
-                    {workout._count.workoutExercises === 1
+                    {workout.exercise_count ?? 0}{" "}
+                    {workout.exercise_count === 1
                       ? "exercise"
                       : "exercises"}
                   </span>
-                  {workout.durationSeconds != null && (
+                  {workout.duration_seconds != null && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {formatDuration(workout.durationSeconds)}
+                      {formatDuration(workout.duration_seconds)}
                     </span>
                   )}
                 </div>
@@ -95,18 +88,6 @@ export default function WorkoutsPage() {
           </Link>
         ))}
       </div>
-
-      {hasNextPage && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? "Loading..." : "Load more"}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

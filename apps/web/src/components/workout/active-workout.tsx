@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { useWorkoutExercises, useWorkoutSets } from "@/hooks/use-workout-detail";
+import { useQuery } from "@powersync/react";
 import { WorkoutHeader } from "./workout-header";
 import { ExerciseCard } from "./exercise-card";
 import { AddExerciseSheet } from "./add-exercise-sheet";
@@ -30,20 +32,49 @@ export function ActiveWorkout({
     { exerciseId: string; type: string; value: number; setId: string }[] | null
   >(null);
 
-  const utils = trpc.useUtils();
+  // Read exercises and sets from PowerSync (reactive local reads)
+  const { data: exercises } = useWorkoutExercises(workoutId);
+  const { data: allSets } = useWorkoutSets(workoutId);
 
-  const workout = trpc.workout.getById.useQuery({ workoutId });
+  // Read exercise details from the exercises table for category/equipment
+  const exerciseIds = exercises.map((e) => e.exercise_id);
+  const { data: exerciseDetails } = useQuery<{
+    id: string;
+    name: string;
+    category: string | null;
+    equipment: string | null;
+  }>(
+    exerciseIds.length > 0
+      ? `SELECT id, name, category, equipment FROM exercises WHERE id IN (${exerciseIds.map(() => "?").join(",")})`
+      : `SELECT id, name, category, equipment FROM exercises WHERE 0`,
+    exerciseIds
+  );
+
+  const exerciseDetailsMap = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; category: string | null; equipment: string | null }>();
+    for (const e of exerciseDetails) {
+      map.set(e.id, e);
+    }
+    return map;
+  }, [exerciseDetails]);
+
+  // Group sets by workout_exercise_id
+  const setsByExercise = useMemo(() => {
+    const map = new Map<string, typeof allSets>();
+    for (const set of allSets) {
+      const existing = map.get(set.workout_exercise_id) ?? [];
+      existing.push(set);
+      map.set(set.workout_exercise_id, existing);
+    }
+    return map;
+  }, [allSets]);
+
+  // Keep tRPC for workout.complete (runs PR detection server-side)
   const completeWorkout = trpc.workout.complete.useMutation({
     onSuccess: (data) => {
-      // Re-fetch workout to get updated durationSeconds, then show completion
-      utils.workout.getById.invalidate({ workoutId });
       setCompletionPRs(data.newPRs);
     },
   });
-
-  const invalidateWorkout = useCallback(() => {
-    utils.workout.getById.invalidate({ workoutId });
-  }, [utils, workoutId]);
 
   function handleSetCompleted() {
     setRestRemaining(REST_DURATION);
@@ -54,23 +85,31 @@ export function ActiveWorkout({
     completeWorkout.mutate({ workoutId });
   }
 
-  // Show completion screen — use workout.getById data (has full exercise/set nesting)
-  if (completionPRs !== null && workout.data) {
+  // Show completion screen
+  if (completionPRs !== null) {
     const exerciseNames: Record<string, string> = {};
-    for (const we of workout.data.workout.workoutExercises) {
-      exerciseNames[we.exercise.id] = we.exercise.name;
+    for (const we of exercises) {
+      const detail = exerciseDetailsMap.get(we.exercise_id);
+      if (detail) {
+        exerciseNames[we.exercise_id] = detail.name;
+      }
     }
 
     const completedWorkout = {
-      ...workout.data.workout,
-      workoutExercises: workout.data.workout.workoutExercises.map((we) => ({
-        exercise: { name: we.exercise.name },
-        sets: we.sets.map((s) => ({
-          weightKg: s.weightKg != null ? Number(s.weightKg) : null,
-          reps: s.reps,
-          completed: s.completed,
-        })),
-      })),
+      name: initialName,
+      startedAt: startedAt.toISOString(),
+      durationSeconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
+      workoutExercises: exercises.map((we) => {
+        const weSets = setsByExercise.get(we.id) ?? [];
+        return {
+          exercise: { name: exerciseDetailsMap.get(we.exercise_id)?.name ?? we.exercise_name },
+          sets: weSets.map((s) => ({
+            weightKg: s.weight_kg != null ? Number(s.weight_kg) : null,
+            reps: s.reps,
+            completed: !!s.completed,
+          })),
+        };
+      }),
     };
 
     return (
@@ -83,6 +122,31 @@ export function ActiveWorkout({
     );
   }
 
+  // Build workout exercise data in the shape ExerciseCard expects
+  const workoutExerciseCards = exercises.map((we) => {
+    const detail = exerciseDetailsMap.get(we.exercise_id);
+    const weSets = (setsByExercise.get(we.id) ?? []).map((s) => ({
+      id: s.id,
+      setNumber: s.set_number,
+      weightKg: s.weight_kg,
+      reps: s.reps,
+      rpe: s.rpe,
+      completed: !!s.completed,
+    }));
+
+    return {
+      id: we.id,
+      exercise: {
+        id: we.exercise_id,
+        name: detail?.name ?? we.exercise_name,
+        category: detail?.category ?? null,
+        equipment: detail?.equipment ?? null,
+      },
+      sets: weSets,
+      notes: we.notes,
+    };
+  });
+
   return (
     <div className="pb-24">
       <WorkoutHeader
@@ -93,17 +157,19 @@ export function ActiveWorkout({
       />
 
       {/* Exercise cards */}
-      {workout.data?.workout.workoutExercises.map((we) => (
+      {workoutExerciseCards.map((we) => (
         <ExerciseCard
           key={we.id}
           workoutExercise={we}
           onSetCompleted={handleSetCompleted}
-          onMutationSuccess={invalidateWorkout}
+          onMutationSuccess={() => {
+            // PowerSync reactive queries auto-update, no invalidation needed
+          }}
         />
       ))}
 
       {/* Empty state */}
-      {workout.data?.workout.workoutExercises.length === 0 && (
+      {exercises.length === 0 && (
         <div className="py-16 text-center">
           <p className="text-muted-foreground">No exercises yet.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -125,7 +191,9 @@ export function ActiveWorkout({
         workoutId={workoutId}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        onExerciseAdded={invalidateWorkout}
+        onExerciseAdded={() => {
+          // PowerSync reactive queries auto-update
+        }}
       />
 
       {/* Rest timer */}

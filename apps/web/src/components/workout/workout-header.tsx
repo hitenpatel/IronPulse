@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
 import { formatElapsed } from "@/lib/workout-utils";
 import {
   Dialog,
@@ -28,13 +28,12 @@ export function WorkoutHeader({
   onFinish,
 }: WorkoutHeaderProps) {
   const router = useRouter();
+  const db = usePowerSync();
   const [elapsed, setElapsed] = useState(0);
   const [showCancel, setShowCancel] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(workoutName ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const updateWorkout = trpc.workout.update.useMutation();
 
   // Elapsed timer
   useEffect(() => {
@@ -58,7 +57,10 @@ export function WorkoutHeader({
   function handleNameSubmit() {
     setIsEditing(false);
     if (editName.trim() && editName !== workoutName) {
-      updateWorkout.mutate({ workoutId, name: editName.trim() });
+      db.execute(
+        `UPDATE workouts SET name = ? WHERE id = ?`,
+        [editName.trim(), workoutId]
+      );
     }
   }
 

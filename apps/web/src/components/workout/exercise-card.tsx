@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -7,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
 import { SetRow } from "./set-row";
 
 interface ExerciseSet {
@@ -42,12 +43,19 @@ export function ExerciseCard({
   onSetCompleted,
   onMutationSuccess,
 }: ExerciseCardProps) {
-  const addSet = trpc.workout.addSet.useMutation({
-    onSuccess: () => onMutationSuccess(),
-  });
+  const db = usePowerSync();
+  const [adding, setAdding] = useState(false);
 
   function handleAddSet() {
-    addSet.mutate({ workoutExerciseId: workoutExercise.id });
+    setAdding(true);
+    const id = crypto.randomUUID();
+    const nextSetNumber = workoutExercise.sets.length + 1;
+    db.execute(
+      `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, ?, ?, 0)`,
+      [id, workoutExercise.id, nextSetNumber, "working"]
+    )
+      .then(() => onMutationSuccess())
+      .finally(() => setAdding(false));
   }
 
   return (
@@ -95,7 +103,7 @@ export function ExerciseCard({
       {/* Add set button */}
       <button
         onClick={handleAddSet}
-        disabled={addSet.isPending}
+        disabled={adding}
         className="mt-2 w-full py-2 text-center text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
       >
         + Add Set

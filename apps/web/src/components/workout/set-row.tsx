@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Check, Circle } from "lucide-react";
-import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
 import { cn } from "@/lib/utils";
 
 interface SetRowProps {
@@ -26,6 +26,7 @@ export function SetRow({
   onCompleted,
   onMutationSuccess,
 }: SetRowProps) {
+  const db = usePowerSync();
   const [localWeight, setLocalWeight] = useState(
     weightKg != null ? String(weightKg) : ""
   );
@@ -34,14 +35,13 @@ export function SetRow({
   );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const updateSet = trpc.workout.updateSet.useMutation({
-    onSuccess: () => onMutationSuccess(),
-  });
-
-  function debouncedUpdate(data: { weight?: number; reps?: number }) {
+  function debouncedUpdate(field: string, value: number) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      updateSet.mutate({ setId, ...data });
+      db.execute(
+        `UPDATE exercise_sets SET ${field} = ? WHERE id = ?`,
+        [value, setId]
+      ).then(() => onMutationSuccess());
     }, 500);
   }
 
@@ -49,7 +49,7 @@ export function SetRow({
     setLocalWeight(value);
     const num = parseFloat(value);
     if (!isNaN(num) && num >= 0) {
-      debouncedUpdate({ weight: num });
+      debouncedUpdate("weight_kg", num);
     }
   }
 
@@ -57,33 +57,31 @@ export function SetRow({
     setLocalReps(value);
     const num = parseInt(value, 10);
     if (!isNaN(num) && num >= 0) {
-      debouncedUpdate({ reps: num });
+      debouncedUpdate("reps", num);
     }
   }
 
   function handleComplete() {
     if (completed) return;
-    updateSet.mutate(
-      { setId, completed: true },
-      {
-        onSuccess: () => {
-          onMutationSuccess();
-          onCompleted();
-        },
-      }
-    );
+    db.execute(
+      `UPDATE exercise_sets SET completed = 1 WHERE id = ?`,
+      [setId]
+    ).then(() => {
+      onMutationSuccess();
+      onCompleted();
+    });
   }
 
   function handleRpeClick() {
-    // Cycle through: null → 6 → 7 → 8 → 9 → 10 → null
+    // Cycle through: null -> 6 -> 7 -> 8 -> 9 -> 10 -> null
     const cycle = [null, 6, 7, 8, 9, 10];
     const currentIndex = cycle.indexOf(rpe);
     const nextIndex = (currentIndex + 1) % cycle.length;
-    const nextRpe = cycle[nextIndex]!;
-    updateSet.mutate(
-      { setId, rpe: nextRpe ?? undefined },
-      { onSuccess: () => onMutationSuccess() }
-    );
+    const nextRpe = cycle[nextIndex];
+    db.execute(
+      `UPDATE exercise_sets SET rpe = ? WHERE id = ?`,
+      [nextRpe, setId]
+    ).then(() => onMutationSuccess());
   }
 
   return (

@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
 import { ActiveWorkout } from "@/components/workout/active-workout";
 import { getWorkoutName } from "@/lib/workout-utils";
 
 export default function NewWorkoutPage() {
+  const db = usePowerSync();
   const [workoutData, setWorkoutData] = useState<{
     id: string;
     startedAt: Date;
@@ -15,24 +16,24 @@ export default function NewWorkoutPage() {
   const [error, setError] = useState(false);
   const createdRef = useRef(false);
 
-  const createWorkout = trpc.workout.create.useMutation({
-    onSuccess: (data) => {
-      setWorkoutData({
-        id: data.workout.id,
-        startedAt: new Date(data.workout.startedAt),
-        name: data.workout.name,
-      });
-    },
-    onError: () => {
-      setError(true);
-    },
-  });
-
   useEffect(() => {
-    // Guard against React Strict Mode double-invocation creating two workouts
     if (createdRef.current) return;
     createdRef.current = true;
-    createWorkout.mutate({ name: getWorkoutName() });
+
+    const id = crypto.randomUUID();
+    const name = getWorkoutName();
+    const now = new Date();
+
+    db.execute(
+      `INSERT INTO workouts (id, name, started_at, created_at) VALUES (?, ?, ?, ?)`,
+      [id, name, now.toISOString(), now.toISOString()]
+    )
+      .then(() => {
+        setWorkoutData({ id, startedAt: now, name });
+      })
+      .catch(() => {
+        setError(true);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

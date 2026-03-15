@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Dumbbell, BarChart3, Target, ClipboardList, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { useWorkoutExercises, useWorkoutSets } from "@/hooks/use-workout-detail";
 import { formatDuration, formatVolume } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@powersync/react";
 
 function formatFullDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
@@ -19,7 +21,24 @@ function formatFullDate(date: Date): string {
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading } = trpc.workout.getById.useQuery({ workoutId: id });
+
+  // Read workout header from PowerSync
+  const { data: workoutRows, isLoading } = useQuery(
+    `SELECT * FROM workouts WHERE id = ?`,
+    [id]
+  );
+  const workout = workoutRows?.[0] as {
+    id: string;
+    name: string | null;
+    started_at: string;
+    duration_seconds: number | null;
+    notes: string | null;
+  } | undefined;
+
+  // Read exercises and sets from PowerSync
+  const { data: exercises } = useWorkoutExercises(id);
+  const { data: sets } = useWorkoutSets(id);
+
   const [saved, setSaved] = useState(false);
   const saveTemplate = trpc.template.saveFromWorkout.useMutation({
     onSuccess: () => {
@@ -27,6 +46,17 @@ export default function WorkoutDetailPage() {
       setTimeout(() => setSaved(false), 2000);
     },
   });
+
+  // Group sets by workout_exercise_id
+  const setsByExercise = useMemo(() => {
+    const map = new Map<string, typeof sets>();
+    for (const set of sets) {
+      const existing = map.get(set.workout_exercise_id) ?? [];
+      existing.push(set);
+      map.set(set.workout_exercise_id, existing);
+    }
+    return map;
+  }, [sets]);
 
   if (isLoading) {
     return (
@@ -53,7 +83,7 @@ export default function WorkoutDetailPage() {
     );
   }
 
-  if (!data?.workout) {
+  if (!workout) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
@@ -69,21 +99,11 @@ export default function WorkoutDetailPage() {
     );
   }
 
-  const { workout } = data;
-
-  const totalExercises = workout.workoutExercises.length;
-  const totalSets = workout.workoutExercises.reduce(
-    (sum, ex) => sum + ex.sets.length,
-    0
-  );
-  const totalVolume = workout.workoutExercises.reduce(
-    (sum, ex) =>
-      sum +
-      ex.sets.reduce(
-        (setSum, set) =>
-          setSum + (set.completed ? (Number(set.weightKg) || 0) * (set.reps ?? 0) : 0),
-        0
-      ),
+  const totalExercises = exercises.length;
+  const totalSets = sets.length;
+  const totalVolume = sets.reduce(
+    (sum, set) =>
+      sum + (set.completed ? (Number(set.weight_kg) || 0) * (set.reps ?? 0) : 0),
     0
   );
 
@@ -119,9 +139,9 @@ export default function WorkoutDetailPage() {
           </Button>
         </div>
         <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-          <span>{formatFullDate(new Date(workout.startedAt))}</span>
-          {workout.durationSeconds != null && (
-            <span>{formatDuration(workout.durationSeconds)}</span>
+          <span>{formatFullDate(new Date(workout.started_at))}</span>
+          {workout.duration_seconds != null && (
+            <span>{formatDuration(workout.duration_seconds)}</span>
           )}
         </div>
       </div>
@@ -156,19 +176,12 @@ export default function WorkoutDetailPage() {
 
       {/* Exercises */}
       <div className="space-y-4">
-        {workout.workoutExercises
-          .sort((a, b) => a.order - b.order)
-          .map((we) => (
+        {exercises.map((we) => {
+          const exerciseSets = setsByExercise.get(we.id) ?? [];
+          return (
             <Card key={we.id}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">{we.exercise.name}</CardTitle>
-                {(we.exercise.category || we.exercise.equipment) && (
-                  <p className="text-xs text-muted-foreground">
-                    {[we.exercise.category, we.exercise.equipment]
-                      .filter(Boolean)
-                      .join(" \u00b7 ")}
-                  </p>
-                )}
+                <CardTitle className="text-base">{we.exercise_name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-0">
@@ -180,8 +193,8 @@ export default function WorkoutDetailPage() {
                     <span className="w-16 text-right">Info</span>
                   </div>
                   {/* Set rows */}
-                  {we.sets
-                    .sort((a, b) => a.setNumber - b.setNumber)
+                  {exerciseSets
+                    .sort((a, b) => a.set_number - b.set_number)
                     .map((set) => (
                       <div
                         key={set.id}
@@ -190,10 +203,10 @@ export default function WorkoutDetailPage() {
                         }`}
                       >
                         <span className="text-muted-foreground">
-                          {set.setNumber}
+                          {set.set_number}
                         </span>
                         <span>
-                          {set.weightKg != null ? `${set.weightKg} kg` : "--"}
+                          {set.weight_kg != null ? `${set.weight_kg} kg` : "--"}
                         </span>
                         <span>{set.reps ?? "--"}</span>
                         <span className="flex w-16 items-center justify-end gap-1">
@@ -213,7 +226,8 @@ export default function WorkoutDetailPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          );
+        })}
       </div>
     </div>
   );

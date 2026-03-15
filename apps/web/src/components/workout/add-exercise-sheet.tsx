@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { trpc } from "@/lib/trpc/client";
+import { usePowerSync, useQuery } from "@powersync/react";
 import { useDebouncedCallback } from "@/hooks/use-debounced-mutation";
 
 interface AddExerciseSheetProps {
@@ -24,8 +24,10 @@ export function AddExerciseSheet({
   onOpenChange,
   onExerciseAdded,
 }: AddExerciseSheetProps) {
+  const db = usePowerSync();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback(
     (value: string) => setDebouncedSearch(value),
@@ -39,28 +41,53 @@ export function AddExerciseSheet({
     }
   }, [open]);
 
-  const exercises = trpc.exercise.list.useQuery(
-    {
-      limit: 30,
-      ...(debouncedSearch && { search: debouncedSearch }),
-    },
-    { enabled: open }
+  // Read exercises from PowerSync local SQLite
+  const { data: exercises, isLoading } = useQuery<{
+    id: string;
+    name: string;
+    category: string | null;
+    equipment: string | null;
+    primary_muscles: string | null;
+  }>(
+    debouncedSearch
+      ? `SELECT id, name, category, equipment, primary_muscles FROM exercises WHERE name LIKE ? ORDER BY name LIMIT 30`
+      : `SELECT id, name, category, equipment, primary_muscles FROM exercises ORDER BY name LIMIT 30`,
+    debouncedSearch ? [`%${debouncedSearch}%`] : []
   );
-
-  const addExercise = trpc.workout.addExercise.useMutation({
-    onSuccess: () => {
-      onExerciseAdded();
-      onOpenChange(false);
-    },
-  });
 
   function handleSearchChange(value: string) {
     setSearch(value);
     debouncedSetSearch(value);
   }
 
-  function handleAdd(exerciseId: string) {
-    addExercise.mutate({ workoutId, exerciseId });
+  async function handleAdd(exerciseId: string) {
+    setAdding(true);
+    try {
+      // Get current max order for this workout
+      const result = await db.execute(
+        `SELECT COALESCE(MAX("order"), 0) as max_order FROM workout_exercises WHERE workout_id = ?`,
+        [workoutId]
+      );
+      const maxOrder = (result.rows?._array?.[0]?.max_order as number) ?? 0;
+
+      const id = crypto.randomUUID();
+      await db.execute(
+        `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order") VALUES (?, ?, ?, ?)`,
+        [id, workoutId, exerciseId, maxOrder + 1]
+      );
+
+      // Add first set automatically
+      const setId = crypto.randomUUID();
+      await db.execute(
+        `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, 1, 'working', 0)`,
+        [setId, id]
+      );
+
+      onExerciseAdded();
+      onOpenChange(false);
+    } finally {
+      setAdding(false);
+    }
   }
 
   return (
@@ -91,7 +118,7 @@ export function AddExerciseSheet({
             {debouncedSearch ? "Results" : "All Exercises"}
           </div>
 
-          {exercises.isLoading ? (
+          {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center gap-3">
@@ -103,34 +130,45 @@ export function AddExerciseSheet({
                 </div>
               ))}
             </div>
-          ) : exercises.data?.data.length === 0 ? (
+          ) : exercises.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               No exercises found
             </div>
           ) : (
             <div className="space-y-1">
-              {exercises.data?.data.map((exercise) => (
-                <button
-                  key={exercise.id}
-                  onClick={() => handleAdd(exercise.id)}
-                  disabled={addExercise.isPending}
-                  className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Dumbbell className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {exercise.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {exercise.primaryMuscles[0] ?? ""}
-                      {exercise.equipment ? ` · ${exercise.equipment}` : ""}
-                    </p>
-                  </div>
-                  <Plus className="h-4 w-4 text-muted-foreground" />
-                </button>
-              ))}
+              {exercises.map((exercise) => {
+                // primary_muscles is stored as JSON string or comma-separated
+                let firstMuscle = "";
+                try {
+                  const parsed = JSON.parse(exercise.primary_muscles ?? "[]");
+                  firstMuscle = Array.isArray(parsed) ? parsed[0] ?? "" : "";
+                } catch {
+                  firstMuscle = exercise.primary_muscles?.split(",")[0] ?? "";
+                }
+
+                return (
+                  <button
+                    key={exercise.id}
+                    onClick={() => handleAdd(exercise.id)}
+                    disabled={adding}
+                    className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <Dumbbell className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {exercise.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {firstMuscle}
+                        {exercise.equipment ? ` · ${exercise.equipment}` : ""}
+                      </p>
+                    </div>
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
