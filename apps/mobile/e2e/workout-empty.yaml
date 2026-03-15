@@ -1,0 +1,31 @@
+appId: com.ironpulse.app
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Sign In"
+- assertVisible: "Good morning"
+- tapOn:
+    id: "fab-button"
+- tapOn: "Start Workout"
+- tapOn: "Empty Workout"
+- assertVisible: "Finish"
+- tapOn:
+    id: "add-exercise-button"
+- inputText: "Bench"
+- tapOn: "Bench Press"
+- tapOn:
+    id: "weight-input-0-0"
+- inputText: "80"
+- tapOn:
+    id: "reps-input-0-0"
+- inputText: "8"
+- tapOn:
+    id: "complete-set-0-0"
+- tapOn:
+    id: "finish-button"
+- assertVisible: "Workout Complete"
+- tapOn: "Done"
+- assertVisible: "Good morning"
