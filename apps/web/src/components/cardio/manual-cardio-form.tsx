@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc/client";
+import { usePowerSync } from "@powersync/react";
 
 interface ManualCardioFormProps {
   type: string;
@@ -17,6 +17,7 @@ export function ManualCardioForm({
   onBack,
   onComplete,
 }: ManualCardioFormProps) {
+  const db = usePowerSync();
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
@@ -28,14 +29,8 @@ export function ManualCardioForm({
   const [calories, setCalories] = useState("");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const utils = trpc.useUtils();
-  const createCardio = trpc.cardio.create.useMutation({
-    onSuccess: (data) => {
-      utils.cardio.list.invalidate();
-      onComplete(data.session);
-    },
-  });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
@@ -82,25 +77,63 @@ export function ManualCardioForm({
     return Object.keys(newErrors).length === 0;
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!validate()) return;
+
+    setSaving(true);
+    setSaveError(null);
 
     const durationSeconds =
       (parseInt(hours || "0", 10) || 0) * 3600 +
       (parseInt(minutes || "0", 10) || 0) * 60 +
       (parseInt(seconds || "0", 10) || 0);
 
-    createCardio.mutate({
-      type: type as "run" | "cycle" | "swim" | "hike" | "walk" | "row" | "elliptical" | "other",
-      startedAt: new Date(),
-      durationSeconds,
-      ...(distanceKm && { distanceMeters: parseFloat(distanceKm) * 1000 }),
-      ...(elevationM && { elevationGainM: parseFloat(elevationM) }),
-      ...(avgHr && { avgHeartRate: parseInt(avgHr, 10) }),
-      ...(maxHr && { maxHeartRate: parseInt(maxHr, 10) }),
-      ...(calories && { calories: parseInt(calories, 10) }),
-      ...(notes.trim() && { notes: notes.trim() }),
-    });
+    const id = crypto.randomUUID();
+    const now = new Date();
+    const distanceMeters = distanceKm ? parseFloat(distanceKm) * 1000 : null;
+    const elevGain = elevationM ? parseFloat(elevationM) : null;
+    const avgHeartRate = avgHr ? parseInt(avgHr, 10) : null;
+    const maxHeartRate = maxHr ? parseInt(maxHr, 10) : null;
+    const cals = calories ? parseInt(calories, 10) : null;
+    const notesTrimmed = notes.trim() || null;
+
+    try {
+      await db.execute(
+        `INSERT INTO cardio_sessions (id, type, source, started_at, duration_seconds, distance_meters, elevation_gain_m, avg_heart_rate, max_heart_rate, calories, notes, created_at)
+         VALUES (?, ?, 'manual', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          type,
+          now.toISOString(),
+          durationSeconds,
+          distanceMeters,
+          elevGain,
+          avgHeartRate,
+          maxHeartRate,
+          cals,
+          notesTrimmed,
+          now.toISOString(),
+        ]
+      );
+
+      onComplete({
+        id,
+        type,
+        source: "manual",
+        startedAt: now.toISOString(),
+        durationSeconds,
+        distanceMeters,
+        elevationGainM: elevGain,
+        avgHeartRate: avgHeartRate,
+        maxHeartRate: maxHeartRate,
+        calories: cals,
+        notes: notesTrimmed,
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save session");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -260,10 +293,10 @@ export function ManualCardioForm({
         </div>
       )}
 
-      {/* Mutation error */}
-      {createCardio.error && (
+      {/* Save error */}
+      {saveError && (
         <p className="mb-4 text-sm text-destructive">
-          {createCardio.error.message}
+          {saveError}
         </p>
       )}
 
@@ -274,10 +307,10 @@ export function ManualCardioForm({
         </Button>
         <Button
           onClick={handleSave}
-          disabled={createCardio.isPending}
+          disabled={saving}
           className="flex-1"
         >
-          {createCardio.isPending ? "Saving..." : "Save"}
+          {saving ? "Saving..." : "Save"}
         </Button>
       </div>
     </div>

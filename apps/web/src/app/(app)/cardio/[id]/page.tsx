@@ -5,12 +5,12 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { useCardioSession } from "@/hooks/use-cardio-detail";
 import { Card } from "@/components/ui/card";
 import {
   formatDuration,
   formatDistance,
   formatPace,
-  formatRelativeDate,
 } from "@/lib/format";
 
 const RouteMap = dynamic(
@@ -64,9 +64,23 @@ function DetailSkeleton() {
 export default function CardioDetailPage() {
   const { id } = useParams<{ id: string }>();
 
-  const { data, isLoading } = trpc.cardio.getById.useQuery({ sessionId: id });
-  const session = data?.session;
+  // Read session from PowerSync local SQLite
+  const { data: sessionRows, isLoading } = useCardioSession(id);
+  const session = sessionRows?.[0] as {
+    id: string;
+    type: string;
+    source: string;
+    started_at: string;
+    duration_seconds: number;
+    distance_meters: number | null;
+    elevation_gain_m: number | null;
+    avg_heart_rate: number | null;
+    max_heart_rate: number | null;
+    calories: number | null;
+    notes: string | null;
+  } | undefined;
 
+  // Keep tRPC for route points (not synced via PowerSync)
   const { data: routeData } = trpc.cardio.getRoutePoints.useQuery(
     { sessionId: id },
     { enabled: !!session && session.source !== "manual" }
@@ -75,7 +89,7 @@ export default function CardioDetailPage() {
   const points = routeData?.points;
 
   const fullDate = session
-    ? new Date(session.startedAt).toLocaleDateString("en-US", {
+    ? new Date(session.started_at).toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
         month: "long",
@@ -113,43 +127,43 @@ export default function CardioDetailPage() {
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <StatItem
                 label="Duration"
-                value={formatDuration(session.durationSeconds)}
+                value={formatDuration(session.duration_seconds)}
               />
-              {session.distanceMeters != null &&
-                Number(session.distanceMeters) > 0 && (
+              {session.distance_meters != null &&
+                Number(session.distance_meters) > 0 && (
                   <StatItem
                     label="Distance"
-                    value={formatDistance(Number(session.distanceMeters))}
+                    value={formatDistance(Number(session.distance_meters))}
                   />
                 )}
-              {session.distanceMeters != null &&
-                Number(session.distanceMeters) > 0 &&
-                session.durationSeconds > 0 && (
+              {session.distance_meters != null &&
+                Number(session.distance_meters) > 0 &&
+                session.duration_seconds > 0 && (
                   <StatItem
                     label="Pace"
                     value={formatPace(
-                      Number(session.distanceMeters),
-                      session.durationSeconds
+                      Number(session.distance_meters),
+                      session.duration_seconds
                     )}
                   />
                 )}
-              {session.elevationGainM != null &&
-                Number(session.elevationGainM) > 0 && (
+              {session.elevation_gain_m != null &&
+                Number(session.elevation_gain_m) > 0 && (
                   <StatItem
                     label="Elevation Gain"
-                    value={`${Math.round(Number(session.elevationGainM))} m`}
+                    value={`${Math.round(Number(session.elevation_gain_m))} m`}
                   />
                 )}
-              {session.avgHeartRate != null && (
+              {session.avg_heart_rate != null && (
                 <StatItem
                   label="Avg Heart Rate"
-                  value={`${session.avgHeartRate} bpm`}
+                  value={`${session.avg_heart_rate} bpm`}
                 />
               )}
-              {session.maxHeartRate != null && (
+              {session.max_heart_rate != null && (
                 <StatItem
                   label="Max Heart Rate"
-                  value={`${session.maxHeartRate} bpm`}
+                  value={`${session.max_heart_rate} bpm`}
                 />
               )}
               {session.calories != null && session.calories > 0 && (

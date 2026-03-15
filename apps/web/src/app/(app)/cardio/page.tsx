@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Activity } from "lucide-react";
-import { trpc } from "@/lib/trpc/client";
+import { useCardioSessions } from "@/hooks/use-cardio-sessions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,13 +31,7 @@ function SessionSkeleton() {
 }
 
 export default function CardioHistoryPage() {
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    trpc.cardio.list.useInfiniteQuery(
-      { limit: 20 },
-      { getNextPageParam: (last) => last.nextCursor }
-    );
-
-  const sessions = data?.pages.flatMap((p) => p.data) ?? [];
+  const { data: sessions, isLoading } = useCardioSessions();
 
   return (
     <div className="space-y-6">
@@ -77,22 +71,22 @@ export default function CardioHistoryPage() {
                         {capitalize(session.type)}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {formatRelativeDate(new Date(session.startedAt))}
+                        {formatRelativeDate(new Date(session.started_at))}
                       </span>
                     </div>
                     <div className="mt-0.5 flex gap-3 text-sm text-muted-foreground">
-                      <span>{formatDuration(session.durationSeconds)}</span>
-                      {session.distanceMeters != null &&
-                        Number(session.distanceMeters) > 0 && (
-                          <span>{formatDistance(Number(session.distanceMeters))}</span>
+                      <span>{formatDuration(session.duration_seconds)}</span>
+                      {session.distance_meters != null &&
+                        Number(session.distance_meters) > 0 && (
+                          <span>{formatDistance(Number(session.distance_meters))}</span>
                         )}
-                      {session.distanceMeters != null &&
-                        Number(session.distanceMeters) > 0 &&
-                        session.durationSeconds > 0 && (
+                      {session.distance_meters != null &&
+                        Number(session.distance_meters) > 0 &&
+                        session.duration_seconds > 0 && (
                           <span>
                             {formatPace(
-                              Number(session.distanceMeters),
-                              session.durationSeconds
+                              Number(session.distance_meters),
+                              session.duration_seconds
                             )}
                           </span>
                         )}
@@ -102,18 +96,6 @@ export default function CardioHistoryPage() {
               </Card>
             </Link>
           ))}
-
-          {hasNextPage && (
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="outline"
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
-              >
-                {isFetchingNextPage ? "Loading..." : "Load more"}
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </div>
