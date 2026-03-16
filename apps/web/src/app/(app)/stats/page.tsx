@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, BarChart3, Scale, Activity } from "lucide-react";
+import { FitnessChart } from "@/components/analytics/fitness-chart";
+import { TrainingLoadChart } from "@/components/analytics/training-load-chart";
+import { MuscleHeatmap } from "@/components/analytics/muscle-heatmap";
+import { ProgressPhotos } from "@/components/analytics/progress-photos";
 
 const MUSCLE_GROUP_COLORS: Record<string, string> = {
   chest: "bg-red-500",
@@ -484,17 +488,70 @@ function WorkoutFrequency() {
   );
 }
 
+// --- Muscle Volume Section ---
+
+function MuscleVolumeSection() {
+  const { data, isLoading } = trpc.analytics.muscleVolume.useQuery({ days: 7 });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Muscle Volume Heatmap</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse rounded-md bg-muted h-48 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <MuscleHeatmap data={data ?? []} />;
+}
+
 // --- Main Page ---
 
 export default function StatsPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-4 p-4">
+    <div className="mx-auto max-w-2xl space-y-6 p-4">
       <h1 className="text-2xl font-bold">Stats</h1>
 
+      {/* Training Status */}
+      <section>
+        <h2 className="text-lg font-semibold mb-2">Training Status</h2>
+        <FitnessChart />
+      </section>
+
+      {/* Training Load */}
+      <section>
+        <h2 className="text-lg font-semibold mb-2">Training Load</h2>
+        <TrainingLoadChart />
+      </section>
+
+      {/* Muscle Volume */}
+      <section>
+        <h2 className="text-lg font-semibold mb-2">Muscle Volume</h2>
+        <MuscleVolumeSection />
+      </section>
+
+      {/* Workout Frequency & Weekly Volume */}
       <WorkoutFrequency />
       <WeeklyVolumeChart />
-      <BodyWeightTrend />
-      <BodyWeightLogForm />
+
+      {/* Body Weight */}
+      <section>
+        <h2 className="text-lg font-semibold mb-2">Body Weight</h2>
+        <div className="space-y-4">
+          <BodyWeightTrend />
+          <BodyWeightLogForm />
+        </div>
+      </section>
+
+      {/* Progress Photos */}
+      <section>
+        <h2 className="text-lg font-semibold mb-2">Progress Photos</h2>
+        <ProgressPhotos />
+      </section>
     </div>
   );
 }
