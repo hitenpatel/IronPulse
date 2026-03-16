@@ -12,4 +12,5 @@ export * from "./schemas/template";
 export * from "./schemas/stripe";
 export * from "./schemas/sync";
 export * from "./schemas/integration";
+export * from "./schemas/progress-photo";
 export * from "./hr-zones";
