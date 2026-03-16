@@ -19,7 +19,7 @@ export function TrainingLoadChart() {
     );
   }
 
-  const rows = data ?? [];
+  const rows = data?.data ?? [];
 
   if (rows.length === 0) {
     return (

@@ -506,7 +506,7 @@ function MuscleVolumeSection() {
     );
   }
 
-  return <MuscleHeatmap data={data ?? []} />;
+  return <MuscleHeatmap data={data?.data ?? []} />;
 }
 
 // --- Main Page ---

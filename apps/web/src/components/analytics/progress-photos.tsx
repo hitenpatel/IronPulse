@@ -27,7 +27,9 @@ export function ProgressPhotos() {
 
     try {
       // Get presigned upload URL
-      const { uploadUrl, photoUrl } = await getUploadUrl.mutateAsync();
+      const { uploadUrl, photoUrl } = await getUploadUrl.mutateAsync({
+        contentType: file.type || "image/jpeg",
+      });
 
       // Upload file to S3
       await fetch(uploadUrl, {
@@ -110,7 +112,7 @@ export function ProgressPhotos() {
 function PhotoCard({
   photo,
 }: {
-  photo: { id: string; photoUrl: string; date: string; notes?: string | null };
+  photo: { id: string; photoUrl: string; date: string | Date; notes?: string | null };
 }) {
   const utils = trpc.useUtils();
   const deletePhoto = trpc.progressPhoto.delete.useMutation({
@@ -140,7 +142,7 @@ function PhotoCard({
         </div>
       </div>
       <p className="text-[10px] text-muted-foreground mt-1">
-        {new Date(photo.date + "T00:00:00").toLocaleDateString(undefined, {
+        {new Date(photo.date).toLocaleDateString(undefined, {
           month: "short",
           day: "numeric",
           year: "numeric",
