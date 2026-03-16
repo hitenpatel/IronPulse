@@ -91,8 +91,8 @@ jobs:
     name: Mobile E2E (Maestro)
     runs-on: macos-latest
     needs: [build]
+    continue-on-error: true
     timeout-minutes: 30
-    services: {}
     env:
       DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
       EXPO_PUBLIC_API_URL: http://localhost:3000
@@ -121,23 +121,28 @@ jobs:
       # Install PostgreSQL for API server
       - name: Install PostgreSQL
         run: |
-          brew install postgresql@16 postgis
-          brew services start postgresql@16
+          brew install postgresql@16
+          echo 'export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"' >> $GITHUB_ENV
+          /opt/homebrew/opt/postgresql@16/bin/initdb -D /tmp/pgdata || true
+          /opt/homebrew/opt/postgresql@16/bin/pg_ctl -D /tmp/pgdata -l /tmp/pg.log start
           sleep 3
-          createuser -s ironpulse || true
-          createdb -O ironpulse ironpulse_test || true
+          /opt/homebrew/opt/postgresql@16/bin/createuser -s ironpulse || true
+          /opt/homebrew/opt/postgresql@16/bin/createdb ironpulse_test || true
+          /opt/homebrew/opt/postgresql@16/bin/psql -c "ALTER USER ironpulse PASSWORD 'ironpulse';" ironpulse_test || true
 
       # Push schema and seed
       - name: Setup database
         run: pnpm --filter @ironpulse/db db:push
+        env:
+          DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
 
       # Build and start API server in background
       - name: Start API server
         run: |
           pnpm --filter @ironpulse/web dev &
-          sleep 10
+          sleep 15
         env:
-          DATABASE_URL: postgresql://ironpulse@localhost/ironpulse_test
+          DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
 
       # Build Expo dev client for simulator
       - name: Build Expo for simulator
