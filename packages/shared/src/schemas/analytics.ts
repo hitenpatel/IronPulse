@@ -20,3 +20,13 @@ export const activityCalendarSchema = z.object({
   year: z.number().int().min(2020).max(2100),
 });
 export type ActivityCalendarInput = z.infer<typeof activityCalendarSchema>;
+
+export const trainingLoadSchema = z.object({
+  days: z.number().int().min(1).max(90).default(30),
+});
+export type TrainingLoadInput = z.infer<typeof trainingLoadSchema>;
+
+export const muscleVolumeSchema = z.object({
+  days: z.number().int().min(1).max(90).default(7),
+});
+export type MuscleVolumeInput = z.infer<typeof muscleVolumeSchema>;

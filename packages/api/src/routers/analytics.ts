@@ -3,8 +3,15 @@ import {
   personalRecordsSchema,
   bodyWeightTrendSchema,
   activityCalendarSchema,
+  trainingLoadSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import {
+  calculateCardioLoad,
+  calculateStrengthLoad,
+  calculateEWMA,
+  calculateTrainingStatus,
+} from "../lib/training-load";
 
 export const analyticsRouter = createTRPCRouter({
   weeklyVolume: protectedProcedure
@@ -169,4 +176,207 @@ export const analyticsRouter = createTRPCRouter({
 
       return { days };
     }),
+
+  trainingLoad: protectedProcedure
+    .input(trainingLoadSchema)
+    .query(async ({ ctx, input }) => {
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+
+      const [workoutSets, cardioSessions] = await Promise.all([
+        ctx.db.exerciseSet.findMany({
+          where: {
+            completed: true,
+            weightKg: { gt: 0 },
+            reps: { gt: 0 },
+            workoutExercise: {
+              workout: {
+                userId: ctx.user.id,
+                completedAt: { gte: since },
+              },
+            },
+          },
+          select: {
+            weightKg: true,
+            reps: true,
+            workoutExercise: {
+              select: {
+                workout: { select: { completedAt: true } },
+              },
+            },
+          },
+        }),
+        ctx.db.cardioSession.findMany({
+          where: {
+            userId: ctx.user.id,
+            startedAt: { gte: since },
+          },
+          select: {
+            startedAt: true,
+            durationSeconds: true,
+            avgHeartRate: true,
+          },
+        }),
+      ]);
+
+      // Aggregate per day
+      const dayMap = new Map<
+        string,
+        { cardioLoad: number; strengthLoad: number }
+      >();
+
+      function getOrCreate(date: string) {
+        if (!dayMap.has(date))
+          dayMap.set(date, { cardioLoad: 0, strengthLoad: 0 });
+        return dayMap.get(date)!;
+      }
+
+      for (const set of workoutSets) {
+        const date =
+          set.workoutExercise.workout.completedAt!
+            .toISOString()
+            .split("T")[0]!;
+        const volume = Number(set.weightKg) * (set.reps ?? 0);
+        getOrCreate(date).strengthLoad += volume;
+      }
+
+      // Convert raw volume to strength load units
+      for (const [, day] of dayMap) {
+        day.strengthLoad = calculateStrengthLoad(day.strengthLoad);
+      }
+
+      for (const session of cardioSessions) {
+        const date = session.startedAt.toISOString().split("T")[0]!;
+        getOrCreate(date).cardioLoad += calculateCardioLoad(
+          session.durationSeconds,
+          session.avgHeartRate,
+        );
+      }
+
+      const data = Array.from(dayMap.entries())
+        .map(([date, loads]) => ({
+          date,
+          cardioLoad: Math.round(loads.cardioLoad * 10) / 10,
+          strengthLoad: Math.round(loads.strengthLoad * 10) / 10,
+          totalLoad:
+            Math.round((loads.cardioLoad + loads.strengthLoad) * 10) / 10,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      return { data };
+    }),
+
+  fitnessStatus: protectedProcedure.query(async ({ ctx }) => {
+    const since = new Date();
+    since.setDate(since.getDate() - 60);
+
+    const [workoutSets, cardioSessions] = await Promise.all([
+      ctx.db.exerciseSet.findMany({
+        where: {
+          completed: true,
+          weightKg: { gt: 0 },
+          reps: { gt: 0 },
+          workoutExercise: {
+            workout: {
+              userId: ctx.user.id,
+              completedAt: { gte: since },
+            },
+          },
+        },
+        select: {
+          weightKg: true,
+          reps: true,
+          workoutExercise: {
+            select: {
+              workout: { select: { completedAt: true } },
+            },
+          },
+        },
+      }),
+      ctx.db.cardioSession.findMany({
+        where: {
+          userId: ctx.user.id,
+          startedAt: { gte: since },
+        },
+        select: {
+          startedAt: true,
+          durationSeconds: true,
+          avgHeartRate: true,
+        },
+      }),
+    ]);
+
+    // Build daily load map
+    const dayMap = new Map<string, number>();
+
+    for (const set of workoutSets) {
+      const date =
+        set.workoutExercise.workout.completedAt!
+          .toISOString()
+          .split("T")[0]!;
+      const volume = Number(set.weightKg) * (set.reps ?? 0);
+      dayMap.set(date, (dayMap.get(date) ?? 0) + volume);
+    }
+
+    // Convert raw volume to strength load
+    for (const [date, vol] of dayMap) {
+      dayMap.set(date, calculateStrengthLoad(vol));
+    }
+
+    for (const session of cardioSessions) {
+      const date = session.startedAt.toISOString().split("T")[0]!;
+      const load = calculateCardioLoad(
+        session.durationSeconds,
+        session.avgHeartRate,
+      );
+      dayMap.set(date, (dayMap.get(date) ?? 0) + load);
+    }
+
+    // Fill all 60 days (including zeros) and sort
+    const dailyLoads: { date: string; load: number }[] = [];
+    for (let i = 59; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const date = d.toISOString().split("T")[0]!;
+      dailyLoads.push({ date, load: dayMap.get(date) ?? 0 });
+    }
+
+    const atl = calculateEWMA(dailyLoads, 7);
+    const ctl = calculateEWMA(dailyLoads, 42);
+    const { tsb, status } = calculateTrainingStatus(atl, ctl);
+
+    // Build history with rolling ATL/CTL for each day
+    const history: { date: string; atl: number; ctl: number; tsb: number }[] =
+      [];
+    let rollingAtl = dailyLoads[0].load;
+    let rollingCtl = dailyLoads[0].load;
+    const alphaAtl = 2 / (7 + 1);
+    const alphaCtl = 2 / (42 + 1);
+
+    for (let i = 0; i < dailyLoads.length; i++) {
+      if (i === 0) {
+        rollingAtl = dailyLoads[0].load;
+        rollingCtl = dailyLoads[0].load;
+      } else {
+        rollingAtl =
+          alphaAtl * dailyLoads[i].load + (1 - alphaAtl) * rollingAtl;
+        rollingCtl =
+          alphaCtl * dailyLoads[i].load + (1 - alphaCtl) * rollingCtl;
+      }
+      history.push({
+        date: dailyLoads[i].date,
+        atl: Math.round(rollingAtl * 10) / 10,
+        ctl: Math.round(rollingCtl * 10) / 10,
+        tsb: Math.round((rollingCtl - rollingAtl) * 10) / 10,
+      });
+    }
+
+    return {
+      atl: Math.round(atl * 10) / 10,
+      ctl: Math.round(ctl * 10) / 10,
+      tsb: Math.round(tsb * 10) / 10,
+      status,
+      history,
+    };
+  }),
 });
