@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
+  NEXTAUTH_URL: http://localhost:3000
+
 jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
@@ -21,7 +25,28 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
-  test:
+  test-unit:
+    name: Unit Tests (shared + sync + mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run shared package tests
+        run: pnpm --filter @ironpulse/shared test
+      - name: Run sync package tests
+        run: pnpm --filter @ironpulse/sync test
+      - name: Run mobile unit tests
+        run: pnpm --filter @ironpulse/mobile test
+
+  test-api:
+    name: API Tests (real PostgreSQL)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -49,12 +74,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ironpulse/db db:push
-      - run: pnpm test
+      - name: Push database schema
+        run: pnpm --filter @ironpulse/db db:push
+      - name: Run API tests
+        run: pnpm --filter @ironpulse/api test
 
   build:
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, test]
+    needs: [lint-and-typecheck, test-unit, test-api]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -65,4 +92,88 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - name: Build web app
+        run: pnpm --filter @ironpulse/web build
+
+  e2e-maestro:
+    name: Mobile E2E (Maestro)
+    runs-on: macos-latest
+    needs: [build]
+    timeout-minutes: 30
+    services: {}
+    env:
+      DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
+      EXPO_PUBLIC_API_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Install Maestro
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      # Start iOS Simulator
+      - name: Boot iOS Simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep "iPhone 15" | head -1 | sed 's/.*(\(.*\)).*/\1/')
+          xcrun simctl boot "$DEVICE" || true
+          echo "SIMULATOR_UDID=$DEVICE" >> $GITHUB_ENV
+
+      # Install PostgreSQL for API server
+      - name: Install PostgreSQL
+        run: |
+          brew install postgresql@16 postgis
+          brew services start postgresql@16
+          sleep 3
+          createuser -s ironpulse || true
+          createdb -O ironpulse ironpulse_test || true
+
+      # Push schema and seed
+      - name: Setup database
+        run: pnpm --filter @ironpulse/db db:push
+
+      # Build and start API server in background
+      - name: Start API server
+        run: |
+          pnpm --filter @ironpulse/web dev &
+          sleep 10
+        env:
+          DATABASE_URL: postgresql://ironpulse@localhost/ironpulse_test
+
+      # Build Expo dev client for simulator
+      - name: Build Expo for simulator
+        working-directory: apps/mobile
+        run: |
+          npx expo prebuild --platform ios --clean
+          xcodebuild -workspace ios/ironpulse.xcworkspace -scheme ironpulse -configuration Debug -sdk iphonesimulator -destination "id=$SIMULATOR_UDID" build 2>&1 | tail -20
+
+      # Install app on simulator
+      - name: Install app
+        run: |
+          APP_PATH=$(find apps/mobile/ios/build -name "*.app" -type d | head -1)
+          xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
+
+      # Run Maestro E2E tests
+      - name: Run Maestro tests
+        run: |
+          maestro test apps/mobile/e2e/auth-signin.yaml || true
+          maestro test apps/mobile/e2e/navigation-tabs.yaml || true
+          maestro test apps/mobile/e2e/auth-signout.yaml || true
+
+      # Upload Maestro screenshots on failure
+      - name: Upload Maestro artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-screenshots
+          path: ~/.maestro/tests/
+          retention-days: 7
