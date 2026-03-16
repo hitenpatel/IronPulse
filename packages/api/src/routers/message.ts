@@ -5,6 +5,7 @@ import {
   markReadSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { notifyNewMessage } from "../lib/notifications";
 
 async function hasCoachAthleteRelationship(
   db: any,
@@ -53,6 +54,17 @@ export const messageRouter = createTRPCRouter({
           content: input.content,
         },
       });
+
+      // Push notification (fire-and-forget)
+      const sender = await ctx.db.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { name: true },
+      });
+      notifyNewMessage(
+        ctx.db,
+        input.receiverId,
+        sender?.name ?? "Someone"
+      ).catch(() => {});
 
       return message;
     }),

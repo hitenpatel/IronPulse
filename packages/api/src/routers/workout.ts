@@ -13,6 +13,7 @@ import {
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
 import { createFeedItem } from "../lib/feed";
+import { notifyNewPR } from "../lib/notifications";
 
 export const workoutRouter = createTRPCRouter({
   create: protectedProcedure
@@ -301,6 +302,26 @@ export const workoutRouter = createTRPCRouter({
       await createFeedItem(ctx.db, ctx.user.id, "workout", input.workoutId);
       for (const pr of newPRs) {
         await createFeedItem(ctx.db, ctx.user.id, "pr", pr.setId);
+      }
+
+      // Push notifications for new PRs (fire-and-forget)
+      if (newPRs.length > 0) {
+        const exerciseIds = [...new Set(newPRs.map((pr) => pr.exerciseId))];
+        const exercises = await ctx.db.exercise.findMany({
+          where: { id: { in: exerciseIds } },
+          select: { id: true, name: true },
+        });
+        const nameMap = new Map(exercises.map((e: { id: string; name: string }) => [e.id, e.name]));
+        for (const pr of newPRs) {
+          const exerciseName = nameMap.get(pr.exerciseId) ?? "Unknown";
+          const label = pr.type === "1rm" ? "Est. 1RM" : "Volume";
+          notifyNewPR(
+            ctx.db,
+            ctx.user.id,
+            exerciseName,
+            `${label}: ${pr.value}`
+          ).catch(() => {});
+        }
       }
 
       return { workout, newPRs };
