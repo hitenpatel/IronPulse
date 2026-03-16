@@ -17,4 +17,5 @@ export * from "./schemas/social";
 export * from "./schemas/challenge";
 export * from "./schemas/coach";
 export * from "./schemas/program";
+export * from "./schemas/message";
 export * from "./hr-zones";

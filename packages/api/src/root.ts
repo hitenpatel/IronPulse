@@ -15,6 +15,7 @@ import { socialRouter } from "./routers/social";
 import { challengeRouter } from "./routers/challenge";
 import { coachRouter } from "./routers/coach";
 import { programRouter } from "./routers/program";
+import { messageRouter } from "./routers/message";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -33,6 +34,7 @@ export const appRouter = createTRPCRouter({
   challenge: challengeRouter,
   coach: coachRouter,
   program: programRouter,
+  message: messageRouter,
 });
 
 export type AppRouter = typeof appRouter;
