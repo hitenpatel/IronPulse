@@ -385,7 +385,7 @@ export const analyticsRouter = createTRPCRouter({
   streak: protectedProcedure.query(async ({ ctx }) => {
     const [workouts, cardioSessions] = await Promise.all([
       ctx.db.workout.findMany({
-        where: { userId: ctx.user.id, startedAt: { not: null } },
+        where: { userId: ctx.user.id },
         select: { startedAt: true },
       }),
       ctx.db.cardioSession.findMany({

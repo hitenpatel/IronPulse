@@ -9,7 +9,7 @@ export const exportRouter = createTRPCRouter({
       const workouts = await ctx.db.workout.findMany({
         where: { userId: ctx.user.id },
         include: {
-          exercises: {
+          workoutExercises: {
             include: {
               exercise: { select: { name: true } },
               sets: true,
@@ -26,7 +26,7 @@ export const exportRouter = createTRPCRouter({
       // Flatten to CSV rows
       const rows: Record<string, unknown>[] = [];
       for (const w of workouts) {
-        for (const we of w.exercises) {
+        for (const we of w.workoutExercises) {
           for (const set of we.sets) {
             rows.push({
               workout_id: w.id,
@@ -37,7 +37,7 @@ export const exportRouter = createTRPCRouter({
               set_number: set.setNumber,
               weight_kg: set.weightKg?.toString() ?? "",
               reps: set.reps ?? "",
-              duration_seconds: set.durationSeconds ?? "",
+              rpe: set.rpe?.toString() ?? "",
               completed: set.completed,
             });
           }
@@ -92,7 +92,6 @@ export const exportRouter = createTRPCRouter({
         date: m.date.toISOString().split("T")[0],
         weight_kg: m.weightKg?.toString() ?? "",
         body_fat_pct: m.bodyFatPct?.toString() ?? "",
-        notes: m.notes ?? "",
       }));
 
       const csv = rows.length > 0 ? stringify(rows, { header: true }) : "";
@@ -104,7 +103,7 @@ export const exportRouter = createTRPCRouter({
       ctx.db.workout.findMany({
         where: { userId: ctx.user.id },
         include: {
-          exercises: {
+          workoutExercises: {
             include: {
               exercise: { select: { name: true } },
               sets: true,
