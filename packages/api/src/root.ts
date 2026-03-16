@@ -13,6 +13,7 @@ import { integrationRouter } from "./routers/integration";
 import { progressPhotoRouter } from "./routers/progress-photo";
 import { socialRouter } from "./routers/social";
 import { challengeRouter } from "./routers/challenge";
+import { coachRouter } from "./routers/coach";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
   progressPhoto: progressPhotoRouter,
   social: socialRouter,
   challenge: challengeRouter,
+  coach: coachRouter,
 });
 
 export type AppRouter = typeof appRouter;

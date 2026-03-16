@@ -15,4 +15,5 @@ export * from "./schemas/integration";
 export * from "./schemas/progress-photo";
 export * from "./schemas/social";
 export * from "./schemas/challenge";
+export * from "./schemas/coach";
 export * from "./hr-zones";
