@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Dumbbell, BarChart3, Target, ClipboardList, Check } from "lucide-react";
+import { ChevronLeft, Dumbbell, BarChart3, Target, ClipboardList, Check, Share2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { formatDuration, formatVolume } from "@/lib/format";
@@ -40,6 +40,7 @@ export default function WorkoutDetailPage() {
   const { data: sets } = useWorkoutSets(id);
 
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
   const saveTemplate = trpc.template.saveFromWorkout.useMutation({
     onSuccess: () => {
       setSaved(true);
@@ -120,23 +121,41 @@ export default function WorkoutDetailPage() {
         </Link>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">{workout.name || "Workout"}</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={saveTemplate.isPending || saved}
-            onClick={() =>
-              saveTemplate.mutate({
-                workoutId: id,
-                name: workout.name || "Workout Template",
-              })
-            }
-          >
-            {saved ? (
-              <><Check className="mr-1.5 h-4 w-4" /> Saved</>
-            ) : (
-              <><ClipboardList className="mr-1.5 h-4 w-4" /> Save as Template</>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = `${window.location.origin}/share/workout/${id}`;
+                navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? (
+                <><Check className="mr-1.5 h-4 w-4" /> Copied!</>
+              ) : (
+                <><Share2 className="mr-1.5 h-4 w-4" /> Share</>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saveTemplate.isPending || saved}
+              onClick={() =>
+                saveTemplate.mutate({
+                  workoutId: id,
+                  name: workout.name || "Workout Template",
+                })
+              }
+            >
+              {saved ? (
+                <><Check className="mr-1.5 h-4 w-4" /> Saved</>
+              ) : (
+                <><ClipboardList className="mr-1.5 h-4 w-4" /> Save as Template</>
+              )}
+            </Button>
+          </div>
         </div>
         <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
           <span>{formatFullDate(new Date(workout.started_at))}</span>
