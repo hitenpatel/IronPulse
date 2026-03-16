@@ -20,3 +20,4 @@ export * from "./schemas/program";
 export * from "./schemas/message";
 export * from "./schemas/export";
 export * from "./hr-zones";
+export * from "./streaks";
