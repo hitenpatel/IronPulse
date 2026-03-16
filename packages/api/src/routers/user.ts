@@ -1,5 +1,7 @@
 import {
   completeOnboardingSchema,
+  registerPushTokenSchema,
+  unregisterPushTokenSchema,
   updateProfileSchema,
   uploadAvatarSchema,
 } from "@ironpulse/shared";
@@ -82,5 +84,34 @@ export const userRouter = createTRPCRouter({
       });
 
       return { uploadUrl, key };
+    }),
+
+  registerPushToken: protectedProcedure
+    .input(registerPushTokenSchema)
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.pushToken.upsert({
+        where: { token: input.token },
+        create: {
+          userId: ctx.user.id,
+          token: input.token,
+          platform: input.platform,
+        },
+        update: {
+          userId: ctx.user.id,
+          platform: input.platform,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  unregisterPushToken: protectedProcedure
+    .input(unregisterPushTokenSchema)
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.pushToken.deleteMany({
+        where: { token: input.token, userId: ctx.user.id },
+      });
+
+      return { success: true };
     }),
 });

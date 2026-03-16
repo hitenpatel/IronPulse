@@ -11,3 +11,14 @@ export const uploadAvatarSchema = z.object({
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 export type UploadAvatarInput = z.infer<typeof uploadAvatarSchema>;
+
+export const registerPushTokenSchema = z.object({
+  token: z.string().min(1),
+  platform: z.string().min(1),
+});
+export type RegisterPushTokenInput = z.infer<typeof registerPushTokenSchema>;
+
+export const unregisterPushTokenSchema = z.object({
+  token: z.string().min(1),
+});
+export type UnregisterPushTokenInput = z.infer<typeof unregisterPushTokenSchema>;

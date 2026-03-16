@@ -46,6 +46,7 @@ model User {
   coachAssignments   ProgramAssignment[]    @relation("CoachAssignments")
   sentMessages       Message[]              @relation("SentMessages")
   receivedMessages   Message[]              @relation("ReceivedMessages")
+  pushTokens         PushToken[]
 
   @@map("users")
 }
@@ -438,6 +439,18 @@ model ProgramAssignment {
   coach   User     @relation("CoachAssignments", fields: [coachId], references: [id], onDelete: Cascade)
 
   @@map("program_assignments")
+}
+
+model PushToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_tokens")
 }
 
 model Message {
