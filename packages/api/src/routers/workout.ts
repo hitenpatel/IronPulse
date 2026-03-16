@@ -12,6 +12,7 @@ import {
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
+import { createFeedItem } from "../lib/feed";
 
 export const workoutRouter = createTRPCRouter({
   create: protectedProcedure
@@ -295,6 +296,12 @@ export const workoutRouter = createTRPCRouter({
         input.workoutId,
         completedAt
       );
+
+      // Create activity feed items
+      await createFeedItem(ctx.db, ctx.user.id, "workout", input.workoutId);
+      for (const pr of newPRs) {
+        await createFeedItem(ctx.db, ctx.user.id, "pr", pr.setId);
+      }
 
       return { workout, newPRs };
     }),
