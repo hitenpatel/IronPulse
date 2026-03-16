@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signOut } from "next-auth/react";
-import { User, Settings, LogOut, Check, Link2 } from "lucide-react";
+import { User, Settings, LogOut, Check, Link2, Users } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.user.me.useQuery();
+  const { data: followersData } = trpc.social.followers.useQuery();
+  const { data: followingData } = trpc.social.following.useQuery();
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       utils.user.me.invalidate();
@@ -123,6 +125,30 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Member since</span>
             <span className="font-medium">{memberSince}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Social Stats */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="h-5 w-5" />
+            <h3 className="font-semibold">Social</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold">
+                {followersData?.followers.length ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">Followers</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold">
+                {followingData?.following.length ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">Following</p>
+            </div>
           </div>
         </CardContent>
       </Card>
