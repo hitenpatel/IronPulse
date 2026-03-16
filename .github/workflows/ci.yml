@@ -102,6 +102,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     timeout-minutes: 60
+    env:
+      # Baked into APK at build time — 10.0.2.2 is Android emulator's alias for host localhost
+      EXPO_PUBLIC_API_URL: http://10.0.2.2:3000
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

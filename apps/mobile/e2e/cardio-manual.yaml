@@ -1,6 +1,7 @@
 appId: com.ironpulse.app
 ---
 - launchApp
+- waitForAnimationToEnd
 - tapOn: "Email"
 - inputText: "test@example.com"
 - tapOn: "Password"

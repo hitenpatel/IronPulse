@@ -1,6 +1,7 @@
 appId: com.ironpulse.app
 ---
 - launchApp
+- waitForAnimationToEnd
 - tapOn: "Sign Up"
 - tapOn: "Name"
 - inputText: "Test User"
