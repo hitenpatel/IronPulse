@@ -158,6 +158,23 @@ export default function ProfileScreen() {
         </Pressable>
 
         <Pressable
+          onPress={() => router.push("/settings/subscription" as any)}
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
+              Subscription
+            </Text>
+            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
+          </Card>
+        </Pressable>
+
+        <Pressable
           onPress={() => router.push("/coach" as any)}
           style={{
             flexDirection: "row",
