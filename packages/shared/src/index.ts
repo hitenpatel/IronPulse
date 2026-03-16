@@ -14,4 +14,5 @@ export * from "./schemas/sync";
 export * from "./schemas/integration";
 export * from "./schemas/progress-photo";
 export * from "./schemas/social";
+export * from "./schemas/challenge";
 export * from "./hr-zones";
