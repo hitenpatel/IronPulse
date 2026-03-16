@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
-import { Dumbbell, Activity, Calendar, ChevronRight, Timer } from "lucide-react-native";
+import { Dumbbell, Activity, Calendar, ChevronRight, Timer, Rss, Trophy } from "lucide-react-native";
 import { formatElapsed } from "@/lib/workout-utils";
 
 const colors = {
@@ -345,6 +345,8 @@ export default function DashboardScreen() {
           { label: "Workout History", route: "/history/workouts" },
           { label: "Cardio History", route: "/history/cardio" },
           { label: "Calendar", route: "/calendar" },
+          { label: "Feed", route: "/feed" },
+          { label: "Challenges", route: "/challenges" },
         ].map((link) => (
           <Pressable
             key={link.route}
