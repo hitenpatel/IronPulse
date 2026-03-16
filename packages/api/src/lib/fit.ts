@@ -101,6 +101,6 @@ export function extractFitData(parsed: ParsedFit): FitData {
 
 export async function parseFitFile(buffer: Buffer): Promise<FitData> {
   const parser = new FitParser({ force: true });
-  const parsed = await parser.parseAsync(buffer);
+  const parsed = await parser.parseAsync(buffer as Buffer<ArrayBuffer>);
   return extractFitData(parsed as unknown as ParsedFit);
 }
