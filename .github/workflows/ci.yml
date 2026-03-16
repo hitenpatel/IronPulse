@@ -258,10 +258,34 @@ jobs:
             # Install pre-built APK
             adb install $GITHUB_WORKSPACE/apk/app-debug.apk
 
-            # Run Maestro tests
+            # Run Maestro tests — all CI-compatible flows
+            # Auth flows
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signup.yaml || true
+
+            # Navigation
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/history-navigation.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/integrations.yaml || true
+
+            # Workout flows
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-empty.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-cancel.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-template.yaml || true
+
+            # Cardio flows
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-manual.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-cancel.yaml || true
+
+            # Stats
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/weight-log.yaml || true
+
+            # Skipped (require device-specific capabilities):
+            # cardio-gps-start.yaml — needs location permissions
+            # sync-offline.yaml — needs airplane mode toggle
+            # healthkit.yaml — iOS only
+            # googlefit.yaml — needs Google Play Services
 
       # Upload test results
       - name: Upload Maestro results
