@@ -40,6 +40,12 @@ model User {
   activityFeedItems  ActivityFeedItem[]
   createdChallenges  Challenge[]
   challengeParticipations ChallengeParticipant[]
+  coachProfile       CoachProfile?
+  coachPrograms      Program[]              @relation("CoachPrograms")
+  athleteAssignments ProgramAssignment[]    @relation("AthleteAssignments")
+  coachAssignments   ProgramAssignment[]    @relation("CoachAssignments")
+  sentMessages       Message[]              @relation("SentMessages")
+  receivedMessages   Message[]              @relation("ReceivedMessages")
 
   @@map("users")
 }
@@ -383,4 +389,68 @@ model ChallengeParticipant {
 
   @@unique([challengeId, userId])
   @@map("challenge_participants")
+}
+
+// ─── Coaching ──────────────────────────────────────────
+
+model CoachProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  bio         String?
+  specialties String[]
+  imageUrl    String?  @map("image_url")
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("coach_profiles")
+}
+
+model Program {
+  id            String   @id @default(uuid()) @db.Uuid
+  coachId       String   @map("coach_id") @db.Uuid
+  name          String
+  description   String?
+  durationWeeks Int      @map("duration_weeks")
+  schedule      Json
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  coach       User                @relation("CoachPrograms", fields: [coachId], references: [id], onDelete: Cascade)
+  assignments ProgramAssignment[]
+
+  @@map("programs")
+}
+
+model ProgramAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  programId String?  @map("program_id") @db.Uuid
+  athleteId String   @map("athlete_id") @db.Uuid
+  coachId   String   @map("coach_id") @db.Uuid
+  startedAt DateTime @default(now()) @map("started_at")
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+  athlete User     @relation("AthleteAssignments", fields: [athleteId], references: [id], onDelete: Cascade)
+  coach   User     @relation("CoachAssignments", fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@map("program_assignments")
+}
+
+model Message {
+  id         String    @id @default(uuid()) @db.Uuid
+  senderId   String    @map("sender_id") @db.Uuid
+  receiverId String    @map("receiver_id") @db.Uuid
+  content    String
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, createdAt])
+  @@map("messages")
 }
