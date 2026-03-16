@@ -36,7 +36,8 @@
         "isAndroidBackgroundLocationEnabled": true
       }],
       "expo-task-manager",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-in-app-purchases"
     ]
   }
 }
