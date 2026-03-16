@@ -174,10 +174,10 @@ function ClientDetail({ athleteId }: { athleteId: string }) {
                   <div>
                     <p className="font-medium text-sm capitalize">{c.type}</p>
                     <p className="text-xs text-muted-foreground">
-                      {c.distanceKm
-                        ? `${Number(c.distanceKm).toFixed(1)} km`
+                      {c.distanceMeters
+                        ? `${(Number(c.distanceMeters) / 1000).toFixed(1)} km`
                         : ""}
-                      {c.durationMin ? ` · ${c.durationMin} min` : ""}
+                      {c.durationSeconds ? ` · ${Math.round(c.durationSeconds / 60)} min` : ""}
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground">
@@ -211,16 +211,9 @@ function ClientDetail({ athleteId }: { athleteId: string }) {
                   <div>
                     <p className="font-medium text-sm">{pr.exercise.name}</p>
                     <div className="flex gap-2">
-                      {pr.weightKg && (
-                        <Badge variant="secondary" className="text-xs">
-                          {Number(pr.weightKg)} kg
-                        </Badge>
-                      )}
-                      {pr.reps && (
-                        <Badge variant="secondary" className="text-xs">
-                          {pr.reps} reps
-                        </Badge>
-                      )}
+                      <Badge variant="secondary" className="text-xs">
+                        {Number(pr.value)} {pr.type === "weight" ? "kg" : pr.type}
+                      </Badge>
                     </div>
                   </div>
                   <span className="text-xs text-muted-foreground">
