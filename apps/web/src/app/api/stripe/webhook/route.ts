@@ -33,9 +33,10 @@ export async function POST(request: Request) {
           ? session.customer
           : session.customer?.id;
       if (customerId) {
+        const tier = session.metadata?.tier ?? "athlete";
         await db.user.updateMany({
           where: { stripeCustomerId: customerId },
-          data: { subscriptionStatus: "active" },
+          data: { subscriptionStatus: "active", tier },
         });
       }
       break;

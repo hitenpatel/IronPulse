@@ -38,15 +38,17 @@ export const stripeRouter = createTRPCRouter({
         });
       }
 
+      const tier = input.tier ?? "athlete";
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: "subscription",
+        metadata: { userId: ctx.user.id, tier },
         line_items: [{ price: input.priceId, quantity: 1 }],
         success_url: input.successUrl,
         cancel_url: input.cancelUrl,
         subscription_data: {
           trial_period_days: 14,
-          metadata: { userId: ctx.user.id },
+          metadata: { userId: ctx.user.id, tier: input.tier ?? "athlete" },
         },
       });
 
