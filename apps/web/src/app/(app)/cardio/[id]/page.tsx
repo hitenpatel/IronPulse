@@ -12,6 +12,12 @@ import {
   formatDistance,
   formatPace,
 } from "@/lib/format";
+import {
+  getHRZone,
+  getHRZoneName,
+  getHRZoneColor,
+  getZoneBoundaries,
+} from "@ironpulse/shared";
 
 const RouteMap = dynamic(
   () => import("@/components/cardio/route-map"),
@@ -174,6 +180,51 @@ export default function CardioDetailPage() {
               )}
             </div>
           </Card>
+
+          {session.avg_heart_rate != null && session.max_heart_rate != null && (() => {
+            const zone = getHRZone(Number(session.avg_heart_rate), Number(session.max_heart_rate));
+            const zoneName = getHRZoneName(zone);
+            const zoneColor = getHRZoneColor(zone);
+            const boundaries = getZoneBoundaries(Number(session.max_heart_rate));
+            return (
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <p className="text-xs text-muted-foreground">Heart Rate Zone</p>
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+                    style={{ backgroundColor: zoneColor }}
+                  >
+                    Zone {zone} — {zoneName}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {boundaries.map((b) => (
+                    <div
+                      key={b.zone}
+                      className="flex-1 rounded-sm transition-all"
+                      style={{
+                        height: b.zone === zone ? 24 : 12,
+                        backgroundColor: b.zone === zone ? b.color : `${b.color}33`,
+                        border: b.zone === zone ? `2px solid ${b.color}` : "none",
+                        alignSelf: "flex-end",
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="flex gap-1 mt-1">
+                  {boundaries.map((b) => (
+                    <p
+                      key={b.zone}
+                      className="flex-1 text-center text-[10px] text-muted-foreground"
+                      style={{ fontWeight: b.zone === zone ? 700 : 400 }}
+                    >
+                      Z{b.zone}
+                    </p>
+                  ))}
+                </div>
+              </Card>
+            );
+          })()}
 
           {session.notes && (
             <Card className="p-6">
