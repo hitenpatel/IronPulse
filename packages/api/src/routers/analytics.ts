@@ -5,6 +5,7 @@ import {
   activityCalendarSchema,
   trainingLoadSchema,
   muscleVolumeSchema,
+  calculateStreak,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
@@ -379,6 +380,29 @@ export const analyticsRouter = createTRPCRouter({
       status,
       history,
     };
+  }),
+
+  streak: protectedProcedure.query(async ({ ctx }) => {
+    const [workouts, cardioSessions] = await Promise.all([
+      ctx.db.workout.findMany({
+        where: { userId: ctx.user.id, startedAt: { not: null } },
+        select: { startedAt: true },
+      }),
+      ctx.db.cardioSession.findMany({
+        where: { userId: ctx.user.id },
+        select: { startedAt: true },
+      }),
+    ]);
+
+    const dates: string[] = [];
+    for (const w of workouts) {
+      if (w.startedAt) dates.push(w.startedAt.toISOString().split("T")[0]!);
+    }
+    for (const c of cardioSessions) {
+      dates.push(c.startedAt.toISOString().split("T")[0]!);
+    }
+
+    return calculateStreak(dates);
   }),
 
   muscleVolume: protectedProcedure

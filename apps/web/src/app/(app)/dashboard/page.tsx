@@ -4,11 +4,13 @@ import { Greeting } from "@/components/dashboard/greeting";
 import { QuickStart } from "@/components/dashboard/quick-start";
 import { WeeklyStats } from "@/components/dashboard/weekly-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { StreakBadge } from "@/components/dashboard/streak-badge";
 
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <Greeting />
+      <StreakBadge />
       <QuickStart />
       <Link
         href="/calendar"

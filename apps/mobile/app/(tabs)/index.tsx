@@ -3,8 +3,9 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
+import { trpc } from "@/lib/trpc";
 import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
-import { Dumbbell, Activity, Calendar, ChevronRight, Timer, Rss, Trophy, Users, MessageCircle } from "lucide-react-native";
+import { Dumbbell, Activity, Calendar, ChevronRight, Timer, Rss, Trophy, Users, MessageCircle, Flame } from "lucide-react-native";
 import { formatElapsed } from "@/lib/workout-utils";
 
 const colors = {
@@ -42,6 +43,11 @@ export default function DashboardScreen() {
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
   const router = useRouter();
+  const [streak, setStreak] = React.useState<{ current: number; longest: number } | null>(null);
+
+  React.useEffect(() => {
+    trpc.analytics.streak.query().then(setStreak).catch(() => {});
+  }, []);
 
   // Weekly summary
   const weeklySummary = useMemo(() => {
@@ -107,6 +113,33 @@ export default function DashboardScreen() {
         <Text style={{ color: colors.mutedFg, marginTop: 4, marginBottom: 20 }}>
           Ready to train?
         </Text>
+
+        {/* Streak badge */}
+        {streak && streak.current > 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              backgroundColor: colors.muted,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.accent,
+              padding: 14,
+              marginBottom: 16,
+            }}
+          >
+            <Flame size={24} color="#f97316" />
+            <View>
+              <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 16 }}>
+                {streak.current} day streak
+              </Text>
+              <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
+                Longest: {streak.longest} days
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Quick-start cards */}
         <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
