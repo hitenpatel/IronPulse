@@ -121,10 +121,9 @@ describe("auth.signIn", () => {
 });
 
 describe("auth.getSession", () => {
-  it("returns null when not authenticated", async () => {
+  it("throws UNAUTHORIZED when not authenticated", async () => {
     const caller = authCaller();
-    const result = await caller.getSession();
-    expect(result.session).toBeNull();
+    await expect(caller.getSession()).rejects.toThrow("UNAUTHORIZED");
   });
 
   it("returns session when authenticated", async () => {
