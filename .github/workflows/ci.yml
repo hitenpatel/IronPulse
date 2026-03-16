@@ -91,7 +91,7 @@ jobs:
     name: Mobile E2E (Maestro + Android)
     runs-on: ubuntu-latest
     needs: [build]
-    timeout-minutes: 45
+    timeout-minutes: 60
     services:
       postgres:
         image: postgis/postgis:16-3.4-alpine
@@ -186,8 +186,9 @@ jobs:
             sleep 15
 
             # Build and install Android app
-            cd apps/mobile/android
-            ./gradlew assembleDebug
+            cd $GITHUB_WORKSPACE/apps/mobile/android
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon
             adb install app/build/outputs/apk/debug/app-debug.apk
 
             # Run Maestro tests
