@@ -286,6 +286,9 @@ importers:
       bcryptjs:
         specifier: ^2.4
         version: 2.4.3
+      csv-stringify:
+        specifier: ^6.6.0
+        version: 6.6.0
       fast-xml-parser:
         specifier: ^5.5.3
         version: 5.5.3
@@ -3405,6 +3408,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  csv-stringify@6.6.0:
+    resolution: {integrity: sha512-YW32lKOmIBgbxtu3g5SaiqWNwa/9ISQt2EcgOq0+RAIFufFp9is6tqNnKahqE5kuKvrnYAzs28r+s6pXJR8Vcw==}
 
   data-urls@7.0.0:
     resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
@@ -9956,6 +9962,8 @@ snapshots:
       lru-cache: 11.2.6
 
   csstype@3.2.3: {}
+
+  csv-stringify@6.6.0: {}
 
   data-urls@7.0.0:
     dependencies:
