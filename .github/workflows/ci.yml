@@ -84,14 +84,72 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Cache Next.js build
+      - name: Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: apps/web/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            nextjs-${{ runner.os }}-
       - name: Build web app
         run: pnpm --filter @ironpulse/web build
 
-  e2e-maestro:
-    name: Mobile E2E (Maestro + Android)
+  # Build Android APK separately and cache it
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     needs: [build]
-    timeout-minutes: 90
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cache Gradle dependencies and build outputs
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-deps-${{ runner.os }}-${{ hashFiles('apps/mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-deps-${{ runner.os }}-
+
+      - name: Expo prebuild
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build APK
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --build-cache
+
+      # Upload APK as artifact for the E2E job
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 1
+
+  e2e-maestro:
+    name: Mobile E2E (Maestro)
+    runs-on: ubuntu-latest
+    needs: [build-android]
+    timeout-minutes: 30
     services:
       postgres:
         image: postgis/postgis:16-3.4-alpine
@@ -116,26 +174,19 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-
-      # Setup JDK for Android
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # Cache Gradle
-      - name: Gradle cache
-        uses: actions/cache@v4
+      - run: pnpm install --frozen-lockfile
+
+      # Download pre-built APK
+      - name: Download APK
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            apps/mobile/android/.gradle
-            apps/mobile/android/app/build
-          key: gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/android/gradle/wrapper/gradle-wrapper.properties', 'apps/mobile/android/build.gradle', 'apps/mobile/android/app/build.gradle') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+          name: android-apk
+          path: apk/
 
       # Install Maestro
       - name: Install Maestro
@@ -143,7 +194,7 @@ jobs:
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-      # Enable KVM for Android emulator acceleration
+      # Enable KVM
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -177,12 +228,7 @@ jobs:
       - name: Setup database
         run: pnpm --filter @ironpulse/db db:push
 
-      # Build Android app
-      - name: Prebuild Android
-        working-directory: apps/mobile
-        run: npx expo prebuild --platform android --clean
-
-      # Start API server, boot emulator, build app, run Maestro
+      # Run emulator, install APK, start API, run Maestro
       - name: Run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -198,14 +244,10 @@ jobs:
             pnpm --filter @ironpulse/web dev &
             sleep 15
 
-            # Build and install Android app
-            cd $GITHUB_WORKSPACE/apps/mobile/android
-            chmod +x gradlew
-            ./gradlew assembleDebug --no-daemon
-            adb install app/build/outputs/apk/debug/app-debug.apk
+            # Install pre-built APK
+            adb install $GITHUB_WORKSPACE/apk/app-debug.apk
 
             # Run Maestro tests
-            cd $GITHUB_WORKSPACE
             $HOME/.maestro/bin/maestro test apps/mobile/e2e/auth-signin.yaml --format junit --output maestro-results.xml || true
             $HOME/.maestro/bin/maestro test apps/mobile/e2e/navigation-tabs.yaml || true
             $HOME/.maestro/bin/maestro test apps/mobile/e2e/auth-signout.yaml || true
