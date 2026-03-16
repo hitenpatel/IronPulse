@@ -174,6 +174,22 @@ export default function ProfileScreen() {
           </Card>
         </Pressable>
 
+        <Card style={{ marginBottom: 16, gap: 8 }}>
+          <Text
+            style={{
+              fontSize: 10,
+              color: "hsl(215, 20%, 65%)",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            Export Data
+          </Text>
+          <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 13 }}>
+            Export your data on the web app at ironpulse.com/profile
+          </Text>
+        </Card>
+
         <Button variant="outline" onPress={signOut}>
           Sign Out
         </Button>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signOut } from "next-auth/react";
-import { User, Settings, LogOut, Check, Link2, Users } from "lucide-react";
+import { User, Settings, LogOut, Check, Link2, Users, Download } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
@@ -190,6 +190,21 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
+      {/* Export Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Export Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <ExportButton label="Export Workouts (CSV)" mutationKey="workouts" format="csv" />
+          <ExportButton label="Export Cardio (CSV)" mutationKey="cardio" format="csv" />
+          <ExportButton label="Export All (JSON)" mutationKey="allData" format="json" />
+        </CardContent>
+      </Card>
+
       {/* Connected Apps */}
       <Card>
         <CardContent className="pt-6">
@@ -216,5 +231,52 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ExportButton({
+  label,
+  mutationKey,
+  format,
+}: {
+  label: string;
+  mutationKey: "workouts" | "cardio" | "allData";
+  format: "csv" | "json";
+}) {
+  const mutation =
+    mutationKey === "allData"
+      ? trpc.export.allData.useMutation()
+      : mutationKey === "workouts"
+        ? trpc.export.workouts.useMutation()
+        : trpc.export.cardio.useMutation();
+
+  function handleExport() {
+    const input = mutationKey === "allData" ? undefined : { format };
+    (mutation.mutate as any)(input, {
+      onSuccess: (result: { data: string; mimeType: string }) => {
+        const blob = new Blob([result.data], { type: result.mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const ext = format === "csv" ? "csv" : "json";
+        a.download = `ironpulse-${mutationKey}-${new Date().toISOString().split("T")[0]}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      },
+    });
+  }
+
+  return (
+    <Button
+      variant="outline"
+      className="w-full justify-start"
+      onClick={handleExport}
+      disabled={mutation.isPending}
+    >
+      <Download className="h-4 w-4" />
+      {mutation.isPending ? "Exporting..." : label}
+    </Button>
   );
 }
