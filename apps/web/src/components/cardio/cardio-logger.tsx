@@ -9,7 +9,7 @@ import { GpxImporter } from "./gpx-importer";
 import { GpxPreview } from "./gpx-preview";
 import { CardioSummary } from "./cardio-summary";
 
-interface GpxStats {
+interface PreviewStats {
   points: { lat: number; lng: number; elevation: number | null; timestamp: Date }[];
   distanceMeters: number;
   elevationGainM: number;
@@ -17,19 +17,21 @@ interface GpxStats {
   startedAt: Date;
 }
 
-type Tab = "manual" | "gpx";
+type FileType = "gpx" | "fit";
+type Tab = "manual" | "import";
 type ManualStep = "type" | "form";
-type GpxStep = "upload" | "preview";
+type ImportStep = "upload" | "preview";
 
 export function CardioLogger() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("manual");
   const [manualStep, setManualStep] = useState<ManualStep>("type");
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [gpxStep, setGpxStep] = useState<GpxStep>("upload");
-  const [gpxPreviewData, setGpxPreviewData] = useState<{
-    gpxContent: string;
-    stats: GpxStats;
+  const [importStep, setImportStep] = useState<ImportStep>("upload");
+  const [previewData, setPreviewData] = useState<{
+    filePayload: string;
+    stats: PreviewStats;
+    fileType: FileType;
   } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [completedSession, setCompletedSession] = useState<any>(null);
@@ -51,19 +53,19 @@ export function CardioLogger() {
     setCompletedSession(session);
   }
 
-  function handleGpxPreview(gpxContent: string, stats: GpxStats) {
-    setGpxPreviewData({ gpxContent, stats });
-    setGpxStep("preview");
+  function handleFilePreview(filePayload: string, stats: PreviewStats, fileType: FileType) {
+    setPreviewData({ filePayload, stats, fileType });
+    setImportStep("preview");
   }
 
-  function handleGpxCancel() {
-    setGpxStep("upload");
-    setGpxPreviewData(null);
+  function handleImportCancel() {
+    setImportStep("upload");
+    setPreviewData(null);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function handleGpxConfirm(session: any) {
-    setCompletedSource("gpx");
+  function handleImportConfirm(session: any) {
+    setCompletedSource(previewData?.fileType ?? "gpx");
     setCompletedSession(session);
   }
 
@@ -72,8 +74,8 @@ export function CardioLogger() {
     // Reset sub-steps when switching tabs
     setManualStep("type");
     setSelectedType(null);
-    setGpxStep("upload");
-    setGpxPreviewData(null);
+    setImportStep("upload");
+    setPreviewData(null);
   }
 
   // Completion screen
@@ -81,7 +83,7 @@ export function CardioLogger() {
     return (
       <CardioSummary
         session={completedSession}
-        hasRoute={completedSource === "gpx"}
+        hasRoute={completedSource === "gpx" || completedSource === "fit"}
         onDone={() => router.push("/dashboard")}
       />
     );
@@ -103,15 +105,15 @@ export function CardioLogger() {
           Log Manually
         </button>
         <button
-          onClick={() => handleTabChange("gpx")}
+          onClick={() => handleTabChange("import")}
           className={cn(
             "flex-1 pb-2 text-center text-sm font-medium transition-colors",
-            activeTab === "gpx"
+            activeTab === "import"
               ? "border-b-2 border-foreground text-foreground"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          Import GPX
+          Import GPX / FIT
         </button>
       </div>
 
@@ -127,16 +129,17 @@ export function CardioLogger() {
         />
       )}
 
-      {/* GPX flow */}
-      {activeTab === "gpx" && gpxStep === "upload" && (
-        <GpxImporter onPreview={handleGpxPreview} />
+      {/* Import flow */}
+      {activeTab === "import" && importStep === "upload" && (
+        <GpxImporter onPreview={handleFilePreview} />
       )}
-      {activeTab === "gpx" && gpxStep === "preview" && gpxPreviewData && (
+      {activeTab === "import" && importStep === "preview" && previewData && (
         <GpxPreview
-          gpxContent={gpxPreviewData.gpxContent}
-          stats={gpxPreviewData.stats}
-          onConfirm={handleGpxConfirm}
-          onCancel={handleGpxCancel}
+          gpxContent={previewData.filePayload}
+          stats={previewData.stats}
+          fileType={previewData.fileType}
+          onConfirm={handleImportConfirm}
+          onCancel={handleImportCancel}
         />
       )}
     </div>

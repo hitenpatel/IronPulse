@@ -19,7 +19,7 @@ const CARDIO_TYPES = [
   { value: "other", label: "Other" },
 ] as const;
 
-interface GpxStats {
+interface PreviewStats {
   points: { lat: number; lng: number; elevation: number | null; timestamp: Date }[];
   distanceMeters: number;
   elevationGainM: number;
@@ -27,9 +27,12 @@ interface GpxStats {
   startedAt: Date;
 }
 
+type FileType = "gpx" | "fit";
+
 interface GpxPreviewProps {
   gpxContent: string;
-  stats: GpxStats;
+  stats: PreviewStats;
+  fileType?: FileType;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onConfirm: (session: any) => void;
   onCancel: () => void;
@@ -38,6 +41,7 @@ interface GpxPreviewProps {
 export function GpxPreview({
   gpxContent,
   stats,
+  fileType = "gpx",
   onConfirm,
   onCancel,
 }: GpxPreviewProps) {
@@ -51,13 +55,27 @@ export function GpxPreview({
     },
   });
 
+  const importFit = trpc.cardio.importFit.useMutation({
+    onSuccess: (data) => {
+      utils.cardio.list.invalidate();
+      onConfirm(data.session as unknown as Record<string, unknown>);
+    },
+  });
+
+  const isPending = importGpx.isPending || importFit.isPending;
+  const mutationError = importGpx.error || importFit.error;
+
   const mapPoints = stats.points.map((p) => ({ lat: p.lat, lng: p.lng }));
 
   function handleConfirm() {
-    importGpx.mutate({
-      gpxContent,
-      type: selectedType as "run" | "cycle" | "swim" | "hike" | "walk" | "row" | "elliptical" | "other",
-    });
+    if (fileType === "fit") {
+      importFit.mutate({ fileBase64: gpxContent });
+    } else {
+      importGpx.mutate({
+        gpxContent,
+        type: selectedType as "run" | "cycle" | "swim" | "hike" | "walk" | "row" | "elliptical" | "other",
+      });
+    }
   }
 
   return (
@@ -103,30 +121,32 @@ export function GpxPreview({
         )}
       </div>
 
-      {/* Activity type selector */}
-      <div className="mb-6">
-        <p className="mb-2 text-sm text-muted-foreground">Activity type</p>
-        <div className="flex flex-wrap gap-2">
-          {CARDIO_TYPES.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setSelectedType(value)}
-              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                selectedType === value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      {/* Activity type selector (GPX only — FIT has type from file) */}
+      {fileType === "gpx" && (
+        <div className="mb-6">
+          <p className="mb-2 text-sm text-muted-foreground">Activity type</p>
+          <div className="flex flex-wrap gap-2">
+            {CARDIO_TYPES.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSelectedType(value)}
+                className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  selectedType === value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Mutation error */}
-      {importGpx.error && (
+      {mutationError && (
         <p className="mb-4 text-sm text-destructive">
-          {importGpx.error.message}
+          {mutationError.message}
         </p>
       )}
 
@@ -137,10 +157,10 @@ export function GpxPreview({
         </Button>
         <Button
           onClick={handleConfirm}
-          disabled={importGpx.isPending}
+          disabled={isPending}
           className="flex-1"
         >
-          {importGpx.isPending ? "Importing..." : "Confirm Import"}
+          {isPending ? "Importing..." : "Confirm Import"}
         </Button>
       </div>
     </div>

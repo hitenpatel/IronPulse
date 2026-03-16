@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 
-interface GpxStats {
+interface PreviewStats {
   points: { lat: number; lng: number; elevation: number | null; timestamp: Date }[];
   distanceMeters: number;
   elevationGainM: number;
@@ -12,8 +12,10 @@ interface GpxStats {
   startedAt: Date;
 }
 
+type FileType = "gpx" | "fit";
+
 interface GpxImporterProps {
-  onPreview: (gpxContent: string, stats: GpxStats) => void;
+  onPreview: (filePayload: string, stats: PreviewStats, fileType: FileType) => void;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -25,18 +27,45 @@ export function GpxImporter({ onPreview }: GpxImporterProps) {
 
   const previewGpx = trpc.cardio.previewGpx.useMutation({
     onSuccess: (data, variables) => {
-      onPreview(variables.gpxContent, data);
+      onPreview(variables.gpxContent, data, "gpx");
     },
     onError: (err) => {
       setError(err.message);
     },
   });
 
+  const previewFit = trpc.cardio.previewFit.useMutation({
+    onSuccess: (data, variables) => {
+      const stats: PreviewStats = {
+        points: data.points.map((p) => ({
+          lat: p.lat,
+          lng: p.lng,
+          elevation: p.elevation,
+          timestamp: new Date(p.timestamp),
+        })),
+        distanceMeters: data.distanceMeters ?? 0,
+        elevationGainM: data.elevationGainM ?? 0,
+        durationSeconds: data.durationSeconds,
+        startedAt: new Date(data.startedAt),
+      };
+      onPreview(variables.fileBase64, stats, "fit");
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const isPending = previewGpx.isPending || previewFit.isPending;
+
   function handleFile(file: File) {
     setError(null);
 
-    if (!file.name.toLowerCase().endsWith(".gpx")) {
-      setError("Please select a .gpx file");
+    const name = file.name.toLowerCase();
+    const isGpx = name.endsWith(".gpx");
+    const isFit = name.endsWith(".fit");
+
+    if (!isGpx && !isFit) {
+      setError("Please select a .gpx or .fit file");
       return;
     }
 
@@ -45,15 +74,33 @@ export function GpxImporter({ onPreview }: GpxImporterProps) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      previewGpx.mutate({ gpxContent: content });
-    };
-    reader.onerror = () => {
-      setError("Failed to read file");
-    };
-    reader.readAsText(file);
+    if (isGpx) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        previewGpx.mutate({ gpxContent: content });
+      };
+      reader.onerror = () => {
+        setError("Failed to read file");
+      };
+      reader.readAsText(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]!);
+        }
+        const base64 = btoa(binary);
+        previewFit.mutate({ fileBase64: base64 });
+      };
+      reader.onerror = () => {
+        setError("Failed to read file");
+      };
+      reader.readAsArrayBuffer(file);
+    }
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -85,7 +132,7 @@ export function GpxImporter({ onPreview }: GpxImporterProps) {
       <input
         ref={inputRef}
         type="file"
-        accept=".gpx"
+        accept=".gpx,.fit"
         onChange={handleInputChange}
         className="hidden"
       />
@@ -95,23 +142,23 @@ export function GpxImporter({ onPreview }: GpxImporterProps) {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        disabled={previewGpx.isPending}
+        disabled={isPending}
         className={`flex w-full flex-col items-center gap-3 rounded-xl border-2 border-dashed px-4 py-12 transition-colors ${
           isDragging
             ? "border-primary bg-primary/5"
             : "border-border hover:border-foreground"
-        } ${previewGpx.isPending ? "opacity-50" : ""}`}
+        } ${isPending ? "opacity-50" : ""}`}
       >
-        {previewGpx.isPending ? (
+        {isPending ? (
           <>
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
-            <span className="text-sm text-muted-foreground">Parsing GPX file...</span>
+            <span className="text-sm text-muted-foreground">Parsing file...</span>
           </>
         ) : (
           <>
             <Upload className="h-8 w-8 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Drop a .gpx file or click to browse
+              Drop a .gpx or .fit file, or click to browse
             </span>
           </>
         )}
