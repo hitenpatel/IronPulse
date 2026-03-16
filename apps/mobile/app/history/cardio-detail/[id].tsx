@@ -11,6 +11,12 @@ import {
   metersToKm,
 } from "@/lib/geo-utils";
 import { trpc } from "@/lib/trpc";
+import {
+  getHRZone,
+  getHRZoneName,
+  getHRZoneColor,
+  getZoneBoundaries,
+} from "@ironpulse/shared";
 
 const colors = {
   background: "hsl(224, 71%, 4%)",
@@ -187,6 +193,66 @@ export default function CardioDetailScreen() {
             }
           />
         </View>
+
+        {/* Heart Rate Zone */}
+        {session.avg_heart_rate != null && session.max_heart_rate != null && (() => {
+          const zone = getHRZone(Number(session.avg_heart_rate), Number(session.max_heart_rate));
+          const zoneName = getHRZoneName(zone);
+          const zoneColor = getHRZoneColor(zone);
+          const boundaries = getZoneBoundaries(Number(session.max_heart_rate));
+          return (
+            <View
+              style={{
+                backgroundColor: colors.muted,
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 12,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <Text style={{ color: colors.mutedFg, fontSize: 13, fontWeight: "600" }}>
+                  Heart Rate Zone
+                </Text>
+                <View style={{ backgroundColor: zoneColor, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 }}>
+                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
+                    Zone {zone} — {zoneName}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: "row", gap: 3, alignItems: "flex-end" }}>
+                {boundaries.map((b) => (
+                  <View
+                    key={b.zone}
+                    style={{
+                      flex: 1,
+                      height: b.zone === zone ? 24 : 12,
+                      borderRadius: 3,
+                      backgroundColor: b.zone === zone ? b.color : `${b.color}33`,
+                      borderWidth: b.zone === zone ? 2 : 0,
+                      borderColor: b.zone === zone ? b.color : "transparent",
+                    }}
+                  />
+                ))}
+              </View>
+              <View style={{ flexDirection: "row", gap: 3, marginTop: 4 }}>
+                {boundaries.map((b) => (
+                  <Text
+                    key={b.zone}
+                    style={{
+                      flex: 1,
+                      textAlign: "center",
+                      fontSize: 10,
+                      color: colors.mutedFg,
+                      fontWeight: b.zone === zone ? "700" : "400",
+                    }}
+                  >
+                    Z{b.zone}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Notes */}
         {session.notes != null && session.notes.length > 0 && (
