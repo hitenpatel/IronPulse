@@ -14,5 +14,13 @@ module.exports = {
         android: null,
       },
     },
+    // expo-in-app-purchases has compilation issues with newer SDKs
+    // IAP functionality accessed via JS wrapper, native module not needed for E2E
+    'expo-in-app-purchases': {
+      platforms: {
+        android: null,
+        ios: null,
+      },
+    },
   },
 };
