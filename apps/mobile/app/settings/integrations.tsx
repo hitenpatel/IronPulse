@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { Stack } from "expo-router";
-import { Heart } from "lucide-react-native";
+import { Heart, Watch } from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
@@ -112,12 +112,27 @@ export default function IntegrationsScreen() {
   }, [fetchConnections]);
 
   const stravaConnection = connections.find((c) => c.provider === "strava");
+  const garminConnection = connections.find((c) => c.provider === "garmin");
 
   const handleConnect = () => {
     // Open the web OAuth flow in the browser. The web callback handles token
     // exchange. User switches back to the app and the connection appears on
     // next data refresh.
     Linking.openURL(`${API_BASE_URL}/api/strava/connect`);
+  };
+
+  const handleGarminConnect = () => {
+    Linking.openURL(`${API_BASE_URL}/api/garmin/connect`);
+  };
+
+  const handleGarminDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await trpc.integration.disconnectProvider.mutate({ provider: "garmin" });
+      await fetchConnections();
+    } finally {
+      setDisconnecting(false);
+    }
   };
 
   const handleDisconnect = async () => {
@@ -239,6 +254,115 @@ export default function IntegrationsScreen() {
                     borderRadius: 8,
                     alignItems: "center",
                     backgroundColor: "#FC4C02",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    Connect
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </Card>
+
+          <Card style={{ gap: 12, marginTop: 16 }}>
+            {/* Garmin Connect header */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <Watch size={20} color="#007CC3" />
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "600",
+                  color: "hsl(213, 31%, 91%)",
+                }}
+              >
+                Garmin Connect
+              </Text>
+            </View>
+
+            {garminConnection ? (
+              <View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: "#22c55e",
+                    }}
+                  />
+                  <Text style={{ color: "#22c55e", fontWeight: "600" }}>
+                    Connected
+                  </Text>
+                </View>
+
+                {garminConnection.lastSyncedAt && (
+                  <Text
+                    style={{
+                      color: "hsl(215, 20%, 65%)",
+                      fontSize: 12,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Last synced{" "}
+                    {new Date(garminConnection.lastSyncedAt).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      },
+                    )}
+                  </Text>
+                )}
+
+                <Pressable
+                  onPress={handleGarminDisconnect}
+                  disabled={disconnecting}
+                  style={{
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    backgroundColor: "hsl(0, 63%, 31%)",
+                    opacity: disconnecting ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
+                    {disconnecting ? "Disconnecting..." : "Disconnect"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View>
+                <Text
+                  style={{
+                    color: "hsl(215, 20%, 65%)",
+                    marginBottom: 12,
+                  }}
+                >
+                  Not connected
+                </Text>
+
+                <Pressable
+                  onPress={handleGarminConnect}
+                  style={{
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    backgroundColor: "#007CC3",
                   }}
                 >
                   <Text style={{ color: "#fff", fontWeight: "600" }}>

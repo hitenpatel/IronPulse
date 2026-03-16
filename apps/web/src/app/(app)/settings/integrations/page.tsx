@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link2, Link2Off } from "lucide-react";
+import { Link2, Link2Off, Watch } from "lucide-react";
 
 export default function IntegrationsPage() {
   const { data: connections, isLoading } =
@@ -22,6 +22,7 @@ export default function IntegrationsPage() {
   });
 
   const stravaConnection = connections?.find((c) => c.provider === "strava");
+  const garminConnection = connections?.find((c) => c.provider === "garmin");
 
   return (
     <div className="space-y-6">
@@ -30,6 +31,7 @@ export default function IntegrationsPage() {
       {isLoading ? (
         <div className="h-[140px] animate-pulse rounded-xl bg-muted" />
       ) : (
+        <>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -87,6 +89,59 @@ export default function IntegrationsPage() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Watch className="h-6 w-6 text-[#007CC3]" aria-hidden />
+              Garmin Connect
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {garminConnection ? (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-medium text-green-500">
+                    <Link2 className="h-4 w-4" />
+                    Connected
+                  </div>
+                  {garminConnection.lastSyncedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Last synced{" "}
+                      {new Date(
+                        garminConnection.lastSyncedAt,
+                      ).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={disconnect.isPending}
+                  onClick={() =>
+                    disconnect.mutate({ provider: "garmin" })
+                  }
+                >
+                  <Link2Off className="h-4 w-4" />
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Not connected</p>
+                <Button asChild size="sm">
+                  <a href="/api/garmin/connect">Connect</a>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        </>
       )}
     </div>
   );
