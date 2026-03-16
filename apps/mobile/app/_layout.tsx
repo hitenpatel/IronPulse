@@ -11,6 +11,7 @@ import {
   createMobileConnector,
 } from "@/lib/powersync";
 import { syncFromHealthKit, isHealthKitConnected } from "@/lib/healthkit";
+import { syncFromGoogleFit, isGoogleFitConnected } from "@/lib/googlefit";
 
 function RootNavigator() {
   const { user, isLoading } = useAuth();
@@ -24,6 +25,13 @@ function RootNavigator() {
         if (connected) {
           syncFromHealthKit(db, user.id).catch((err) =>
             console.error("HealthKit sync error:", err)
+          );
+        }
+      });
+      isGoogleFitConnected().then((connected) => {
+        if (connected) {
+          syncFromGoogleFit(db, user.id).catch((err) =>
+            console.error("Google Fit sync error:", err)
           );
         }
       });

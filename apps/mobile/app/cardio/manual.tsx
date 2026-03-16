@@ -14,6 +14,7 @@ import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
 import { ChevronDown, ChevronUp, X } from "lucide-react-native";
 import { writeCardioToHealthKit } from "@/lib/healthkit";
+import { writeCardioToGoogleFit } from "@/lib/googlefit";
 
 const colors = {
   bg: "hsl(224, 71%, 4%)",
@@ -84,6 +85,14 @@ export default function ManualCardioScreen() {
       );
 
       writeCardioToHealthKit({
+        type: type!,
+        started_at: now,
+        duration_seconds: totalSeconds,
+        distance_meters: distanceMeters || null,
+        calories: calories ? parseInt(calories) : null,
+      }).catch(() => {});
+
+      writeCardioToGoogleFit({
         type: type!,
         started_at: now,
         duration_seconds: totalSeconds,

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { WeightChart } from "@/components/stats/weight-chart";
 import { writeWeightToHealthKit } from "@/lib/healthkit";
+import { writeWeightToGoogleFit } from "@/lib/googlefit";
 
 export default function StatsScreen() {
   const { data: metrics } = useBodyMetrics();
@@ -36,6 +37,7 @@ export default function StatsScreen() {
     );
 
     writeWeightToHealthKit(parseFloat(weight), today).catch(() => {});
+    writeWeightToGoogleFit(parseFloat(weight), new Date()).catch(() => {});
 
     setWeight("");
   };
