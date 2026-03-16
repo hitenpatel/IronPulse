@@ -4,6 +4,7 @@ import {
   bodyWeightTrendSchema,
   activityCalendarSchema,
   trainingLoadSchema,
+  muscleVolumeSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
@@ -379,4 +380,63 @@ export const analyticsRouter = createTRPCRouter({
       history,
     };
   }),
+
+  muscleVolume: protectedProcedure
+    .input(muscleVolumeSchema)
+    .query(async ({ ctx, input }) => {
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+
+      const sets = await ctx.db.exerciseSet.findMany({
+        where: {
+          completed: true,
+          weightKg: { gt: 0 },
+          reps: { gt: 0 },
+          workoutExercise: {
+            workout: {
+              userId: ctx.user.id,
+              completedAt: { gte: since },
+            },
+          },
+        },
+        select: {
+          weightKg: true,
+          reps: true,
+          workoutExercise: {
+            select: {
+              exercise: {
+                select: { primaryMuscles: true },
+              },
+            },
+          },
+        },
+      });
+
+      const muscleMap = new Map<string, number>();
+
+      for (const set of sets) {
+        const volume = Number(set.weightKg) * (set.reps ?? 0);
+        for (const muscle of set.workoutExercise.exercise.primaryMuscles) {
+          muscleMap.set(muscle, (muscleMap.get(muscle) ?? 0) + volume);
+        }
+      }
+
+      const totalVolume = Array.from(muscleMap.values()).reduce(
+        (sum, v) => sum + v,
+        0,
+      );
+
+      const data = Array.from(muscleMap.entries())
+        .map(([muscle, volume]) => ({
+          muscle,
+          volume: Math.round(volume),
+          percentage:
+            totalVolume > 0
+              ? Math.round((volume / totalVolume) * 1000) / 10
+              : 0,
+        }))
+        .sort((a, b) => b.volume - a.volume);
+
+      return { data };
+    }),
 });
