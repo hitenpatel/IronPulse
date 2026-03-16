@@ -49,3 +49,14 @@ export const previewGpxSchema = z.object({
   gpxContent: z.string().max(10_000_000),
 });
 export type PreviewGpxInput = z.infer<typeof previewGpxSchema>;
+
+export const previewFitSchema = z.object({
+  fileBase64: z.string(),
+});
+export type PreviewFitInput = z.infer<typeof previewFitSchema>;
+
+export const importFitSchema = z.object({
+  fileBase64: z.string(),
+  notes: z.string().optional(),
+});
+export type ImportFitInput = z.infer<typeof importFitSchema>;

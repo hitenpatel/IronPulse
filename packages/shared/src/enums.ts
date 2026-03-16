@@ -95,6 +95,7 @@ export const CardioSource = {
   MANUAL: "manual",
   GPS: "gps",
   GPX: "gpx",
+  FIT: "fit",
   GARMIN: "garmin",
   STRAVA: "strava",
 } as const;

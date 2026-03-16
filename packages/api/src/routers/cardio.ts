@@ -5,10 +5,13 @@ import {
   completeGpsSessionSchema,
   importGpxSchema,
   previewGpxSchema,
+  previewFitSchema,
+  importFitSchema,
   cursorPaginationSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { parseGpx, haversineDistance } from "../lib/gpx";
+import { parseFitFile } from "../lib/fit";
 
 export const cardioRouter = createTRPCRouter({
   create: protectedProcedure
@@ -205,6 +208,73 @@ export const cardioRouter = createTRPCRouter({
         select: {
           id: true, type: true, source: true, startedAt: true,
           durationSeconds: true, distanceMeters: true, elevationGainM: true,
+        },
+      });
+
+      return { session };
+    }),
+
+  previewFit: protectedProcedure
+    .input(previewFitSchema)
+    .mutation(async ({ input }) => {
+      const buffer = Buffer.from(input.fileBase64, "base64");
+      const fitData = await parseFitFile(buffer);
+      return {
+        type: fitData.type,
+        startedAt: fitData.startedAt,
+        durationSeconds: fitData.durationSeconds,
+        distanceMeters: fitData.distanceMeters,
+        elevationGainM: fitData.elevationGainM,
+        avgHeartRate: fitData.avgHeartRate,
+        maxHeartRate: fitData.maxHeartRate,
+        calories: fitData.calories,
+        pointCount: fitData.points.length,
+        points: fitData.points.map((p) => ({
+          lat: p.latitude,
+          lng: p.longitude,
+          elevation: p.altitude,
+          timestamp: p.timestamp,
+        })),
+      };
+    }),
+
+  importFit: protectedProcedure
+    .input(importFitSchema)
+    .mutation(async ({ ctx, input }) => {
+      const buffer = Buffer.from(input.fileBase64, "base64");
+      const fitData = await parseFitFile(buffer);
+
+      const session = await ctx.db.cardioSession.create({
+        data: {
+          userId: ctx.user.id,
+          type: fitData.type,
+          source: "fit",
+          startedAt: fitData.startedAt,
+          durationSeconds: fitData.durationSeconds,
+          ...(fitData.distanceMeters != null && { distanceMeters: fitData.distanceMeters }),
+          ...(fitData.elevationGainM != null && { elevationGainM: fitData.elevationGainM }),
+          ...(fitData.avgHeartRate != null && { avgHeartRate: fitData.avgHeartRate }),
+          ...(fitData.maxHeartRate != null && { maxHeartRate: fitData.maxHeartRate }),
+          ...(fitData.calories != null && { calories: fitData.calories }),
+          ...(input.notes !== undefined && { notes: input.notes }),
+          ...(fitData.points.length > 0 && {
+            routePoints: {
+              createMany: {
+                data: fitData.points.map((p) => ({
+                  latitude: p.latitude,
+                  longitude: p.longitude,
+                  elevationM: p.altitude,
+                  heartRate: p.heartRate,
+                  timestamp: p.timestamp,
+                })),
+              },
+            },
+          }),
+        },
+        select: {
+          id: true, type: true, source: true, startedAt: true,
+          durationSeconds: true, distanceMeters: true, elevationGainM: true,
+          avgHeartRate: true, maxHeartRate: true, calories: true, notes: true,
         },
       });
 
