@@ -15,6 +15,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { formatDuration, formatDistance, formatPace } from "@/lib/format";
+import {
+  getHRZone,
+  getHRZoneName,
+  getHRZoneColor,
+  getZoneBoundaries,
+} from "@ironpulse/shared";
 
 const RouteMap = dynamic(() => import("./route-map"), { ssr: false });
 
@@ -127,6 +133,38 @@ export function CardioSummary({ session, hasRoute, onDone }: CardioSummaryProps)
                 <span>{session.maxHeartRate} bpm</span>
               </div>
             )}
+            {session.avgHeartRate && session.maxHeartRate && (() => {
+              const zone = getHRZone(session.avgHeartRate, session.maxHeartRate);
+              const zoneName = getHRZoneName(zone);
+              const zoneColor = getHRZoneColor(zone);
+              const boundaries = getZoneBoundaries(session.maxHeartRate);
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-muted-foreground">HR Zone</span>
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
+                      style={{ backgroundColor: zoneColor }}
+                    >
+                      Zone {zone} — {zoneName}
+                    </span>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {boundaries.map((b) => (
+                      <div
+                        key={b.zone}
+                        className="flex-1 rounded-sm"
+                        style={{
+                          height: b.zone === zone ? 16 : 8,
+                          backgroundColor: b.zone === zone ? b.color : `${b.color}33`,
+                          alignSelf: "flex-end",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             {session.calories && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Calories</span>

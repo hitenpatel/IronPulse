@@ -20,6 +20,12 @@ import {
   metersToKm,
   metersToMiles,
 } from "@/lib/geo-utils";
+import {
+  getHRZone,
+  getHRZoneName,
+  getHRZoneColor,
+  getZoneBoundaries,
+} from "@ironpulse/shared";
 
 const colors = {
   bg: "hsl(224, 71%, 4%)",
@@ -191,6 +197,48 @@ export default function SummaryScreen() {
             </View>
           </View>
         )}
+
+        {/* Heart Rate Zone */}
+        {session.avg_heart_rate != null && session.max_heart_rate != null && (() => {
+          const zone = getHRZone(Number(session.avg_heart_rate), Number(session.max_heart_rate));
+          const zoneName = getHRZoneName(zone);
+          const zoneColor = getHRZoneColor(zone);
+          const boundaries = getZoneBoundaries(Number(session.max_heart_rate));
+          return (
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: 16,
+                padding: 20,
+                marginBottom: 16,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <Text style={{ fontSize: 11, fontWeight: "500", color: colors.muted, textTransform: "uppercase" }}>
+                  HR Zone
+                </Text>
+                <View style={{ backgroundColor: zoneColor, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 }}>
+                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+                    Zone {zone} — {zoneName}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: "row", gap: 3, alignItems: "flex-end" }}>
+                {boundaries.map((b) => (
+                  <View
+                    key={b.zone}
+                    style={{
+                      flex: 1,
+                      height: b.zone === zone ? 20 : 10,
+                      borderRadius: 3,
+                      backgroundColor: b.zone === zone ? b.color : `${b.color}33`,
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Notes */}
         {session.notes ? (
