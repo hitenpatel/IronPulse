@@ -88,14 +88,27 @@ jobs:
         run: pnpm --filter @ironpulse/web build
 
   e2e-maestro:
-    name: Mobile E2E (Maestro)
-    runs-on: macos-latest
+    name: Mobile E2E (Maestro + Android)
+    runs-on: ubuntu-latest
     needs: [build]
-    continue-on-error: true
-    timeout-minutes: 30
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_USER: ironpulse
+          POSTGRES_PASSWORD: ironpulse
+          POSTGRES_DB: ironpulse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ironpulse"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
-      EXPO_PUBLIC_API_URL: http://localhost:3000
+      EXPO_PUBLIC_API_URL: http://10.0.2.2:3000
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -105,70 +118,91 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # Setup JDK for Android
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       # Install Maestro
       - name: Install Maestro
         run: |
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-      # Start iOS Simulator
-      - name: Boot iOS Simulator
+      # Enable KVM for Android emulator acceleration
+      - name: Enable KVM
         run: |
-          DEVICE=$(xcrun simctl list devices available | grep "iPhone 15" | head -1 | sed 's/.*(\(.*\)).*/\1/')
-          xcrun simctl boot "$DEVICE" || true
-          echo "SIMULATOR_UDID=$DEVICE" >> $GITHUB_ENV
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
-      # Install PostgreSQL for API server
-      - name: Install PostgreSQL
-        run: |
-          brew install postgresql@16
-          echo 'export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"' >> $GITHUB_ENV
-          /opt/homebrew/opt/postgresql@16/bin/initdb -D /tmp/pgdata || true
-          /opt/homebrew/opt/postgresql@16/bin/pg_ctl -D /tmp/pgdata -l /tmp/pg.log start
-          sleep 3
-          /opt/homebrew/opt/postgresql@16/bin/createuser -s ironpulse || true
-          /opt/homebrew/opt/postgresql@16/bin/createdb ironpulse_test || true
-          /opt/homebrew/opt/postgresql@16/bin/psql -c "ALTER USER ironpulse PASSWORD 'ironpulse';" ironpulse_test || true
+      # Cache AVD
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api-34-${{ runner.os }}
 
-      # Push schema and seed
+      # Create AVD if not cached
+      - name: Create AVD
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: echo "AVD created"
+
+      # Push database schema
       - name: Setup database
         run: pnpm --filter @ironpulse/db db:push
-        env:
-          DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
 
-      # Build and start API server in background
-      - name: Start API server
-        run: |
-          pnpm --filter @ironpulse/web dev &
-          sleep 15
-        env:
-          DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
-
-      # Build Expo dev client for simulator
-      - name: Build Expo for simulator
+      # Build Android app
+      - name: Prebuild Android
         working-directory: apps/mobile
-        run: |
-          npx expo prebuild --platform ios --clean
-          xcodebuild -workspace ios/ironpulse.xcworkspace -scheme ironpulse -configuration Debug -sdk iphonesimulator -destination "id=$SIMULATOR_UDID" build 2>&1 | tail -20
+        run: npx expo prebuild --platform android --clean
 
-      # Install app on simulator
-      - name: Install app
-        run: |
-          APP_PATH=$(find apps/mobile/ios/build -name "*.app" -type d | head -1)
-          xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
+      # Start API server, boot emulator, build app, run Maestro
+      - name: Run E2E tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            # Start API server in background
+            cd $GITHUB_WORKSPACE
+            pnpm --filter @ironpulse/web dev &
+            sleep 15
 
-      # Run Maestro E2E tests
-      - name: Run Maestro tests
-        run: |
-          maestro test apps/mobile/e2e/auth-signin.yaml || true
-          maestro test apps/mobile/e2e/navigation-tabs.yaml || true
-          maestro test apps/mobile/e2e/auth-signout.yaml || true
+            # Build and install Android app
+            cd apps/mobile/android
+            ./gradlew assembleDebug
+            adb install app/build/outputs/apk/debug/app-debug.apk
 
-      # Upload Maestro screenshots on failure
-      - name: Upload Maestro artifacts
-        if: failure()
+            # Run Maestro tests
+            cd $GITHUB_WORKSPACE
+            $HOME/.maestro/bin/maestro test apps/mobile/e2e/auth-signin.yaml --format junit --output maestro-results.xml || true
+            $HOME/.maestro/bin/maestro test apps/mobile/e2e/navigation-tabs.yaml || true
+            $HOME/.maestro/bin/maestro test apps/mobile/e2e/auth-signout.yaml || true
+
+      # Upload test results
+      - name: Upload Maestro results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-screenshots
-          path: ~/.maestro/tests/
+          name: maestro-results
+          path: |
+            maestro-results.xml
+            ~/.maestro/tests/
           retention-days: 7
