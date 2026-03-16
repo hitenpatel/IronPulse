@@ -1,10 +1,22 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ClipboardList, MessageSquare, Crown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  ClipboardList,
+  MessageSquare,
+  Crown,
+  Pencil,
+  Check,
+  ExternalLink,
+} from "lucide-react";
 
 export default function CoachDashboardPage() {
   const { data, isLoading } = trpc.user.me.useQuery();
@@ -102,6 +114,160 @@ function CoachOverview() {
           </Link>
         ))}
       </div>
+
+      <EditCoachProfile />
     </div>
+  );
+}
+
+function EditCoachProfile() {
+  const utils = trpc.useUtils();
+  const { data: userData } = trpc.user.me.useQuery();
+  const { data: profile, isLoading } = trpc.coach.profile.useQuery();
+  const updateProfile = trpc.coach.updateProfile.useMutation({
+    onSuccess: () => {
+      utils.coach.profile.invalidate();
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    },
+  });
+
+  const [bio, setBio] = useState("");
+  const [specialtiesInput, setSpecialtiesInput] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle"
+  );
+
+  useEffect(() => {
+    if (profile) {
+      setBio(profile.bio ?? "");
+      setSpecialtiesInput((profile.specialties ?? []).join(", "));
+      setImageUrl(profile.imageUrl ?? "");
+      setIsPublic(profile.isPublic);
+    }
+  }, [profile]);
+
+  function handleSave() {
+    setSaveStatus("saving");
+    const specialties = specialtiesInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    updateProfile.mutate({
+      bio: bio.trim() || undefined,
+      specialties,
+      imageUrl: imageUrl.trim() || undefined,
+      isPublic,
+    });
+  }
+
+  if (isLoading) {
+    return <div className="h-[200px] animate-pulse rounded-xl bg-muted" />;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Pencil className="h-4 w-4" />
+          Coach Profile
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="coach-bio">Bio</Label>
+          <textarea
+            id="coach-bio"
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px] resize-y"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Tell athletes about yourself..."
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="coach-specialties">
+            Specialties (comma-separated)
+          </Label>
+          <Input
+            id="coach-specialties"
+            value={specialtiesInput}
+            onChange={(e) => setSpecialtiesInput(e.target.value)}
+            placeholder="e.g. Powerlifting, Hypertrophy, Running"
+          />
+          {specialtiesInput && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {specialtiesInput
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((s) => (
+                  <Badge key={s} variant="secondary" className="text-xs">
+                    {s}
+                  </Badge>
+                ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="coach-image">Profile Image URL</Label>
+          <Input
+            id="coach-image"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Public Profile</Label>
+            <p className="text-xs text-muted-foreground">
+              Allow anyone to view your coach profile
+            </p>
+          </div>
+          <Button
+            variant={isPublic ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsPublic(!isPublic)}
+          >
+            {isPublic ? "Public" : "Private"}
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={updateProfile.isPending}
+          >
+            {saveStatus === "saved" ? (
+              <>
+                <Check className="h-4 w-4" />
+                Saved!
+              </>
+            ) : saveStatus === "saving" ? (
+              "Saving..."
+            ) : (
+              "Save Profile"
+            )}
+          </Button>
+
+          {isPublic && userData?.user?.id && (
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={`/coach/${userData.user.id}`}
+                target="_blank"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Public Profile
+              </Link>
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
