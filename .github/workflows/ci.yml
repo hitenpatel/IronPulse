@@ -135,7 +135,7 @@ jobs:
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --build-cache --stacktrace 2>&1 | tail -100
+          ./gradlew assembleDebug --no-daemon --build-cache
 
       # Upload APK as artifact for the E2E job
       - name: Upload APK
