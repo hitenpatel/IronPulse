@@ -114,7 +114,8 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - run: pnpm install --frozen-lockfile
+      # Use hoisted node_modules for React Native autolinking compatibility
+      - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
 
       # Cache Gradle dependencies and build outputs
       - name: Gradle cache
