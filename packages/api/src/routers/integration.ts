@@ -3,11 +3,14 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
   disconnectProviderSchema,
   completeStravaAuthSchema,
+  completeGarminAuthSchema,
 } from "@ironpulse/shared/src/schemas/integration";
 import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
+const GARMIN_TOKEN_URL =
+  "https://connectapi.garmin.com/oauth-service/oauth/token";
 
 export const integrationRouter = createTRPCRouter({
   listConnections: protectedProcedure.query(async ({ ctx }) => {
@@ -46,7 +49,12 @@ export const integrationRouter = createTRPCRouter({
       // Best-effort token revocation — may fail if token is already invalid
       try {
         const accessToken = decryptToken(connection.accessToken);
-        await revokeToken(accessToken);
+        if (input.provider === "garmin") {
+          const { revokeGarminToken } = await import("../lib/garmin");
+          await revokeGarminToken(accessToken);
+        } else {
+          await revokeToken(accessToken);
+        }
       } catch {
         // Ignore revocation errors
       }
@@ -111,6 +119,62 @@ export const integrationRouter = createTRPCRouter({
           accessToken: encryptToken(data.access_token),
           refreshToken: encryptToken(data.refresh_token),
           tokenExpiresAt: new Date(data.expires_at * 1000),
+        },
+      });
+
+      return { success: true };
+    }),
+
+  completeGarminAuth: protectedProcedure
+    .input(completeGarminAuthSchema)
+    .mutation(async ({ ctx, input }) => {
+      const response = await fetch(GARMIN_TOKEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code: input.code,
+          redirect_uri: `${process.env.NEXTAUTH_URL}/api/garmin/callback`,
+          client_id: process.env.GARMIN_CLIENT_ID!,
+          client_secret: process.env.GARMIN_CLIENT_SECRET!,
+          code_verifier: input.codeVerifier,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Failed to exchange Garmin authorization code",
+        });
+      }
+
+      const data = (await response.json()) as {
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        user_id: string;
+      };
+
+      await ctx.db.deviceConnection.upsert({
+        where: {
+          userId_provider: {
+            userId: ctx.user.id,
+            provider: "garmin",
+          },
+        },
+        create: {
+          userId: ctx.user.id,
+          provider: "garmin",
+          providerAccountId: data.user_id,
+          accessToken: encryptToken(data.access_token),
+          refreshToken: encryptToken(data.refresh_token),
+          tokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
+        },
+        update: {
+          providerAccountId: data.user_id,
+          accessToken: encryptToken(data.access_token),
+          refreshToken: encryptToken(data.refresh_token),
+          tokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
         },
       });
 
