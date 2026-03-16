@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
 import { ChevronDown, ChevronUp, X } from "lucide-react-native";
+import { writeCardioToHealthKit } from "@/lib/healthkit";
 
 const colors = {
   bg: "hsl(224, 71%, 4%)",
@@ -81,6 +82,14 @@ export default function ManualCardioScreen() {
           now,
         ]
       );
+
+      writeCardioToHealthKit({
+        type: type!,
+        started_at: now,
+        duration_seconds: totalSeconds,
+        distance_meters: distanceMeters || null,
+        calories: calories ? parseInt(calories) : null,
+      }).catch(() => {});
 
       router.push({
         pathname: "/cardio/summary",

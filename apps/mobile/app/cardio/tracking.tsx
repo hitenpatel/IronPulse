@@ -19,6 +19,7 @@ import {
 import { haversineDistance, calculatePace } from "@/lib/geo-utils";
 import { RouteMap } from "@/components/cardio/route-map";
 import { LiveStatsBar } from "@/components/cardio/live-stats-bar";
+import { writeCardioToHealthKit } from "@/lib/healthkit";
 
 const colors = {
   bg: "hsl(224, 71%, 4%)",
@@ -223,6 +224,14 @@ export default function TrackingScreen() {
       await Haptics.notificationAsync(
         Haptics.NotificationFeedbackType.Success
       );
+
+      writeCardioToHealthKit({
+        type: type!,
+        started_at: new Date(startTimeRef.current).toISOString(),
+        duration_seconds: finalDuration,
+        distance_meters: finalDistance,
+        calories: null,
+      }).catch(() => {});
 
       router.push({
         pathname: "/cardio/summary",
