@@ -1,10 +1,16 @@
 appId: com.ironpulse.app
 ---
-- launchApp
+- launchApp:
+    clearState: true
 - waitForAnimationToEnd
+- assertVisible:
+    text: "Email"
+    timeout: 30000
 - tapOn: "Email"
 - inputText: "test@example.com"
 - tapOn: "Password"
 - inputText: "password123"
 - tapOn: "Sign In"
-- assertVisible: "Good morning"
+- assertVisible:
+    text: "Good morning"
+    timeout: 15000
