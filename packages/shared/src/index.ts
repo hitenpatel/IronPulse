@@ -13,4 +13,5 @@ export * from "./schemas/stripe";
 export * from "./schemas/sync";
 export * from "./schemas/integration";
 export * from "./schemas/progress-photo";
+export * from "./schemas/social";
 export * from "./hr-zones";
