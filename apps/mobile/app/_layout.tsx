@@ -2,9 +2,11 @@ import "../global.css";
 import { useEffect } from "react";
 import { Slot, Redirect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PowerSyncContext } from "@powersync/react";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import {
   getPowerSyncDatabase,
@@ -12,6 +14,7 @@ import {
 } from "@/lib/powersync";
 import { syncFromHealthKit, isHealthKitConnected } from "@/lib/healthkit";
 import { syncFromGoogleFit, isGoogleFitConnected } from "@/lib/googlefit";
+import { trpc } from "@/lib/trpc";
 
 function RootNavigator() {
   const { user, isLoading } = useAuth();
@@ -21,6 +24,20 @@ function RootNavigator() {
     if (user) {
       const connector = createMobileConnector();
       db.connect(connector);
+
+      // Register push notifications
+      if (Device.isDevice) {
+        Notifications.requestPermissionsAsync().then(({ status }) => {
+          if (status === "granted") {
+            Notifications.getExpoPushTokenAsync().then(({ data: token }) => {
+              trpc.user.registerPushToken
+                .mutate({ token, platform: Platform.OS })
+                .catch(() => {});
+            });
+          }
+        });
+      }
+
       isHealthKitConnected().then((connected) => {
         if (connected) {
           syncFromHealthKit(db, user.id).catch((err) =>

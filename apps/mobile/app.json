@@ -35,7 +35,8 @@
         "isIosBackgroundLocationEnabled": true,
         "isAndroidBackgroundLocationEnabled": true
       }],
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-notifications"
     ]
   }
 }
