@@ -229,7 +229,22 @@ jobs:
       - name: Setup database
         run: pnpm --filter @ironpulse/db db:push
 
-      # Run emulator, install APK, start API, run Maestro
+      # Start API server before emulator (so it's ready when Maestro runs)
+      - name: Start API server
+        run: |
+          nohup pnpm --filter @ironpulse/web dev > /tmp/api-server.log 2>&1 &
+          echo "API server starting in background..."
+          # Wait for server to be ready
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "API server ready!"
+              break
+            fi
+            echo "Waiting for API server... ($i/30)"
+            sleep 5
+          done
+
+      # Run emulator, install APK, run Maestro
       - name: Run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -240,18 +255,13 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            # Start API server in background
-            cd $GITHUB_WORKSPACE
-            pnpm --filter @ironpulse/web dev &
-            sleep 15
-
             # Install pre-built APK
             adb install $GITHUB_WORKSPACE/apk/app-debug.apk
 
             # Run Maestro tests
-            $HOME/.maestro/bin/maestro test apps/mobile/e2e/auth-signin.yaml --format junit --output maestro-results.xml || true
-            $HOME/.maestro/bin/maestro test apps/mobile/e2e/navigation-tabs.yaml || true
-            $HOME/.maestro/bin/maestro test apps/mobile/e2e/auth-signout.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml || true
 
       # Upload test results
       - name: Upload Maestro results
