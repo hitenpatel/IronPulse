@@ -34,6 +34,7 @@ model User {
   customExercises    Exercise[]         @relation("CustomExercises")
   workoutTemplates   WorkoutTemplate[]
   deviceConnections  DeviceConnection[]
+  progressPhotos     ProgressPhoto[]
 
   @@map("users")
 }
@@ -302,4 +303,20 @@ model DeviceConnection {
 
   @@unique([userId, provider])
   @@map("device_connections")
+}
+
+// ─── Progress Photos ──────────────────────────────────
+
+model ProgressPhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  photoUrl  String   @map("photo_url")
+  date      DateTime @db.Date
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("progress_photos")
 }
