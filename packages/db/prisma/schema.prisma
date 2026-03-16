@@ -35,6 +35,11 @@ model User {
   workoutTemplates   WorkoutTemplate[]
   deviceConnections  DeviceConnection[]
   progressPhotos     ProgressPhoto[]
+  following          Follow[]               @relation("UserFollowing")
+  followers          Follow[]               @relation("UserFollowers")
+  activityFeedItems  ActivityFeedItem[]
+  createdChallenges  Challenge[]
+  challengeParticipations ChallengeParticipant[]
 
   @@map("users")
 }
@@ -319,4 +324,63 @@ model ProgressPhoto {
 
   @@index([userId, date])
   @@map("progress_photos")
+}
+
+// ─── Social ─────────────────────────────────────────────
+
+model Follow {
+  id          String   @id @default(uuid()) @db.Uuid
+  followerId  String   @map("follower_id") @db.Uuid
+  followingId String   @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model ActivityFeedItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  type        String
+  referenceId String   @map("reference_id") @db.Uuid
+  visibility  String   @default("followers")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("activity_feed_items")
+}
+
+model Challenge {
+  id        String   @id @default(uuid()) @db.Uuid
+  creatorId String   @map("creator_id") @db.Uuid
+  name      String
+  type      String
+  target    Decimal  @db.Decimal(12, 2)
+  startsAt  DateTime @map("starts_at")
+  endsAt    DateTime @map("ends_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator      User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  participants ChallengeParticipant[]
+
+  @@map("challenges")
+}
+
+model ChallengeParticipant {
+  id          String   @id @default(uuid()) @db.Uuid
+  challengeId String   @map("challenge_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  progress    Decimal  @default(0) @db.Decimal(12, 2)
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@map("challenge_participants")
 }
