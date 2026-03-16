@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { WeightChart } from "@/components/stats/weight-chart";
+import { writeWeightToHealthKit } from "@/lib/healthkit";
 
 export default function StatsScreen() {
   const { data: metrics } = useBodyMetrics();
@@ -33,6 +34,8 @@ export default function StatsScreen() {
       "INSERT INTO body_metrics (id, user_id, date, weight_kg, created_at) VALUES (?, ?, ?, ?, ?)",
       [id, user?.id, today, value, now],
     );
+
+    writeWeightToHealthKit(parseFloat(weight), today).catch(() => {});
 
     setWeight("");
   };

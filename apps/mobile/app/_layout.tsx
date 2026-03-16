@@ -10,6 +10,7 @@ import {
   getPowerSyncDatabase,
   createMobileConnector,
 } from "@/lib/powersync";
+import { syncFromHealthKit, isHealthKitConnected } from "@/lib/healthkit";
 
 function RootNavigator() {
   const { user, isLoading } = useAuth();
@@ -19,6 +20,13 @@ function RootNavigator() {
     if (user) {
       const connector = createMobileConnector();
       db.connect(connector);
+      isHealthKitConnected().then((connected) => {
+        if (connected) {
+          syncFromHealthKit(db, user.id).catch((err) =>
+            console.error("HealthKit sync error:", err)
+          );
+        }
+      });
     } else {
       db.disconnect();
     }
