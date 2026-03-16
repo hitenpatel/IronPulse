@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { Stack } from "expo-router";
-import { Heart, Watch } from "lucide-react-native";
+import { Activity, Heart, Watch } from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
@@ -21,6 +21,14 @@ import {
   syncFromHealthKit,
   getLastSyncTimestamp,
 } from "@/lib/healthkit";
+import {
+  isGoogleFitAvailable,
+  isGoogleFitConnected,
+  setGoogleFitEnabled,
+  authorizeGoogleFit,
+  syncFromGoogleFit,
+  getGoogleFitLastSync,
+} from "@/lib/googlefit";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -46,6 +54,12 @@ export default function IntegrationsScreen() {
   const [hkLastSync, setHkLastSync] = useState<string | null>(null);
   const [hkLoading, setHkLoading] = useState(false);
 
+  // Google Fit state (Android only)
+  const [gfAvailable, setGfAvailable] = useState(false);
+  const [gfConnected, setGfConnected] = useState(false);
+  const [gfLastSync, setGfLastSync] = useState<string | null>(null);
+  const [gfLoading, setGfLoading] = useState(false);
+
   useEffect(() => {
     if (Platform.OS !== "ios") return;
     (async () => {
@@ -56,6 +70,20 @@ export default function IntegrationsScreen() {
         setHkConnected(connected);
         const ts = await getLastSyncTimestamp();
         setHkLastSync(ts);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    (async () => {
+      const available = isGoogleFitAvailable();
+      setGfAvailable(available);
+      if (available) {
+        const connected = await isGoogleFitConnected();
+        setGfConnected(connected);
+        const ts = await getGoogleFitLastSync();
+        setGfLastSync(ts);
       }
     })();
   }, []);
@@ -93,6 +121,42 @@ export default function IntegrationsScreen() {
       setHkLastSync(new Date().toISOString());
     } finally {
       setHkLoading(false);
+    }
+  };
+
+  const handleGfConnect = async () => {
+    setGfLoading(true);
+    try {
+      const authorized = await authorizeGoogleFit();
+      if (authorized) {
+        await setGoogleFitEnabled(true);
+        await syncFromGoogleFit(db, user!.id);
+        setGfConnected(true);
+        setGfLastSync(new Date().toISOString());
+      }
+    } finally {
+      setGfLoading(false);
+    }
+  };
+
+  const handleGfDisconnect = async () => {
+    setGfLoading(true);
+    try {
+      await setGoogleFitEnabled(false);
+      setGfConnected(false);
+      setGfLastSync(null);
+    } finally {
+      setGfLoading(false);
+    }
+  };
+
+  const handleGfSync = async () => {
+    setGfLoading(true);
+    try {
+      await syncFromGoogleFit(db, user!.id);
+      setGfLastSync(new Date().toISOString());
+    } finally {
+      setGfLoading(false);
     }
   };
 
@@ -372,6 +436,144 @@ export default function IntegrationsScreen() {
               </View>
             )}
           </Card>
+
+          {Platform.OS === "android" && gfAvailable && (
+            <Card style={{ gap: 12, marginTop: 16 }}>
+              {/* Google Fit header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <Activity size={20} color="#0F9D58" />
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "600",
+                    color: "hsl(213, 31%, 91%)",
+                  }}
+                >
+                  Google Fit
+                </Text>
+              </View>
+
+              {gfConnected ? (
+                <View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: "#22c55e",
+                      }}
+                    />
+                    <Text style={{ color: "#22c55e", fontWeight: "600" }}>
+                      Connected
+                    </Text>
+                  </View>
+
+                  {gfLastSync && (
+                    <Text
+                      style={{
+                        color: "hsl(215, 20%, 65%)",
+                        fontSize: 12,
+                        marginBottom: 12,
+                      }}
+                    >
+                      Last synced{" "}
+                      {new Date(gfLastSync).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </Text>
+                  )}
+
+                  <View style={{ gap: 8 }}>
+                    <Pressable
+                      onPress={handleGfSync}
+                      disabled={gfLoading}
+                      style={{
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        alignItems: "center",
+                        backgroundColor: "hsl(217, 33%, 17%)",
+                        opacity: gfLoading ? 0.6 : 1,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "hsl(210, 40%, 98%)",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {gfLoading ? "Syncing..." : "Sync Now"}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={handleGfDisconnect}
+                      disabled={gfLoading}
+                      style={{
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        alignItems: "center",
+                        backgroundColor: "hsl(0, 63%, 31%)",
+                        opacity: gfLoading ? 0.6 : 1,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "hsl(210, 40%, 98%)",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Disconnect
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View>
+                  <Text
+                    style={{
+                      color: "hsl(215, 20%, 65%)",
+                      marginBottom: 12,
+                    }}
+                  >
+                    Not connected
+                  </Text>
+
+                  <Pressable
+                    onPress={handleGfConnect}
+                    disabled={gfLoading}
+                    style={{
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      alignItems: "center",
+                      backgroundColor: "#0F9D58",
+                      opacity: gfLoading ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "600" }}>
+                      {gfLoading ? "Connecting..." : "Connect"}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+            </Card>
+          )}
 
           {Platform.OS === "ios" && hkAvailable && (
             <Card style={{ gap: 12, marginTop: 16 }}>
