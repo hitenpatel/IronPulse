@@ -7,7 +7,11 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.ironpulse.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "IronPulse reads your workouts and body weight from Apple Health to show them in your activity feed.",
+        "NSHealthUpdateUsageDescription": "IronPulse saves your logged workouts and weight to Apple Health."
+      }
     },
     "android": {
       "package": "com.ironpulse.app",
