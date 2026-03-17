@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signOut } from "next-auth/react";
-import { User, Settings, LogOut, Check, Link2, Users, Download } from "lucide-react";
+import { User, Settings, LogOut, Check, Link2, Users, Download, Shield } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
@@ -202,6 +202,18 @@ export default function ProfilePage() {
           <ExportButton label="Export Workouts (CSV)" mutationKey="workouts" format="csv" />
           <ExportButton label="Export Cardio (CSV)" mutationKey="cardio" format="csv" />
           <ExportButton label="Export All (JSON)" mutationKey="allData" format="json" />
+        </CardContent>
+      </Card>
+
+      {/* Security */}
+      <Card>
+        <CardContent className="pt-6">
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/profile/security">
+              <Shield className="h-4 w-4" />
+              Security (Passkeys & Password)
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 
