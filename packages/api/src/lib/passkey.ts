@@ -1,9 +1,7 @@
-import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-  generateAuthenticationOptions,
-  verifyAuthenticationResponse,
-} from "@simplewebauthn/server";
+// Dynamic import to avoid webpack bundling issues with eval/WASM
+async function getSimpleWebAuthn() {
+  return await import("@simplewebauthn/server");
+}
 import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
@@ -49,6 +47,7 @@ export async function createRegistrationOptions(
     throw new Error("Maximum passkey limit reached (5)");
   }
 
+  const { generateRegistrationOptions } = await getSimpleWebAuthn();
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID: getRpId(),
@@ -107,6 +106,7 @@ export async function verifyAndSaveRegistration(
       throw new Error("Maximum passkey limit reached (5)");
     }
 
+    const { verifyRegistrationResponse } = await getSimpleWebAuthn();
     const verification = await verifyRegistrationResponse({
       response: attestation,
       expectedChallenge: challengeRecord.challenge,
@@ -142,6 +142,7 @@ export async function verifyAndSaveRegistration(
 }
 
 export async function createLoginOptions(db: PrismaClient) {
+  const { generateAuthenticationOptions } = await getSimpleWebAuthn();
   const options = await generateAuthenticationOptions({
     rpID: getRpId(),
     userVerification: "preferred",
@@ -206,6 +207,7 @@ export async function verifyLogin(
     throw new Error("No valid challenge found");
   }
 
+  const { verifyAuthenticationResponse } = await getSimpleWebAuthn();
   const verification = await verifyAuthenticationResponse({
     response: assertion,
     expectedChallenge: challengeRecord.challenge,
