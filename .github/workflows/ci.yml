@@ -135,18 +135,18 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --clean
 
-      - name: Build APK (release — bundles JS inline, no Metro needed)
+      - name: Build debug APK
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --build-cache
+          ./gradlew assembleDebug --no-daemon --build-cache
 
       # Upload APK as artifact for the E2E job
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 1
 
   e2e-maestro:
@@ -238,7 +238,6 @@ jobs:
         run: |
           nohup pnpm --filter @ironpulse/web dev > /tmp/api-server.log 2>&1 &
           echo "API server starting in background..."
-          # Wait for server to be ready
           for i in $(seq 1 30); do
             if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
               echo "API server ready!"
@@ -247,6 +246,15 @@ jobs:
             echo "Waiting for API server... ($i/30)"
             sleep 5
           done
+
+      # Start Metro bundler for the debug APK
+      - name: Start Metro bundler
+        run: |
+          cd apps/mobile
+          nohup npx react-native start --port 8081 > /tmp/metro.log 2>&1 &
+          echo "Metro bundler starting..."
+          sleep 15
+          echo "Metro should be ready"
 
       # Run emulator, install APK, run Maestro
       - name: Run E2E tests
@@ -259,8 +267,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            # Install pre-built release APK
-            adb install $GITHUB_WORKSPACE/apk/app-release.apk
+            # Install pre-built debug APK and set up port forwarding for Metro
+            adb install $GITHUB_WORKSPACE/apk/app-debug.apk
+            adb reverse tcp:8081 tcp:8081
+            adb reverse tcp:3000 tcp:3000
 
             # Run Maestro tests — all CI-compatible flows
             # Auth flows
