@@ -217,6 +217,7 @@ export default function IntegrationsScreen() {
         {loading ? (
           <ActivityIndicator color="hsl(213, 31%, 91%)" />
         ) : (
+          <>
           <Card style={{ gap: 12 }}>
             {/* Strava header */}
             <View
@@ -711,7 +712,7 @@ export default function IntegrationsScreen() {
                 </View>
               )}
             </Card>
-          )}
+          </>
         )}
       </View>
     </>
