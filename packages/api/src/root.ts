@@ -1,5 +1,6 @@
 import { createTRPCRouter } from "./trpc";
 import { authRouter } from "./routers/auth";
+import { passkeyRouter } from "./routers/passkey";
 import { userRouter } from "./routers/user";
 import { exerciseRouter } from "./routers/exercise";
 import { workoutRouter } from "./routers/workout";
@@ -20,6 +21,7 @@ import { exportRouter } from "./routers/export";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
+  passkey: passkeyRouter,
   user: userRouter,
   exercise: exerciseRouter,
   workout: workoutRouter,
