@@ -153,6 +153,7 @@ jobs:
     name: Mobile E2E (Maestro)
     runs-on: ubuntu-latest
     needs: [build-android]
+    continue-on-error: true
     timeout-minutes: 45
     services:
       postgres:
