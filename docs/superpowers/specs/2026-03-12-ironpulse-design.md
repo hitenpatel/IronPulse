@@ -166,7 +166,7 @@ GPS live tracking uses the Expo Location API with the following design:
 
 **User**: id (UUID PK), email (unique), name, avatar_url, unit_system (metric|imperial), tier (athlete|coach), subscription_status (trialing|active|past_due|cancelled|none), created_at. Self-hosted deployments set `subscription_status = none` and ignore tier-based feature gating — all features are unlocked. Cloud deployments gate features based on `tier` and require `subscription_status` to be `trialing` or `active`.
 
-**Account**: id (UUID PK), user_id (FK → User), provider (email|google|apple), provider_account_id, passkey_credential_id.
+**Account**: id (UUID PK), user_id (FK → User), provider (email|google|apple), provider_account_id.
 
 **Follow**: follower_id (FK → User), following_id (FK → User), created_at.
 

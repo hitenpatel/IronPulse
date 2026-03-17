@@ -45,6 +45,7 @@ model PasskeyChallenge {
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([expiresAt])
   @@map("passkey_challenges")
 }
 ```
@@ -52,7 +53,7 @@ model PasskeyChallenge {
 - Registration challenges include `userId` (must be authenticated)
 - Login challenges have `userId = null` (pre-auth, discoverable credentials)
 - 5-minute expiry, deleted after use or on expiry
-- Stale challenges cleaned up periodically (same pattern as `MagicLinkToken`)
+- Stale challenges cleaned up on every Nth challenge creation (every 10th): `DELETE FROM passkey_challenges WHERE expires_at < NOW()`. The `@@index([expiresAt])` ensures this is an index scan, not a sequential scan.
 
 No new DB model needed for mobile biometric — purely client-side.
 
@@ -64,7 +65,7 @@ No new DB model needed for mobile biometric — purely client-side.
 2. Client calls `auth.passkeyRegisterOptions` → server generates registration options via `generateRegistrationOptions()` (challenge, RP ID, user info, excludes existing credential IDs)
 3. Challenge stored in `PasskeyChallenge` table with 5-min expiry
 4. Client calls `startRegistration()` from `@simplewebauthn/browser` — triggers browser passkey dialog
-5. Client sends attestation response to `auth.passkeyRegisterVerify` → server calls `verifyRegistrationResponse()`, creates `Passkey` row
+5. Client sends attestation response to `auth.passkeyRegisterVerify` → server verifies `challenge.userId === ctx.user.id`, calls `verifyRegistrationResponse()`, enforces 5-passkey limit via `SELECT COUNT(*) ... FOR UPDATE` within a transaction, creates `Passkey` row
 6. User can optionally name the passkey ("MacBook Pro", "Security Key")
 
 ### Login
@@ -72,8 +73,9 @@ No new DB model needed for mobile biometric — purely client-side.
 1. Login page shows "Sign in with passkey" button alongside email/password and OAuth
 2. Client calls `auth.passkeyLoginOptions` → server generates authentication options via `generateAuthenticationOptions()` (no user ID — discoverable credentials)
 3. Client calls `startAuthentication()` — triggers browser passkey dialog
-4. Client sends assertion response to `auth.passkeyLoginVerify` → server calls `verifyAuthenticationResponse()`, updates counter + lastUsedAt, returns JWT session
-5. NextAuth `signIn()` is called programmatically with the verified user
+4. Client sends assertion response to `auth.passkeyLoginVerify` → server calls `verifyAuthenticationResponse()`, updates counter + lastUsedAt
+5. Server returns a short-lived, signed passkey login token (random UUID stored in a `PasskeyLoginToken` table with 30-second expiry, or signed with HMAC using `NEXTAUTH_SECRET`)
+6. Client calls NextAuth `signIn("credentials", { passkeyToken })` which hits a second Credentials provider ("passkey") that verifies the token and returns the user object — this keeps the existing JWT/session callback chain intact
 
 ### Why tRPC instead of NextAuth's built-in WebAuthn provider
 
@@ -85,13 +87,14 @@ NextAuth's WebAuthn provider requires `@auth/prisma-adapter` which expects a dif
 - Each row: name (editable), device type icon, last used date, delete button
 - "Add passkey" button (disabled at 5 limit)
 - Rename and delete via tRPC endpoints
-- Deleting last passkey warns user to ensure they have another auth method
+- Deleting a passkey checks that the user still has at least one other auth method (another passkey, password, or OAuth) — same guard as password removal. Both `passkeyDelete` and `removePassword` use a serializable transaction to prevent race conditions between concurrent requests.
 
 ### Password Removal
 
 - Users can optionally remove their password once they have a passkey or OAuth provider linked
+- Requires re-authentication before proceeding: user must confirm their current password OR complete a fresh passkey assertion
 - Warning shown: "Make sure you have access to your passkey device. If you lose it and have no OAuth provider linked, you'll be locked out."
-- `auth.removePassword` mutation checks user has at least one passkey or OAuth account before allowing removal
+- `auth.removePassword` mutation verifies re-auth, then checks user has at least one passkey or OAuth account within a serializable transaction before allowing removal
 
 ## Mobile Biometric Unlock
 
@@ -146,23 +149,29 @@ NextAuth's WebAuthn provider requires `@auth/prisma-adapter` which expects a dif
 
 Added to `packages/shared/src/schemas/auth.ts`:
 
+- `passkeyRegisterVerifySchema`: wraps `@simplewebauthn/types` `RegistrationResponseJSON` via `z.custom<RegistrationResponseJSON>()`, plus `name: z.string().max(50).optional()`
+- `passkeyLoginVerifySchema`: wraps `AuthenticationResponseJSON` via `z.custom<AuthenticationResponseJSON>()`
 - `passkeyRenameSchema`: `{ passkeyId: z.string().uuid(), name: z.string().min(1).max(50) }`
 - `passkeyDeleteSchema`: `{ passkeyId: z.string().uuid() }`
-- `removePasswordSchema`: `{}` (auth context provides user ID)
+- `removePasswordSchema`: `{ currentPassword: z.string().optional(), passkeyAssertion: z.custom<AuthenticationResponseJSON>().optional() }` — one of the two re-auth methods required
 
 ## Rate Limiting
 
-- Registration: 5 attempts/hour per user (reuses existing Redis rate limiter)
-- Login: 5 attempts/minute per IP (same as password auth)
+- **Registration**: 5 attempts/hour per user. New rate limit config in `packages/api/src/lib/rate-limit.ts`: key pattern `passkey-reg:${userId}`, window 3,600,000ms, max 5. Applied via a new `passkeyRegRateLimitedProcedure` or inline check in the endpoint.
+- **Login**: 5 attempts/minute per IP, sharing the existing `auth:${ip}` rate limit pool with password login (via `authRateLimitedProcedure`). Sharing the pool prevents attackers from bypassing limits by switching auth methods.
 
 ## Security Considerations
 
+- `attestation: "none"` for registration options — no attestation certificate validation needed for a consumer fitness app
 - Challenge expiry (5 min) prevents replay attacks
+- Challenge-to-user binding: `passkeyRegisterVerify` verifies `challenge.userId === ctx.user.id`
 - Signature counter verification detects cloned credentials
 - Discoverable credentials for login (no username required)
-- Password removal guarded by requiring at least one alternative auth method (passkey or OAuth)
+- Password removal requires re-authentication (current password or fresh passkey assertion) and at least one alternative auth method
+- Both `passkeyDelete` and `removePassword` use serializable transactions to prevent race conditions
 - All passkey management endpoints require authentication
 - Passkey CRUD scoped to authenticated user's own credentials
+- 5-passkey limit enforced via `SELECT COUNT(*) ... FOR UPDATE` within a transaction
 
 ## UI Touchpoints
 
