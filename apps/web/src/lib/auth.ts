@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { db } from "@ironpulse/db";
+import { verifyPasskeyLoginToken } from "@ironpulse/api/src/lib/passkey";
 import { signInSchema } from "@ironpulse/shared";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -28,6 +29,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.passwordHash
         );
         if (!valid) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          tier: user.tier,
+          subscriptionStatus: user.subscriptionStatus,
+          unitSystem: user.unitSystem,
+          onboardingComplete: user.onboardingComplete,
+        };
+      },
+    }),
+    Credentials({
+      id: "passkey",
+      name: "Passkey",
+      credentials: {
+        passkeyLoginToken: {},
+      },
+      async authorize(credentials) {
+        const token = credentials?.passkeyLoginToken as string;
+        if (!token) return null;
+
+        const userId = verifyPasskeyLoginToken(token);
+        if (!userId) return null;
+
+        const user = await db.user.findUnique({
+          where: { id: userId },
+        });
+
+        if (!user) return null;
 
         return {
           id: user.id,
