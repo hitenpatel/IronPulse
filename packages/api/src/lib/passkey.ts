@@ -99,11 +99,11 @@ export async function verifyAndSaveRegistration(
       throw new Error("No valid challenge found");
     }
 
-    // Enforce passkey limit with FOR UPDATE lock to prevent concurrent over-registration
-    const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*) as count FROM passkeys WHERE user_id = ${userId}::uuid FOR UPDATE
+    // Enforce passkey limit — lock existing rows to prevent concurrent over-registration
+    const existingRows = await tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM passkeys WHERE user_id = ${userId}::uuid FOR UPDATE
     `;
-    if (Number(count) >= MAX_PASSKEYS) {
+    if (existingRows.length >= MAX_PASSKEYS) {
       throw new Error("Maximum passkey limit reached (5)");
     }
 

@@ -263,7 +263,7 @@ describe("passkey.rename", () => {
 
     await expect(
       caller.rename({ passkeyId: passkey.id, name: "Hacked" }),
-    ).rejects.toThrow("NOT_FOUND");
+    ).rejects.toThrow("Passkey not found");
   });
 });
 
