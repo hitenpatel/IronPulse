@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc/client";
+import { PasskeyLoginButton } from "@/components/passkey-login-button";
 
 type View = "credentials" | "magic-link" | "magic-link-sent";
 
@@ -178,6 +179,7 @@ export default function LoginPage() {
 
       {/* OAuth + Magic Link */}
       <div className="space-y-2">
+        <PasskeyLoginButton />
         <Button
           variant="outline"
           className="w-full"
