@@ -1,4 +1,5 @@
-import { View, Text, Pressable, Alert, Platform } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, Pressable, Alert, Platform, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
@@ -6,10 +7,48 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import {
+  isBiometricAvailable,
+  isBiometricEnabled,
+  enableBiometric,
+  disableBiometric,
+  getBiometricLabel,
+} from "@/lib/biometric";
 
 export default function ProfileScreen() {
   const { user, signOut, updateUser } = useAuth();
   const router = useRouter();
+
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioLabel, setBioLabel] = useState("Biometric");
+  const [bioLoading, setBioLoading] = useState(false);
+
+  useEffect(() => {
+    async function checkBiometric() {
+      const available = await isBiometricAvailable();
+      setBioAvailable(available);
+      if (available) {
+        const enabled = await isBiometricEnabled();
+        setBioEnabled(enabled);
+        const label = await getBiometricLabel();
+        setBioLabel(label);
+      }
+    }
+    checkBiometric();
+  }, []);
+
+  async function handleBiometricToggle(value: boolean) {
+    setBioLoading(true);
+    if (value) {
+      const success = await enableBiometric();
+      setBioEnabled(success);
+    } else {
+      await disableBiometric();
+      setBioEnabled(false);
+    }
+    setBioLoading(false);
+  }
 
   const handleEditName = () => {
     if (Platform.OS === "ios") {
@@ -190,6 +229,38 @@ export default function ProfileScreen() {
             <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
           </Card>
         </Pressable>
+
+        {bioAvailable && (
+          <Card style={{ marginBottom: 16, gap: 8 }}>
+            <Text
+              style={{
+                fontSize: 10,
+                color: "hsl(215, 20%, 65%)",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Security
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
+                {bioLabel} Unlock
+              </Text>
+              <Switch
+                value={bioEnabled}
+                onValueChange={handleBiometricToggle}
+                disabled={bioLoading}
+                trackColor={{ false: "hsl(216, 34%, 17%)", true: "hsl(142, 71%, 45%)" }}
+              />
+            </View>
+          </Card>
+        )}
 
         <Card style={{ marginBottom: 16, gap: 8 }}>
           <Text
