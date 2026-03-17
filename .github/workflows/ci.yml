@@ -264,6 +264,11 @@ jobs:
             adb reverse tcp:3000 tcp:3000
             adb logcat -G 16M
             adb logcat -c
+            # Launch app and capture logcat for JS errors
+            adb shell am start -n com.ironpulse.app/.MainActivity
+            sleep 15
+            adb logcat -d | grep -iE "ReactNative|FATAL|Error|error|Exception|crash" | tail -30 > $GITHUB_WORKSPACE/logcat-errors.txt || true
+            cat $GITHUB_WORKSPACE/logcat-errors.txt
             echo "=== Running Maestro tests ==="
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug; echo $? > /tmp/maestro-exit
             echo "=== Maestro auth-signin exit code: $(cat /tmp/maestro-exit) ==="
@@ -285,5 +290,6 @@ jobs:
           path: |
             maestro-results.xml
             maestro-debug/
+            logcat-errors.txt
           include-hidden-files: true
           retention-days: 7
