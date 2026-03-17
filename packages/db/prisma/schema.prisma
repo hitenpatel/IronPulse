@@ -12,41 +12,42 @@ datasource db {
 // ─── Users & Auth ────────────────────────────────────────
 
 model User {
-  id                 String             @id @default(uuid()) @db.Uuid
-  email              String             @unique
+  id                 String   @id @default(uuid()) @db.Uuid
+  email              String   @unique
   name               String
-  avatarUrl          String?            @map("avatar_url")
-  passwordHash       String?            @map("password_hash")
-  unitSystem         String             @default("metric") @map("unit_system")
-  tier               String             @default("athlete")
-  subscriptionStatus String             @default("none") @map("subscription_status")
-  stripeCustomerId   String?            @unique @map("stripe_customer_id")
-  onboardingComplete Boolean            @default(false) @map("onboarding_complete")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
+  avatarUrl          String?  @map("avatar_url")
+  passwordHash       String?  @map("password_hash")
+  unitSystem         String   @default("metric") @map("unit_system")
+  tier               String   @default("athlete")
+  subscriptionStatus String   @default("none") @map("subscription_status")
+  stripeCustomerId   String?  @unique @map("stripe_customer_id")
+  onboardingComplete Boolean  @default(false) @map("onboarding_complete")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  accounts           Account[]
-  passwordResetTokens PasswordResetToken[]
-  workouts           Workout[]
-  cardioSessions     CardioSession[]
-  bodyMetrics        BodyMetric[]
-  personalRecords    PersonalRecord[]
-  customExercises    Exercise[]         @relation("CustomExercises")
-  workoutTemplates   WorkoutTemplate[]
-  deviceConnections  DeviceConnection[]
-  progressPhotos     ProgressPhoto[]
-  following          Follow[]               @relation("UserFollowing")
-  followers          Follow[]               @relation("UserFollowers")
-  activityFeedItems  ActivityFeedItem[]
-  createdChallenges  Challenge[]
+  accounts                Account[]
+  passwordResetTokens     PasswordResetToken[]
+  workouts                Workout[]
+  cardioSessions          CardioSession[]
+  bodyMetrics             BodyMetric[]
+  personalRecords         PersonalRecord[]
+  customExercises         Exercise[]             @relation("CustomExercises")
+  workoutTemplates        WorkoutTemplate[]
+  deviceConnections       DeviceConnection[]
+  progressPhotos          ProgressPhoto[]
+  following               Follow[]               @relation("UserFollowing")
+  followers               Follow[]               @relation("UserFollowers")
+  activityFeedItems       ActivityFeedItem[]
+  createdChallenges       Challenge[]
   challengeParticipations ChallengeParticipant[]
-  coachProfile       CoachProfile?
-  coachPrograms      Program[]              @relation("CoachPrograms")
-  athleteAssignments ProgramAssignment[]    @relation("AthleteAssignments")
-  coachAssignments   ProgramAssignment[]    @relation("CoachAssignments")
-  sentMessages       Message[]              @relation("SentMessages")
-  receivedMessages   Message[]              @relation("ReceivedMessages")
-  pushTokens         PushToken[]
+  coachProfile            CoachProfile?
+  coachPrograms           Program[]              @relation("CoachPrograms")
+  athleteAssignments      ProgramAssignment[]    @relation("AthleteAssignments")
+  coachAssignments        ProgramAssignment[]    @relation("CoachAssignments")
+  sentMessages            Message[]              @relation("SentMessages")
+  receivedMessages        Message[]              @relation("ReceivedMessages")
+  pushTokens              PushToken[]
+  passkeys                Passkey[]
 
   @@map("users")
 }
@@ -85,6 +86,35 @@ model MagicLinkToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("magic_link_tokens")
+}
+
+model Passkey {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  counter      BigInt    @default(0)
+  deviceType   String    @map("device_type")
+  backedUp     Boolean   @default(false) @map("backed_up")
+  transports   String[]  @default([])
+  name         String?
+  lastUsedAt   DateTime? @map("last_used_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("passkeys")
+}
+
+model PasskeyChallenge {
+  id        String   @id @default(uuid()) @db.Uuid
+  challenge String   @unique
+  userId    String?  @map("user_id") @db.Uuid
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("passkey_challenges")
 }
 
 // ─── Exercises ───────────────────────────────────────────
@@ -139,8 +169,8 @@ model WorkoutExercise {
   order      Int
   notes      String?
 
-  workout  Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  workout  Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise      @relation(fields: [exerciseId], references: [id])
   sets     ExerciseSet[]
 
   @@map("workout_exercises")
@@ -157,7 +187,7 @@ model ExerciseSet {
   restSeconds       Int?     @map("rest_seconds")
   completed         Boolean  @default(false)
 
-  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  workoutExercise WorkoutExercise  @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   personalRecords PersonalRecord[]
 
   @@map("exercise_sets")
@@ -166,21 +196,21 @@ model ExerciseSet {
 // ─── Cardio ──────────────────────────────────────────────
 
 model CardioSession {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @map("user_id") @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
   type            String
-  source          String    @default("manual")
-  startedAt       DateTime  @map("started_at")
-  durationSeconds Int       @map("duration_seconds")
-  distanceMeters  Decimal?  @map("distance_meters") @db.Decimal(10, 2)
-  elevationGainM  Decimal?  @map("elevation_gain_m") @db.Decimal(8, 2)
-  avgHeartRate    Int?      @map("avg_heart_rate")
-  maxHeartRate    Int?      @map("max_heart_rate")
+  source          String   @default("manual")
+  startedAt       DateTime @map("started_at")
+  durationSeconds Int      @map("duration_seconds")
+  distanceMeters  Decimal? @map("distance_meters") @db.Decimal(10, 2)
+  elevationGainM  Decimal? @map("elevation_gain_m") @db.Decimal(8, 2)
+  avgHeartRate    Int?     @map("avg_heart_rate")
+  maxHeartRate    Int?     @map("max_heart_rate")
   calories        Int?
-  routeFileUrl    String?   @map("route_file_url")
-  externalId      String?   @map("external_id")
+  routeFileUrl    String?  @map("route_file_url")
+  externalId      String?  @map("external_id")
   notes           String?
-  createdAt       DateTime  @default(now()) @map("created_at")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   routePoints RoutePoint[]
@@ -192,13 +222,13 @@ model CardioSession {
 }
 
 model RoutePoint {
-  id          String   @id @default(uuid()) @db.Uuid
-  sessionId   String   @map("session_id") @db.Uuid
-  latitude    Decimal  @db.Decimal(10, 7)
-  longitude   Decimal  @db.Decimal(10, 7)
-  elevationM  Decimal? @map("elevation_m") @db.Decimal(8, 2)
-  heartRate   Int?     @map("heart_rate")
-  timestamp   DateTime
+  id         String   @id @default(uuid()) @db.Uuid
+  sessionId  String   @map("session_id") @db.Uuid
+  latitude   Decimal  @db.Decimal(10, 7)
+  longitude  Decimal  @db.Decimal(10, 7)
+  elevationM Decimal? @map("elevation_m") @db.Decimal(8, 2)
+  heartRate  Int?     @map("heart_rate")
+  timestamp  DateTime
 
   session CardioSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -288,8 +318,8 @@ model PersonalRecord {
   setId      String?  @map("set_id") @db.Uuid
   createdAt  DateTime @default(now()) @map("created_at")
 
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise Exercise    @relation(fields: [exerciseId], references: [id])
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise     @relation(fields: [exerciseId], references: [id])
   set      ExerciseSet? @relation(fields: [setId], references: [id], onDelete: SetNull)
 
   @@index([userId, exerciseId, type])
@@ -299,17 +329,17 @@ model PersonalRecord {
 // ─── Device Connections ─────────────────────────────────
 
 model DeviceConnection {
-  id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @map("user_id") @db.Uuid
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
   provider          String
-  providerAccountId String   @map("provider_account_id")
-  accessToken       String   @map("access_token")
-  refreshToken      String   @map("refresh_token")
-  tokenExpiresAt    DateTime @map("token_expires_at")
+  providerAccountId String    @map("provider_account_id")
+  accessToken       String    @map("access_token")
+  refreshToken      String    @map("refresh_token")
+  tokenExpiresAt    DateTime  @map("token_expires_at")
   lastSyncedAt      DateTime? @map("last_synced_at")
-  syncEnabled       Boolean  @default(true) @map("sync_enabled")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  syncEnabled       Boolean   @default(true) @map("sync_enabled")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
