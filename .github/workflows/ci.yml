@@ -259,13 +259,11 @@ jobs:
           disable-animations: true
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-            sleep 10
+            sleep 5
             adb install apk/app-debug.apk
             adb reverse tcp:3000 tcp:3000
             adb logcat -G 16M
             adb logcat -c
-            adb shell am start -n com.ironpulse.app/.MainActivity
-            sleep 20
             echo "=== Running Maestro tests ==="
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug; echo $? > /tmp/maestro-exit
             echo "=== Maestro auth-signin exit code: $(cat /tmp/maestro-exit) ==="
