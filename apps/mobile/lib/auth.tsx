@@ -8,6 +8,7 @@ import {
 import * as SecureStore from "expo-secure-store";
 import type { SessionUser } from "@ironpulse/shared";
 import { trpc } from "./trpc";
+import { isBiometricEnabled, isBiometricAvailable, authenticateWithBiometric, disableBiometric } from "./biometric";
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -17,6 +18,8 @@ interface AuthContextValue {
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (updates: Partial<SessionUser>) => Promise<void>;
+  showBiometricPrompt: boolean;
+  dismissBiometricPrompt: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
 
   useEffect(() => {
     async function restore() {
@@ -39,6 +43,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedUser = await SecureStore.getItemAsync("auth-user");
 
         if (storedToken && storedUser) {
+          // Check if biometric unlock is required
+          const bioEnabled = await isBiometricEnabled();
+          const bioAvailable = await isBiometricAvailable();
+
+          if (bioEnabled && bioAvailable) {
+            const success = await authenticateWithBiometric();
+
+            if (!success) {
+              // Biometric + passcode both failed — don't restore session, show login
+              setIsLoading(false);
+              return;
+            }
+          } else if (bioEnabled && !bioAvailable) {
+            // User disabled biometrics in OS settings — skip gate, session still valid
+          }
+
           const parsedUser = JSON.parse(storedUser) as SessionUser;
           setToken(storedToken);
           setUser(parsedUser);
@@ -64,6 +84,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.setItemAsync("auth-user", JSON.stringify(result.user));
     setToken(result.token);
     setUser(result.user as SessionUser);
+    // Check if we should offer biometric enrollment
+    const bioAvailable = await isBiometricAvailable();
+    const bioEnabled = await isBiometricEnabled();
+    if (bioAvailable && !bioEnabled) {
+      setShowBiometricPrompt(true);
+    }
   }, []);
 
   const signUp = useCallback(
@@ -82,10 +108,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    await disableBiometric();
     await SecureStore.deleteItemAsync("auth-token");
     await SecureStore.deleteItemAsync("auth-user");
     setToken(null);
     setUser(null);
+  }, []);
+
+  const dismissBiometricPrompt = useCallback(() => {
+    setShowBiometricPrompt(false);
   }, []);
 
   const updateUser = useCallback(async (updates: Partial<SessionUser>) => {
@@ -99,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, signIn, signUp, signOut, updateUser }}
+      value={{ user, token, isLoading, signIn, signUp, signOut, updateUser, showBiometricPrompt, dismissBiometricPrompt }}
     >
       {children}
     </AuthContext.Provider>
