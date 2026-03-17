@@ -1,12 +1,14 @@
-import "../global.css";
+try { require("../global.css"); } catch {}
 import { useEffect } from "react";
 import { Slot, Redirect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { PowerSyncContext } from "@powersync/react";
-import * as Notifications from "expo-notifications";
-import * as Device from "expo-device";
+let PowerSyncContext: any;
+try { PowerSyncContext = require("@powersync/react").PowerSyncContext; } catch {}
+let Notifications: any;
+let Device: any;
+try { Notifications = require("expo-notifications"); Device = require("expo-device"); } catch {}
 import { AuthProvider, useAuth } from "@/lib/auth";
 import {
   getPowerSyncDatabase,
@@ -26,8 +28,8 @@ function RootNavigator() {
       db.connect(connector);
 
       // Register push notifications
-      if (Device.isDevice) {
-        Notifications.requestPermissionsAsync().then(({ status }) => {
+      if (Device?.isDevice && Notifications) {
+        Notifications.requestPermissionsAsync().then(({ status }: any) => {
           if (status === "granted") {
             Notifications.getExpoPushTokenAsync().then(({ data: token }) => {
               trpc.user.registerPushToken
@@ -76,11 +78,15 @@ function RootNavigator() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return (
-    <PowerSyncContext.Provider value={db}>
-      <Slot />
-    </PowerSyncContext.Provider>
-  );
+  if (PowerSyncContext) {
+    return (
+      <PowerSyncContext.Provider value={db}>
+        <Slot />
+      </PowerSyncContext.Provider>
+    );
+  }
+
+  return <Slot />;
 }
 
 export default function RootLayout() {
