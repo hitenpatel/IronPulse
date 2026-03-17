@@ -1,4 +1,8 @@
 import { z } from "zod";
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+} from "@simplewebauthn/types";
 
 export const signUpSchema = z.object({
   email: z.string().email(),
@@ -34,3 +38,32 @@ export const completeOnboardingSchema = z.object({
   unitSystem: z.enum(["metric", "imperial"]),
 });
 export type CompleteOnboardingInput = z.infer<typeof completeOnboardingSchema>;
+
+export const passkeyRegisterVerifySchema = z.object({
+  attestation: z.custom<RegistrationResponseJSON>(),
+  name: z.string().max(50).optional(),
+});
+export type PasskeyRegisterVerifyInput = z.infer<typeof passkeyRegisterVerifySchema>;
+
+export const passkeyLoginVerifySchema = z.object({
+  assertion: z.custom<AuthenticationResponseJSON>(),
+  challenge: z.string(),
+});
+export type PasskeyLoginVerifyInput = z.infer<typeof passkeyLoginVerifySchema>;
+
+export const passkeyRenameSchema = z.object({
+  passkeyId: z.string().uuid(),
+  name: z.string().min(1).max(50),
+});
+export type PasskeyRenameInput = z.infer<typeof passkeyRenameSchema>;
+
+export const passkeyDeleteSchema = z.object({
+  passkeyId: z.string().uuid(),
+});
+export type PasskeyDeleteInput = z.infer<typeof passkeyDeleteSchema>;
+
+export const removePasswordSchema = z.object({
+  currentPassword: z.string().optional(),
+  passkeyAssertion: z.custom<AuthenticationResponseJSON>().optional(),
+});
+export type RemovePasswordInput = z.infer<typeof removePasswordSchema>;
