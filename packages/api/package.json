@@ -14,6 +14,8 @@
     "@aws-sdk/s3-request-presigner": "^3.1009.0",
     "@ironpulse/db": "workspace:*",
     "@ironpulse/shared": "workspace:*",
+    "@simplewebauthn/server": "^13.3.0",
+    "@simplewebauthn/types": "^12.0.0",
     "@trpc/server": "^11.0",
     "bcryptjs": "^2.4",
     "csv-stringify": "^6.6.0",

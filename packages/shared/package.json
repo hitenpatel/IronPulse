@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@simplewebauthn/types": "^12.0.0",
     "zod": "^3.24"
   },
   "devDependencies": {
