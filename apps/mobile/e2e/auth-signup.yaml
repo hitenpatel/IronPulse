@@ -1,13 +1,17 @@
 appId: com.ironpulse.app
 ---
-- launchApp
+- launchApp:
+    clearState: true
 - waitForAnimationToEnd
 - tapOn: "Sign Up"
-- tapOn: "Name"
+- tapOn:
+    id: "name-input"
 - inputText: "Test User"
-- tapOn: "Email"
+- tapOn:
+    id: "signup-email-input"
 - inputText: "test-signup@example.com"
-- tapOn: "Password"
+- tapOn:
+    id: "signup-password-input"
 - inputText: "Password123!"
 - tapOn: "Create Account"
 - assertVisible: "Good morning"

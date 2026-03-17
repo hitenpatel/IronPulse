@@ -46,9 +46,10 @@ export default function SignupScreen() {
         </Text>
 
         <View style={{ gap: 16 }}>
-          <Input label="Name" value={name} onChangeText={setName} />
+          <Input label="Name" testID="name-input" value={name} onChangeText={setName} />
           <Input
             label="Email"
+            testID="signup-email-input"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -57,6 +58,7 @@ export default function SignupScreen() {
           />
           <Input
             label="Password"
+            testID="signup-password-input"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

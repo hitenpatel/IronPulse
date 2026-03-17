@@ -44,6 +44,8 @@ export default function LoginScreen() {
         <View style={{ gap: 16 }}>
           <Input
             label="Email"
+            testID="email-input"
+            accessibilityLabel="Email"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -52,11 +54,13 @@ export default function LoginScreen() {
           />
           <Input
             label="Password"
+            testID="password-input"
+            accessibilityLabel="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
-          <Button onPress={handleSignIn} disabled={loading}>
+          <Button testID="signin-button" onPress={handleSignIn} disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </View>

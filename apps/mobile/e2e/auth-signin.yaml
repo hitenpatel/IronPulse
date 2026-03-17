@@ -3,9 +3,12 @@ appId: com.ironpulse.app
 - launchApp:
     clearState: true
 - waitForAnimationToEnd
-- tapOn: "Email"
+- tapOn:
+    id: "email-input"
 - inputText: "test@example.com"
-- tapOn: "Password"
+- tapOn:
+    id: "password-input"
 - inputText: "password123"
-- tapOn: "Sign In"
+- tapOn:
+    id: "signin-button"
 - assertVisible: "Good morning"

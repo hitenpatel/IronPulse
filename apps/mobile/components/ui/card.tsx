@@ -1,8 +1,20 @@
-import { View, type ViewProps } from "react-native";
+import { View, type ViewProps, type StyleProp, type ViewStyle } from "react-native";
 
-export function Card({ className = "", children, ...props }: ViewProps & { children: React.ReactNode }) {
+export function Card({ style, children, ...props }: ViewProps & { children: React.ReactNode }) {
   return (
-    <View className={`rounded-xl border border-border bg-card p-4 ${className}`} {...props}>
+    <View
+      style={[
+        {
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: "hsl(216, 34%, 17%)",
+          backgroundColor: "hsl(224, 71%, 4%)",
+          padding: 16,
+        },
+        style as StyleProp<ViewStyle>,
+      ]}
+      {...props}
+    >
       {children}
     </View>
   );
