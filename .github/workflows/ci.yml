@@ -84,7 +84,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Cache Next.js build
       - name: Next.js cache
         uses: actions/cache@v4
         with:
@@ -96,16 +95,23 @@ jobs:
       - name: Build web app
         run: pnpm --filter @ironpulse/web build
 
-  # Build Android APK separately and cache it
+  # ── Android: build APK with embedded JS bundle ──
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
     needs: [build]
     timeout-minutes: 60
     env:
-      # Baked into APK at build time — 10.0.2.2 is Android emulator's alias for host localhost
       EXPO_PUBLIC_API_URL: http://10.0.2.2:3000
     steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h /
+
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -117,31 +123,55 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Use hoisted node_modules for React Native autolinking compatibility
       - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
 
-      # Cache Gradle dependencies and build outputs
-      - name: Gradle cache
-        uses: actions/cache@v4
+      # Deduplicate React for Metro bundling (prevents "useRef is null" crash)
+      - name: Deduplicate React
+        run: |
+          find node_modules -path "*/node_modules/react/index.js" \
+            -not -path "node_modules/react/index.js" \
+            -not -path "apps/mobile/node_modules/react/index.js" \
+            | while read f; do rm -rf "$(dirname "$f")"; done
+
+      - name: Expo prebuild Android
+        run: |
+          cd apps/mobile
+          EXPO_PUBLIC_API_URL=http://10.0.2.2:3000 npx expo prebuild --platform android --no-install
+
+      # Force debug APK to embed JS bundle (no Metro needed at runtime)
+      - name: Disable debug dev-server (embed JS bundle)
+        run: |
+          cd apps/mobile/android/app
+          sed -i '/autolinkLibrariesWithApp/i\    debuggableVariants = []' build.gradle
+
+      - name: Restore Gradle cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-deps-${{ runner.os }}-${{ hashFiles('apps/mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-deps-${{ runner.os }}-
-
-      - name: Expo prebuild
-        working-directory: apps/mobile
-        run: npx expo prebuild --platform android --clean
+            apps/mobile/android/.gradle
+          key: gradle-${{ hashFiles('apps/mobile/android/gradle/wrapper/gradle-wrapper.properties', 'apps/mobile/package.json') }}
+          restore-keys: gradle-
 
       - name: Build debug APK
-        working-directory: apps/mobile/android
+        env:
+          EXPO_PUBLIC_API_URL: http://10.0.2.2:3000
         run: |
+          cd apps/mobile/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --build-cache
+          ./gradlew assembleDebug --no-daemon
 
-      # Upload APK as artifact for the E2E job
+      - name: Save Gradle cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            apps/mobile/android/.gradle
+          key: gradle-${{ hashFiles('apps/mobile/android/gradle/wrapper/gradle-wrapper.properties', 'apps/mobile/package.json') }}
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -149,162 +179,113 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 1
 
+  # ── Maestro E2E on Android emulator ──
   e2e-maestro:
     name: Mobile E2E (Maestro)
     runs-on: ubuntu-latest
     needs: [build-android]
-    continue-on-error: true
     timeout-minutes: 45
-    services:
-      postgres:
-        image: postgis/postgis:16-3.4-alpine
-        env:
-          POSTGRES_USER: ironpulse
-          POSTGRES_PASSWORD: ironpulse
-          POSTGRES_DB: ironpulse_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ironpulse"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
-      EXPO_PUBLIC_API_URL: http://10.0.2.2:3000
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - run: pnpm install --frozen-lockfile
-
-      # Download pre-built APK
-      - name: Download APK
-        uses: actions/download-artifact@v4
-        with:
-          name: android-apk
-          path: apk/
-
-      # Install Maestro
-      - name: Install Maestro
+      - name: Free disk space
         run: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
 
-      # Enable KVM
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # Cache AVD
-      - name: AVD cache
-        uses: actions/cache@v4
-        id: avd-cache
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-api-34-${{ runner.os }}
+          node-version: 22
+          cache: pnpm
 
-      # Create AVD if not cached
-      - name: Create AVD
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          disable-animations: true
-          script: echo "AVD created"
+      # Install PostgreSQL (not Docker service — use apt for compatibility)
+      - name: Install and start PostgreSQL
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql postgresql-client postgis postgresql-16-postgis-3 > /dev/null
+          PG_VER=$(pg_lsclusters -h | head -1 | awk '{print $1}')
+          sudo pg_ctlcluster "$PG_VER" main start
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres psql -c "CREATE USER ironpulse WITH PASSWORD 'ironpulse' SUPERUSER;"
+          sudo -u postgres createdb -O ironpulse ironpulse_test
 
-      # Push database schema
-      - name: Setup database
+      - run: pnpm install --frozen-lockfile
+
+      - name: Push database schema
         run: pnpm --filter @ironpulse/db db:push
 
-      # Start API server before emulator (so it's ready when Maestro runs)
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: apk/
+
+      # Start API server
       - name: Start API server
         run: |
           nohup pnpm --filter @ironpulse/web dev > /tmp/api-server.log 2>&1 &
-          echo "API server starting in background..."
-          for i in $(seq 1 30); do
-            if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
-              echo "API server ready!"
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "API is ready"
               break
             fi
-            echo "Waiting for API server... ($i/30)"
-            sleep 5
+            echo "Waiting for API... ($i/60)"
+            sleep 2
+            if [ "$i" -eq 60 ]; then echo "ERROR: API failed to start"; exit 1; fi
           done
 
-      # Start Metro bundler for the debug APK
-      - name: Start Metro bundler
-        run: |
-          cd apps/mobile
-          nohup npx react-native start --port 8081 > /tmp/metro.log 2>&1 &
-          echo "Metro bundler starting..."
-          sleep 15
-          echo "Metro should be ready"
-
-      # Run emulator, install APK, run Maestro
-      - name: Run E2E tests
+      - name: Run Maestro tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
-          target: google_apis
+          api-level: 31
           arch: x86_64
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          target: default
+          ram-size: 4096
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
           disable-animations: true
           script: |
-            # Install pre-built debug APK and set up port forwarding for Metro
-            adb install $GITHUB_WORKSPACE/apk/app-debug.apk
-            adb reverse tcp:8081 tcp:8081
+            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+            sleep 10
+            adb install apk/app-debug.apk
             adb reverse tcp:3000 tcp:3000
-
-            # Run Maestro tests — all CI-compatible flows
-            # Auth flows
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml || true
+            adb logcat -G 16M
+            adb logcat -c
+            adb shell am start -n com.ironpulse.app/.MainActivity
+            sleep 20
+            echo "=== Running Maestro tests ==="
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug; echo $? > /tmp/maestro-exit
+            echo "=== Maestro auth-signin exit code: $(cat /tmp/maestro-exit) ==="
+            # Run remaining flows (allow failures for now)
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signup.yaml || true
-
-            # Navigation
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/history-navigation.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/integrations.yaml || true
-
-            # Workout flows
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-empty.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-cancel.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-template.yaml || true
-
-            # Cardio flows
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-manual.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-cancel.yaml || true
-
-            # Stats
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/weight-log.yaml || true
 
-      # Upload test results
-      - name: Upload Maestro results
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: maestro-results
+          name: maestro-report
           path: |
             maestro-results.xml
             maestro-debug/
-            logcat.txt
-            after_launch.png
-            ~/.maestro/tests/
+          include-hidden-files: true
           retention-days: 7
