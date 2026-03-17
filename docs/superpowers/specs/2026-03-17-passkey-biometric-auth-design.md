@@ -134,16 +134,18 @@ NextAuth's WebAuthn provider requires `@auth/prisma-adapter` which expects a dif
 
 ## tRPC Endpoints
 
+Passkey endpoints live in a separate `passkey` router (consistent with the codebase pattern of one router per domain — social, coach, challenge, etc.).
+
 | Endpoint | Type | Auth | Purpose |
 |----------|------|------|---------|
-| `auth.passkeyRegisterOptions` | mutation | protected | Generate registration challenge |
-| `auth.passkeyRegisterVerify` | mutation | protected | Verify attestation, create passkey |
-| `auth.passkeyLoginOptions` | mutation | public | Generate login challenge |
-| `auth.passkeyLoginVerify` | mutation | public | Verify assertion, return session |
-| `auth.passkeyList` | query | protected | List user's passkeys |
-| `auth.passkeyRename` | mutation | protected | Rename a passkey |
-| `auth.passkeyDelete` | mutation | protected | Delete a passkey |
-| `auth.removePassword` | mutation | protected | Remove password (requires passkey or OAuth) |
+| `passkey.registerOptions` | mutation | protected | Generate registration challenge |
+| `passkey.registerVerify` | mutation | protected | Verify attestation, create passkey |
+| `passkey.loginOptions` | mutation | public | Generate login challenge |
+| `passkey.loginVerify` | mutation | public | Verify assertion, return session |
+| `passkey.list` | query | protected | List user's passkeys |
+| `passkey.rename` | mutation | protected | Rename a passkey |
+| `passkey.delete` | mutation | protected | Delete a passkey |
+| `passkey.removePassword` | mutation | protected | Remove password (requires passkey or OAuth) |
 
 ## Shared Schemas
 
