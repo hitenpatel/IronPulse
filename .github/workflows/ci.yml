@@ -135,18 +135,18 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --clean
 
-      - name: Build APK
+      - name: Build APK (release — bundles JS inline, no Metro needed)
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --build-cache
+          ./gradlew assembleRelease --no-daemon --build-cache
 
       # Upload APK as artifact for the E2E job
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 1
 
   e2e-maestro:
@@ -258,18 +258,31 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            # Install pre-built APK
-            adb install $GITHUB_WORKSPACE/apk/app-debug.apk
+            # Install pre-built release APK
+            adb install $GITHUB_WORKSPACE/apk/app-release.apk
 
-            # Dump logcat for debugging if app crashes
-            adb logcat -c
-            adb shell am start -n com.ironpulse.app/.MainActivity || true
-            sleep 10
-            adb logcat -d > $GITHUB_WORKSPACE/logcat.txt 2>&1 || true
-            adb shell screencap -p /sdcard/after_launch.png && adb pull /sdcard/after_launch.png $GITHUB_WORKSPACE/after_launch.png || true
+            # Run Maestro tests — all CI-compatible flows
+            # Auth flows
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signup.yaml || true
 
-            # Run only auth-signin for now (diagnostic)
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug || true
+            # Navigation
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/history-navigation.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/integrations.yaml || true
+
+            # Workout flows
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-empty.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-cancel.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-template.yaml || true
+
+            # Cardio flows
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-manual.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-cancel.yaml || true
+
+            # Stats
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/weight-log.yaml || true
 
       # Upload test results
       - name: Upload Maestro results

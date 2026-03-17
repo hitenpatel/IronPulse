@@ -2,14 +2,10 @@ appId: com.ironpulse.app
 ---
 - launchApp:
     clearState: true
-- wait:
-    seconds: 10
-- takeScreenshot: after_launch
+- waitForAnimationToEnd
 - tapOn: "Email"
 - inputText: "test@example.com"
 - tapOn: "Password"
 - inputText: "password123"
 - tapOn: "Sign In"
-- wait:
-    seconds: 5
 - assertVisible: "Good morning"
