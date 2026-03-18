@@ -316,7 +316,7 @@ jobs:
           node-version: 22
 
       - name: Install e2e-dashboard
-        run: npm install e2e-dashboard
+        run: npm install hitenpatel/e2e-dashboard
 
       - name: Checkout gh-pages
         run: |
