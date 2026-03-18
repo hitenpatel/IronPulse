@@ -1,0 +1,46 @@
+name: Visual Regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lost-pixel:
+    runs-on: docker
+    container: node:24-bookworm
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.4 --activate
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter @ironpulse/web build
+        env:
+          NEXTAUTH_SECRET: ci-visual-regression
+
+      - name: Start web app
+        run: |
+          pnpm --filter @ironpulse/web start &
+          sleep 5
+          curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || true
+
+      - name: Install Lost Pixel
+        run: pnpm add -D lost-pixel
+
+      - name: Run Lost Pixel
+        run: npx lost-pixel
+
+      - name: Upload diffs on failure
+        if: failure()
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: lost-pixel-diffs
+          path: .lostpixel/difference/
+          retention-days: 7
