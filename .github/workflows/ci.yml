@@ -316,7 +316,10 @@ jobs:
           node-version: 22
 
       - name: Install e2e-dashboard
-        run: npm install hitenpatel/e2e-dashboard
+        run: |
+          mkdir -p /tmp/e2e-dash && cd /tmp/e2e-dash
+          npm init -y > /dev/null
+          npm install hitenpatel/e2e-dashboard
 
       - name: Checkout gh-pages
         run: |
@@ -331,12 +334,12 @@ jobs:
 
       - name: Copy dashboard SPA
         run: |
-          cp node_modules/e2e-dashboard/dashboard/index.html dashboard-deploy/index.html
+          cp /tmp/e2e-dash/node_modules/e2e-dashboard/dashboard/index.html dashboard-deploy/index.html
           mkdir -p dashboard-deploy/data
 
       - name: Parse results
         run: |
-          npx e2e-dashboard parse \
+          node /tmp/e2e-dash/node_modules/e2e-dashboard/bin/cli.js parse \
             --run-id "${{ github.run_id }}" \
             --sha "${GITHUB_SHA::7}" \
             --message "$(git log -1 --format=%s | head -c 120)" \
@@ -348,7 +351,7 @@ jobs:
 
       - name: Merge history
         run: |
-          npx e2e-dashboard merge \
+          node /tmp/e2e-dash/node_modules/e2e-dashboard/bin/cli.js merge \
             --history dashboard-deploy/data/history.json \
             --new new-run.json \
             --output dashboard-deploy/data/history.json \
