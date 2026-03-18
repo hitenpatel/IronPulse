@@ -1,6 +1,7 @@
-// Dynamic import to avoid webpack bundling issues with eval/WASM
+// Dynamic import with webpackIgnore to prevent webpack from following the import
+// @simplewebauthn/server uses eval/WASM which webpack flags as "Dynamic Code Evaluation"
 async function getSimpleWebAuthn() {
-  return await import("@simplewebauthn/server");
+  return await import(/* webpackIgnore: true */ "@simplewebauthn/server");
 }
 import type {
   RegistrationResponseJSON,
