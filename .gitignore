@@ -8,5 +8,3 @@ dist/
 .superpowers/
 .worktrees/
 apps/web/public/@powersync/
-.lostpixel/current/
-.lostpixel/difference/
