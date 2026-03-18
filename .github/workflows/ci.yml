@@ -293,3 +293,71 @@ jobs:
             logcat-errors.txt
           include-hidden-files: true
           retention-days: 7
+
+  # ── E2E Dashboard ──
+  deploy-dashboard:
+    runs-on: ubuntu-latest
+    needs: [e2e-maestro]
+    if: always() && github.ref == 'refs/heads/main'
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install e2e-dashboard
+        run: npm install e2e-dashboard
+
+      - name: Checkout gh-pages
+        run: |
+          git fetch origin gh-pages:gh-pages 2>/dev/null || true
+          if git rev-parse --verify gh-pages >/dev/null 2>&1; then
+            git worktree add dashboard-deploy gh-pages
+          else
+            mkdir dashboard-deploy
+            cd dashboard-deploy && git init && git checkout --orphan gh-pages
+          fi
+
+      - name: Copy dashboard SPA
+        run: |
+          cp node_modules/e2e-dashboard/dashboard/index.html dashboard-deploy/index.html
+          mkdir -p dashboard-deploy/data
+
+      - name: Parse results
+        run: |
+          npx e2e-dashboard parse \
+            --run-id "${{ github.run_id }}" \
+            --sha "${GITHUB_SHA::7}" \
+            --message "$(git log -1 --format=%s | head -c 120)" \
+            --branch "${{ github.ref_name }}" \
+            --maestro-android artifacts/maestro-report/maestro-results.xml \
+            --screenshots-dir artifacts/maestro-report/ \
+            --output-dir dashboard-deploy/screenshots/run-${{ github.run_id }}/ \
+            > new-run.json
+
+      - name: Merge history
+        run: |
+          npx e2e-dashboard merge \
+            --history dashboard-deploy/data/history.json \
+            --new new-run.json \
+            --output dashboard-deploy/data/history.json \
+            --max-runs 50 \
+            --screenshots-base dashboard-deploy/screenshots/
+
+      - name: Deploy to gh-pages
+        run: |
+          cd dashboard-deploy
+          git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" \
+            commit -m "update dashboard: run ${{ github.run_id }}" --allow-empty
+          git push origin gh-pages --force
