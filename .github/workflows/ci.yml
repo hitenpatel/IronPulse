@@ -326,6 +326,7 @@ jobs:
           else
             mkdir dashboard-deploy
             cd dashboard-deploy && git init && git checkout --orphan gh-pages
+            git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           fi
 
       - name: Copy dashboard SPA
@@ -360,4 +361,5 @@ jobs:
           git add -A
           git -c user.name="github-actions" -c user.email="actions@github.com" \
             commit -m "update dashboard: run ${{ github.run_id }}" --allow-empty
+          git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" 2>/dev/null || true
           git push origin gh-pages --force
