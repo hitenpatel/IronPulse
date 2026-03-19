@@ -24,6 +24,7 @@ const handler = async (req: Request) => {
                   (session.user as any).subscriptionStatus ?? "none",
                 unitSystem: (session.user as any).unitSystem ?? "metric",
                 onboardingComplete: (session.user as any).onboardingComplete ?? true,
+                defaultRestSeconds: (session.user as any).defaultRestSeconds ?? 90,
               },
             }
           : null,

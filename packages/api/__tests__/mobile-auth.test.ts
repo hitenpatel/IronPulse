@@ -10,6 +10,7 @@ const testUser: SessionUser = {
   subscriptionStatus: "none",
   unitSystem: "metric",
   onboardingComplete: true,
+  defaultRestSeconds: 90,
 };
 
 describe("signMobileToken", () => {

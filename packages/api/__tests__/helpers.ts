@@ -22,6 +22,7 @@ export function createTestUser(overrides?: Partial<SessionUser>): SessionUser {
     subscriptionStatus: "none",
     unitSystem: "metric",
     onboardingComplete: false,
+    defaultRestSeconds: 90,
     ...overrides,
   };
 }
