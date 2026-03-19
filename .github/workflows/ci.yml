@@ -299,19 +299,10 @@ jobs:
             adb logcat -d | grep -iE "ReactNative|FATAL|Error|error|Exception|crash" | tail -30 > $GITHUB_WORKSPACE/logcat-errors.txt || true
             cat $GITHUB_WORKSPACE/logcat-errors.txt
             echo "=== Running Maestro tests ==="
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug; echo $? > /tmp/maestro-exit
-            echo "=== Maestro auth-signin exit code: $(cat /tmp/maestro-exit) ==="
-            # Stabilized flows — failures gate the build
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/history-navigation.yaml
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-empty.yaml
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-cancel.yaml
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/weight-log.yaml
-            # Complex flows — keep continue-on-error until further stabilized
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/integrations.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-manual.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-cancel.yaml || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
+              --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
+              --debug-output $GITHUB_WORKSPACE/maestro-debug \
+              || true
 
       - uses: actions/upload-artifact@v4
         if: always()
