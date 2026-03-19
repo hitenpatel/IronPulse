@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, BarChart3, Plus, Search, User, CalendarDays } from "lucide-react";
+import { Home, BarChart3, Plus, Search, User, CalendarDays, UserSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
@@ -12,6 +12,7 @@ const navItems = [
   { icon: CalendarDays, label: "Calendar", href: "/calendar" },
   { icon: BarChart3, label: "Stats", href: "/stats" },
   { icon: Search, label: "Exercises", href: "/exercises" },
+  { icon: UserSearch, label: "Find a Coach", href: "/coaches" },
   { icon: User, label: "Profile", href: "/profile" },
 ];
 

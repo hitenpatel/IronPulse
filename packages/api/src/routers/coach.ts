@@ -1,11 +1,12 @@
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import {
   addClientSchema,
   removeClientSchema,
   clientProgressSchema,
   updateCoachProfileSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 
 const coachProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.tier !== "coach") {
@@ -182,5 +183,65 @@ export const coachRouter = createTRPCRouter({
       });
 
       return profile;
+    }),
+
+  listPublicCoaches: rateLimitedProcedure
+    .input(
+      z.object({
+        specialty: z.string().optional(),
+        search: z.string().optional(),
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(50).default(20),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = { isPublic: true };
+      if (input.specialty) {
+        where.specialties = { has: input.specialty };
+      }
+      if (input.search) {
+        where.user = { name: { contains: input.search, mode: "insensitive" } };
+      }
+
+      const profiles = await ctx.db.coachProfile.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              _count: {
+                select: {
+                  coachAssignments: { where: { status: "active" } },
+                },
+              },
+            },
+          },
+        },
+        take: input.limit + 1,
+        ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
+        orderBy: { createdAt: "desc" },
+      });
+
+      const hasMore = profiles.length > input.limit;
+      const sliced = profiles.slice(0, input.limit);
+      return {
+        coaches: sliced.map((p) => ({
+          id: p.id,
+          userId: p.userId,
+          bio: p.bio,
+          specialties: p.specialties,
+          imageUrl: p.imageUrl,
+          createdAt: p.createdAt,
+          user: {
+            id: p.user.id,
+            name: p.user.name,
+            avatarUrl: p.user.avatarUrl,
+          },
+          activeClientCount: p.user._count.coachAssignments,
+        })),
+        nextCursor: hasMore ? sliced[sliced.length - 1]!.id : null,
+      };
     }),
 });
