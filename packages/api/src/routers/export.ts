@@ -99,7 +99,7 @@ export const exportRouter = createTRPCRouter({
     }),
 
   allData: rateLimitedProcedure.mutation(async ({ ctx }) => {
-    const [workouts, cardioSessions, bodyMetrics] = await Promise.all([
+    const [workouts, cardioSessions, bodyMetrics, personalRecords, progressPhotos] = await Promise.all([
       ctx.db.workout.findMany({
         where: { userId: ctx.user.id },
         include: {
@@ -120,6 +120,14 @@ export const exportRouter = createTRPCRouter({
         where: { userId: ctx.user.id },
         orderBy: { date: "desc" },
       }),
+      ctx.db.personalRecord.findMany({
+        where: { userId: ctx.user.id },
+        include: { exercise: { select: { name: true } } },
+      }),
+      ctx.db.progressPhoto.findMany({
+        where: { userId: ctx.user.id },
+        orderBy: { date: "desc" },
+      }),
     ]);
 
     const exportData = {
@@ -127,6 +135,8 @@ export const exportRouter = createTRPCRouter({
       workouts,
       cardioSessions,
       bodyMetrics,
+      personalRecords,
+      progressPhotos,
     };
 
     return { data: JSON.stringify(exportData, null, 2), mimeType: "application/json" };
