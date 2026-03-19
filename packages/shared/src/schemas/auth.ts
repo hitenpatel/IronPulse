@@ -70,3 +70,9 @@ export const removePasswordSchema = z.object({
   passkeyAssertion: z.custom<AuthenticationResponseJSON>().optional(),
 });
 export type RemovePasswordInput = z.infer<typeof removePasswordSchema>;
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(8),
+  newPassword: z.string().min(8).max(128),
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

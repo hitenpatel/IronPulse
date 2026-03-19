@@ -8,6 +8,7 @@ import {
   sendMagicLinkSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
+  changePasswordSchema,
 } from "@ironpulse/shared";
 import { sendMagicLinkEmail, sendPasswordResetEmail } from "../lib/email";
 import { signMobileToken } from "../lib/mobile-auth";
@@ -258,5 +259,45 @@ export const authRouter = createTRPCRouter({
       ]);
 
       return { ok: true, email: updatedUser.email };
+    }),
+
+  changePassword: rateLimitedProcedure
+    .input(changePasswordSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "You must be signed in to change your password",
+        });
+      }
+
+      const user = await ctx.db.user.findUnique({
+        where: { id: ctx.session.user.id },
+        select: { id: true, passwordHash: true },
+      });
+
+      if (!user || !user.passwordHash) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No password is set on this account",
+        });
+      }
+
+      const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+      if (!valid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Current password is incorrect",
+        });
+      }
+
+      const newPasswordHash = await bcrypt.hash(input.newPassword, 12);
+
+      await ctx.db.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newPasswordHash },
+      });
+
+      return { ok: true };
     }),
 });

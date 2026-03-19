@@ -15,6 +15,7 @@ import {
   X,
   ShieldAlert,
   ArrowLeft,
+  KeyRound,
 } from "lucide-react";
 import Link from "next/link";
 import { registerPasskey, authenticatePasskey } from "@/lib/passkey";
@@ -33,6 +34,7 @@ export default function SecurityPage() {
     onSuccess: () => utils.passkey.list.invalidate(),
   });
   const removePasswordMutation = trpc.passkey.removePassword.useMutation();
+  const changePasswordMutation = trpc.auth.changePassword.useMutation();
 
   const [addingPasskey, setAddingPasskey] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,6 +43,13 @@ export default function SecurityPage() {
   const [passwordRemovalPassword, setPasswordRemovalPassword] = useState("");
   const [showPasswordRemoval, setShowPasswordRemoval] = useState(false);
   const [reAuthMethod, setReAuthMethod] = useState<"password" | "passkey">("password");
+
+  // Change password form state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
 
   async function handleAddPasskey() {
     setError(null);
@@ -105,6 +114,27 @@ export default function SecurityPage() {
     }
   }
 
+  async function handleChangePassword() {
+    setError(null);
+    setChangePasswordSuccess(false);
+
+    if (newPassword !== confirmNewPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+
+    try {
+      await changePasswordMutation.mutateAsync({ currentPassword, newPassword });
+      setChangePasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setShowChangePassword(false);
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to change password");
+    }
+  }
+
   const passkeys = data?.passkeys ?? [];
   const atLimit = passkeys.length >= 5;
   const hasOAuth = (userData?.user as any)?.accounts?.some(
@@ -140,6 +170,78 @@ export default function SecurityPage() {
           </button>
         </div>
       )}
+
+      {changePasswordSuccess && (
+        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
+          Password changed successfully.
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5" />
+            Change Password
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {showChangePassword ? (
+            <div className="space-y-3">
+              <Input
+                type="password"
+                placeholder="Current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+              <Input
+                type="password"
+                placeholder="New password (min. 8 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <Input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleChangePassword}
+                  disabled={
+                    !currentPassword ||
+                    !newPassword ||
+                    !confirmNewPassword ||
+                    changePasswordMutation.isPending
+                  }
+                >
+                  {changePasswordMutation.isPending ? "Saving..." : "Save new password"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowChangePassword(false);
+                    setCurrentPassword("");
+                    setNewPassword("");
+                    setConfirmNewPassword("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={() => setShowChangePassword(true)}>
+              Change password
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
