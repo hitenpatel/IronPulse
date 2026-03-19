@@ -202,7 +202,10 @@ jobs:
         run: |
           # Use default postgresql (not @16) because postgis formula is built against it
           brew install postgresql postgis
-          brew services start postgresql
+          PG_VER=$(brew list --formula | grep -oE 'postgresql@[0-9]+' | head -1)
+          export PATH="/opt/homebrew/opt/$PG_VER/bin:$PATH"
+          echo "/opt/homebrew/opt/$PG_VER/bin" >> $GITHUB_PATH
+          brew services start "$PG_VER"
           sleep 3
           createdb ironpulse_test
           psql -d ironpulse_test -c "ALTER USER $(whoami) WITH PASSWORD 'postgres';"
