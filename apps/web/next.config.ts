@@ -19,8 +19,8 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.amazonaws.com",
-      "connect-src 'self' https://*.amazonaws.com https://api.strava.com https://connect.garmin.com https://*.ingest.sentry.io wss:",
+      "img-src 'self' data: blob: https://*.amazonaws.com http://localhost:9000",
+      "connect-src 'self' https://*.amazonaws.com https://api.strava.com https://connect.garmin.com https://*.ingest.sentry.io wss: http://localhost:9000",
       "worker-src 'self' blob:",
       "font-src 'self' data:",
       "frame-ancestors 'none'",
@@ -50,6 +50,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "**.apple.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
       },
     ],
   },

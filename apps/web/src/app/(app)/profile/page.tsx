@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from "next-auth/react";
-import { User, Settings, LogOut, Check, Link2, Users, Download, Shield } from "lucide-react";
+import { User, Settings, LogOut, Check, Link2, Users, Download, Shield, Camera } from "lucide-react";
 import Link from "next/link";
+
+const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/ironpulse";
 
 export default function ProfilePage() {
   const utils = trpc.useUtils();
@@ -22,6 +25,27 @@ export default function ProfilePage() {
       setTimeout(() => setSaveStatus("idle"), 2000);
     },
   });
+  const uploadAvatar = trpc.user.uploadAvatar.useMutation({
+    onSuccess: async ({ uploadUrl }, { contentType }) => {
+      if (!pendingFile.current) return;
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: pendingFile.current,
+        headers: { "Content-Type": contentType },
+      });
+      pendingFile.current = null;
+      setAvatarUploading(false);
+      utils.user.me.invalidate();
+    },
+    onError: () => {
+      pendingFile.current = null;
+      setAvatarUploading(false);
+    },
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingFile = useRef<File | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const [name, setName] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
@@ -67,6 +91,27 @@ export default function ProfilePage() {
     updateProfile.mutate({ unitSystem });
   }
 
+  function handleAvatarClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"] as const;
+    type AllowedType = (typeof allowedTypes)[number];
+    if (!allowedTypes.includes(file.type as AllowedType)) return;
+    pendingFile.current = file;
+    setAvatarUploading(true);
+    uploadAvatar.mutate({ contentType: file.type as AllowedType });
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = "";
+  }
+
+  const avatarDisplayUrl = user?.avatarUrl
+    ? `${S3_PUBLIC_URL}/${user.avatarUrl}`
+    : undefined;
+
   const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
@@ -85,6 +130,36 @@ export default function ProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              disabled={avatarUploading}
+              className="group relative cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Upload avatar"
+            >
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={avatarDisplayUrl} alt={user.name ?? "Avatar"} />
+                <AvatarFallback className="text-2xl">
+                  {user.name ? user.name.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 group-disabled:opacity-0">
+                <Camera className="h-6 w-6 text-white" />
+              </div>
+            </button>
+            <p className="text-xs text-muted-foreground">
+              {avatarUploading ? "Uploading..." : "Click to change photo"}
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarFileChange}
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="name">Name</Label>
             <div className="flex gap-2">
