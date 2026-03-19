@@ -198,14 +198,15 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install and start PostgreSQL
+      - name: Install and start PostgreSQL with PostGIS
         run: |
-          brew install postgresql@16
+          brew install postgresql@16 postgis
           export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
           brew services start postgresql@16
           sleep 3
           createdb ironpulse_test
           psql -d ironpulse_test -c "ALTER USER $(whoami) WITH PASSWORD 'postgres';"
+          psql -d ironpulse_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
           echo "/opt/homebrew/opt/postgresql@16/bin" >> $GITHUB_PATH
 
       - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
@@ -436,10 +437,7 @@ jobs:
             adb logcat -d | grep -iE "ReactNative|FATAL|Error|error|Exception|crash" | tail -30 > $GITHUB_WORKSPACE/logcat-errors.txt || true
             cat $GITHUB_WORKSPACE/logcat-errors.txt
             echo "=== Running Maestro tests ==="
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
-              --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
-              --debug-output $GITHUB_WORKSPACE/maestro-debug \
-              || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug || true
 
       - uses: actions/upload-artifact@v4
         if: always()
