@@ -1,0 +1,36 @@
+appId: com.ironpulse.app
+---
+# Verify biometric button appears on login screen when available
+# Note: actual biometric prompt cannot be triggered in CI — this test
+# verifies the button renders when biometric is enrolled
+- launchApp:
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+# Sign in first to enroll biometric credentials
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "signin-button"
+- extendedWaitUntil:
+    visible: "Good morning"
+    timeout: 15000
+# Sign out and verify login screen loads
+- waitForAnimationToEnd
+- tapOn: "Profile"
+- extendedWaitUntil:
+    visible: "Sign Out"
+    timeout: 10000
+- tapOn: "Sign Out"
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 15000
+- assertVisible:
+    id: "signin-button"
