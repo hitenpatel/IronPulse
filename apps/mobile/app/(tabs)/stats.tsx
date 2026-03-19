@@ -429,7 +429,7 @@ export default function StatsScreen() {
               ))}
             </View>
           ) : (
-            <View
+            <Card
               style={{
                 alignItems: "center",
                 justifyContent: "center",
@@ -439,9 +439,10 @@ export default function StatsScreen() {
               <Text
                 style={{ color: "hsl(215, 20%, 65%)", textAlign: "center" }}
               >
-                More analytics coming soon
+                No weight entries yet. Log your first weight above to start
+                tracking.
               </Text>
-            </View>
+            </Card>
           )}
         </View>
       </ScrollView>
