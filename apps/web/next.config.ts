@@ -36,6 +36,22 @@ const nextConfig: NextConfig = {
     "@ironpulse/shared",
     "@ironpulse/sync",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.apple.com",
+      },
+    ],
+  },
   async headers() {
     return [
       {
