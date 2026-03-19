@@ -131,6 +131,7 @@ export default function LoginPage() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            data-testid="email-input"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -144,6 +145,7 @@ export default function LoginPage() {
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
+            data-testid="password-input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -165,7 +167,7 @@ export default function LoginPage() {
           <p className="text-sm text-destructive">{error}</p>
         )}
 
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="w-full" disabled={loading} data-testid="signin-button">
           {loading ? "Signing in..." : "Sign in"}
         </Button>
       </form>
