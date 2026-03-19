@@ -231,7 +231,126 @@ export const socialRouter = createTRPCRouter({
         return { ...rest, reactionCounts, myReactions };
       });
 
-      return { data, nextCursor };
+      // Collect reference IDs by type to avoid N+1
+      const workoutIds = data.filter((i) => i.type === "workout").map((i) => i.referenceId);
+      const cardioIds = data.filter((i) => i.type === "cardio").map((i) => i.referenceId);
+      const prIds = data.filter((i) => i.type === "pr").map((i) => i.referenceId);
+
+      // Fetch preview data in parallel
+      const [workouts, cardioSessions, personalRecords] = await Promise.all([
+        workoutIds.length > 0
+          ? ctx.db.workout.findMany({
+              where: { id: { in: workoutIds } },
+              select: {
+                id: true,
+                name: true,
+                durationSeconds: true,
+                workoutExercises: {
+                  orderBy: { order: "asc" },
+                  select: {
+                    order: true,
+                    exercise: { select: { name: true } },
+                    sets: {
+                      where: { completed: true },
+                      select: { weightKg: true, reps: true },
+                    },
+                  },
+                },
+              },
+            })
+          : Promise.resolve([]),
+        cardioIds.length > 0
+          ? ctx.db.cardioSession.findMany({
+              where: { id: { in: cardioIds } },
+              select: {
+                id: true,
+                type: true,
+                durationSeconds: true,
+                distanceMeters: true,
+              },
+            })
+          : Promise.resolve([]),
+        prIds.length > 0
+          ? ctx.db.personalRecord.findMany({
+              where: { id: { in: prIds } },
+              select: {
+                id: true,
+                type: true,
+                value: true,
+                exercise: { select: { name: true } },
+              },
+            })
+          : Promise.resolve([]),
+      ]);
+
+      // Build lookup maps
+      type WorkoutPreview = {
+        workoutName: string | null;
+        durationSeconds: number | null;
+        topExercises: string[];
+        totalVolumeKg: number;
+        prCount: number;
+      };
+      type CardioPreview = {
+        cardioType: string;
+        durationSeconds: number;
+        distanceMeters: number | null;
+      };
+      type PrPreview = {
+        exerciseName: string;
+        prType: string;
+        value: number;
+      };
+
+      const workoutMap = new Map<string, WorkoutPreview>();
+      for (const w of workouts) {
+        const topExercises = w.workoutExercises
+          .slice(0, 3)
+          .map((we) => we.exercise.name);
+        let totalVolumeKg = 0;
+        for (const we of w.workoutExercises) {
+          for (const s of we.sets) {
+            if (s.weightKg != null && s.reps != null) {
+              totalVolumeKg += Number(s.weightKg) * s.reps;
+            }
+          }
+        }
+        workoutMap.set(w.id, {
+          workoutName: w.name,
+          durationSeconds: w.durationSeconds,
+          topExercises,
+          totalVolumeKg,
+          prCount: 0, // populated below
+        });
+      }
+
+      const cardioMap = new Map<string, CardioPreview>();
+      for (const c of cardioSessions) {
+        cardioMap.set(c.id, {
+          cardioType: c.type,
+          durationSeconds: c.durationSeconds,
+          distanceMeters: c.distanceMeters != null ? Number(c.distanceMeters) : null,
+        });
+      }
+
+      const prMap = new Map<string, PrPreview>();
+      for (const pr of personalRecords) {
+        prMap.set(pr.id, {
+          exerciseName: pr.exercise.name,
+          prType: pr.type,
+          value: Number(pr.value),
+        });
+      }
+
+      // Attach preview data to each item
+      const enriched = data.map((item) => ({
+        ...item,
+        workoutPreview: item.type === "workout" ? (workoutMap.get(item.referenceId) ?? null) : null,
+        cardioPreview: item.type === "cardio" ? (cardioMap.get(item.referenceId) ?? null) : null,
+        prPreview: item.type === "pr" ? (prMap.get(item.referenceId) ?? null) : null,
+      }));
+
+      return { data: enriched, nextCursor };
     }),
 
   toggleReaction: rateLimitedProcedure

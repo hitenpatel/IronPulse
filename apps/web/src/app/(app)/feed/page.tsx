@@ -4,6 +4,7 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dumbbell, Activity, Trophy, Users } from "lucide-react";
 
 const REACTIONS = [
@@ -135,6 +136,96 @@ function FeedItemReactions({ feedItemId, reactionCounts, myReactions }: FeedItem
   );
 }
 
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return rem > 0 ? `${hours}h ${rem}m` : `${hours}h`;
+}
+
+function formatDistance(meters: number): string {
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(2)} km`;
+  }
+  return `${Math.round(meters)} m`;
+}
+
+type WorkoutPreview = {
+  workoutName: string | null;
+  durationSeconds: number | null;
+  topExercises: string[];
+  totalVolumeKg: number;
+  prCount: number;
+};
+
+type CardioPreview = {
+  cardioType: string;
+  durationSeconds: number;
+  distanceMeters: number | null;
+};
+
+type PrPreview = {
+  exerciseName: string;
+  prType: string;
+  value: number;
+};
+
+function WorkoutPreviewCard({ preview }: { preview: WorkoutPreview }) {
+  return (
+    <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-xs space-y-1.5">
+      {preview.topExercises.length > 0 && (
+        <p className="text-foreground font-medium">
+          {preview.topExercises.join(" · ")}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+        {preview.totalVolumeKg > 0 && (
+          <span>{Math.round(preview.totalVolumeKg).toLocaleString()} kg volume</span>
+        )}
+        {preview.durationSeconds != null && (
+          <span>{formatDuration(preview.durationSeconds)}</span>
+        )}
+        {preview.prCount > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] bg-yellow-500/20 text-yellow-400 border-0">
+            {preview.prCount} PR{preview.prCount !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CardioPreviewCard({ preview }: { preview: CardioPreview }) {
+  return (
+    <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-xs space-y-1">
+      <p className="text-foreground font-medium capitalize">{preview.cardioType}</p>
+      <div className="flex flex-wrap items-center gap-x-3 text-muted-foreground">
+        {preview.distanceMeters != null && (
+          <span>{formatDistance(preview.distanceMeters)}</span>
+        )}
+        <span>{formatDuration(preview.durationSeconds)}</span>
+      </div>
+    </div>
+  );
+}
+
+function PrPreviewCard({ preview }: { preview: PrPreview }) {
+  return (
+    <div className="mt-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 px-3 py-2 text-xs flex items-center gap-2">
+      <Trophy className="h-3.5 w-3.5 text-yellow-400 shrink-0" />
+      <span className="font-medium text-foreground">{preview.exerciseName}</span>
+      <span className="text-muted-foreground">
+        {preview.prType === "1rm"
+          ? `${preview.value} kg (1RM)`
+          : preview.prType === "volume"
+          ? `${Math.round(preview.value)} kg volume`
+          : `${preview.value}`}
+      </span>
+    </div>
+  );
+}
+
 export default function FeedPage() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     trpc.social.feed.useInfiniteQuery(
@@ -193,6 +284,15 @@ export default function FeedPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {timeAgo(new Date(item.createdAt))}
                   </p>
+                  {item.workoutPreview && (
+                    <WorkoutPreviewCard preview={item.workoutPreview} />
+                  )}
+                  {item.cardioPreview && (
+                    <CardioPreviewCard preview={item.cardioPreview} />
+                  )}
+                  {item.prPreview && (
+                    <PrPreviewCard preview={item.prPreview} />
+                  )}
                   <FeedItemReactions
                     feedItemId={item.id}
                     reactionCounts={item.reactionCounts}
