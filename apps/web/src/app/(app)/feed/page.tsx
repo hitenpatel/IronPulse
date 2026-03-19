@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,9 +87,12 @@ export default function FeedPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">
-                    <span className="font-medium">
+                    <Link
+                      href={`/users/${item.user.id}`}
+                      className="font-medium hover:underline"
+                    >
                       {item.user.name ?? "Unknown"}
-                    </span>{" "}
+                    </Link>{" "}
                     <span className="text-muted-foreground">
                       {getActivityText(item.type)}
                     </span>

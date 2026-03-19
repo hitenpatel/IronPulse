@@ -15,6 +15,11 @@ export const searchUsersSchema = z.object({
 });
 export type SearchUsersInput = z.infer<typeof searchUsersSchema>;
 
+export const getUserProfileSchema = z.object({
+  userId: z.string().uuid(),
+});
+export type GetUserProfileInput = z.infer<typeof getUserProfileSchema>;
+
 export const feedSchema = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.number().int().min(1).max(50).default(20),

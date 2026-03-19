@@ -3,6 +3,7 @@ import {
   followSchema,
   unfollowSchema,
   searchUsersSchema,
+  getUserProfileSchema,
   feedSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
@@ -102,6 +103,73 @@ export const socialRouter = createTRPCRouter({
       });
 
       return { users };
+    }),
+
+  getUserProfile: rateLimitedProcedure
+    .input(getUserProfileSchema)
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          createdAt: true,
+          _count: {
+            select: {
+              followers: true,
+              following: true,
+              workouts: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const isFollowing = await ctx.db.follow.findUnique({
+        where: {
+          followerId_followingId: {
+            followerId: ctx.user.id,
+            followingId: input.userId,
+          },
+        },
+        select: { id: true },
+      });
+
+      const recentActivity = await ctx.db.activityFeedItem.findMany({
+        where: {
+          userId: input.userId,
+          visibility: input.userId === ctx.user.id
+            ? undefined
+            : isFollowing
+              ? { in: ["public", "followers"] }
+              : "public",
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          type: true,
+          referenceId: true,
+          createdAt: true,
+        },
+      });
+
+      return {
+        id: user.id,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
+        followerCount: user._count.followers,
+        followingCount: user._count.following,
+        workoutCount: user._count.workouts,
+        isFollowing: !!isFollowing,
+        isOwnProfile: input.userId === ctx.user.id,
+        recentActivity,
+      };
     }),
 
   feed: rateLimitedProcedure

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,9 +86,12 @@ export default function UsersPage() {
               <Card key={user.id}>
                 <CardContent className="flex items-center justify-between py-4">
                   <div className="min-w-0">
-                    <p className="font-medium truncate">
+                    <Link
+                      href={`/users/${user.id}`}
+                      className="font-medium truncate hover:underline"
+                    >
                       {user.name ?? "Unknown"}
-                    </p>
+                    </Link>
                   </div>
                   <Button
                     variant={isFollowing ? "outline" : "default"}

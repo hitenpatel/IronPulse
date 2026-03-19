@@ -153,7 +153,7 @@ export function GlobalSearch() {
                   {data.users.map((user) => (
                     <button
                       key={user.id}
-                      onClick={() => navigate(`/social/${user.id}`)}
+                      onClick={() => navigate(`/users/${user.id}`)}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm",
                         "hover:bg-accent hover:text-accent-foreground"
