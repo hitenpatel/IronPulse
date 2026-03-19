@@ -47,7 +47,7 @@ export default function CoachDashboardPage() {
             communicate with athletes.
           </p>
           <Button asChild>
-            <Link href="/settings/integrations">View Pricing</Link>
+            <Link href="/pricing">View Pricing</Link>
           </Button>
         </div>
       </div>
