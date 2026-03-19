@@ -5,10 +5,10 @@ import {
   leaveChallengeSchema,
   updateChallengeProgressSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const challengeRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createChallengeSchema)
     .mutation(async ({ ctx, input }) => {
       const challenge = await ctx.db.challenge.create({
@@ -34,7 +34,7 @@ export const challengeRouter = createTRPCRouter({
       return { challenge };
     }),
 
-  join: protectedProcedure
+  join: rateLimitedProcedure
     .input(joinChallengeSchema)
     .mutation(async ({ ctx, input }) => {
       const challenge = await ctx.db.challenge.findUnique({
@@ -69,7 +69,7 @@ export const challengeRouter = createTRPCRouter({
       return { participant };
     }),
 
-  leave: protectedProcedure
+  leave: rateLimitedProcedure
     .input(leaveChallengeSchema)
     .mutation(async ({ ctx, input }) => {
       const challenge = await ctx.db.challenge.findUnique({
@@ -98,7 +98,7 @@ export const challengeRouter = createTRPCRouter({
       return { success: deleted.count > 0 };
     }),
 
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: rateLimitedProcedure.query(async ({ ctx }) => {
     const challenges = await ctx.db.challenge.findMany({
       where: {
         endsAt: { gt: new Date() },
@@ -133,7 +133,7 @@ export const challengeRouter = createTRPCRouter({
     };
   }),
 
-  getById: protectedProcedure
+  getById: rateLimitedProcedure
     .input(joinChallengeSchema)
     .query(async ({ ctx, input }) => {
       const challenge = await ctx.db.challenge.findUnique({
@@ -174,7 +174,7 @@ export const challengeRouter = createTRPCRouter({
       };
     }),
 
-  updateProgress: protectedProcedure
+  updateProgress: rateLimitedProcedure
     .input(updateChallengeProgressSchema)
     .mutation(async ({ ctx, input }) => {
       const participant = await ctx.db.challengeParticipant.findUnique({

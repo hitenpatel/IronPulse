@@ -1,9 +1,9 @@
 import { stringify } from "csv-stringify/sync";
 import { exportFormatSchema } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const exportRouter = createTRPCRouter({
-  workouts: protectedProcedure
+  workouts: rateLimitedProcedure
     .input(exportFormatSchema)
     .mutation(async ({ ctx, input }) => {
       const workouts = await ctx.db.workout.findMany({
@@ -48,7 +48,7 @@ export const exportRouter = createTRPCRouter({
       return { data: csv, mimeType: "text/csv" };
     }),
 
-  cardio: protectedProcedure
+  cardio: rateLimitedProcedure
     .input(exportFormatSchema)
     .mutation(async ({ ctx, input }) => {
       const sessions = await ctx.db.cardioSession.findMany({
@@ -75,7 +75,7 @@ export const exportRouter = createTRPCRouter({
       return { data: csv, mimeType: "text/csv" };
     }),
 
-  bodyMetrics: protectedProcedure
+  bodyMetrics: rateLimitedProcedure
     .input(exportFormatSchema)
     .mutation(async ({ ctx, input }) => {
       const metrics = await ctx.db.bodyMetric.findMany({
@@ -98,7 +98,7 @@ export const exportRouter = createTRPCRouter({
       return { data: csv, mimeType: "text/csv" };
     }),
 
-  allData: protectedProcedure.mutation(async ({ ctx }) => {
+  allData: rateLimitedProcedure.mutation(async ({ ctx }) => {
     const [workouts, cardioSessions, bodyMetrics] = await Promise.all([
       ctx.db.workout.findMany({
         where: { userId: ctx.user.id },

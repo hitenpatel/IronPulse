@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import {
   disconnectProviderSchema,
   completeStravaAuthSchema,
@@ -13,7 +13,7 @@ const GARMIN_TOKEN_URL =
   "https://connectapi.garmin.com/oauth-service/oauth/token";
 
 export const integrationRouter = createTRPCRouter({
-  listConnections: protectedProcedure.query(async ({ ctx }) => {
+  listConnections: rateLimitedProcedure.query(async ({ ctx }) => {
     return ctx.db.deviceConnection.findMany({
       where: { userId: ctx.user.id },
       select: {
@@ -27,7 +27,7 @@ export const integrationRouter = createTRPCRouter({
     });
   }),
 
-  disconnectProvider: protectedProcedure
+  disconnectProvider: rateLimitedProcedure
     .input(disconnectProviderSchema)
     .mutation(async ({ ctx, input }) => {
       const connection = await ctx.db.deviceConnection.findUnique({
@@ -71,7 +71,7 @@ export const integrationRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  completeStravaAuth: protectedProcedure
+  completeStravaAuth: rateLimitedProcedure
     .input(completeStravaAuthSchema)
     .mutation(async ({ ctx, input }) => {
       const response = await fetch(STRAVA_TOKEN_URL, {
@@ -125,7 +125,7 @@ export const integrationRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  completeGarminAuth: protectedProcedure
+  completeGarminAuth: rateLimitedProcedure
     .input(completeGarminAuthSchema)
     .mutation(async ({ ctx, input }) => {
       const response = await fetch(GARMIN_TOKEN_URL, {

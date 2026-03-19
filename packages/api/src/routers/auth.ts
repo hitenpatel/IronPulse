@@ -11,7 +11,7 @@ import {
 } from "@ironpulse/shared";
 import { sendMagicLinkEmail, sendPasswordResetEmail } from "../lib/email";
 import { signMobileToken } from "../lib/mobile-auth";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
+import { createTRPCRouter, publicProcedure, rateLimitedProcedure } from "../trpc";
 
 export const authRouter = createTRPCRouter({
   signUp: publicProcedure.input(signUpSchema).mutation(async ({ ctx, input }) => {
@@ -85,7 +85,7 @@ export const authRouter = createTRPCRouter({
     };
   }),
 
-  getSession: protectedProcedure.query(({ ctx }) => {
+  getSession: rateLimitedProcedure.query(({ ctx }) => {
     return { session: ctx.session };
   }),
 

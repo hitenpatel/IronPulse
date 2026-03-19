@@ -6,10 +6,10 @@ import {
   uploadAvatarSchema,
 } from "@ironpulse/shared";
 import { getPresignedUploadUrl } from "../lib/s3";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const userRouter = createTRPCRouter({
-  me: protectedProcedure.query(async ({ ctx }) => {
+  me: rateLimitedProcedure.query(async ({ ctx }) => {
     const user = await ctx.db.user.findUniqueOrThrow({
       where: { id: ctx.user.id },
       select: {
@@ -27,7 +27,7 @@ export const userRouter = createTRPCRouter({
     return { user };
   }),
 
-  updateProfile: protectedProcedure
+  updateProfile: rateLimitedProcedure
     .input(updateProfileSchema)
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.update({
@@ -50,7 +50,7 @@ export const userRouter = createTRPCRouter({
       return { user };
     }),
 
-  completeOnboarding: protectedProcedure
+  completeOnboarding: rateLimitedProcedure
     .input(completeOnboardingSchema)
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.update({
@@ -71,7 +71,7 @@ export const userRouter = createTRPCRouter({
       return { user };
     }),
 
-  uploadAvatar: protectedProcedure
+  uploadAvatar: rateLimitedProcedure
     .input(uploadAvatarSchema)
     .mutation(async ({ ctx, input }) => {
       const ext = input.contentType.split("/")[1];
@@ -86,7 +86,7 @@ export const userRouter = createTRPCRouter({
       return { uploadUrl, key };
     }),
 
-  registerPushToken: protectedProcedure
+  registerPushToken: rateLimitedProcedure
     .input(registerPushTokenSchema)
     .mutation(async ({ ctx, input }) => {
       await ctx.db.pushToken.upsert({
@@ -105,7 +105,7 @@ export const userRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  unregisterPushToken: protectedProcedure
+  unregisterPushToken: rateLimitedProcedure
     .input(unregisterPushTokenSchema)
     .mutation(async ({ ctx, input }) => {
       await ctx.db.pushToken.deleteMany({

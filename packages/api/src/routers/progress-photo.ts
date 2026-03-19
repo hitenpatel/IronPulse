@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import {
   createProgressPhotoSchema,
   uploadProgressPhotoSchema,
@@ -7,7 +7,7 @@ import {
 import { getPresignedUploadUrl } from "../lib/s3";
 
 export const progressPhotoRouter = createTRPCRouter({
-  getUploadUrl: protectedProcedure
+  getUploadUrl: rateLimitedProcedure
     .input(uploadProgressPhotoSchema)
     .mutation(async ({ ctx, input }) => {
       const ext = input.contentType.split("/")[1] ?? "jpg";
@@ -16,7 +16,7 @@ export const progressPhotoRouter = createTRPCRouter({
       return { uploadUrl, photoUrl: key };
     }),
 
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createProgressPhotoSchema)
     .mutation(async ({ ctx, input }) => {
       return ctx.db.progressPhoto.create({
@@ -29,7 +29,7 @@ export const progressPhotoRouter = createTRPCRouter({
       });
     }),
 
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: rateLimitedProcedure.query(async ({ ctx }) => {
     return ctx.db.progressPhoto.findMany({
       where: { userId: ctx.user.id },
       orderBy: { date: "desc" },
@@ -37,7 +37,7 @@ export const progressPhotoRouter = createTRPCRouter({
     });
   }),
 
-  delete: protectedProcedure
+  delete: rateLimitedProcedure
     .input(deleteProgressPhotoSchema)
     .mutation(async ({ ctx, input }) => {
       await ctx.db.progressPhoto.deleteMany({

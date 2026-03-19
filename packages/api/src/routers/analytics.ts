@@ -7,7 +7,7 @@ import {
   muscleVolumeSchema,
   calculateStreak,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import {
   calculateCardioLoad,
   calculateStrengthLoad,
@@ -16,7 +16,7 @@ import {
 } from "../lib/training-load";
 
 export const analyticsRouter = createTRPCRouter({
-  weeklyVolume: protectedProcedure
+  weeklyVolume: rateLimitedProcedure
     .input(weeklyVolumeSchema)
     .query(async ({ ctx, input }) => {
       const weeksAgo = new Date();
@@ -83,7 +83,7 @@ export const analyticsRouter = createTRPCRouter({
       return { data };
     }),
 
-  personalRecords: protectedProcedure
+  personalRecords: rateLimitedProcedure
     .input(personalRecordsSchema)
     .query(async ({ ctx, input }) => {
       const data = await ctx.db.personalRecord.findMany({
@@ -104,7 +104,7 @@ export const analyticsRouter = createTRPCRouter({
       return { data };
     }),
 
-  bodyWeightTrend: protectedProcedure
+  bodyWeightTrend: rateLimitedProcedure
     .input(bodyWeightTrendSchema)
     .query(async ({ ctx, input }) => {
       const since = new Date();
@@ -126,7 +126,7 @@ export const analyticsRouter = createTRPCRouter({
       return { data };
     }),
 
-  activityCalendar: protectedProcedure
+  activityCalendar: rateLimitedProcedure
     .input(activityCalendarSchema)
     .query(async ({ ctx, input }) => {
       const start = new Date(input.year, input.month - 1, 1);
@@ -179,7 +179,7 @@ export const analyticsRouter = createTRPCRouter({
       return { days };
     }),
 
-  trainingLoad: protectedProcedure
+  trainingLoad: rateLimitedProcedure
     .input(trainingLoadSchema)
     .query(async ({ ctx, input }) => {
       const since = new Date();
@@ -268,7 +268,7 @@ export const analyticsRouter = createTRPCRouter({
       return { data };
     }),
 
-  fitnessStatus: protectedProcedure.query(async ({ ctx }) => {
+  fitnessStatus: rateLimitedProcedure.query(async ({ ctx }) => {
     const since = new Date();
     since.setDate(since.getDate() - 60);
 
@@ -382,7 +382,7 @@ export const analyticsRouter = createTRPCRouter({
     };
   }),
 
-  streak: protectedProcedure.query(async ({ ctx }) => {
+  streak: rateLimitedProcedure.query(async ({ ctx }) => {
     const [workouts, cardioSessions] = await Promise.all([
       ctx.db.workout.findMany({
         where: { userId: ctx.user.id },
@@ -405,7 +405,7 @@ export const analyticsRouter = createTRPCRouter({
     return calculateStreak(dates);
   }),
 
-  muscleVolume: protectedProcedure
+  muscleVolume: rateLimitedProcedure
     .input(muscleVolumeSchema)
     .query(async ({ ctx, input }) => {
       const since = new Date();

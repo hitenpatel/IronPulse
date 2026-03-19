@@ -2,10 +2,10 @@ import {
   createBodyMetricSchema,
   listBodyMetricsSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const bodyMetricRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createBodyMetricSchema)
     .mutation(async ({ ctx, input }) => {
       const metric = await ctx.db.bodyMetric.upsert({
@@ -32,7 +32,7 @@ export const bodyMetricRouter = createTRPCRouter({
       return { metric };
     }),
 
-  list: protectedProcedure
+  list: rateLimitedProcedure
     .input(listBodyMetricsSchema)
     .query(async ({ ctx, input }) => {
       const data = await ctx.db.bodyMetric.findMany({

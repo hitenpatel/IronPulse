@@ -4,10 +4,10 @@ import {
   createPortalSessionSchema,
 } from "@ironpulse/shared";
 import { getStripe } from "../lib/stripe";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const stripeRouter = createTRPCRouter({
-  createCheckoutSession: protectedProcedure
+  createCheckoutSession: rateLimitedProcedure
     .input(createCheckoutSessionSchema)
     .mutation(async ({ ctx, input }) => {
       const stripe = getStripe();
@@ -55,7 +55,7 @@ export const stripeRouter = createTRPCRouter({
       return { url: session.url };
     }),
 
-  createPortalSession: protectedProcedure
+  createPortalSession: rateLimitedProcedure
     .input(createPortalSessionSchema)
     .mutation(async ({ ctx, input }) => {
       const stripe = getStripe();

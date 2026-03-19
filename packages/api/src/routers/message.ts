@@ -4,7 +4,7 @@ import {
   messageHistorySchema,
   markReadSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { notifyNewMessage } from "../lib/notifications";
 
 async function hasCoachAthleteRelationship(
@@ -24,7 +24,7 @@ async function hasCoachAthleteRelationship(
 }
 
 export const messageRouter = createTRPCRouter({
-  send: protectedProcedure
+  send: rateLimitedProcedure
     .input(sendMessageSchema)
     .mutation(async ({ ctx, input }) => {
       if (input.receiverId === ctx.user.id) {
@@ -69,7 +69,7 @@ export const messageRouter = createTRPCRouter({
       return message;
     }),
 
-  conversations: protectedProcedure.query(async ({ ctx }) => {
+  conversations: rateLimitedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
 
     // Get all messages where the user is sender or receiver
@@ -126,7 +126,7 @@ export const messageRouter = createTRPCRouter({
     );
   }),
 
-  history: protectedProcedure
+  history: rateLimitedProcedure
     .input(messageHistorySchema)
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id;
@@ -154,7 +154,7 @@ export const messageRouter = createTRPCRouter({
       return { messages, nextCursor };
     }),
 
-  markRead: protectedProcedure
+  markRead: rateLimitedProcedure
     .input(markReadSchema)
     .mutation(async ({ ctx, input }) => {
       const updated = await ctx.db.message.updateMany({

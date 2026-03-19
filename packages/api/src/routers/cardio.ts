@@ -9,12 +9,12 @@ import {
   importFitSchema,
   cursorPaginationSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { parseGpx, haversineDistance } from "../lib/gpx";
 import { parseFitFile } from "../lib/fit";
 
 export const cardioRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createCardioSchema)
     .mutation(async ({ ctx, input }) => {
       const session = await ctx.db.cardioSession.create({
@@ -41,7 +41,7 @@ export const cardioRouter = createTRPCRouter({
       return { session };
     }),
 
-  list: protectedProcedure
+  list: rateLimitedProcedure
     .input(cursorPaginationSchema)
     .query(async ({ ctx, input }) => {
       const sessions = await ctx.db.cardioSession.findMany({
@@ -67,7 +67,7 @@ export const cardioRouter = createTRPCRouter({
       return { data, nextCursor };
     }),
 
-  getById: protectedProcedure
+  getById: rateLimitedProcedure
     .input(z.object({ sessionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const session = await ctx.db.cardioSession.findFirst({
@@ -86,7 +86,7 @@ export const cardioRouter = createTRPCRouter({
       return { session };
     }),
 
-  getRoutePoints: protectedProcedure
+  getRoutePoints: rateLimitedProcedure
     .input(z.object({ sessionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       // Verify ownership
@@ -113,7 +113,7 @@ export const cardioRouter = createTRPCRouter({
       return { points };
     }),
 
-  completeGpsSession: protectedProcedure
+  completeGpsSession: rateLimitedProcedure
     .input(completeGpsSessionSchema)
     .mutation(async ({ ctx, input }) => {
       const points = input.routePoints;
@@ -167,7 +167,7 @@ export const cardioRouter = createTRPCRouter({
       return { session };
     }),
 
-  previewGpx: protectedProcedure
+  previewGpx: rateLimitedProcedure
     .input(previewGpxSchema)
     .mutation(async ({ input }) => {
       const gpxData = parseGpx(input.gpxContent);
@@ -180,7 +180,7 @@ export const cardioRouter = createTRPCRouter({
       };
     }),
 
-  importGpx: protectedProcedure
+  importGpx: rateLimitedProcedure
     .input(importGpxSchema)
     .mutation(async ({ ctx, input }) => {
       const gpxData = parseGpx(input.gpxContent);
@@ -214,7 +214,7 @@ export const cardioRouter = createTRPCRouter({
       return { session };
     }),
 
-  previewFit: protectedProcedure
+  previewFit: rateLimitedProcedure
     .input(previewFitSchema)
     .mutation(async ({ input }) => {
       const buffer = Buffer.from(input.fileBase64, "base64");
@@ -238,7 +238,7 @@ export const cardioRouter = createTRPCRouter({
       };
     }),
 
-  importFit: protectedProcedure
+  importFit: rateLimitedProcedure
     .input(importFitSchema)
     .mutation(async ({ ctx, input }) => {
       const buffer = Buffer.from(input.fileBase64, "base64");

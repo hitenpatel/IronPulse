@@ -6,7 +6,7 @@ import {
 import {
   createTRPCRouter,
   publicProcedure,
-  protectedProcedure,
+  rateLimitedProcedure,
 } from "../trpc";
 
 export const exerciseRouter = createTRPCRouter({
@@ -69,7 +69,7 @@ export const exerciseRouter = createTRPCRouter({
       return { exercise };
     }),
 
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createExerciseSchema)
     .mutation(async ({ ctx, input }) => {
       const exercise = await ctx.db.exercise.create({

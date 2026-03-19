@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { signPowerSyncToken } from "../lib/powersync-auth";
 import {
   syncApplySchema,
@@ -205,7 +205,7 @@ function enforceUserIdScope(
 // ─── Router ─────────────────────────────────────────────
 
 export const syncRouter = createTRPCRouter({
-  getToken: protectedProcedure.query(({ ctx }) => {
+  getToken: rateLimitedProcedure.query(({ ctx }) => {
     const token = signPowerSyncToken(ctx.user.id);
     return {
       token,
@@ -213,7 +213,7 @@ export const syncRouter = createTRPCRouter({
     };
   }),
 
-  applyChange: protectedProcedure
+  applyChange: rateLimitedProcedure
     .input(syncApplySchema)
     .mutation(async ({ ctx, input }) => {
       const { table, record: rawRecord } = input;
@@ -236,7 +236,7 @@ export const syncRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  update: protectedProcedure
+  update: rateLimitedProcedure
     .input(syncUpdateSchema)
     .mutation(async ({ ctx, input }) => {
       const { table, id, data: rawData } = input;
@@ -259,7 +259,7 @@ export const syncRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  delete: protectedProcedure
+  delete: rateLimitedProcedure
     .input(syncDeleteSchema)
     .mutation(async ({ ctx, input }) => {
       const { table, id } = input;

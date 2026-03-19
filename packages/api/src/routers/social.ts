@@ -5,10 +5,10 @@ import {
   searchUsersSchema,
   feedSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const socialRouter = createTRPCRouter({
-  follow: protectedProcedure
+  follow: rateLimitedProcedure
     .input(followSchema)
     .mutation(async ({ ctx, input }) => {
       if (input.userId === ctx.user.id) {
@@ -44,7 +44,7 @@ export const socialRouter = createTRPCRouter({
       return { follow };
     }),
 
-  unfollow: protectedProcedure
+  unfollow: rateLimitedProcedure
     .input(unfollowSchema)
     .mutation(async ({ ctx, input }) => {
       const deleted = await ctx.db.follow.deleteMany({
@@ -57,7 +57,7 @@ export const socialRouter = createTRPCRouter({
       return { success: deleted.count > 0 };
     }),
 
-  followers: protectedProcedure.query(async ({ ctx }) => {
+  followers: rateLimitedProcedure.query(async ({ ctx }) => {
     const followers = await ctx.db.follow.findMany({
       where: { followingId: ctx.user.id },
       select: {
@@ -73,7 +73,7 @@ export const socialRouter = createTRPCRouter({
     return { followers: followers.map((f) => ({ ...f.follower, followedAt: f.createdAt })) };
   }),
 
-  following: protectedProcedure.query(async ({ ctx }) => {
+  following: rateLimitedProcedure.query(async ({ ctx }) => {
     const following = await ctx.db.follow.findMany({
       where: { followerId: ctx.user.id },
       select: {
@@ -89,7 +89,7 @@ export const socialRouter = createTRPCRouter({
     return { following: following.map((f) => ({ ...f.following, followedAt: f.createdAt })) };
   }),
 
-  searchUsers: protectedProcedure
+  searchUsers: rateLimitedProcedure
     .input(searchUsersSchema)
     .query(async ({ ctx, input }) => {
       const users = await ctx.db.user.findMany({
@@ -104,7 +104,7 @@ export const socialRouter = createTRPCRouter({
       return { users };
     }),
 
-  feed: protectedProcedure
+  feed: rateLimitedProcedure
     .input(feedSchema)
     .query(async ({ ctx, input }) => {
       // Get IDs of users the current user follows

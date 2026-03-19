@@ -7,10 +7,10 @@ import {
   updateTemplateSchema,
   deleteTemplateSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const templateRouter = createTRPCRouter({
-  list: protectedProcedure
+  list: rateLimitedProcedure
     .input(listTemplatesSchema)
     .query(async ({ ctx, input }) => {
       const templates = await ctx.db.workoutTemplate.findMany({
@@ -33,7 +33,7 @@ export const templateRouter = createTRPCRouter({
       return { data, nextCursor };
     }),
 
-  getById: protectedProcedure
+  getById: rateLimitedProcedure
     .input(getTemplateSchema)
     .query(async ({ ctx, input }) => {
       const template = await ctx.db.workoutTemplate.findFirst({
@@ -58,7 +58,7 @@ export const templateRouter = createTRPCRouter({
       return { template };
     }),
 
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createTemplateSchema)
     .mutation(async ({ ctx, input }) => {
       const template = await ctx.db.workoutTemplate.create({
@@ -87,7 +87,7 @@ export const templateRouter = createTRPCRouter({
       return { template };
     }),
 
-  saveFromWorkout: protectedProcedure
+  saveFromWorkout: rateLimitedProcedure
     .input(saveWorkoutAsTemplateSchema)
     .mutation(async ({ ctx, input }) => {
       const workout = await ctx.db.workout.findFirst({
@@ -130,7 +130,7 @@ export const templateRouter = createTRPCRouter({
       return { template };
     }),
 
-  update: protectedProcedure
+  update: rateLimitedProcedure
     .input(updateTemplateSchema)
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.workoutTemplate.findFirst({
@@ -179,7 +179,7 @@ export const templateRouter = createTRPCRouter({
       return { template };
     }),
 
-  delete: protectedProcedure
+  delete: rateLimitedProcedure
     .input(deleteTemplateSchema)
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.workoutTemplate.findFirst({

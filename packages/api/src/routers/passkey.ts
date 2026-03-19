@@ -17,12 +17,12 @@ import {
 import { checkRateLimit, RATE_LIMITS } from "../lib/rate-limit";
 import {
   createTRPCRouter,
-  protectedProcedure,
+  rateLimitedProcedure,
   authRateLimitedProcedure,
 } from "../trpc";
 
 export const passkeyRouter = createTRPCRouter({
-  registerOptions: protectedProcedure.mutation(async ({ ctx }) => {
+  registerOptions: rateLimitedProcedure.mutation(async ({ ctx }) => {
     await checkRateLimit(
       `passkey-reg:${ctx.user.id}`,
       RATE_LIMITS.passkeyReg,
@@ -43,7 +43,7 @@ export const passkeyRouter = createTRPCRouter({
     }
   }),
 
-  registerVerify: protectedProcedure
+  registerVerify: rateLimitedProcedure
     .input(passkeyRegisterVerifySchema)
     .mutation(async ({ ctx, input }) => {
       try {
@@ -97,7 +97,7 @@ export const passkeyRouter = createTRPCRouter({
       }
     }),
 
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: rateLimitedProcedure.query(async ({ ctx }) => {
     const passkeys = await ctx.db.passkey.findMany({
       where: { userId: ctx.user.id },
       select: {
@@ -114,7 +114,7 @@ export const passkeyRouter = createTRPCRouter({
     return { passkeys };
   }),
 
-  rename: protectedProcedure
+  rename: rateLimitedProcedure
     .input(passkeyRenameSchema)
     .mutation(async ({ ctx, input }) => {
       const passkey = await ctx.db.passkey.findFirst({
@@ -133,7 +133,7 @@ export const passkeyRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  delete: protectedProcedure
+  delete: rateLimitedProcedure
     .input(passkeyDeleteSchema)
     .mutation(async ({ ctx, input }) => {
       // Serializable transaction to prevent race condition with removePassword
@@ -166,7 +166,7 @@ export const passkeyRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  removePassword: protectedProcedure
+  removePassword: rateLimitedProcedure
     .input(removePasswordSchema)
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
