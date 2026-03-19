@@ -2,14 +2,30 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, BarChart3, Plus, Search, User, CalendarDays, UserSearch } from "lucide-react";
+import {
+  Home,
+  BarChart3,
+  Plus,
+  Search,
+  User,
+  CalendarDays,
+  UserSearch,
+  Dumbbell,
+  Activity,
+  MessageSquare,
+  ClipboardList,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
 
 const navItems = [
   { icon: Home, label: "Home", href: "/dashboard" },
+  { icon: Dumbbell, label: "Workouts", href: "/workouts" },
+  { icon: ClipboardList, label: "Templates", href: "/templates" },
   { icon: CalendarDays, label: "Calendar", href: "/calendar" },
+  { icon: Activity, label: "Feed", href: "/feed" },
+  { icon: MessageSquare, label: "Messages", href: "/messages" },
   { icon: BarChart3, label: "Stats", href: "/stats" },
   { icon: Search, label: "Exercises", href: "/exercises" },
   { icon: UserSearch, label: "Find a Coach", href: "/coaches" },
