@@ -72,6 +72,17 @@ export const coachRouter = createTRPCRouter({
         });
       }
 
+      const MAX_CLIENTS = 25;
+      const clientCount = await ctx.db.programAssignment.count({
+        where: { coachId: ctx.user.id, status: { not: "cancelled" } },
+      });
+      if (clientCount >= MAX_CLIENTS) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `Client limit reached (${MAX_CLIENTS}). Upgrade your plan to add more clients.`,
+        });
+      }
+
       const assignment = await ctx.db.programAssignment.create({
         data: {
           coachId: ctx.user.id,
