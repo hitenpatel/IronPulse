@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,9 +120,9 @@ function PhotoCard({
     onSuccess: () => utils.progressPhoto.list.invalidate(),
   });
   const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm("Delete this photo?")) return;
     setDeleting(true);
     try {
       await deletePhoto.mutateAsync({ id: photo.id });
@@ -150,13 +151,22 @@ function PhotoCard({
         <p className="text-[10px] text-muted-foreground truncate">{photo.notes}</p>
       )}
       <button
-        onClick={handleDelete}
+        onClick={() => setConfirmOpen(true)}
         disabled={deleting}
         className="absolute top-1 right-1 p-1 rounded bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
         title="Delete photo"
       >
         <Trash2 className="h-3 w-3 text-destructive" />
       </button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete photo"
+        description="Delete this progress photo? This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

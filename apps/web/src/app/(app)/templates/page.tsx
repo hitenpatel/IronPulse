@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Play, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
@@ -7,12 +8,14 @@ import { usePowerSync } from "@powersync/react";
 import { useTemplates } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function TemplatesPage() {
   const router = useRouter();
   const db = usePowerSync();
 
   const { data: templatesData, isLoading } = useTemplates();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const startWorkout = trpc.workout.create.useMutation({
     onSuccess: (result) => {
@@ -22,10 +25,10 @@ export default function TemplatesPage() {
 
   const templates = templatesData ?? [];
 
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Delete template "${name}"? This cannot be undone.`)) {
-      await db.execute("DELETE FROM workout_templates WHERE id = ?", [id]);
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await db.execute("DELETE FROM workout_templates WHERE id = ?", [deleteTarget.id]);
+    setDeleteTarget(null);
   };
 
   if (isLoading) {
@@ -109,7 +112,7 @@ export default function TemplatesPage() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => handleDelete(template.id, template.name)}
+                onClick={() => setDeleteTarget({ id: template.id, name: template.name })}
                 aria-label="Delete template"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -118,6 +121,15 @@ export default function TemplatesPage() {
           </Card>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete template"
+        description={`Delete "${deleteTarget?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

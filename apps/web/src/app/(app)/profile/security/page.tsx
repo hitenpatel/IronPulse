@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -72,13 +73,15 @@ export default function SecurityPage() {
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
-    if (confirm("Delete this passkey? This cannot be undone.")) {
-      deleteMutation.mutate(
-        { passkeyId: id },
-        { onError: (err) => setError(err.message) },
-      );
-    }
+  const [deletePasskeyId, setDeletePasskeyId] = useState<string | null>(null);
+
+  function handleDelete() {
+    if (!deletePasskeyId) return;
+    deleteMutation.mutate(
+      { passkeyId: deletePasskeyId },
+      { onError: (err) => setError(err.message) },
+    );
+    setDeletePasskeyId(null);
   }
 
   async function handleRemovePassword() {
@@ -188,7 +191,7 @@ export default function SecurityPage() {
                     <Button size="sm" variant="ghost" onClick={() => handleStartRename(pk.id, pk.name)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(pk.id)} disabled={deleteMutation.isPending}>
+                    <Button size="sm" variant="ghost" onClick={() => setDeletePasskeyId(pk.id)} disabled={deleteMutation.isPending}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -262,6 +265,14 @@ export default function SecurityPage() {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={!!deletePasskeyId}
+        onOpenChange={(open) => !open && setDeletePasskeyId(null)}
+        title="Delete passkey"
+        description="Delete this passkey? This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
