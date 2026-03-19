@@ -315,11 +315,11 @@ jobs:
           xcrun simctl terminate "$DEVICE" com.ironpulse.app
 
           # Run Maestro
+          MAESTRO_EXIT=0
           $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
             --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
             --debug-output $GITHUB_WORKSPACE/maestro-debug \
-            || true
-          echo $? > /tmp/maestro-exit
+            || MAESTRO_EXIT=$?
 
           # Collect screenshots
           mkdir -p $GITHUB_WORKSPACE/maestro-debug/screenshots
@@ -330,7 +330,7 @@ jobs:
             --predicate 'processImagePath CONTAINS "IronPulse"' \
             --last 30m --style compact 2>/dev/null | tail -50
 
-          exit $(cat /tmp/maestro-exit)
+          exit $MAESTRO_EXIT
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -439,7 +439,7 @@ jobs:
             adb logcat -d | grep -iE "ReactNative|FATAL|Error|error|Exception|crash" | tail -30 > $GITHUB_WORKSPACE/logcat-errors.txt || true
             cat $GITHUB_WORKSPACE/logcat-errors.txt
             echo "=== Running Maestro tests ==="
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug || true
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -451,6 +451,25 @@ jobs:
             logcat-errors.txt
           include-hidden-files: true
           retention-days: 7
+
+  # ── CI Gate: single required check for branch protection ──
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build, e2e-maestro, e2e-ios]
+    steps:
+      - name: Check all required jobs
+        run: |
+          echo "build: ${{ needs.build.result }}"
+          echo "e2e-maestro: ${{ needs.e2e-maestro.result }}"
+          echo "e2e-ios: ${{ needs.e2e-ios.result }}"
+          if [[ "${{ needs.build.result }}" != "success" || \
+                "${{ needs.e2e-maestro.result }}" != "success" || \
+                "${{ needs.e2e-ios.result }}" != "success" ]]; then
+            echo "One or more required jobs failed"
+            exit 1
+          fi
 
   # ── E2E Dashboard ──
   deploy-dashboard:
