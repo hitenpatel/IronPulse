@@ -179,13 +179,17 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 1
 
-  # ── iOS: build simulator IPA via EAS Build (offloaded to Expo's servers) ──
-  # Note: EXPO_TOKEN must be set in GitHub repo secrets (from expo.dev → Account Settings → Access Tokens)
-  build-ios:
-    name: Build iOS (EAS)
-    needs: [lint-and-typecheck, test-unit, test-api]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  # ── iOS: build simulator .app + Maestro E2E on macOS ──
+  e2e-ios:
+    name: Mobile E2E iOS (Maestro)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
+      NEXTAUTH_URL: http://localhost:3000
+      EXPO_PUBLIC_API_URL: http://localhost:3000
+      EXPO_PUBLIC_E2E: "1"
+      DATABASE_URL: postgresql://runner:postgres@localhost:5432/ironpulse_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -193,14 +197,147 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Install and start PostgreSQL
+        run: |
+          brew install postgresql@16
+          export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+          brew services start postgresql@16
+          sleep 3
+          createdb ironpulse_test
+          psql -d ironpulse_test -c "ALTER USER $(whoami) WITH PASSWORD 'postgres';"
+          echo "/opt/homebrew/opt/postgresql@16/bin" >> $GITHUB_PATH
+
       - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
-      - uses: expo/expo-github-action@v8
+
+      - name: Deduplicate React
+        run: |
+          find node_modules -path "*/node_modules/react/index.js" \
+            -not -path "node_modules/react/index.js" \
+            -not -path "apps/mobile/node_modules/react/index.js" \
+            | while read f; do rm -rf "$(dirname "$f")"; done
+
+      - name: Push database schema
+        run: pnpm --filter @ironpulse/db db:push
+
+      - name: Expo prebuild iOS
+        run: |
+          cd apps/mobile
+          npx expo prebuild --platform ios --no-install
+
+      - name: Restore CocoaPods cache
+        uses: actions/cache/restore@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-      - name: Build iOS (simulator)
-        working-directory: apps/mobile
-        run: eas build --platform ios --profile preview --non-interactive --no-wait
+          path: apps/mobile/ios/Pods
+          key: pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          restore-keys: pods-
+
+      - name: Install CocoaPods
+        run: |
+          cd apps/mobile/ios
+          pod install
+
+      - name: Save CocoaPods cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: apps/mobile/ios/Pods
+          key: pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+
+      - name: Restore Xcode derived data cache
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/mobile/ios/build
+          key: xcode-release-${{ hashFiles('apps/mobile/ios/Podfile.lock', 'apps/mobile/package.json') }}
+          restore-keys: xcode-release-
+
+      - name: Build iOS (simulator, Release)
+        run: |
+          cd apps/mobile/ios
+          xcodebuild \
+            -workspace IronPulse.xcworkspace \
+            -scheme IronPulse \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -derivedDataPath build \
+            build
+
+      - name: Save Xcode derived data cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: apps/mobile/ios/build
+          key: xcode-release-${{ hashFiles('apps/mobile/ios/Podfile.lock', 'apps/mobile/package.json') }}
+
+      - name: Start API server
+        run: |
+          nohup pnpm --filter @ironpulse/web dev > /tmp/api-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "API is ready"
+              break
+            fi
+            echo "Waiting for API... ($i/60)"
+            sleep 2
+            if [ "$i" -eq 60 ]; then echo "ERROR: API failed to start"; cat /tmp/api-server.log; exit 1; fi
+          done
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Run Maestro tests on iOS simulator
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 240000
+        run: |
+          # Find an available iPhone simulator
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in devices:
+                      if 'iPhone' in d['name'] and d['isAvailable']:
+                          print(d['udid'])
+                          sys.exit(0)
+          ")
+          echo "Using simulator: $DEVICE"
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl install "$DEVICE" apps/mobile/ios/build/Build/Products/Release-iphonesimulator/IronPulse.app
+
+          # Pre-warm the app
+          xcrun simctl launch "$DEVICE" com.ironpulse.app
+          sleep 15
+          xcrun simctl terminate "$DEVICE" com.ironpulse.app
+
+          # Run Maestro
+          $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
+            --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
+            --debug-output $GITHUB_WORKSPACE/maestro-debug \
+            || true
+          echo $? > /tmp/maestro-exit
+
+          # Collect screenshots
+          mkdir -p $GITHUB_WORKSPACE/maestro-debug/screenshots
+          find $GITHUB_WORKSPACE -maxdepth 1 -name "native-*.png" -exec mv {} $GITHUB_WORKSPACE/maestro-debug/screenshots/ \; 2>/dev/null || true
+
+          # Print simulator logs
+          xcrun simctl spawn "$DEVICE" log show \
+            --predicate 'processImagePath CONTAINS "IronPulse"' \
+            --last 30m --style compact 2>/dev/null | tail -50
+
+          exit $(cat /tmp/maestro-exit)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maestro-report-ios
+          path: |
+            maestro-results.xml
+            maestro-debug/
+          include-hidden-files: true
+          retention-days: 7
 
   # ── Maestro E2E on Android emulator ──
   e2e-maestro:
@@ -307,7 +444,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: maestro-report
+          name: maestro-report-android
           path: |
             maestro-results.xml
             maestro-debug/
@@ -315,30 +452,10 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
-  deploy:
-    name: Deploy to Production
-    needs: [build]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd /opt/ironpulse
-            git pull origin main
-            docker compose -f docker/docker-compose.yml build app
-            docker compose -f docker/docker-compose.yml up -d app
-            docker compose -f docker/docker-compose.yml exec app npx prisma migrate deploy
-            echo "Deploy complete"
-
   # ── E2E Dashboard ──
   deploy-dashboard:
     runs-on: ubuntu-latest
-    needs: [e2e-maestro]
+    needs: [e2e-maestro, e2e-ios]
     if: always() && github.ref == 'refs/heads/main'
     concurrency:
       group: pages
@@ -385,8 +502,9 @@ jobs:
             --sha "${GITHUB_SHA::7}" \
             --message "$(git log -1 --format=%s | head -c 120)" \
             --branch "${{ github.ref_name }}" \
-            --maestro-android artifacts/maestro-report/maestro-results.xml \
-            --screenshots-dir artifacts/maestro-report/ \
+            --maestro-android artifacts/maestro-report-android/maestro-results.xml \
+            --maestro-ios artifacts/maestro-report-ios/maestro-results.xml \
+            --screenshots-dir artifacts/ \
             --output-dir dashboard-deploy/screenshots/run-${{ github.run_id }}/ \
             > new-run.json
 
