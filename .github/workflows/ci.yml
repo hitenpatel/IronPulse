@@ -179,6 +179,29 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 1
 
+  # ── iOS: build simulator IPA via EAS Build (offloaded to Expo's servers) ──
+  # Note: EXPO_TOKEN must be set in GitHub repo secrets (from expo.dev → Account Settings → Access Tokens)
+  build-ios:
+    name: Build iOS (EAS)
+    needs: [lint-and-typecheck, test-unit, test-api]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build iOS (simulator)
+        working-directory: apps/mobile
+        run: eas build --platform ios --profile preview --non-interactive --no-wait
+
   # ── Maestro E2E on Android emulator ──
   e2e-maestro:
     name: Mobile E2E (Maestro)
