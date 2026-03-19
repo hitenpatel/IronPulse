@@ -105,6 +105,7 @@ model Passkey {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("passkeys")
 }
 
@@ -177,6 +178,7 @@ model WorkoutExercise {
   exercise Exercise      @relation(fields: [exerciseId], references: [id])
   sets     ExerciseSet[]
 
+  @@index([workoutId])
   @@map("workout_exercises")
 }
 
@@ -194,6 +196,7 @@ model ExerciseSet {
   workoutExercise WorkoutExercise  @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   personalRecords PersonalRecord[]
 
+  @@index([workoutExerciseId])
   @@map("exercise_sets")
 }
 
@@ -250,6 +253,7 @@ model Lap {
 
   session CardioSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@index([sessionId])
   @@map("laps")
 }
 
@@ -265,6 +269,7 @@ model WorkoutTemplate {
   templateExercises TemplateExercise[]
   workouts          Workout[]
 
+  @@index([userId])
   @@map("workout_templates")
 }
 
@@ -279,6 +284,7 @@ model TemplateExercise {
   exercise     Exercise        @relation(fields: [exerciseId], references: [id])
   templateSets TemplateSet[]
 
+  @@index([templateId])
   @@map("template_exercises")
 }
 
@@ -292,6 +298,7 @@ model TemplateSet {
 
   templateExercise TemplateExercise @relation(fields: [templateExerciseId], references: [id], onDelete: Cascade)
 
+  @@index([templateExerciseId])
   @@map("template_sets")
 }
 
@@ -423,6 +430,7 @@ model ChallengeParticipant {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, userId])
+  @@index([userId])
   @@map("challenge_participants")
 }
 
@@ -456,6 +464,7 @@ model Program {
   coach       User                @relation("CoachPrograms", fields: [coachId], references: [id], onDelete: Cascade)
   assignments ProgramAssignment[]
 
+  @@index([coachId])
   @@map("programs")
 }
 
@@ -472,6 +481,8 @@ model ProgramAssignment {
   athlete User     @relation("AthleteAssignments", fields: [athleteId], references: [id], onDelete: Cascade)
   coach   User     @relation("CoachAssignments", fields: [coachId], references: [id], onDelete: Cascade)
 
+  @@index([coachId, status])
+  @@index([athleteId])
   @@map("program_assignments")
 }
 
@@ -484,6 +495,7 @@ model PushToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("push_tokens")
 }
 
