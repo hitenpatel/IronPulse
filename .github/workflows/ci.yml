@@ -202,6 +202,14 @@ jobs:
         run: |
           brew install postgresql@16 postgis
           export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+          # Link PostGIS extension files into PostgreSQL 16's extension directory
+          PG_EXT=$(pg_config --sharedir)/extension
+          PG_LIB=$(pg_config --pkglibdir)
+          POSTGIS_EXT=$(brew --prefix postgis)/share/postgresql/extension
+          POSTGIS_LIB=$(brew --prefix postgis)/lib/postgresql
+          ln -sf "$POSTGIS_EXT"/postgis* "$PG_EXT/" 2>/dev/null || true
+          ln -sf "$POSTGIS_LIB"/*.so "$PG_LIB/" 2>/dev/null || true
+          ln -sf "$POSTGIS_LIB"/*.dylib "$PG_LIB/" 2>/dev/null || true
           brew services start postgresql@16
           sleep 3
           createdb ironpulse_test
