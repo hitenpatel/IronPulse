@@ -6,10 +6,12 @@ import { View, Text, ActivityIndicator, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
+import { useNotificationDeepLink } from "@/lib/useNotificationDeepLink";
 
 function RootNavigator() {
   const { user, isLoading } = useAuth();
   const [powersyncReady, setPowersyncReady] = useState(false);
+  useNotificationDeepLink();
   const [PowerSyncProvider, setPowerSyncProvider] = useState<any>(null);
   const [db, setDb] = useState<any>(null);
 
