@@ -1,7 +1,11 @@
 appId: com.ironpulse.app
 ---
-- launchApp
-- waitForAnimationToEnd
+- launchApp:
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
 - tapOn:
     id: "email-input"
 - inputText: "test@example.com"
@@ -10,6 +14,11 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "signin-button"
-- assertVisible: "Good morning"
+- extendedWaitUntil:
+    visible: "Good morning"
+    timeout: 15000
+- waitForAnimationToEnd
 - tapOn: "Workout History"
-- assertVisible: "Workouts"
+- extendedWaitUntil:
+    visible: "Workouts"
+    timeout: 10000

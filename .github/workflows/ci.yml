@@ -248,6 +248,12 @@ jobs:
             if [ "$i" -eq 60 ]; then echo "ERROR: API failed to start"; exit 1; fi
           done
 
+      - name: Wait for API
+        run: |
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && break || sleep 2
+          done
+
       - name: Run Maestro tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -272,16 +278,17 @@ jobs:
             echo "=== Running Maestro tests ==="
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signin.yaml --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug; echo $? > /tmp/maestro-exit
             echo "=== Maestro auth-signin exit code: $(cat /tmp/maestro-exit) ==="
-            # Run remaining flows (allow failures for now)
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/history-navigation.yaml || true
+            # Stabilized flows — failures gate the build
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/auth-signout.yaml
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/navigation-tabs.yaml
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/history-navigation.yaml
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-empty.yaml
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-cancel.yaml
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/weight-log.yaml
+            # Complex flows — keep continue-on-error until further stabilized
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/integrations.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-empty.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/workout-cancel.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-manual.yaml || true
             $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/cardio-cancel.yaml || true
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/weight-log.yaml || true
 
       - uses: actions/upload-artifact@v4
         if: always()

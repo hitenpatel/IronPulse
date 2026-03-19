@@ -1,7 +1,11 @@
 appId: com.ironpulse.app
 ---
-- launchApp
-- waitForAnimationToEnd
+- launchApp:
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
 - tapOn:
     id: "email-input"
 - inputText: "test@example.com"
@@ -10,16 +14,39 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "signin-button"
-- assertVisible: "Good morning"
+- extendedWaitUntil:
+    visible: "Good morning"
+    timeout: 15000
+- waitForAnimationToEnd
 - tapOn:
     id: "fab-button"
+- extendedWaitUntil:
+    visible: "Start Workout"
+    timeout: 10000
 - tapOn: "Start Workout"
+- extendedWaitUntil:
+    visible: "Empty Workout"
+    timeout: 10000
 - tapOn: "Empty Workout"
-- assertVisible: "Finish"
+- extendedWaitUntil:
+    visible: "Finish"
+    timeout: 10000
+- waitForAnimationToEnd
 - tapOn:
     id: "add-exercise-button"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-search-input"
+    timeout: 10000
 - inputText: "Bench"
+- extendedWaitUntil:
+    visible: "Bench Press"
+    timeout: 10000
 - tapOn: "Bench Press"
+- extendedWaitUntil:
+    visible:
+      id: "weight-input-0-0"
+    timeout: 10000
 - tapOn:
     id: "weight-input-0-0"
 - inputText: "80"
@@ -30,6 +57,10 @@ appId: com.ironpulse.app
     id: "complete-set-0-0"
 - tapOn:
     id: "finish-button"
-- assertVisible: "Workout Complete"
+- extendedWaitUntil:
+    visible: "Workout Complete"
+    timeout: 15000
 - tapOn: "Done"
-- assertVisible: "Good morning"
+- extendedWaitUntil:
+    visible: "Good morning"
+    timeout: 10000
