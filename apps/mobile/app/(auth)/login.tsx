@@ -1,16 +1,33 @@
-import { useState } from "react";
-import { View, Text, Alert } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, Alert, Pressable } from "react-native";
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fingerprint } from "lucide-react-native";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isBiometricEnabled, isBiometricAvailable, getBiometricLabel } from "@/lib/biometric";
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithBiometric } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState("Biometric");
+
+  useEffect(() => {
+    async function checkBiometric() {
+      const enabled = await isBiometricEnabled();
+      const available = await isBiometricAvailable();
+      if (enabled && available) {
+        const label = await getBiometricLabel();
+        setBiometricLabel(label);
+        setBiometricAvailable(true);
+      }
+    }
+    checkBiometric();
+  }, []);
 
   async function handleSignIn() {
     if (!email || !password) return;
@@ -19,6 +36,20 @@ export default function LoginScreen() {
       await signIn(email, password);
     } catch (error: any) {
       Alert.alert("Sign In Failed", error?.message ?? "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBiometricSignIn() {
+    setLoading(true);
+    try {
+      const success = await signInWithBiometric();
+      if (!success) {
+        Alert.alert("Authentication Failed", "Biometric authentication was not successful.");
+      }
+    } catch (error: any) {
+      Alert.alert("Authentication Failed", error?.message ?? "Could not authenticate with biometrics.");
     } finally {
       setLoading(false);
     }
@@ -63,6 +94,31 @@ export default function LoginScreen() {
           <Button testID="signin-button" onPress={handleSignIn} disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
+
+          {biometricAvailable && (
+            <Pressable
+              testID="biometric-signin-button"
+              accessibilityLabel={`Sign in with ${biometricLabel}`}
+              onPress={handleBiometricSignIn}
+              disabled={loading}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 12,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: "hsl(215, 20%, 65%)",
+                opacity: loading ? 0.5 : 1,
+              }}
+            >
+              <Fingerprint size={20} color="hsl(213, 31%, 91%)" />
+              <Text style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}>
+                Sign in with {biometricLabel}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <Link href="/(auth)/signup" asChild>

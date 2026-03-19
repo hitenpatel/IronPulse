@@ -15,6 +15,7 @@ interface AuthContextValue {
   token: string | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithBiometric: () => Promise<boolean>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (updates: Partial<SessionUser>) => Promise<void>;
@@ -92,6 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signInWithBiometric = useCallback(async (): Promise<boolean> => {
+    const storedToken = await SecureStore.getItemAsync("auth-token");
+    const storedUser = await SecureStore.getItemAsync("auth-user");
+    if (!storedToken || !storedUser) return false;
+
+    const success = await authenticateWithBiometric();
+    if (!success) return false;
+
+    const parsedUser = JSON.parse(storedUser) as SessionUser;
+    setToken(storedToken);
+    setUser(parsedUser);
+    return true;
+  }, []);
+
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
       const result = await trpc.auth.mobileSignUp.mutate({
@@ -130,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, signIn, signUp, signOut, updateUser, showBiometricPrompt, dismissBiometricPrompt }}
+      value={{ user, token, isLoading, signIn, signInWithBiometric, signUp, signOut, updateUser, showBiometricPrompt, dismissBiometricPrompt }}
     >
       {children}
     </AuthContext.Provider>
