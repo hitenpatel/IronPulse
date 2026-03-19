@@ -62,12 +62,16 @@ export const userRouter = createTRPCRouter({
         data: {
           name: input.name,
           unitSystem: input.unitSystem,
+          ...(input.fitnessGoal !== undefined && { fitnessGoal: input.fitnessGoal }),
+          ...(input.experienceLevel !== undefined && { experienceLevel: input.experienceLevel }),
           onboardingComplete: true,
         },
         select: {
           id: true,
           name: true,
           unitSystem: true,
+          fitnessGoal: true,
+          experienceLevel: true,
           onboardingComplete: true,
         },
       });

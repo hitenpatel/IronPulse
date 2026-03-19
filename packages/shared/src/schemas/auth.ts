@@ -37,6 +37,8 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export const completeOnboardingSchema = z.object({
   name: z.string().min(1).max(100),
   unitSystem: z.enum(["metric", "imperial"]),
+  fitnessGoal: z.enum(["lose_weight", "build_muscle", "endurance", "general"]).optional(),
+  experienceLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
 });
 export type CompleteOnboardingInput = z.infer<typeof completeOnboardingSchema>;
 

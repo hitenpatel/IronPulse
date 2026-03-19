@@ -22,6 +22,8 @@ model User {
   subscriptionStatus String   @default("none") @map("subscription_status")
   stripeCustomerId   String?  @unique @map("stripe_customer_id")
   onboardingComplete    Boolean   @default(false) @map("onboarding_complete")
+  fitnessGoal           String?   @map("fitness_goal")
+  experienceLevel       String?   @map("experience_level")
   defaultRestSeconds    Int       @default(90) @map("default_rest_seconds")
   deletionRequestedAt   DateTime? @map("deletion_requested_at")
   consentedAt           DateTime? @map("consented_at")
@@ -169,11 +171,12 @@ model Workout {
 }
 
 model WorkoutExercise {
-  id         String  @id @default(uuid()) @db.Uuid
-  workoutId  String  @map("workout_id") @db.Uuid
-  exerciseId String  @map("exercise_id") @db.Uuid
-  order      Int
-  notes      String?
+  id             String  @id @default(uuid()) @db.Uuid
+  workoutId      String  @map("workout_id") @db.Uuid
+  exerciseId     String  @map("exercise_id") @db.Uuid
+  order          Int
+  notes          String?
+  supersetGroup  Int?    @map("superset_group")
 
   workout  Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   exercise Exercise      @relation(fields: [exerciseId], references: [id])
