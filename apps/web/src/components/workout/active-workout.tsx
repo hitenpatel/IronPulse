@@ -4,9 +4,23 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
-import { useQuery } from "@powersync/react";
+import { useQuery, usePowerSync } from "@powersync/react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { WorkoutHeader } from "./workout-header";
-import { ExerciseCard } from "./exercise-card";
+import { SortableExerciseCard } from "./sortable-exercise-card";
 import { AddExerciseSheet } from "./add-exercise-sheet";
 import { RestTimer } from "./rest-timer";
 import { CompletionSummary } from "./completion-summary";
@@ -25,6 +39,7 @@ export function ActiveWorkout({
   initialName,
 }: ActiveWorkoutProps) {
   const router = useRouter();
+  const db = usePowerSync();
   const { data: userData } = trpc.user.me.useQuery();
   const restDuration = userData?.user?.defaultRestSeconds ?? DEFAULT_REST_DURATION;
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -37,6 +52,16 @@ export function ActiveWorkout({
   // Read exercises and sets from PowerSync (reactive local reads)
   const { data: exercises } = useWorkoutExercises(workoutId);
   const { data: allSets } = useWorkoutSets(workoutId);
+
+  // dnd-kit sensors — pointer for mouse/trackpad, touch for mobile
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    })
+  );
 
   // Read exercise details from the exercises table for category/equipment
   const exerciseIds = exercises.map((e) => e.exercise_id);
@@ -87,6 +112,25 @@ export function ActiveWorkout({
     completeWorkout.mutate({ workoutId });
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = exercises.findIndex((e) => e.id === active.id);
+    const newIndex = exercises.findIndex((e) => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Compute the new order using arrayMove logic
+    const reordered = arrayMove(exercises, oldIndex, newIndex);
+
+    // Update all exercises' order in a batch
+    await Promise.all(
+      reordered.map((ex, idx) =>
+        db.execute(`UPDATE workout_exercises SET "order" = ? WHERE id = ?`, [idx + 1, ex.id])
+      )
+    );
+  }
+
   // Show completion screen
   if (completionPRs !== null) {
     const exerciseNames: Record<string, string> = {};
@@ -125,6 +169,54 @@ export function ActiveWorkout({
     );
   }
 
+  // Query previous performance for all exercises in this workout
+  const previousSetsQuery =
+    exerciseIds.length > 0
+      ? `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id
+         FROM exercise_sets es
+         JOIN workout_exercises we ON we.id = es.workout_exercise_id
+         JOIN workouts w ON w.id = we.workout_id
+         WHERE we.exercise_id IN (${exerciseIds.map(() => "?").join(",")})
+           AND w.completed_at IS NOT NULL
+           AND w.id != ?
+         ORDER BY w.completed_at DESC, es.set_number ASC`
+      : `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
+
+  const previousSetsParams = exerciseIds.length > 0 ? [...exerciseIds, workoutId] : [];
+
+  const { data: allPreviousSets } = useQuery<{
+    weight_kg: number | null;
+    reps: number | null;
+    set_number: number;
+    exercise_id: string;
+  }>(previousSetsQuery, previousSetsParams);
+
+  // Group previous sets by exercise_id, keeping only the most recent session (first seen per exercise)
+  const previousSetsByExercise = useMemo(() => {
+    const map = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
+    // allPreviousSets is ordered by completed_at DESC so we take up to LIMIT 10
+    // but we need to collect all sets from only the most recent workout per exercise
+    const seenExercise = new Map<string, boolean>();
+    const perExerciseRows = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
+
+    for (const row of allPreviousSets) {
+      if (!seenExercise.has(row.exercise_id)) {
+        seenExercise.set(row.exercise_id, true);
+        perExerciseRows.set(row.exercise_id, []);
+      }
+      // We include all rows returned — the SQL already limits to 10 total per exercise via ordering
+      const existing = perExerciseRows.get(row.exercise_id)!;
+      if (existing.length < 10) {
+        existing.push({ weight_kg: row.weight_kg, reps: row.reps, set_number: row.set_number });
+      }
+    }
+
+    for (const [exerciseId, rows] of perExerciseRows) {
+      map.set(exerciseId, rows);
+    }
+    return map;
+  }, [allPreviousSets]);
+
   // Build workout exercise data in the shape ExerciseCard expects
   const workoutExerciseCards = exercises.map((we) => {
     const detail = exerciseDetailsMap.get(we.exercise_id);
@@ -147,6 +239,7 @@ export function ActiveWorkout({
       },
       sets: weSets,
       notes: we.notes,
+      previousSets: previousSetsByExercise.get(we.exercise_id) ?? [],
     };
   });
 
@@ -159,17 +252,28 @@ export function ActiveWorkout({
         onFinish={handleFinish}
       />
 
-      {/* Exercise cards */}
-      {workoutExerciseCards.map((we) => (
-        <ExerciseCard
-          key={we.id}
-          workoutExercise={we}
-          onSetCompleted={handleSetCompleted}
-          onMutationSuccess={() => {
-            // PowerSync reactive queries auto-update, no invalidation needed
-          }}
-        />
-      ))}
+      {/* Sortable exercise list */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={workoutExerciseCards.map((we) => we.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {workoutExerciseCards.map((we) => (
+            <SortableExerciseCard
+              key={we.id}
+              workoutExercise={we}
+              onSetCompleted={handleSetCompleted}
+              onMutationSuccess={() => {
+                // PowerSync reactive queries auto-update, no invalidation needed
+              }}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
 
       {/* Empty state */}
       {exercises.length === 0 && (
