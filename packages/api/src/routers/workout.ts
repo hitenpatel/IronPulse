@@ -268,6 +268,30 @@ export const workoutRouter = createTRPCRouter({
       return { success: true };
     }),
 
+  updateExerciseNotes: protectedProcedure
+    .input(z.object({
+      workoutExerciseId: z.string(),
+      notes: z.string().max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership through workout exercise → workout → user
+      const we = await ctx.db.workoutExercise.findFirst({
+        where: {
+          id: input.workoutExerciseId,
+          workout: { userId: ctx.user.id },
+        },
+        select: { id: true },
+      });
+      if (!we) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Workout exercise not found" });
+      }
+
+      return ctx.db.workoutExercise.update({
+        where: { id: input.workoutExerciseId },
+        data: { notes: input.notes },
+      });
+    }),
+
   complete: protectedProcedure
     .input(completeWorkoutSchema)
     .mutation(async ({ ctx, input }) => {

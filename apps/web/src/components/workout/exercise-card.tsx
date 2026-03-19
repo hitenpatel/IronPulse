@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePowerSync } from "@powersync/react";
+import { trpc } from "@/lib/trpc/client";
 import { SetRow } from "./set-row";
 
 interface ExerciseSet {
@@ -45,6 +46,14 @@ export function ExerciseCard({
 }: ExerciseCardProps) {
   const db = usePowerSync();
   const [adding, setAdding] = useState(false);
+  const [showNotes, setShowNotes] = useState(
+    workoutExercise.notes != null && workoutExercise.notes !== ""
+  );
+  const [notes, setNotes] = useState(workoutExercise.notes || "");
+
+  const updateExerciseNotes = trpc.workout.updateExerciseNotes.useMutation({
+    onSuccess: () => onMutationSuccess(),
+  });
 
   function handleAddSet() {
     setAdding(true);
@@ -71,10 +80,38 @@ export function ExerciseCard({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Add Note</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setShowNotes(true)}>
+              Add Note
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Notes area */}
+      {showNotes && (
+        <div className="mb-3 flex flex-col gap-2">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add a note for this exercise..."
+            maxLength={500}
+            rows={2}
+            className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <button
+            onClick={() =>
+              updateExerciseNotes.mutate({
+                workoutExerciseId: workoutExercise.id,
+                notes,
+              })
+            }
+            disabled={updateExerciseNotes.isPending}
+            className="self-end rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {updateExerciseNotes.isPending ? "Saving…" : "Save"}
+          </button>
+        </div>
+      )}
 
       {/* Set table header */}
       <div className="flex items-center gap-1 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
