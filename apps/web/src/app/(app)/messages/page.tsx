@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { useMessageStream } from "@/hooks/use-message-stream";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Send, ArrowLeft } from "lucide-react";
 
 export default function MessagesPage() {
+  useMessageStream();
   const searchParams = useSearchParams();
   const initialPartner = searchParams.get("partner");
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(
@@ -71,9 +73,7 @@ function ConversationList({
   onSelect: (id: string) => void;
 }) {
   const { data: conversations, isLoading } =
-    trpc.message.conversations.useQuery(undefined, {
-      refetchInterval: 5000,
-    });
+    trpc.message.conversations.useQuery();
 
   if (isLoading) {
     return (
@@ -150,8 +150,7 @@ function MessageThread({
   const userId = userData?.user?.id;
 
   const { data: historyData, isLoading } = trpc.message.history.useQuery(
-    { partnerId, limit: 50 },
-    { refetchInterval: 5000 }
+    { partnerId, limit: 50 }
   );
 
   const markRead = trpc.message.markRead.useMutation({
