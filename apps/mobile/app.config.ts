@@ -31,6 +31,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     },
   },
+  extra: {
+    eas: {
+      projectId: "a4541ea9-4c09-42bf-8ae6-f12a5ebb81e3",
+    },
+  },
   plugins: [
     "expo-router",
     "expo-secure-store",
