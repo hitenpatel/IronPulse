@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, BarChart3, Plus, Search, User, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navItems = [
   { icon: Home, label: "Home", href: "/dashboard" },
@@ -55,6 +56,8 @@ export function SidebarNav({ onNewSession }: SidebarNavProps) {
           <Plus className="h-5 w-5" />
         </button>
       </nav>
+
+      <ThemeToggle />
     </aside>
   );
 }
