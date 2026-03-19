@@ -11,6 +11,9 @@ export default defineConfig({
     fileParallelism: false,
   },
   resolve: {
+    alias: {
+      "server-only": path.resolve(__dirname, "__tests__/server-only-mock.ts"),
+    },
     extensions: [".ts", ".js"],
   },
 });
