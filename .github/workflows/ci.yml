@@ -200,28 +200,13 @@ jobs:
 
       - name: Install and start PostgreSQL with PostGIS
         run: |
-          brew install postgresql@16 postgis
-          export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
-          # Homebrew PostGIS installs against default postgresql, not @16
-          # Find and symlink all PostGIS files into PG16's directories
-          PG16_EXT="$(pg_config --sharedir)/extension"
-          PG16_LIB="$(pg_config --pkglibdir)"
-          POSTGIS_PREFIX="$(brew --prefix postgis)"
-          # Find extension control files wherever Homebrew put them
-          find "$POSTGIS_PREFIX" -name "postgis*.control" -exec ln -sf {} "$PG16_EXT/" \; 2>/dev/null
-          find "$POSTGIS_PREFIX" -name "postgis*.sql" -exec ln -sf {} "$PG16_EXT/" \; 2>/dev/null
-          find "$POSTGIS_PREFIX" -name "postgis*.dylib" -exec ln -sf {} "$PG16_LIB/" \; 2>/dev/null
-          find "$POSTGIS_PREFIX" -name "rtpostgis*.dylib" -exec ln -sf {} "$PG16_LIB/" \; 2>/dev/null
-          find "$POSTGIS_PREFIX" -name "postgis_topology*.sql" -exec ln -sf {} "$PG16_EXT/" \; 2>/dev/null
-          find "$POSTGIS_PREFIX" -name "postgis_topology*.control" -exec ln -sf {} "$PG16_EXT/" \; 2>/dev/null
-          # Debug: verify files exist
-          ls -la "$PG16_EXT"/postgis* 2>/dev/null || echo "WARNING: No postgis files found in $PG16_EXT"
-          brew services start postgresql@16
+          # Use default postgresql (not @16) because postgis formula is built against it
+          brew install postgresql postgis
+          brew services start postgresql
           sleep 3
           createdb ironpulse_test
           psql -d ironpulse_test -c "ALTER USER $(whoami) WITH PASSWORD 'postgres';"
           psql -d ironpulse_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-          echo "/opt/homebrew/opt/postgresql@16/bin" >> $GITHUB_PATH
 
       - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
 
