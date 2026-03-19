@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <NewSessionSheet open={sheetOpen} onOpenChange={setSheetOpen} />
 
       {/* Main content: offset by sidebar on desktop, padding for bottom nav on mobile */}
-      <main className="pb-20 lg:pl-16 lg:pb-0">
+      <main id="main-content" className="pb-20 lg:pl-16 lg:pb-0">
         <div className="mx-auto max-w-screen-sm px-4 py-6">
           <div className="mb-4 flex justify-end"><SyncStatus /></div>
           {children}

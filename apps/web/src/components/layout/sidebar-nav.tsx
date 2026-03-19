@@ -26,7 +26,7 @@ export function SidebarNav({ onNewSession }: SidebarNavProps) {
         IP
       </div>
 
-      <nav className="flex flex-1 flex-col items-center gap-2">
+      <nav aria-label="Main navigation" className="flex flex-1 flex-col items-center gap-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -39,7 +39,8 @@ export function SidebarNav({ onNewSession }: SidebarNavProps) {
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
-              title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
             >
               <item.icon className="h-5 w-5" />
             </Link>
@@ -49,7 +50,7 @@ export function SidebarNav({ onNewSession }: SidebarNavProps) {
         <button
           onClick={onNewSession}
           className="mt-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform active:scale-95"
-          title="New session"
+          aria-label="New session"
         >
           <Plus className="h-5 w-5" />
         </button>

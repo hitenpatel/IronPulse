@@ -119,6 +119,7 @@ export function SetRow({
 
       <button
         onClick={handleRpeClick}
+        aria-label={`RPE for set ${setNumber}: ${rpe ?? "not set"}. Click to cycle.`}
         className="w-12 text-center text-sm text-muted-foreground hover:text-foreground"
       >
         {rpe ?? "-"}
@@ -126,6 +127,7 @@ export function SetRow({
 
       <button
         onClick={handleComplete}
+        aria-label={completed ? `Set ${setNumber} completed` : `Mark set ${setNumber} as complete`}
         className="w-9 flex items-center justify-center"
       >
         {completed ? (

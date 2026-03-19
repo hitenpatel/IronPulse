@@ -33,14 +33,22 @@ interface WorkoutExerciseData {
   notes: string | null;
 }
 
+interface PreviousSet {
+  weight_kg: number | null;
+  reps: number | null;
+  set_number: number;
+}
+
 interface ExerciseCardProps {
   workoutExercise: WorkoutExerciseData;
+  previousSets?: PreviousSet[];
   onSetCompleted: () => void;
   onMutationSuccess: () => void;
 }
 
 export function ExerciseCard({
   workoutExercise,
+  previousSets,
   onSetCompleted,
   onMutationSuccess,
 }: ExerciseCardProps) {
@@ -75,7 +83,10 @@ export function ExerciseCard({
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1 text-muted-foreground hover:text-foreground">
+            <button
+              aria-label={`More options for ${workoutExercise.exercise.name}`}
+              className="p-1 text-muted-foreground hover:text-foreground"
+            >
               <MoreVertical className="h-4 w-4" />
             </button>
           </DropdownMenuTrigger>
@@ -86,6 +97,21 @@ export function ExerciseCard({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Previous performance */}
+      {previousSets && previousSets.length > 0 && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          <span className="font-medium">Last:</span>{" "}
+          {previousSets
+            .map((s) => {
+              if (s.weight_kg != null && s.reps != null)
+                return `${s.weight_kg}kg × ${s.reps}`;
+              if (s.reps != null) return `${s.reps} reps`;
+              return "—";
+            })
+            .join(", ")}
+        </p>
+      )}
 
       {/* Notes area */}
       {showNotes && (
