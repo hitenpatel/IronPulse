@@ -33,6 +33,7 @@ export const authRouter = createTRPCRouter({
         email: input.email,
         name: input.name,
         passwordHash,
+        consentedAt: input.consentedAt ?? null,
         accounts: {
           create: {
             provider: "email",
@@ -148,6 +149,7 @@ export const authRouter = createTRPCRouter({
           email: input.email,
           name: input.name,
           passwordHash,
+          consentedAt: input.consentedAt ?? null,
           accounts: {
             create: {
               provider: "email",

@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [consented, setConsented] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -34,6 +35,7 @@ export default function SignupPage() {
     if (name.length > 100) errors.name = "Name must be under 100 characters";
     if (!email.trim()) errors.email = "Email is required";
     if (password.length < 8) errors.password = "Password must be at least 8 characters";
+    if (!consented) errors.consent = "You must agree to the Privacy Policy and Terms of Service";
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -50,6 +52,7 @@ export default function SignupPage() {
         name: name.trim(),
         email,
         password,
+        consentedAt: new Date(),
       });
 
       // Auto sign-in after signup
@@ -201,6 +204,30 @@ export default function SignupPage() {
           </p>
           {fieldErrors.password && (
             <p className="mt-1 text-xs text-destructive">{fieldErrors.password}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => setConsented(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border border-input accent-primary"
+            />
+            <span className="text-sm text-muted-foreground">
+              I agree to the{" "}
+              <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                Privacy Policy
+              </Link>{" "}
+              and{" "}
+              <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                Terms of Service
+              </Link>
+            </span>
+          </label>
+          {fieldErrors.consent && (
+            <p className="mt-1 text-xs text-destructive">{fieldErrors.consent}</p>
           )}
         </div>
 

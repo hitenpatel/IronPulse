@@ -231,7 +231,15 @@ export default function LandingPage() {
       <footer className="border-t border-border/40 py-8">
         <div className="mx-auto max-w-6xl px-6 flex items-center justify-between text-sm text-muted-foreground">
           <span>IronPulse</span>
-          <span>Open-source fitness tracking</span>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">
+              Terms of Service
+            </Link>
+            <span>Open-source fitness tracking</span>
+          </div>
         </div>
       </footer>
     </main>
