@@ -1,3 +1,5 @@
+import "server-only";
+
 // Dynamic import with webpackIgnore to prevent webpack from following the import
 // @simplewebauthn/server uses eval/WASM which webpack flags as "Dynamic Code Evaluation"
 async function getSimpleWebAuthn() {
