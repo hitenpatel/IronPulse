@@ -53,6 +53,7 @@ export default function StatsScreen() {
   const { user } = useAuth();
   const db = usePowerSync();
   const [weight, setWeight] = useState("");
+  const [bodyFat, setBodyFat] = useState("");
 
   const [fitnessStatus, setFitnessStatus] = useState<FitnessStatus | null>(
     null,
@@ -92,19 +93,29 @@ export default function StatsScreen() {
       return;
     }
 
+    const bodyFatValue = bodyFat !== "" ? parseFloat(bodyFat) : null;
+    if (
+      bodyFatValue !== null &&
+      (isNaN(bodyFatValue) || bodyFatValue < 0 || bodyFatValue > 100)
+    ) {
+      Alert.alert("Invalid body fat", "Body fat must be between 0 and 100.");
+      return;
+    }
+
     const id = crypto.randomUUID();
     const today = new Date().toISOString().slice(0, 10);
     const now = new Date().toISOString();
 
     await db.execute(
-      "INSERT INTO body_metrics (id, user_id, date, weight_kg, created_at) VALUES (?, ?, ?, ?, ?)",
-      [id, user?.id, today, value, now],
+      "INSERT INTO body_metrics (id, user_id, date, weight_kg, body_fat_pct, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      [id, user?.id, today, value, bodyFatValue, now],
     );
 
     writeWeightToHealthKit(parseFloat(weight), today).catch(() => {});
     writeWeightToGoogleFit(parseFloat(weight), new Date()).catch(() => {});
 
     setWeight("");
+    setBodyFat("");
   };
 
   const maxVolume = muscleVolume.length > 0 ? muscleVolume[0].volume : 1;
@@ -400,6 +411,24 @@ export default function StatsScreen() {
                 fontSize: 16,
               }}
             />
+            <TextInput
+              testID="body-fat-input"
+              placeholder="Body fat % (optional)"
+              placeholderTextColor="hsl(215, 20%, 65%)"
+              keyboardType="decimal-pad"
+              value={bodyFat}
+              onChangeText={setBodyFat}
+              style={{
+                borderWidth: 1,
+                borderColor: "hsl(217, 33%, 17%)",
+                borderRadius: 8,
+                backgroundColor: "hsl(224, 71%, 4%)",
+                color: "hsl(213, 31%, 91%)",
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: 16,
+              }}
+            />
             <Button testID="log-weight" onPress={handleLogWeight}>
               Log Weight
             </Button>
@@ -420,11 +449,20 @@ export default function StatsScreen() {
                   <Text style={{ color: "hsl(213, 31%, 91%)" }}>
                     {new Date(item.date).toLocaleDateString()}
                   </Text>
-                  <Text
-                    style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}
-                  >
-                    {item.weight_kg != null ? `${item.weight_kg} kg` : "\u2014"}
-                  </Text>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text
+                      style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}
+                    >
+                      {item.weight_kg != null ? `${item.weight_kg} kg` : "\u2014"}
+                    </Text>
+                    {item.body_fat_pct != null && (
+                      <Text
+                        style={{ color: "hsl(215, 20%, 65%)", fontSize: 12 }}
+                      >
+                        {Number(item.body_fat_pct).toFixed(1)}% body fat
+                      </Text>
+                    )}
+                  </View>
                 </Card>
               ))}
             </View>

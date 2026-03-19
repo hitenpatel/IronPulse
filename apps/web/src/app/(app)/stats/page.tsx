@@ -196,7 +196,11 @@ function BodyWeightTrend() {
   // Filter to entries with weight, sort ascending by date for chart
   const points = (metrics ?? [])
     .filter((m) => m.weight_kg != null)
-    .map((m) => ({ date: m.date, weightKg: Number(m.weight_kg) }))
+    .map((m) => ({
+      date: m.date,
+      weightKg: Number(m.weight_kg),
+      bodyFatPct: m.body_fat_pct != null ? Number(m.body_fat_pct) : null,
+    }))
     .reverse(); // useBodyMetrics returns DESC, we need ASC for chart
 
   if (points.length === 0) {
@@ -238,6 +242,14 @@ function BodyWeightTrend() {
   const previousWeight = weights.length >= 2 ? weights[weights.length - 2] : null;
   const diff = previousWeight !== null ? latestWeight - previousWeight : null;
 
+  const latestBodyFat = points[points.length - 1].bodyFatPct;
+  const previousBodyFat =
+    points.length >= 2 ? points[points.length - 2].bodyFatPct : null;
+  const bodyFatDiff =
+    latestBodyFat !== null && previousBodyFat !== null
+      ? latestBodyFat - previousBodyFat
+      : null;
+
   return (
     <Card>
       <CardHeader>
@@ -258,6 +270,21 @@ function BodyWeightTrend() {
             >
               {diff > 0 ? "+" : ""}
               {diff.toFixed(1)} kg
+            </span>
+          )}
+          {latestBodyFat !== null && (
+            <span className="text-sm text-muted-foreground ml-2">
+              {latestBodyFat.toFixed(1)}% body fat
+              {bodyFatDiff !== null && (
+                <span
+                  className={`ml-1 text-xs font-medium ${
+                    bodyFatDiff > 0 ? "text-red-500" : bodyFatDiff < 0 ? "text-green-500" : "text-muted-foreground"
+                  }`}
+                >
+                  ({bodyFatDiff > 0 ? "+" : ""}
+                  {bodyFatDiff.toFixed(1)}%)
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -316,6 +343,7 @@ function BodyWeightTrend() {
 
 function BodyWeightLogForm() {
   const [weight, setWeight] = useState("");
+  const [bodyFat, setBodyFat] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -323,8 +351,11 @@ function BodyWeightLogForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(weight);
-    if (isNaN(val) || val <= 0) return;
+    const weightVal = parseFloat(weight);
+    if (isNaN(weightVal) || weightVal <= 0) return;
+
+    const bodyFatVal = bodyFat !== "" ? parseFloat(bodyFat) : null;
+    if (bodyFatVal !== null && (isNaN(bodyFatVal) || bodyFatVal < 0 || bodyFatVal > 100)) return;
 
     setIsPending(true);
     setError(false);
@@ -336,11 +367,12 @@ function BodyWeightLogForm() {
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
       await db.execute(
-        `INSERT INTO body_metrics (id, date, weight_kg, created_at) VALUES (?, ?, ?, ?)`,
-        [id, dateStr, val, now.toISOString()]
+        `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, created_at) VALUES (?, ?, ?, ?, ?)`,
+        [id, dateStr, weightVal, bodyFatVal, now.toISOString()]
       );
 
       setWeight("");
+      setBodyFat("");
       setSuccess(true);
     } catch {
       setError(true);
@@ -358,24 +390,36 @@ function BodyWeightLogForm() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <Input
-            type="number"
-            step="0.1"
-            min="20"
-            max="300"
-            placeholder="Weight (kg)"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            className="flex-1"
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={isPending || !weight}
-          >
-            {isPending ? "Saving..." : "Save"}
-          </Button>
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              step="0.1"
+              min="20"
+              max="300"
+              placeholder="Weight (kg)"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              placeholder="Body fat % (optional)"
+              value={bodyFat}
+              onChange={(e) => setBodyFat(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isPending || !weight}
+            >
+              {isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
         </form>
         {error && (
           <p className="text-xs text-destructive mt-2">
