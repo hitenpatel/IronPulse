@@ -69,6 +69,69 @@ export const exerciseRouter = createTRPCRouter({
       return { exercise };
     }),
 
+  getDetail: rateLimitedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const exercise = await ctx.db.exercise.findUniqueOrThrow({
+        where: { id: input.id },
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          primaryMuscles: true,
+          secondaryMuscles: true,
+          equipment: true,
+          instructions: true,
+          imageUrls: true,
+          videoUrls: true,
+          isCustom: true,
+        },
+      });
+
+      const personalRecords = await ctx.db.personalRecord.findMany({
+        where: {
+          userId: ctx.user.id,
+          exerciseId: input.id,
+        },
+        orderBy: { achievedAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          type: true,
+          value: true,
+          achievedAt: true,
+        },
+      });
+
+      const recentSets = await ctx.db.exerciseSet.findMany({
+        where: {
+          completed: true,
+          workoutExercise: {
+            exerciseId: input.id,
+            workout: { userId: ctx.user.id },
+          },
+        },
+        orderBy: { workoutExercise: { workout: { startedAt: "desc" } } },
+        take: 20,
+        select: {
+          id: true,
+          setNumber: true,
+          weightKg: true,
+          reps: true,
+          rpe: true,
+          workoutExercise: {
+            select: {
+              workout: {
+                select: { startedAt: true },
+              },
+            },
+          },
+        },
+      });
+
+      return { exercise, personalRecords, recentSets };
+    }),
+
   create: rateLimitedProcedure
     .input(createExerciseSchema)
     .mutation(async ({ ctx, input }) => {
