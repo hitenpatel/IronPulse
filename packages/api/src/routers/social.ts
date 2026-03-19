@@ -95,12 +95,9 @@ export const socialRouter = createTRPCRouter({
       const users = await ctx.db.user.findMany({
         where: {
           id: { not: ctx.user.id },
-          OR: [
-            { name: { contains: input.query, mode: "insensitive" } },
-            { email: { contains: input.query, mode: "insensitive" } },
-          ],
+          name: { contains: input.query, mode: "insensitive" },
         },
-        select: { id: true, name: true, email: true, avatarUrl: true },
+        select: { id: true, name: true, avatarUrl: true },
         take: 20,
       });
 
