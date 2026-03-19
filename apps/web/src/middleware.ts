@@ -26,7 +26,7 @@ export default auth((req) => {
 
   // Allow public routes for unauthenticated users
   if (!isLoggedIn) {
-    if (publicRoutes.some((route) => pathname === route)) {
+    if (publicRoutes.includes(pathname) || pathname.startsWith("/share")) {
       return NextResponse.next();
     }
     return NextResponse.redirect(new URL("/login", req.url));

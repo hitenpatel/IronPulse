@@ -10,13 +10,13 @@ import {
   completeWorkoutSchema,
   cursorPaginationSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
 import { createFeedItem } from "../lib/feed";
 import { notifyNewPR } from "../lib/notifications";
 
 export const workoutRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: rateLimitedProcedure
     .input(createWorkoutSchema)
     .mutation(async ({ ctx, input }) => {
       const now = new Date();
@@ -80,7 +80,7 @@ export const workoutRouter = createTRPCRouter({
       return { workout };
     }),
 
-  getById: protectedProcedure
+  getById: rateLimitedProcedure
     .input(z.object({ workoutId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const workout = await ctx.db.workout.findFirst({
@@ -103,7 +103,7 @@ export const workoutRouter = createTRPCRouter({
       return { workout };
     }),
 
-  list: protectedProcedure
+  list: rateLimitedProcedure
     .input(cursorPaginationSchema)
     .query(async ({ ctx, input }) => {
       const workouts = await ctx.db.workout.findMany({
@@ -128,7 +128,7 @@ export const workoutRouter = createTRPCRouter({
       return { data, nextCursor };
     }),
 
-  update: protectedProcedure
+  update: rateLimitedProcedure
     .input(updateWorkoutSchema)
     .mutation(async ({ ctx, input }) => {
       const workout = await ctx.db.workout.updateMany({
@@ -151,7 +151,7 @@ export const workoutRouter = createTRPCRouter({
       return { workout: updated };
     }),
 
-  addExercise: protectedProcedure
+  addExercise: rateLimitedProcedure
     .input(addExerciseSchema)
     .mutation(async ({ ctx, input }) => {
       // Verify workout belongs to user
@@ -182,7 +182,7 @@ export const workoutRouter = createTRPCRouter({
       return { workoutExercise };
     }),
 
-  addSet: protectedProcedure
+  addSet: rateLimitedProcedure
     .input(addSetSchema)
     .mutation(async ({ ctx, input }) => {
       // Verify ownership through workout exercise → workout → user
@@ -219,7 +219,7 @@ export const workoutRouter = createTRPCRouter({
       return { set };
     }),
 
-  updateSet: protectedProcedure
+  updateSet: rateLimitedProcedure
     .input(updateSetSchema)
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
@@ -249,7 +249,7 @@ export const workoutRouter = createTRPCRouter({
       return { set };
     }),
 
-  deleteSet: protectedProcedure
+  deleteSet: rateLimitedProcedure
     .input(deleteSetSchema)
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
@@ -268,7 +268,7 @@ export const workoutRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  updateExerciseNotes: protectedProcedure
+  updateExerciseNotes: rateLimitedProcedure
     .input(z.object({
       workoutExerciseId: z.string(),
       notes: z.string().max(500),
@@ -292,7 +292,21 @@ export const workoutRouter = createTRPCRouter({
       });
     }),
 
-  complete: protectedProcedure
+  toggleShare: rateLimitedProcedure
+    .input(z.object({ workoutId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const workout = await ctx.db.workout.findFirst({
+        where: { id: input.workoutId, userId: ctx.user.id },
+      });
+      if (!workout) throw new TRPCError({ code: "NOT_FOUND" });
+      return ctx.db.workout.update({
+        where: { id: input.workoutId },
+        data: { isPublic: !workout.isPublic },
+        select: { isPublic: true, shareToken: true },
+      });
+    }),
+
+  complete: rateLimitedProcedure
     .input(completeWorkoutSchema)
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.workout.findFirst({
