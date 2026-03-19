@@ -24,16 +24,33 @@ interface WorkoutExerciseData {
   };
   sets: ExerciseSet[];
   notes: string | null;
+  supersetGroup: number | null;
+}
+
+interface PreviousSet {
+  weight_kg: number | null;
+  reps: number | null;
+  set_number: number;
 }
 
 interface SortableExerciseCardProps {
   workoutExercise: WorkoutExerciseData;
+  allExercises: WorkoutExerciseData[];
+  previousSets?: PreviousSet[];
+  isInSuperset: boolean;
+  isSupersetStart: boolean;
+  isSupersetEnd: boolean;
   onSetCompleted: () => void;
   onMutationSuccess: () => void;
 }
 
 export function SortableExerciseCard({
   workoutExercise,
+  allExercises,
+  previousSets,
+  isInSuperset,
+  isSupersetStart,
+  isSupersetEnd,
   onSetCompleted,
   onMutationSuccess,
 }: SortableExerciseCardProps) {
@@ -53,6 +70,16 @@ export function SortableExerciseCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const supersetBorderClass = isInSuperset
+    ? [
+        "border-l-4 border-primary/60",
+        isSupersetStart ? "rounded-tl" : "",
+        isSupersetEnd ? "rounded-bl" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : "";
+
   return (
     <div ref={setNodeRef} style={style} className="relative">
       {/* Drag handle positioned absolutely on the left */}
@@ -67,9 +94,11 @@ export function SortableExerciseCard({
       </button>
 
       {/* Indent the exercise card to make room for the drag handle */}
-      <div className="pl-7">
+      <div className={`pl-7 ${supersetBorderClass}`}>
         <ExerciseCard
           workoutExercise={workoutExercise}
+          allExercises={allExercises}
+          previousSets={previousSets}
           onSetCompleted={onSetCompleted}
           onMutationSuccess={onMutationSuccess}
         />

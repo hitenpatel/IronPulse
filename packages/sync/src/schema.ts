@@ -20,6 +20,7 @@ const workout_exercises = new Table(
     exercise_id: column.text,
     order: column.integer,
     notes: column.text,
+    superset_group: column.integer,
   },
   { indexes: { workout: ["workout_id"] } }
 );

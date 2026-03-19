@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   createProgramSchema,
   updateProgramSchema,
+  updateScheduleSchema,
   assignProgramSchema,
   unassignProgramSchema,
 } from "@ironpulse/shared";
@@ -60,6 +61,26 @@ export const programRouter = createTRPCRouter({
       });
 
       return program;
+    }),
+
+  updateSchedule: coachProcedure
+    .input(updateScheduleSchema)
+    .mutation(async ({ ctx, input }) => {
+      const program = await ctx.db.program.findFirst({
+        where: { id: input.programId, coachId: ctx.user.id },
+      });
+
+      if (!program) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Program not found",
+        });
+      }
+
+      return ctx.db.program.update({
+        where: { id: input.programId },
+        data: { schedule: input.schedule },
+      });
     }),
 
   delete: coachProcedure
@@ -122,15 +143,18 @@ export const programRouter = createTRPCRouter({
         });
       }
 
-      // Resolve template names from schedule
-      const schedule = program.schedule as Record<
-        string,
-        Record<string, string>
-      >;
+      // Resolve schedule — supports both legacy (string) and structured ({ templateId, templateName }) formats
+      type ScheduleCell = { templateId: string; templateName: string | null; isRestDay?: boolean } | null;
+      const rawSchedule = program.schedule as Record<string, Record<string, string | ScheduleCell>>;
+
       const templateIds = new Set<string>();
-      for (const week of Object.values(schedule)) {
-        for (const templateId of Object.values(week)) {
-          if (templateId) templateIds.add(templateId);
+      for (const week of Object.values(rawSchedule)) {
+        for (const cell of Object.values(week)) {
+          if (typeof cell === "string" && cell) {
+            templateIds.add(cell);
+          } else if (cell && typeof cell === "object" && cell.templateId) {
+            templateIds.add(cell.templateId);
+          }
         }
       }
 
@@ -145,15 +169,23 @@ export const programRouter = createTRPCRouter({
 
       const resolvedSchedule: Record<
         string,
-        Record<string, { templateId: string; templateName: string | null }>
+        Record<string, { templateId: string; templateName: string | null; isRestDay?: boolean }>
       > = {};
-      for (const [week, days] of Object.entries(schedule)) {
+      for (const [week, days] of Object.entries(rawSchedule)) {
         resolvedSchedule[week] = {};
-        for (const [day, templateId] of Object.entries(days)) {
-          resolvedSchedule[week][day] = {
-            templateId,
-            templateName: templateMap.get(templateId) ?? null,
-          };
+        for (const [day, cell] of Object.entries(days)) {
+          if (typeof cell === "string") {
+            resolvedSchedule[week][day] = {
+              templateId: cell,
+              templateName: templateMap.get(cell) ?? null,
+            };
+          } else if (cell && typeof cell === "object") {
+            resolvedSchedule[week][day] = {
+              templateId: cell.templateId,
+              templateName: templateMap.get(cell.templateId) ?? cell.templateName,
+              isRestDay: cell.isRestDay,
+            };
+          }
         }
       }
 

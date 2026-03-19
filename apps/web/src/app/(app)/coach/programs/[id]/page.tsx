@@ -8,7 +8,30 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, UserPlus, Crown, X } from "lucide-react";
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS_OF_WEEK = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+
+const DAY_LABELS: Record<typeof DAYS_OF_WEEK[number], string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+
+type DayOfWeek = typeof DAYS_OF_WEEK[number];
+
+// Local schedule state: Record<weekNum, Record<dayOfWeek, templateId>>
+type LocalSchedule = Record<string, Record<DayOfWeek, string>>;
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -60,37 +83,34 @@ function ProgramBuilder({ programId }: { programId: string }) {
 
   const templates = templatesData?.data ?? [];
 
-  // Local schedule state: Record<weekNum, Record<dayNum, templateId>>
-  const [schedule, setSchedule] = useState<
-    Record<string, Record<string, string>>
-  >({});
+  // Local schedule state: Record<weekNum, Record<dayOfWeek, templateId>>
+  const [schedule, setSchedule] = useState<LocalSchedule>({});
   const [dirty, setDirty] = useState(false);
   const [selectorCell, setSelectorCell] = useState<{
     week: string;
-    day: string;
+    day: DayOfWeek;
   } | null>(null);
   const [assignAthleteId, setAssignAthleteId] = useState("");
   const [assignDate, setAssignDate] = useState("");
 
   useEffect(() => {
     if (program?.schedule) {
-      // Convert resolved schedule back to simple templateId map
-      const simple: Record<string, Record<string, string>> = {};
+      const local: LocalSchedule = {};
       for (const [week, days] of Object.entries(program.schedule)) {
-        simple[week] = {};
+        local[week] = {} as Record<DayOfWeek, string>;
         for (const [day, cell] of Object.entries(
           days as Record<string, { templateId: string; templateName: string | null }>
         )) {
-          if (cell.templateId) {
-            simple[week][day] = cell.templateId;
+          if (DAYS_OF_WEEK.includes(day as DayOfWeek) && cell?.templateId) {
+            local[week][day as DayOfWeek] = cell.templateId;
           }
         }
       }
-      setSchedule(simple);
+      setSchedule(local);
     }
   }, [program?.schedule]);
 
-  const updateProgram = trpc.program.update.useMutation({
+  const updateSchedule = trpc.program.updateSchedule.useMutation({
     onSuccess: () => {
       setDirty(false);
       utils.program.getById.invalidate({ id: programId });
@@ -113,13 +133,13 @@ function ProgramBuilder({ programId }: { programId: string }) {
       [week]: {
         ...(prev[week] ?? {}),
         [day]: templateId,
-      },
+      } as Record<DayOfWeek, string>,
     }));
     setDirty(true);
     setSelectorCell(null);
   }
 
-  function handleClearCell(week: string, day: string) {
+  function handleClearCell(week: string, day: DayOfWeek) {
     setSchedule((prev) => {
       const updated = { ...prev };
       if (updated[week]) {
@@ -134,13 +154,25 @@ function ProgramBuilder({ programId }: { programId: string }) {
 
   function handleSave() {
     if (!program) return;
-    updateProgram.mutate({
-      id: programId,
-      name: program.name,
-      description: program.description ?? undefined,
-      durationWeeks: program.durationWeeks,
-      schedule,
-    });
+
+    // Build structured schedule: Record<weekNum, Record<dayOfWeek, { templateId, templateName }>>
+    const structured: Record<
+      string,
+      Record<string, { templateId: string; templateName: string; isRestDay?: boolean } | null>
+    > = {};
+
+    for (const [week, days] of Object.entries(schedule)) {
+      structured[week] = {};
+      for (const [day, templateId] of Object.entries(days)) {
+        const tpl = templates.find((t) => t.id === templateId);
+        structured[week][day] = {
+          templateId,
+          templateName: tpl?.name ?? getTemplateName(templateId),
+        };
+      }
+    }
+
+    updateSchedule.mutate({ programId, schedule: structured });
   }
 
   function handleAssign() {
@@ -159,7 +191,7 @@ function ProgramBuilder({ programId }: { programId: string }) {
         for (const cell of Object.values(
           days as Record<string, { templateId: string; templateName: string | null }>
         )) {
-          if (cell.templateId === templateId && cell.templateName) {
+          if (cell?.templateId === templateId && cell.templateName) {
             return cell.templateName;
           }
         }
@@ -224,11 +256,11 @@ function ProgramBuilder({ programId }: { programId: string }) {
         </div>
         <Button
           onClick={handleSave}
-          disabled={!dirty || updateProgram.isPending}
+          disabled={!dirty || updateSchedule.isPending}
           size="sm"
         >
           <Save className="h-4 w-4" />
-          {updateProgram.isPending ? "Saving..." : "Save"}
+          {updateSchedule.isPending ? "Saving..." : "Save Schedule"}
         </Button>
       </div>
 
@@ -242,32 +274,32 @@ function ProgramBuilder({ programId }: { programId: string }) {
             <thead>
               <tr>
                 <th className="text-left p-2 text-muted-foreground font-medium">
-                  Week
+                  Day
                 </th>
-                {DAY_LABELS.map((d) => (
+                {weeks.map((week) => (
                   <th
-                    key={d}
-                    className="text-center p-2 text-muted-foreground font-medium"
+                    key={week}
+                    className="text-center p-2 text-muted-foreground font-medium min-w-[90px]"
                   >
-                    {d}
+                    Wk {week}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {weeks.map((week) => (
-                <tr key={week} className="border-t border-border/50">
-                  <td className="p-2 font-medium text-muted-foreground">
-                    {week}
+              {DAYS_OF_WEEK.map((day) => (
+                <tr key={day} className="border-t border-border/50">
+                  <td className="p-2 font-medium text-muted-foreground whitespace-nowrap">
+                    {DAY_LABELS[day]}
                   </td>
-                  {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                    const templateId = schedule[String(week)]?.[String(day)];
+                  {weeks.map((week) => {
+                    const templateId = schedule[String(week)]?.[day];
                     const isSelecting =
                       selectorCell?.week === String(week) &&
-                      selectorCell?.day === String(day);
+                      selectorCell?.day === day;
 
                     return (
-                      <td key={day} className="p-1 text-center">
+                      <td key={week} className="p-1 text-center">
                         {isSelecting ? (
                           <div className="relative">
                             <select
@@ -290,7 +322,7 @@ function ProgramBuilder({ programId }: { programId: string }) {
                             </select>
                           </div>
                         ) : templateId ? (
-                          <div className="group relative">
+                          <div className="group relative inline-block">
                             <Badge
                               variant="secondary"
                               className="text-xs cursor-pointer max-w-[80px] truncate"
@@ -298,7 +330,7 @@ function ProgramBuilder({ programId }: { programId: string }) {
                               onClick={() =>
                                 setSelectorCell({
                                   week: String(week),
-                                  day: String(day),
+                                  day,
                                 })
                               }
                             >
@@ -307,7 +339,7 @@ function ProgramBuilder({ programId }: { programId: string }) {
                             <button
                               className="absolute -top-1 -right-1 hidden group-hover:flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]"
                               onClick={() =>
-                                handleClearCell(String(week), String(day))
+                                handleClearCell(String(week), day)
                               }
                             >
                               <X className="h-3 w-3" />
@@ -319,7 +351,7 @@ function ProgramBuilder({ programId }: { programId: string }) {
                             onClick={() =>
                               setSelectorCell({
                                 week: String(week),
-                                day: String(day),
+                                day,
                               })
                             }
                           >

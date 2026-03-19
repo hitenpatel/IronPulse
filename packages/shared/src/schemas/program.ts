@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+export const scheduleCellSchema = z
+  .object({
+    templateId: z.string(),
+    templateName: z.string(),
+    isRestDay: z.boolean().optional(),
+  })
+  .nullable();
+
+export const programScheduleSchema = z.record(
+  z.string(),
+  z.record(z.string(), scheduleCellSchema)
+);
+
 export const createProgramSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
@@ -9,6 +22,11 @@ export const createProgramSchema = z.object({
 
 export const updateProgramSchema = createProgramSchema.extend({
   id: z.string().uuid(),
+});
+
+export const updateScheduleSchema = z.object({
+  programId: z.string().uuid(),
+  schedule: programScheduleSchema,
 });
 
 export const assignProgramSchema = z.object({

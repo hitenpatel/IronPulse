@@ -6,6 +6,7 @@ export interface WorkoutExerciseRow {
   exercise_id: string;
   order: number;
   notes: string | null;
+  superset_group: number | null;
   exercise_name: string;
 }
 

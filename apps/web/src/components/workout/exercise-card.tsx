@@ -31,6 +31,7 @@ interface WorkoutExerciseData {
   };
   sets: ExerciseSet[];
   notes: string | null;
+  supersetGroup: number | null;
 }
 
 interface PreviousSet {
@@ -41,6 +42,7 @@ interface PreviousSet {
 
 interface ExerciseCardProps {
   workoutExercise: WorkoutExerciseData;
+  allExercises?: WorkoutExerciseData[];
   previousSets?: PreviousSet[];
   onSetCompleted: () => void;
   onMutationSuccess: () => void;
@@ -48,6 +50,7 @@ interface ExerciseCardProps {
 
 export function ExerciseCard({
   workoutExercise,
+  allExercises = [],
   previousSets,
   onSetCompleted,
   onMutationSuccess,
@@ -62,6 +65,39 @@ export function ExerciseCard({
   const updateExerciseNotes = trpc.workout.updateExerciseNotes.useMutation({
     onSuccess: () => onMutationSuccess(),
   });
+
+  const currentIndex = allExercises.findIndex((e) => e.id === workoutExercise.id);
+  const nextExercise = currentIndex >= 0 ? allExercises[currentIndex + 1] : undefined;
+  const isInSuperset = workoutExercise.supersetGroup != null;
+  const canLinkSuperset = !isInSuperset && nextExercise != null && !nextExercise.supersetGroup;
+
+  function handleLinkSuperset() {
+    if (!nextExercise) return;
+    // Find the lowest unused group number across all exercises
+    const usedGroups = new Set(
+      allExercises
+        .map((e) => e.supersetGroup)
+        .filter((g): g is number => g != null)
+    );
+    let newGroup = 1;
+    while (usedGroups.has(newGroup)) newGroup++;
+
+    db.execute(
+      `UPDATE workout_exercises SET superset_group = ? WHERE id = ?`,
+      [newGroup, workoutExercise.id]
+    ).then(() => onMutationSuccess());
+    db.execute(
+      `UPDATE workout_exercises SET superset_group = ? WHERE id = ?`,
+      [newGroup, nextExercise.id]
+    ).then(() => onMutationSuccess());
+  }
+
+  function handleUnlinkSuperset() {
+    db.execute(
+      `UPDATE workout_exercises SET superset_group = NULL WHERE id = ?`,
+      [workoutExercise.id]
+    ).then(() => onMutationSuccess());
+  }
 
   function handleAddSet() {
     setAdding(true);
@@ -94,6 +130,16 @@ export function ExerciseCard({
             <DropdownMenuItem onSelect={() => setShowNotes(true)}>
               Add Note
             </DropdownMenuItem>
+            {canLinkSuperset && (
+              <DropdownMenuItem onSelect={handleLinkSuperset}>
+                Link as Superset
+              </DropdownMenuItem>
+            )}
+            {isInSuperset && (
+              <DropdownMenuItem onSelect={handleUnlinkSuperset}>
+                Unlink Superset
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -61,6 +61,45 @@ export default function ActiveWorkoutScreen() {
     return map;
   }, [sets]);
 
+  // Query previous performance for all exercises in this workout
+  const exerciseIds = useMemo(
+    () => (exercises ?? []).map((e) => e.exercise_id),
+    [exercises]
+  );
+
+  const { data: allPreviousSets } = useQuery<{
+    weight_kg: number | null;
+    reps: number | null;
+    set_number: number;
+    exercise_id: string;
+  }>(
+    exerciseIds.length > 0
+      ? `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id
+         FROM exercise_sets es
+         JOIN workout_exercises we ON we.id = es.workout_exercise_id
+         JOIN workouts w ON w.id = we.workout_id
+         WHERE we.exercise_id IN (${exerciseIds.map(() => "?").join(",")})
+           AND w.completed_at IS NOT NULL
+           AND w.id != ?
+         ORDER BY w.completed_at DESC, es.set_number ASC`
+      : `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`,
+    exerciseIds.length > 0 ? [...exerciseIds, workoutId ?? ""] : []
+  );
+
+  const previousSetsByExercise = useMemo(() => {
+    const map = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
+    for (const row of allPreviousSets ?? []) {
+      if (!map.has(row.exercise_id)) {
+        map.set(row.exercise_id, []);
+      }
+      const existing = map.get(row.exercise_id)!;
+      if (existing.length < 10) {
+        existing.push({ weight_kg: row.weight_kg, reps: row.reps, set_number: row.set_number });
+      }
+    }
+    return map;
+  }, [allPreviousSets]);
+
   // Keyboard height tracking
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
@@ -194,6 +233,7 @@ export default function ActiveWorkoutScreen() {
             workoutExerciseId={item.id}
             exerciseName={item.exercise_name}
             sets={(setsByExercise.get(item.id) ?? []) as any}
+            previousSets={previousSetsByExercise.get(item.exercise_id) ?? []}
             exerciseIndex={index}
             workoutId={workoutId!}
             onSetComplete={handleSetComplete}

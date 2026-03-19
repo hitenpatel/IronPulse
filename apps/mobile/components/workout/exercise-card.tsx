@@ -24,11 +24,18 @@ interface SetData {
   completed: 0 | 1;
 }
 
+interface PreviousSet {
+  weight_kg: number | null;
+  reps: number | null;
+  set_number: number;
+}
+
 interface ExerciseCardProps {
   exerciseId: string;
   workoutExerciseId: string;
   exerciseName: string;
   sets: SetData[];
+  previousSets?: PreviousSet[];
   exerciseIndex: number;
   workoutId: string;
   onSetComplete: () => void;
@@ -40,6 +47,7 @@ export function ExerciseCard({
   workoutExerciseId,
   exerciseName,
   sets,
+  previousSets,
   exerciseIndex,
   workoutId,
   onSetComplete,
@@ -115,6 +123,29 @@ export function ExerciseCard({
         >
           {exerciseName}
         </Text>
+
+        {/* Previous performance */}
+        {previousSets && previousSets.length > 0 && (
+          <Text
+            style={{
+              color: colors.mutedFg,
+              fontSize: 12,
+              paddingHorizontal: 12,
+              marginBottom: 8,
+            }}
+            numberOfLines={2}
+          >
+            <Text style={{ fontWeight: "600" }}>Last: </Text>
+            {previousSets
+              .map((s) => {
+                if (s.weight_kg != null && s.reps != null)
+                  return `${s.weight_kg}kg × ${s.reps}`;
+                if (s.reps != null) return `${s.reps} reps`;
+                return "—";
+              })
+              .join(", ")}
+          </Text>
+        )}
 
         {/* Column headers */}
         <View

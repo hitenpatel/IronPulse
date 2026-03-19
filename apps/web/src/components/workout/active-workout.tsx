@@ -132,6 +132,44 @@ export function ActiveWorkout({
   }
 
   // Show completion screen
+
+  // Query previous performance for all exercises in this workout
+  const previousSetsQuery =
+    exerciseIds.length > 0
+      ? `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id
+         FROM exercise_sets es
+         JOIN workout_exercises we ON we.id = es.workout_exercise_id
+         JOIN workouts w ON w.id = we.workout_id
+         WHERE we.exercise_id IN (${exerciseIds.map(() => "?").join(",")})
+           AND w.completed_at IS NOT NULL
+           AND w.id != ?
+         ORDER BY w.completed_at DESC, es.set_number ASC`
+      : `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
+
+  const previousSetsParams = exerciseIds.length > 0 ? [...exerciseIds, workoutId] : [];
+
+  const { data: allPreviousSets } = useQuery<{
+    weight_kg: number | null;
+    reps: number | null;
+    set_number: number;
+    exercise_id: string;
+  }>(previousSetsQuery, previousSetsParams);
+
+  // Group previous sets by exercise_id (rows ordered by completed_at DESC, first rows per exercise = most recent workout)
+  const previousSetsByExercise = useMemo(() => {
+    const map = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
+    for (const row of allPreviousSets) {
+      if (!map.has(row.exercise_id)) {
+        map.set(row.exercise_id, []);
+      }
+      const existing = map.get(row.exercise_id)!;
+      if (existing.length < 10) {
+        existing.push({ weight_kg: row.weight_kg, reps: row.reps, set_number: row.set_number });
+      }
+    }
+    return map;
+  }, [allPreviousSets]);
+
   if (completionPRs !== null) {
     const exerciseNames: Record<string, string> = {};
     for (const we of exercises) {
@@ -169,54 +207,6 @@ export function ActiveWorkout({
     );
   }
 
-  // Query previous performance for all exercises in this workout
-  const previousSetsQuery =
-    exerciseIds.length > 0
-      ? `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id
-         FROM exercise_sets es
-         JOIN workout_exercises we ON we.id = es.workout_exercise_id
-         JOIN workouts w ON w.id = we.workout_id
-         WHERE we.exercise_id IN (${exerciseIds.map(() => "?").join(",")})
-           AND w.completed_at IS NOT NULL
-           AND w.id != ?
-         ORDER BY w.completed_at DESC, es.set_number ASC`
-      : `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
-
-  const previousSetsParams = exerciseIds.length > 0 ? [...exerciseIds, workoutId] : [];
-
-  const { data: allPreviousSets } = useQuery<{
-    weight_kg: number | null;
-    reps: number | null;
-    set_number: number;
-    exercise_id: string;
-  }>(previousSetsQuery, previousSetsParams);
-
-  // Group previous sets by exercise_id, keeping only the most recent session (first seen per exercise)
-  const previousSetsByExercise = useMemo(() => {
-    const map = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
-    // allPreviousSets is ordered by completed_at DESC so we take up to LIMIT 10
-    // but we need to collect all sets from only the most recent workout per exercise
-    const seenExercise = new Map<string, boolean>();
-    const perExerciseRows = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
-
-    for (const row of allPreviousSets) {
-      if (!seenExercise.has(row.exercise_id)) {
-        seenExercise.set(row.exercise_id, true);
-        perExerciseRows.set(row.exercise_id, []);
-      }
-      // We include all rows returned — the SQL already limits to 10 total per exercise via ordering
-      const existing = perExerciseRows.get(row.exercise_id)!;
-      if (existing.length < 10) {
-        existing.push({ weight_kg: row.weight_kg, reps: row.reps, set_number: row.set_number });
-      }
-    }
-
-    for (const [exerciseId, rows] of perExerciseRows) {
-      map.set(exerciseId, rows);
-    }
-    return map;
-  }, [allPreviousSets]);
-
   // Build workout exercise data in the shape ExerciseCard expects
   const workoutExerciseCards = exercises.map((we) => {
     const detail = exerciseDetailsMap.get(we.exercise_id);
@@ -239,6 +229,7 @@ export function ActiveWorkout({
       },
       sets: weSets,
       notes: we.notes,
+      supersetGroup: we.superset_group ?? null,
       previousSets: previousSetsByExercise.get(we.exercise_id) ?? [],
     };
   });
@@ -262,16 +253,44 @@ export function ActiveWorkout({
           items={workoutExerciseCards.map((we) => we.id)}
           strategy={verticalListSortingStrategy}
         >
-          {workoutExerciseCards.map((we) => (
-            <SortableExerciseCard
-              key={we.id}
-              workoutExercise={we}
-              onSetCompleted={handleSetCompleted}
-              onMutationSuccess={() => {
-                // PowerSync reactive queries auto-update, no invalidation needed
-              }}
-            />
-          ))}
+          {workoutExerciseCards.map((we, index) => {
+            const prev = workoutExerciseCards[index - 1];
+            const next = workoutExerciseCards[index + 1];
+            const isInSuperset = we.supersetGroup != null;
+            const isSupersetStart =
+              isInSuperset &&
+              (prev == null || prev.supersetGroup !== we.supersetGroup);
+            const isSupersetEnd =
+              isInSuperset &&
+              (next == null || next.supersetGroup !== we.supersetGroup);
+            const showSupersetBadge = isInSuperset && !isSupersetStart;
+
+            return (
+              <div key={we.id}>
+                {showSupersetBadge && (
+                  <div className="flex items-center gap-2 px-7 py-0.5">
+                    <div className="h-px flex-1 bg-primary/30" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary/70">
+                      Superset
+                    </span>
+                    <div className="h-px flex-1 bg-primary/30" />
+                  </div>
+                )}
+                <SortableExerciseCard
+                  workoutExercise={we}
+                  allExercises={workoutExerciseCards}
+                  previousSets={we.previousSets}
+                  isInSuperset={isInSuperset}
+                  isSupersetStart={isSupersetStart}
+                  isSupersetEnd={isSupersetEnd}
+                  onSetCompleted={handleSetCompleted}
+                  onMutationSuccess={() => {
+                    // PowerSync reactive queries auto-update, no invalidation needed
+                  }}
+                />
+              </div>
+            );
+          })}
         </SortableContext>
       </DndContext>
 
