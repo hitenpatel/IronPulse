@@ -19,6 +19,18 @@ function getActivityIcon(type: string) {
   }
 }
 
+function getActivityHref(type: string, referenceId: string | null): string | null {
+  if (!referenceId) return null;
+  switch (type) {
+    case "workout":
+      return `/workouts/${referenceId}`;
+    case "pr":
+      return `/share/pr/${referenceId}`;
+    default:
+      return null;
+  }
+}
+
 function getActivityText(type: string) {
   switch (type) {
     case "workout":
@@ -79,8 +91,9 @@ export default function FeedPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => (
-            <Card key={item.id}>
+          {items.map((item) => {
+            const href = getActivityHref(item.type, item.referenceId);
+            const content = (
               <CardContent className="flex items-start gap-3 py-4">
                 <div className="mt-0.5 shrink-0">
                   {getActivityIcon(item.type)}
@@ -90,6 +103,7 @@ export default function FeedPage() {
                     <Link
                       href={`/users/${item.user.id}`}
                       className="font-medium hover:underline"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {item.user.name ?? "Unknown"}
                     </Link>{" "}
@@ -102,8 +116,18 @@ export default function FeedPage() {
                   </p>
                 </div>
               </CardContent>
-            </Card>
-          ))}
+            );
+
+            return href ? (
+              <Link key={item.id} href={href} className="block">
+                <Card className="transition-colors hover:bg-muted/50">
+                  {content}
+                </Card>
+              </Link>
+            ) : (
+              <Card key={item.id}>{content}</Card>
+            );
+          })}
 
           {hasNextPage && (
             <Button
