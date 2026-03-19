@@ -5,6 +5,7 @@ import {
   searchUsersSchema,
   getUserProfileSchema,
   feedSchema,
+  toggleReactionSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
@@ -206,13 +207,67 @@ export const socialRouter = createTRPCRouter({
           user: {
             select: { id: true, name: true, avatarUrl: true },
           },
+          reactions: {
+            select: { type: true, userId: true },
+          },
         },
       });
 
       const hasMore = items.length > input.limit;
-      const data = hasMore ? items.slice(0, -1) : items;
-      const nextCursor = hasMore ? data[data.length - 1]!.id : null;
+      const rawData = hasMore ? items.slice(0, -1) : items;
+      const nextCursor = hasMore ? rawData[rawData.length - 1]!.id : null;
+
+      // Shape reactions: counts per type + current user's reactions
+      const data = rawData.map((item) => {
+        const reactionCounts: Record<string, number> = {};
+        const myReactions: string[] = [];
+        for (const r of item.reactions) {
+          reactionCounts[r.type] = (reactionCounts[r.type] ?? 0) + 1;
+          if (r.userId === ctx.user.id) {
+            myReactions.push(r.type);
+          }
+        }
+        const { reactions: _reactions, ...rest } = item;
+        return { ...rest, reactionCounts, myReactions };
+      });
 
       return { data, nextCursor };
+    }),
+
+  toggleReaction: rateLimitedProcedure
+    .input(toggleReactionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const feedItem = await ctx.db.activityFeedItem.findUnique({
+        where: { id: input.feedItemId },
+        select: { id: true },
+      });
+      if (!feedItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Feed item not found" });
+      }
+
+      const existing = await ctx.db.feedReaction.findUnique({
+        where: {
+          feedItemId_userId_type: {
+            feedItemId: input.feedItemId,
+            userId: ctx.user.id,
+            type: input.type,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        await ctx.db.feedReaction.delete({ where: { id: existing.id } });
+        return { active: false };
+      }
+
+      await ctx.db.feedReaction.create({
+        data: {
+          feedItemId: input.feedItemId,
+          userId: ctx.user.id,
+          type: input.type,
+        },
+      });
+      return { active: true };
     }),
 });

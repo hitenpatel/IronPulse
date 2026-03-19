@@ -43,6 +43,7 @@ model User {
   following               Follow[]               @relation("UserFollowing")
   followers               Follow[]               @relation("UserFollowers")
   activityFeedItems       ActivityFeedItem[]
+  feedReactions           FeedReaction[]
   createdChallenges       Challenge[]
   challengeParticipations ChallengeParticipant[]
   coachProfile            CoachProfile?
@@ -401,10 +402,26 @@ model ActivityFeedItem {
   visibility  String   @default("followers")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions FeedReaction[]
 
   @@index([userId, createdAt])
   @@map("activity_feed_items")
+}
+
+model FeedReaction {
+  id         String   @id @default(uuid()) @db.Uuid
+  feedItemId String   @map("feed_item_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  type       String   // kudos, fire, muscle
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  feedItem ActivityFeedItem @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([feedItemId, userId, type])
+  @@index([feedItemId])
+  @@map("feed_reactions")
 }
 
 model Challenge {

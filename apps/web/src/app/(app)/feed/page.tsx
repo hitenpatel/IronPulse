@@ -6,6 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, Activity, Trophy, Users } from "lucide-react";
 
+const REACTIONS = [
+  { type: "kudos", emoji: "👏", label: "Kudos" },
+  { type: "fire", emoji: "🔥", label: "Fire" },
+  { type: "muscle", emoji: "💪", label: "Muscle" },
+] as const;
+
+type ReactionType = (typeof REACTIONS)[number]["type"];
+
 function getActivityIcon(type: string) {
   switch (type) {
     case "workout":
@@ -54,6 +62,77 @@ function timeAgo(date: Date): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+interface FeedItemReactionsProps {
+  feedItemId: string;
+  reactionCounts: Record<string, number>;
+  myReactions: string[];
+}
+
+function FeedItemReactions({ feedItemId, reactionCounts, myReactions }: FeedItemReactionsProps) {
+  const utils = trpc.useUtils();
+  const toggleReaction = trpc.social.toggleReaction.useMutation({
+    onMutate: async ({ feedItemId: itemId, type }) => {
+      await utils.social.feed.cancel();
+      const isActive = myReactions.includes(type);
+
+      utils.social.feed.setInfiniteData({ limit: 20 }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.map((item) => {
+              if (item.id !== itemId) return item;
+              const newCounts = { ...item.reactionCounts };
+              const newMine = [...item.myReactions];
+              if (isActive) {
+                newCounts[type] = Math.max(0, (newCounts[type] ?? 0) - 1);
+                const idx = newMine.indexOf(type);
+                if (idx !== -1) newMine.splice(idx, 1);
+              } else {
+                newCounts[type] = (newCounts[type] ?? 0) + 1;
+                newMine.push(type);
+              }
+              return { ...item, reactionCounts: newCounts, myReactions: newMine };
+            }),
+          })),
+        };
+      });
+    },
+    onSettled: () => {
+      void utils.social.feed.invalidate();
+    },
+  });
+
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      {REACTIONS.map(({ type, emoji, label }) => {
+        const count = reactionCounts[type] ?? 0;
+        const active = myReactions.includes(type);
+        return (
+          <button
+            key={type}
+            aria-label={`${label}${count > 0 ? ` (${count})` : ""}`}
+            aria-pressed={active}
+            onClick={() =>
+              toggleReaction.mutate({ feedItemId, type: type as ReactionType })
+            }
+            disabled={toggleReaction.isPending}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+              active
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
+          >
+            <span>{emoji}</span>
+            {count > 0 && <span>{count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function FeedPage() {
@@ -114,6 +193,11 @@ export default function FeedPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {timeAgo(new Date(item.createdAt))}
                   </p>
+                  <FeedItemReactions
+                    feedItemId={item.id}
+                    reactionCounts={item.reactionCounts}
+                    myReactions={item.myReactions}
+                  />
                 </div>
               </CardContent>
             );

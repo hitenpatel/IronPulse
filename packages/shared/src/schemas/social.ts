@@ -25,3 +25,12 @@ export const feedSchema = z.object({
   limit: z.number().int().min(1).max(50).default(20),
 });
 export type FeedInput = z.infer<typeof feedSchema>;
+
+export const reactionTypeEnum = z.enum(["kudos", "fire", "muscle"]);
+export type ReactionType = z.infer<typeof reactionTypeEnum>;
+
+export const toggleReactionSchema = z.object({
+  feedItemId: z.string().uuid(),
+  type: reactionTypeEnum,
+});
+export type ToggleReactionInput = z.infer<typeof toggleReactionSchema>;
