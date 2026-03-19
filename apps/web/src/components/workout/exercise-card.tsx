@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 import { usePowerSync } from "@powersync/react";
 import { trpc } from "@/lib/trpc/client";
 import { SetRow } from "./set-row";
+import { calculateOverloadSuggestion } from "@ironpulse/api/src/lib/overload-suggestions";
 
 interface ExerciseSet {
   id: string;
@@ -37,6 +38,8 @@ interface WorkoutExerciseData {
 interface PreviousSet {
   weight_kg: number | null;
   reps: number | null;
+  rpe: number | null;
+  completed: boolean;
   set_number: number;
 }
 
@@ -65,6 +68,29 @@ export function ExerciseCard({
   const updateExerciseNotes = trpc.workout.updateExerciseNotes.useMutation({
     onSuccess: () => onMutationSuccess(),
   });
+
+  const suggestion = useMemo(() => {
+    if (!previousSets || previousSets.length === 0) return null;
+    return calculateOverloadSuggestion(
+      previousSets.map((s) => ({
+        weightKg: s.weight_kg ?? 0,
+        reps: s.reps ?? 0,
+        rpe: s.rpe,
+        completed: s.completed,
+      }))
+    );
+  }, [previousSets]);
+
+  function handleSmartFill() {
+    if (!suggestion) return;
+    // Find the first incomplete set
+    const firstEmptySet = workoutExercise.sets.find((s) => !s.completed);
+    if (!firstEmptySet) return;
+    db.execute(
+      `UPDATE exercise_sets SET weight_kg = ?, reps = ? WHERE id = ?`,
+      [suggestion.suggestedWeightKg, suggestion.suggestedReps, firstEmptySet.id]
+    ).then(() => onMutationSuccess());
+  }
 
   const currentIndex = allExercises.findIndex((e) => e.id === workoutExercise.id);
   const nextExercise = currentIndex >= 0 ? allExercises[currentIndex + 1] : undefined;
@@ -146,7 +172,7 @@ export function ExerciseCard({
 
       {/* Previous performance */}
       {previousSets && previousSets.length > 0 && (
-        <p className="mb-2 text-xs text-muted-foreground">
+        <p className="mb-1 text-xs text-muted-foreground">
           <span className="font-medium">Last:</span>{" "}
           {previousSets
             .map((s) => {
@@ -157,6 +183,23 @@ export function ExerciseCard({
             })
             .join(", ")}
         </p>
+      )}
+
+      {/* Progressive overload suggestion */}
+      {suggestion && (
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-xs text-primary/70">
+            <span className="font-medium">Suggested:</span>{" "}
+            {suggestion.suggestedWeightKg}kg × {suggestion.suggestedReps} —{" "}
+            {suggestion.reason}
+          </p>
+          <button
+            onClick={handleSmartFill}
+            className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20"
+          >
+            Smart Fill
+          </button>
+        </div>
       )}
 
       {/* Notes area */}

@@ -136,7 +136,7 @@ export function ActiveWorkout({
   // Query previous performance for all exercises in this workout
   const previousSetsQuery =
     exerciseIds.length > 0
-      ? `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id
+      ? `SELECT es.weight_kg, es.reps, es.rpe, es.completed, es.set_number, we.exercise_id
          FROM exercise_sets es
          JOIN workout_exercises we ON we.id = es.workout_exercise_id
          JOIN workouts w ON w.id = we.workout_id
@@ -144,27 +144,29 @@ export function ActiveWorkout({
            AND w.completed_at IS NOT NULL
            AND w.id != ?
          ORDER BY w.completed_at DESC, es.set_number ASC`
-      : `SELECT es.weight_kg, es.reps, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
+      : `SELECT es.weight_kg, es.reps, es.rpe, es.completed, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
 
   const previousSetsParams = exerciseIds.length > 0 ? [...exerciseIds, workoutId] : [];
 
   const { data: allPreviousSets } = useQuery<{
     weight_kg: number | null;
     reps: number | null;
+    rpe: number | null;
+    completed: number;
     set_number: number;
     exercise_id: string;
   }>(previousSetsQuery, previousSetsParams);
 
   // Group previous sets by exercise_id (rows ordered by completed_at DESC, first rows per exercise = most recent workout)
   const previousSetsByExercise = useMemo(() => {
-    const map = new Map<string, { weight_kg: number | null; reps: number | null; set_number: number }[]>();
+    const map = new Map<string, { weight_kg: number | null; reps: number | null; rpe: number | null; completed: boolean; set_number: number }[]>();
     for (const row of allPreviousSets) {
       if (!map.has(row.exercise_id)) {
         map.set(row.exercise_id, []);
       }
       const existing = map.get(row.exercise_id)!;
       if (existing.length < 10) {
-        existing.push({ weight_kg: row.weight_kg, reps: row.reps, set_number: row.set_number });
+        existing.push({ weight_kg: row.weight_kg, reps: row.reps, rpe: row.rpe, completed: !!row.completed, set_number: row.set_number });
       }
     }
     return map;

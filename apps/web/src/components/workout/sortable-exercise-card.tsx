@@ -30,6 +30,8 @@ interface WorkoutExerciseData {
 interface PreviousSet {
   weight_kg: number | null;
   reps: number | null;
+  rpe: number | null;
+  completed: boolean;
   set_number: number;
 }
 
