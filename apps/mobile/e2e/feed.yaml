@@ -1,0 +1,36 @@
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "signin-button"
+- extendedWaitUntil:
+    visible: "Good morning"
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: "Feed"
+- extendedWaitUntil:
+    visible: "Feed"
+    timeout: 10000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "No activity yet"
+    commands:
+      - assertVisible: "No activity yet"
+- runFlow:
+    when:
+      NOT:
+        visible: "No activity yet"
+    commands:
+      - assertVisible: "completed a workout"
