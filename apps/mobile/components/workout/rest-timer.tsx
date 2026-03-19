@@ -18,23 +18,24 @@ const DEFAULT_REST = 90;
 interface RestTimerProps {
   visible: boolean;
   onDismiss: () => void;
+  defaultRest?: number;
 }
 
-export function RestTimer({ visible, onDismiss }: RestTimerProps) {
+export function RestTimer({ visible, onDismiss, defaultRest = DEFAULT_REST }: RestTimerProps) {
   const insets = useSafeAreaInsets();
-  const [remaining, setRemaining] = useState(DEFAULT_REST);
-  const [totalDuration, setTotalDuration] = useState(DEFAULT_REST);
+  const [remaining, setRemaining] = useState(defaultRest);
+  const [totalDuration, setTotalDuration] = useState(defaultRest);
   const [expanded, setExpanded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Reset when becoming visible
   useEffect(() => {
     if (visible) {
-      setRemaining(DEFAULT_REST);
-      setTotalDuration(DEFAULT_REST);
+      setRemaining(defaultRest);
+      setTotalDuration(defaultRest);
       setExpanded(false);
     }
-  }, [visible]);
+  }, [visible, defaultRest]);
 
   // Countdown logic
   useEffect(() => {

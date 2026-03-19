@@ -20,6 +20,7 @@ export const userRouter = createTRPCRouter({
         unitSystem: true,
         tier: true,
         subscriptionStatus: true,
+        defaultRestSeconds: true,
         deletionRequestedAt: true,
         createdAt: true,
       },
@@ -36,6 +37,7 @@ export const userRouter = createTRPCRouter({
         data: {
           ...(input.name !== undefined && { name: input.name }),
           ...(input.unitSystem !== undefined && { unitSystem: input.unitSystem }),
+          ...(input.defaultRestSeconds !== undefined && { defaultRestSeconds: input.defaultRestSeconds }),
         },
         select: {
           id: true,
@@ -45,6 +47,7 @@ export const userRouter = createTRPCRouter({
           unitSystem: true,
           tier: true,
           subscriptionStatus: true,
+          defaultRestSeconds: true,
         },
       });
 

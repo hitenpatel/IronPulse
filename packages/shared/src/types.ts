@@ -6,4 +6,5 @@ export interface SessionUser {
   subscriptionStatus: string;
   unitSystem: string;
   onboardingComplete: boolean;
+  defaultRestSeconds: number;
 }

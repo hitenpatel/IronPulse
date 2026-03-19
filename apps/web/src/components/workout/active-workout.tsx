@@ -11,7 +11,7 @@ import { AddExerciseSheet } from "./add-exercise-sheet";
 import { RestTimer } from "./rest-timer";
 import { CompletionSummary } from "./completion-summary";
 
-const REST_DURATION = 90;
+const DEFAULT_REST_DURATION = 90;
 
 interface ActiveWorkoutProps {
   workoutId: string;
@@ -25,9 +25,11 @@ export function ActiveWorkout({
   initialName,
 }: ActiveWorkoutProps) {
   const router = useRouter();
+  const { data: userData } = trpc.user.me.useQuery();
+  const restDuration = userData?.user?.defaultRestSeconds ?? DEFAULT_REST_DURATION;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [restRunning, setRestRunning] = useState(false);
-  const [restRemaining, setRestRemaining] = useState(REST_DURATION);
+  const [restRemaining, setRestRemaining] = useState(DEFAULT_REST_DURATION);
   const [completionPRs, setCompletionPRs] = useState<
     { exerciseId: string; type: string; value: number; setId: string }[] | null
   >(null);
@@ -77,7 +79,7 @@ export function ActiveWorkout({
   });
 
   function handleSetCompleted() {
-    setRestRemaining(REST_DURATION);
+    setRestRemaining(restDuration);
     setRestRunning(true);
   }
 

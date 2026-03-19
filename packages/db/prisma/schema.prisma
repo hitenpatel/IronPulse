@@ -22,6 +22,7 @@ model User {
   subscriptionStatus String   @default("none") @map("subscription_status")
   stripeCustomerId   String?  @unique @map("stripe_customer_id")
   onboardingComplete    Boolean   @default(false) @map("onboarding_complete")
+  defaultRestSeconds    Int       @default(90) @map("default_rest_seconds")
   deletionRequestedAt   DateTime? @map("deletion_requested_at")
   consentedAt           DateTime? @map("consented_at")
   createdAt             DateTime  @default(now()) @map("created_at")

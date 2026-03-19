@@ -19,6 +19,7 @@ import { RestTimer } from "../../components/workout/rest-timer";
 import { RpePicker } from "../../components/workout/rpe-picker";
 import { calculateVolume } from "../../lib/workout-utils";
 import { trpc } from "../../lib/trpc";
+import { useAuth } from "../../lib/auth";
 
 const colors = {
   background: "hsl(224, 71%, 4%)",
@@ -33,6 +34,8 @@ export default function ActiveWorkoutScreen() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const router = useRouter();
   const db = usePowerSync();
+  const { user } = useAuth();
+  const defaultRest = user?.defaultRestSeconds ?? 90;
 
   // Workout data
   const { data: workoutRows } = useQuery(
@@ -230,6 +233,7 @@ export default function ActiveWorkoutScreen() {
       <RestTimer
         visible={restTimerVisible}
         onDismiss={() => setRestTimerVisible(false)}
+        defaultRest={defaultRest}
       />
 
       <RpePicker

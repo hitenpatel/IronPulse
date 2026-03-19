@@ -104,6 +104,7 @@ export const authRouter = createTRPCRouter({
           subscriptionStatus: true,
           unitSystem: true,
           onboardingComplete: true,
+          defaultRestSeconds: true,
         },
       });
 
@@ -165,6 +166,7 @@ export const authRouter = createTRPCRouter({
           subscriptionStatus: true,
           unitSystem: true,
           onboardingComplete: true,
+          defaultRestSeconds: true,
         },
       });
 
