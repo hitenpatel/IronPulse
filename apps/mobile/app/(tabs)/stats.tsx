@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   View,
   Text,
+  Image,
   FlatList,
   TextInput,
   Alert,
@@ -42,6 +43,7 @@ type MuscleVolume = {
 type ProgressPhoto = {
   id: string;
   photoUrl: string;
+  imageUrl: string;
   date: Date;
   notes: string | null;
 };
@@ -329,40 +331,37 @@ export default function StatsScreen() {
                       width: 140,
                       backgroundColor: "hsl(217, 33%, 17%)",
                       borderRadius: 8,
-                      padding: 12,
+                      overflow: "hidden",
                     }}
                   >
-                    <Text
-                      style={{
-                        color: "hsl(213, 31%, 91%)",
-                        fontWeight: "600",
-                        fontSize: 13,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {new Date(item.date).toLocaleDateString()}
-                    </Text>
-                    {item.notes ? (
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={{ width: 140, height: 140 }}
+                      resizeMode="cover"
+                    />
+                    <View style={{ padding: 8 }}>
                       <Text
                         style={{
-                          color: "hsl(215, 20%, 65%)",
+                          color: "hsl(213, 31%, 91%)",
+                          fontWeight: "600",
                           fontSize: 12,
                         }}
-                        numberOfLines={3}
                       >
-                        {item.notes}
+                        {new Date(item.date).toLocaleDateString()}
                       </Text>
-                    ) : (
-                      <Text
-                        style={{
-                          color: "hsl(215, 20%, 55%)",
-                          fontSize: 12,
-                          fontStyle: "italic",
-                        }}
-                      >
-                        No notes
-                      </Text>
-                    )}
+                      {item.notes && (
+                        <Text
+                          style={{
+                            color: "hsl(215, 20%, 65%)",
+                            fontSize: 11,
+                            marginTop: 2,
+                          }}
+                          numberOfLines={2}
+                        >
+                          {item.notes}
+                        </Text>
+                      )}
+                    </View>
                   </View>
                 )}
               />

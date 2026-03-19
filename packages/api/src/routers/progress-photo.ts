@@ -4,7 +4,7 @@ import {
   uploadProgressPhotoSchema,
   deleteProgressPhotoSchema,
 } from "@ironpulse/shared";
-import { getPresignedUploadUrl } from "../lib/s3";
+import { getPresignedUploadUrl, getPresignedDownloadUrl } from "../lib/s3";
 
 export const progressPhotoRouter = createTRPCRouter({
   getUploadUrl: rateLimitedProcedure
@@ -30,11 +30,18 @@ export const progressPhotoRouter = createTRPCRouter({
     }),
 
   list: rateLimitedProcedure.query(async ({ ctx }) => {
-    return ctx.db.progressPhoto.findMany({
+    const photos = await ctx.db.progressPhoto.findMany({
       where: { userId: ctx.user.id },
       orderBy: { date: "desc" },
       take: 50,
     });
+
+    return Promise.all(
+      photos.map(async (photo) => ({
+        ...photo,
+        imageUrl: await getPresignedDownloadUrl(photo.photoUrl, 3600),
+      }))
+    );
   }),
 
   delete: rateLimitedProcedure

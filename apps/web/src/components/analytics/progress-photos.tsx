@@ -112,7 +112,7 @@ export function ProgressPhotos() {
 function PhotoCard({
   photo,
 }: {
-  photo: { id: string; photoUrl: string; date: string | Date; notes?: string | null };
+  photo: { id: string; photoUrl: string; imageUrl: string; date: string | Date; notes?: string | null };
 }) {
   const utils = trpc.useUtils();
   const deletePhoto = trpc.progressPhoto.delete.useMutation({
@@ -132,14 +132,12 @@ function PhotoCard({
 
   return (
     <div className="relative group">
-      <div className="aspect-square rounded-md bg-muted border overflow-hidden flex items-center justify-center">
-        {/* Display photo URL as placeholder; presigned download URLs needed for actual rendering */}
-        <div className="p-2 text-center">
-          <Camera className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-[9px] text-muted-foreground break-all line-clamp-2">
-            {photo.photoUrl.split("/").pop()}
-          </p>
-        </div>
+      <div className="aspect-square rounded-md bg-muted border overflow-hidden">
+        <img
+          src={photo.imageUrl}
+          alt={`Progress photo from ${new Date(photo.date).toLocaleDateString()}`}
+          className="h-full w-full object-cover"
+        />
       </div>
       <p className="text-[10px] text-muted-foreground mt-1">
         {new Date(photo.date).toLocaleDateString(undefined, {
