@@ -7,7 +7,7 @@ import {
   assignProgramSchema,
   unassignProgramSchema,
 } from "@ironpulse/shared";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 
 const coachProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.tier !== "coach") {
@@ -242,6 +242,82 @@ export const programRouter = createTRPCRouter({
 
       return { deleted: true };
     }),
+
+  // ── Athlete-facing procedures ──
+
+  myAssignment: rateLimitedProcedure.query(async ({ ctx }) => {
+    const assignment = await ctx.db.programAssignment.findFirst({
+      where: { athleteId: ctx.user.id, status: "active" },
+      include: {
+        program: true,
+        coach: { select: { id: true, name: true, avatarUrl: true } },
+      },
+      orderBy: { startedAt: "desc" },
+    });
+
+    if (!assignment || !assignment.program) return null;
+
+    const program = assignment.program;
+
+    // Resolve schedule template names
+    type ScheduleCell = { templateId: string; templateName: string | null; isRestDay?: boolean } | null;
+    const rawSchedule = (program.schedule ?? {}) as Record<string, Record<string, string | ScheduleCell>>;
+
+    const templateIds = new Set<string>();
+    for (const week of Object.values(rawSchedule)) {
+      for (const cell of Object.values(week)) {
+        if (typeof cell === "string" && cell) templateIds.add(cell);
+        else if (cell && typeof cell === "object" && cell.templateId) templateIds.add(cell.templateId);
+      }
+    }
+
+    const templates = templateIds.size
+      ? await ctx.db.workoutTemplate.findMany({
+          where: { id: { in: [...templateIds] } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const templateMap = new Map(templates.map((t) => [t.id, t.name]));
+
+    const resolvedSchedule: Record<
+      string,
+      Record<string, { templateId: string; templateName: string | null; isRestDay?: boolean }>
+    > = {};
+    for (const [week, days] of Object.entries(rawSchedule)) {
+      resolvedSchedule[week] = {};
+      for (const [day, cell] of Object.entries(days)) {
+        if (typeof cell === "string") {
+          resolvedSchedule[week][day] = { templateId: cell, templateName: templateMap.get(cell) ?? null };
+        } else if (cell && typeof cell === "object") {
+          resolvedSchedule[week][day] = {
+            templateId: cell.templateId,
+            templateName: templateMap.get(cell.templateId) ?? cell.templateName,
+            isRestDay: cell.isRestDay,
+          };
+        }
+      }
+    }
+
+    // Calculate current week number
+    const startDate = new Date(assignment.startedAt);
+    const now = new Date();
+    const diffMs = now.getTime() - startDate.getTime();
+    const currentWeek = Math.max(1, Math.min(program.durationWeeks, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000))));
+
+    return {
+      assignmentId: assignment.id,
+      startedAt: assignment.startedAt,
+      program: {
+        id: program.id,
+        name: program.name,
+        description: program.description,
+        durationWeeks: program.durationWeeks,
+        schedule: resolvedSchedule,
+      },
+      coach: assignment.coach,
+      currentWeek,
+    };
+  }),
 
   listAssignments: coachProcedure
     .input(z.object({ programId: z.string().uuid() }))

@@ -14,6 +14,7 @@ import {
   Activity,
   MessageSquare,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -23,6 +24,7 @@ const navItems = [
   { icon: Home, label: "Home", href: "/dashboard" },
   { icon: Dumbbell, label: "Workouts", href: "/workouts" },
   { icon: ClipboardList, label: "Templates", href: "/templates" },
+  { icon: BookOpen, label: "My Program", href: "/program" },
   { icon: CalendarDays, label: "Calendar", href: "/calendar" },
   { icon: Activity, label: "Feed", href: "/feed" },
   { icon: MessageSquare, label: "Messages", href: "/messages" },
