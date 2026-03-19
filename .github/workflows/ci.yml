@@ -22,6 +22,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
 
   test-unit:
     name: Unit Tests (shared + sync + mobile)
