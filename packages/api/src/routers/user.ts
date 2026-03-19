@@ -6,7 +6,7 @@ import {
   uploadAvatarSchema,
 } from "@ironpulse/shared";
 import { getPresignedUploadUrl } from "../lib/s3";
-import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 
 export const userRouter = createTRPCRouter({
   me: rateLimitedProcedure.query(async ({ ctx }) => {
@@ -20,6 +20,7 @@ export const userRouter = createTRPCRouter({
         unitSystem: true,
         tier: true,
         subscriptionStatus: true,
+        deletionRequestedAt: true,
         createdAt: true,
       },
     });
@@ -114,4 +115,20 @@ export const userRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+  requestDeletion: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.db.user.update({
+      where: { id: ctx.user.id },
+      data: { deletionRequestedAt: new Date() },
+    });
+    return { message: "Account deletion requested. You have 7 days to cancel." };
+  }),
+
+  cancelDeletion: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.db.user.update({
+      where: { id: ctx.user.id },
+      data: { deletionRequestedAt: null },
+    });
+    return { message: "Account deletion cancelled." };
+  }),
 });

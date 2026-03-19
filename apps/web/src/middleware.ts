@@ -7,9 +7,11 @@ const publicRoutes = [
   "/signup",
   "/forgot-password",
   "/reset-password",
+  "/privacy",
+  "/terms",
 ];
 
-const authApiRoutes = ["/api/auth"];
+const authApiRoutes = ["/api/auth", "/api/health"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

@@ -294,6 +294,26 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
+  deploy:
+    name: Deploy to Production
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/ironpulse
+            git pull origin main
+            docker compose -f docker/docker-compose.yml build app
+            docker compose -f docker/docker-compose.yml up -d app
+            docker compose -f docker/docker-compose.yml exec app npx prisma migrate deploy
+            echo "Deploy complete"
+
   # ── E2E Dashboard ──
   deploy-dashboard:
     runs-on: ubuntu-latest

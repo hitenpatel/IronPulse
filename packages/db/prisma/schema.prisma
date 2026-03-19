@@ -23,6 +23,7 @@ model User {
   stripeCustomerId   String?  @unique @map("stripe_customer_id")
   onboardingComplete    Boolean   @default(false) @map("onboarding_complete")
   deletionRequestedAt   DateTime? @map("deletion_requested_at")
+  consentedAt           DateTime? @map("consented_at")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
