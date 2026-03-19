@@ -7,6 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 export default defineConfig({
   test: {
     include: ["__tests__/**/*.test.ts"],
+    setupFiles: ["__tests__/setup.ts"],
     testTimeout: 10000,
     fileParallelism: false,
   },
