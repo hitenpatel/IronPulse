@@ -56,7 +56,7 @@ export function GlobalSearch() {
     { query: debouncedQuery },
     {
       enabled: debouncedQuery.length > 0,
-      keepPreviousData: true,
+      placeholderData: (prev) => prev,
     }
   );
 
