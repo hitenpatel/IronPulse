@@ -185,7 +185,7 @@ jobs:
   # ── iOS: build simulator .app + Maestro E2E on macOS ──
   e2e-ios:
     name: Mobile E2E iOS (Maestro)
-    runs-on: macos-13
+    runs-on: macos-14
     timeout-minutes: 60
     env:
       NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
