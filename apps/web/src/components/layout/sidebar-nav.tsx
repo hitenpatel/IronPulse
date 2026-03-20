@@ -15,6 +15,7 @@ import {
   MessageSquare,
   ClipboardList,
   BookOpen,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -32,6 +33,7 @@ const navItems = [
   { icon: Search, label: "Exercises", href: "/exercises" },
   { icon: UserSearch, label: "Find a Coach", href: "/coaches" },
   { icon: User, label: "Profile", href: "/profile" },
+  { icon: Calculator, label: "Tools", href: "/tools/1rm" },
 ];
 
 interface SidebarNavProps {
@@ -49,7 +51,10 @@ export function SidebarNav({ onNewSession }: SidebarNavProps) {
 
       <nav aria-label="Main navigation" className="flex flex-1 flex-col items-center gap-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/tools/1rm"
+              ? pathname.startsWith("/tools")
+              : pathname === item.href;
           return (
             <Link
               key={item.href}
