@@ -12,11 +12,15 @@ import {
 import { calculateVolume, formatElapsed } from "@/lib/workout-utils";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  accent: "hsl(216, 34%, 17%)",
-  muted: "hsl(223, 47%, 11%)",
+  background: "#060B14",
+  card: "#0F1629",
+  muted: "#243052",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  dimFg: "#4E6180",
+  prGold: "#FFD700",
 };
 
 interface WorkoutRow {
@@ -68,23 +72,26 @@ export default function WorkoutDetailScreen() {
         contentContainerStyle={{ padding: 16 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 20 }}>
-            {/* Stats row */}
-            <View style={{ flexDirection: "row", gap: 12 }}>
+            {/* Stat pills row */}
+            <View style={{ flexDirection: "row", gap: 10 }}>
               <View
                 style={{
-                  flex: 1,
                   backgroundColor: colors.muted,
-                  borderRadius: 12,
-                  padding: 16,
+                  borderRadius: 24,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
                   alignItems: "center",
+                  flex: 1,
                 }}
               >
                 <Text
                   style={{
                     color: colors.mutedFg,
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: "600",
-                    marginBottom: 4,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.4,
+                    marginBottom: 2,
                   }}
                 >
                   Duration
@@ -92,7 +99,7 @@ export default function WorkoutDetailScreen() {
                 <Text
                   style={{
                     color: colors.foreground,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: "700",
                     fontVariant: ["tabular-nums"],
                   }}
@@ -102,19 +109,22 @@ export default function WorkoutDetailScreen() {
               </View>
               <View
                 style={{
-                  flex: 1,
                   backgroundColor: colors.muted,
-                  borderRadius: 12,
-                  padding: 16,
+                  borderRadius: 24,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
                   alignItems: "center",
+                  flex: 1,
                 }}
               >
                 <Text
                   style={{
                     color: colors.mutedFg,
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: "600",
-                    marginBottom: 4,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.4,
+                    marginBottom: 2,
                   }}
                 >
                   Volume
@@ -122,7 +132,7 @@ export default function WorkoutDetailScreen() {
                 <Text
                   style={{
                     color: colors.foreground,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: "700",
                     fontVariant: ["tabular-nums"],
                   }}
@@ -163,10 +173,10 @@ function ExerciseCard({
   return (
     <View
       style={{
-        backgroundColor: colors.muted,
+        backgroundColor: colors.card,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.border,
         padding: 16,
         marginBottom: 10,
       }}
@@ -175,7 +185,7 @@ function ExerciseCard({
         style={{
           color: colors.foreground,
           fontSize: 16,
-          fontWeight: "700",
+          fontWeight: "600",
           marginBottom: 12,
         }}
       >
@@ -184,12 +194,12 @@ function ExerciseCard({
 
       {/* Table header */}
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
-        <Text style={{ color: colors.mutedFg, fontSize: 12, fontWeight: "600", width: 36 }}>
+        <Text style={{ color: colors.dimFg, fontSize: 12, fontWeight: "600", width: 36 }}>
           SET
         </Text>
         <Text
           style={{
-            color: colors.mutedFg,
+            color: colors.dimFg,
             fontSize: 12,
             fontWeight: "600",
             flex: 1,
@@ -200,7 +210,7 @@ function ExerciseCard({
         </Text>
         <Text
           style={{
-            color: colors.mutedFg,
+            color: colors.dimFg,
             fontSize: 12,
             fontWeight: "600",
             flex: 1,
@@ -211,7 +221,7 @@ function ExerciseCard({
         </Text>
         <Text
           style={{
-            color: colors.mutedFg,
+            color: colors.dimFg,
             fontSize: 12,
             fontWeight: "600",
             width: 48,
@@ -223,61 +233,68 @@ function ExerciseCard({
       </View>
 
       {/* Set rows */}
-      {sets.map((set) => (
-        <View
-          key={set.id}
-          style={{
-            flexDirection: "row",
-            paddingVertical: 6,
-            borderTopWidth: 1,
-            borderTopColor: colors.accent,
-          }}
-        >
-          <Text
+      {sets.map((set) => {
+        const isPR = (set as any).is_pr;
+        return (
+          <View
+            key={set.id}
             style={{
-              color: colors.mutedFg,
-              fontSize: 14,
-              width: 36,
-              fontVariant: ["tabular-nums"],
+              flexDirection: "row",
+              paddingVertical: 6,
+              borderTopWidth: 1,
+              borderTopColor: colors.borderSubtle,
+              borderLeftWidth: isPR ? 2 : 0,
+              borderLeftColor: isPR ? colors.prGold : "transparent",
+              paddingLeft: isPR ? 6 : 0,
             }}
           >
-            {set.set_number}
-          </Text>
-          <Text
-            style={{
-              color: colors.foreground,
-              fontSize: 14,
-              flex: 1,
-              textAlign: "center",
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {set.weight_kg ?? "-"}
-          </Text>
-          <Text
-            style={{
-              color: colors.foreground,
-              fontSize: 14,
-              flex: 1,
-              textAlign: "center",
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {set.reps ?? "-"}
-          </Text>
-          <Text
-            style={{
-              color: colors.mutedFg,
-              fontSize: 14,
-              width: 48,
-              textAlign: "center",
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {set.rpe ?? "-"}
-          </Text>
-        </View>
-      ))}
+            <Text
+              style={{
+                color: isPR ? colors.prGold : colors.mutedFg,
+                fontSize: 14,
+                width: 36,
+                fontVariant: ["tabular-nums"],
+                fontWeight: isPR ? "700" : "400",
+              }}
+            >
+              {set.set_number}
+            </Text>
+            <Text
+              style={{
+                color: colors.foreground,
+                fontSize: 14,
+                flex: 1,
+                textAlign: "center",
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {set.weight_kg ?? "-"}
+            </Text>
+            <Text
+              style={{
+                color: colors.foreground,
+                fontSize: 14,
+                flex: 1,
+                textAlign: "center",
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {set.reps ?? "-"}
+            </Text>
+            <Text
+              style={{
+                color: colors.mutedFg,
+                fontSize: 14,
+                width: 48,
+                textAlign: "center",
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {set.rpe ?? "-"}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }

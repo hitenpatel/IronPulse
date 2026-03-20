@@ -1,18 +1,34 @@
 import { useState } from "react";
-import { View, Text, FlatList, Pressable, Alert } from "react-native";
+import { View, Text, FlatList, Pressable, Alert, ScrollView, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePowerSync } from "@powersync/react";
 import { useRouter } from "expo-router";
 import { useExercises, useTemplates, type TemplateRow } from "@ironpulse/sync";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { getWorkoutName } from "@/lib/workout-utils";
-import { Trash2, FileText } from "lucide-react-native";
+import { Trash2, FileText, Search, Heart } from "lucide-react-native";
 import * as crypto from "expo-crypto";
+
+const colors = {
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  primary: "#0077FF",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  dimFg: "#4E6180",
+  error: "#EF4444",
+};
+
+const MUSCLE_FILTERS = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Glutes"];
 
 export default function ExercisesScreen() {
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
   const { data: exercises } = useExercises({ search: search || undefined });
   const { data: templates } = useTemplates();
   const db = usePowerSync();
@@ -91,32 +107,120 @@ export default function ExercisesScreen() {
     ]);
   }
 
+  const filteredExercises = (exercises ?? []).filter((ex) => {
+    if (activeFilter === "All") return true;
+    const category = (ex.category ?? "").toLowerCase();
+    const muscles = (() => {
+      try { return JSON.parse(ex.primary_muscles ?? "[]").join(" ").toLowerCase(); }
+      catch { return (ex.primary_muscles ?? "").toLowerCase(); }
+    })();
+    return category.includes(activeFilter.toLowerCase()) || muscles.includes(activeFilter.toLowerCase());
+  });
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Header */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
         <Text
           style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "hsl(213, 31%, 91%)",
+            fontSize: 28,
+            fontWeight: "600",
+            fontFamily: "ClashDisplay",
+            color: colors.foreground,
             marginBottom: 16,
           }}
         >
           Exercises
         </Text>
 
+        {/* Search bar */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 8,
+            height: 44,
+            paddingHorizontal: 12,
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <Search size={16} color={colors.dimFg} />
+          <TextInput
+            style={{
+              flex: 1,
+              color: colors.foreground,
+              fontSize: 15,
+            }}
+            placeholder="Search exercises..."
+            placeholderTextColor={colors.dimFg}
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+
+        {/* Filter pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+          style={{ marginBottom: 16 }}
+        >
+          {MUSCLE_FILTERS.map((filter) => {
+            const isActive = activeFilter === filter;
+            return (
+              <Pressable
+                key={filter}
+                onPress={() => setActiveFilter(filter)}
+                style={{
+                  backgroundColor: isActive ? colors.primary : colors.accent,
+                  borderWidth: 1,
+                  borderColor: isActive ? colors.primary : colors.border,
+                  borderRadius: 24,
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isActive ? "#FFFFFF" : colors.mutedFg,
+                    fontSize: 13,
+                    fontWeight: "500",
+                  }}
+                >
+                  {filter}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {/* Templates section */}
         {templates.length > 0 && (
           <View style={{ marginBottom: 16 }}>
-            <Text
+            <View
               style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: "hsl(213, 31%, 91%)",
-                marginBottom: 8,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.borderSubtle,
+                marginBottom: 10,
+                paddingBottom: 6,
               }}
             >
-              Templates
-            </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: colors.dimFg,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Templates
+              </Text>
+            </View>
             <FlatList
               horizontal
               data={templates}
@@ -127,7 +231,9 @@ export default function ExercisesScreen() {
                 <Pressable
                   onPress={() => startFromTemplate(item)}
                   style={{
-                    backgroundColor: "hsl(216, 34%, 17%)",
+                    backgroundColor: colors.card,
+                    borderWidth: 1,
+                    borderColor: colors.border,
                     borderRadius: 12,
                     padding: 14,
                     width: 150,
@@ -141,13 +247,14 @@ export default function ExercisesScreen() {
                       marginBottom: 6,
                     }}
                   >
-                    <FileText size={16} color="hsl(213, 31%, 91%)" />
+                    <FileText size={16} color={colors.mutedFg} />
                     <Text
                       numberOfLines={1}
                       style={{
-                        color: "hsl(213, 31%, 91%)",
-                        fontWeight: "500",
+                        color: colors.foreground,
+                        fontWeight: "600",
                         flex: 1,
+                        fontSize: 14,
                       }}
                     >
                       {item.name}
@@ -160,7 +267,7 @@ export default function ExercisesScreen() {
                       alignItems: "center",
                     }}
                   >
-                    <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12 }}>
+                    <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
                       {item.exercise_count ?? 0} exercise
                       {item.exercise_count !== 1 ? "s" : ""}
                     </Text>
@@ -168,7 +275,7 @@ export default function ExercisesScreen() {
                       onPress={() => confirmDeleteTemplate(item)}
                       hitSlop={8}
                     >
-                      <Trash2 size={14} color="hsl(215, 20%, 65%)" />
+                      <Trash2 size={14} color={colors.mutedFg} />
                     </Pressable>
                   </View>
                 </Pressable>
@@ -177,48 +284,77 @@ export default function ExercisesScreen() {
           </View>
         )}
 
-        <Input
-          label=""
-          placeholder="Search exercises..."
-          value={search}
-          onChangeText={setSearch}
-        />
+        {/* Section header for exercise list */}
+        <View
+          style={{
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderSubtle,
+            paddingBottom: 6,
+            marginBottom: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: colors.dimFg,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+            }}
+          >
+            {activeFilter === "All" ? "All Exercises" : activeFilter}
+          </Text>
+        </View>
       </View>
 
+      {/* Exercise list */}
       <FlatList
-        data={exercises ?? []}
+        data={filteredExercises}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 1 }}
         ListEmptyComponent={
           <Text
             style={{
-              color: "hsl(215, 20%, 65%)",
+              color: colors.mutedFg,
               textAlign: "center",
               paddingVertical: 32,
+              fontSize: 14,
             }}
           >
             {search ? "No exercises found" : "Syncing exercises..."}
           </Text>
         }
         renderItem={({ item }) => (
-          <Card>
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}>
-              {item.name}
-            </Text>
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-              {item.category && (
+          <View
+            style={{
+              height: 56,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontWeight: "600",
+                  fontSize: 16,
+                }}
+                numberOfLines={1}
+              >
+                {item.name}
+              </Text>
+              {item.primary_muscles && (
                 <Text
                   style={{
                     fontSize: 12,
-                    color: "hsl(215, 20%, 65%)",
-                    textTransform: "capitalize",
+                    color: colors.mutedFg,
+                    marginTop: 1,
                   }}
+                  numberOfLines={1}
                 >
-                  {item.category}
-                </Text>
-              )}
-              {item.primary_muscles && (
-                <Text style={{ fontSize: 12, color: "hsl(215, 20%, 65%)" }}>
                   {(() => {
                     try {
                       return JSON.parse(item.primary_muscles).join(", ");
@@ -229,7 +365,31 @@ export default function ExercisesScreen() {
                 </Text>
               )}
             </View>
-          </Card>
+            {item.category && (
+              <View
+                style={{
+                  backgroundColor: colors.accent,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 6,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: colors.mutedFg,
+                    fontWeight: "500",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {item.category}
+                </Text>
+              </View>
+            )}
+            <Heart size={18} color={colors.dimFg} />
+          </View>
         )}
       />
     </SafeAreaView>

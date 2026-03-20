@@ -8,12 +8,16 @@ import { MonthGrid } from "@/components/calendar/month-grid";
 import { formatElapsed } from "@/lib/workout-utils";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  accent: "hsl(216, 34%, 17%)",
-  muted: "hsl(223, 47%, 11%)",
+  background: "#060B14",
+  card: "#0F1629",
+  muted: "#243052",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  dimFg: "#4E6180",
+  primary: "#0077FF",
+  success: "#10B981",
 };
 
 const MONTH_NAMES = [
@@ -87,13 +91,20 @@ export default function CalendarScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 12,
+            marginBottom: 16,
           }}
         >
           <Pressable onPress={goToPreviousMonth} hitSlop={12}>
             <ChevronLeft size={24} color={colors.foreground} />
           </Pressable>
-          <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "700" }}>
+          <Text
+            style={{
+              fontFamily: "ClashDisplay",
+              fontWeight: "600",
+              fontSize: 22,
+              color: colors.foreground,
+            }}
+          >
             {MONTH_NAMES[currentMonth]} {currentYear}
           </Text>
           <Pressable onPress={goToNextMonth} hitSlop={12}>
@@ -112,13 +123,27 @@ export default function CalendarScreen() {
         />
 
         {/* Legend */}
-        <View style={{ flexDirection: "row", gap: 16, marginTop: 12, marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", gap: 16, marginTop: 14, marginBottom: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#3b82f6" }} />
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: colors.primary,
+              }}
+            />
             <Text style={{ color: colors.mutedFg, fontSize: 12 }}>Workout</Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" }} />
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: colors.success,
+              }}
+            />
             <Text style={{ color: colors.mutedFg, fontSize: 12 }}>Cardio</Text>
           </View>
         </View>
@@ -130,7 +155,7 @@ export default function CalendarScreen() {
               style={{
                 color: colors.foreground,
                 fontSize: 16,
-                fontWeight: "700",
+                fontWeight: "600",
                 marginBottom: 12,
               }}
             >
@@ -149,21 +174,32 @@ export default function CalendarScreen() {
               <Pressable
                 key={w.id}
                 onPress={() => router.push(`/history/workout/${w.id}`)}
+                style={{ marginBottom: 10 }}
               >
                 <View
                   style={{
-                    backgroundColor: colors.muted,
+                    backgroundColor: colors.card,
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: colors.accent,
+                    borderColor: colors.border,
                     padding: 16,
-                    marginBottom: 10,
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 12,
                   }}
                 >
-                  <Dumbbell size={20} color="#3b82f6" />
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: `${colors.primary}26`,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Dumbbell size={18} color={colors.primary} />
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 15 }}>
                       {w.name ?? "Workout"}
@@ -187,21 +223,32 @@ export default function CalendarScreen() {
               <Pressable
                 key={c.id}
                 onPress={() => router.push(`/history/cardio-detail/${c.id}`)}
+                style={{ marginBottom: 10 }}
               >
                 <View
                   style={{
-                    backgroundColor: colors.muted,
+                    backgroundColor: colors.card,
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: colors.accent,
+                    borderColor: colors.border,
                     padding: 16,
-                    marginBottom: 10,
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 12,
                   }}
                 >
-                  <Activity size={20} color="#22c55e" />
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: `${colors.success}26`,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Activity size={18} color={colors.success} />
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
