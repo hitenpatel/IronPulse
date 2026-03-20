@@ -71,6 +71,14 @@ export const removePasswordSchema = z.object({
 });
 export type RemovePasswordInput = z.infer<typeof removePasswordSchema>;
 
+export const mobileOAuthSignInSchema = z.object({
+  provider: z.enum(["google", "apple"]),
+  idToken: z.string().min(1),
+  name: z.string().max(100).optional(),
+  email: z.string().email().optional(),
+});
+export type MobileOAuthSignInInput = z.infer<typeof mobileOAuthSignInSchema>;
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(8),
   newPassword: z.string().min(8).max(128),

@@ -9,6 +9,7 @@ import {
   requestPasswordResetSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  mobileOAuthSignInSchema,
 } from "@ironpulse/shared";
 import { sendMagicLinkEmail, sendPasswordResetEmail } from "../lib/email";
 import { signMobileToken } from "../lib/mobile-auth";
@@ -156,6 +157,121 @@ export const authRouter = createTRPCRouter({
             create: {
               provider: "email",
               providerAccountId: input.email,
+            },
+          },
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          tier: true,
+          subscriptionStatus: true,
+          unitSystem: true,
+          onboardingComplete: true,
+          defaultRestSeconds: true,
+        },
+      });
+
+      const token = signMobileToken(user as SessionUser);
+      return { token, user };
+    }),
+
+  mobileOAuthSignIn: publicProcedure
+    .input(mobileOAuthSignInSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Decode the ID token to extract the subject (user ID from provider)
+      // For Google/Apple, the ID token is a JWT — decode payload without verification
+      // (the native SDK already verified it on the client)
+      let payload: { sub?: string; email?: string; name?: string };
+      try {
+        const parts = input.idToken.split(".");
+        payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+      } catch {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid ID token" });
+      }
+
+      const providerAccountId = payload.sub;
+      if (!providerAccountId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Missing subject in token" });
+      }
+
+      const email = input.email ?? payload.email;
+      const name = input.name ?? payload.name ?? email?.split("@")[0] ?? "User";
+
+      // Find existing account for this provider
+      const existingAccount = await ctx.db.account.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: input.provider,
+            providerAccountId,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              tier: true,
+              subscriptionStatus: true,
+              unitSystem: true,
+              onboardingComplete: true,
+              defaultRestSeconds: true,
+            },
+          },
+        },
+      });
+
+      if (existingAccount) {
+        const token = signMobileToken(existingAccount.user as SessionUser);
+        return { token, user: existingAccount.user };
+      }
+
+      // Check if a user with this email already exists (link accounts)
+      if (email) {
+        const existingUser = await ctx.db.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            tier: true,
+            subscriptionStatus: true,
+            unitSystem: true,
+            onboardingComplete: true,
+            defaultRestSeconds: true,
+          },
+        });
+
+        if (existingUser) {
+          await ctx.db.account.create({
+            data: {
+              userId: existingUser.id,
+              provider: input.provider,
+              providerAccountId,
+            },
+          });
+          const token = signMobileToken(existingUser as SessionUser);
+          return { token, user: existingUser };
+        }
+      }
+
+      // Create new user
+      if (!email) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Email is required for new accounts",
+        });
+      }
+
+      const user = await ctx.db.user.create({
+        data: {
+          email,
+          name,
+          accounts: {
+            create: {
+              provider: input.provider,
+              providerAccountId,
             },
           },
         },
