@@ -33,3 +33,15 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     text: `Click this link to reset your password:\n\n${link}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, you can safely ignore this email.`,
   });
 }
+
+export async function sendEmailChangeVerificationEmail(email: string, token: string) {
+  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const link = `${baseUrl}/confirm-email-change?token=${token}`;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: "Confirm your new email address for IronPulse",
+    text: `Click this link to confirm your new email address:\n\n${link}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, you can safely ignore this email.`,
+  });
+}

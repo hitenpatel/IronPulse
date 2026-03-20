@@ -54,6 +54,7 @@ model User {
   receivedMessages        Message[]              @relation("ReceivedMessages")
   pushTokens              PushToken[]
   passkeys                Passkey[]
+  emailChangeTokens       EmailChangeToken[]
 
   @@map("users")
 }
@@ -92,6 +93,20 @@ model MagicLinkToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("magic_link_tokens")
+}
+
+model EmailChangeToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newEmail  String   @map("new_email")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("email_change_tokens")
 }
 
 model Passkey {

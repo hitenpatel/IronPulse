@@ -43,6 +43,15 @@ export default function ProfilePage() {
     },
   });
 
+  const requestEmailChange = trpc.user.requestEmailChange.useMutation({
+    onSuccess: () => {
+      setEmailChangeStatus("sent");
+    },
+    onError: (err) => {
+      setEmailChangeError(err.message);
+    },
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFile = useRef<File | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -51,6 +60,12 @@ export default function ProfilePage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle",
   );
+
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailChangeStatus, setEmailChangeStatus] = useState<"idle" | "sent">("idle");
+  const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
 
   const user = data?.user;
 
@@ -106,6 +121,20 @@ export default function ProfilePage() {
     uploadAvatar.mutate({ contentType: file.type as AllowedType });
     // Reset input so the same file can be re-selected if needed
     e.target.value = "";
+  }
+
+  function handleEmailChangeOpen() {
+    setShowEmailForm(true);
+    setEmailChangeStatus("idle");
+    setEmailChangeError(null);
+    setNewEmail("");
+    setEmailPassword("");
+  }
+
+  function handleEmailChangeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailChangeError(null);
+    requestEmailChange.mutate({ newEmail, password: emailPassword });
   }
 
   const avatarDisplayUrl = user?.avatarUrl
@@ -189,7 +218,66 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <Label>Email</Label>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">{user.email}</p>
+              {!showEmailForm && (
+                <Button size="sm" variant="outline" onClick={handleEmailChangeOpen}>
+                  Change
+                </Button>
+              )}
+            </div>
+            {showEmailForm && (
+              emailChangeStatus === "sent" ? (
+                <p className="text-sm text-green-600">
+                  Check your new email for a verification link.
+                </p>
+              ) : (
+                <form onSubmit={handleEmailChangeSubmit} className="space-y-2 pt-1">
+                  <div className="space-y-1">
+                    <Label htmlFor="new-email">New email address</Label>
+                    <Input
+                      id="new-email"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="new@example.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="email-password">Current password</Label>
+                    <Input
+                      id="email-password"
+                      type="password"
+                      value={emailPassword}
+                      onChange={(e) => setEmailPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                  {emailChangeError && (
+                    <p className="text-sm text-destructive">{emailChangeError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={requestEmailChange.isPending}
+                    >
+                      {requestEmailChange.isPending ? "Sending..." : "Send verification"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowEmailForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )
+            )}
           </div>
 
           <div className="flex items-center justify-between text-sm">

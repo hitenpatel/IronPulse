@@ -1,10 +1,16 @@
+import crypto from "crypto";
+import { TRPCError } from "@trpc/server";
+import bcrypt from "bcryptjs";
 import {
+  changeEmailSchema,
   completeOnboardingSchema,
+  confirmEmailChangeSchema,
   registerPushTokenSchema,
   unregisterPushTokenSchema,
   updateProfileSchema,
   uploadAvatarSchema,
 } from "@ironpulse/shared";
+import { sendEmailChangeVerificationEmail } from "../lib/email";
 import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 
@@ -121,6 +127,117 @@ export const userRouter = createTRPCRouter({
       });
 
       return { success: true };
+    }),
+
+  requestEmailChange: rateLimitedProcedure
+    .input(changeEmailSchema)
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUniqueOrThrow({
+        where: { id: ctx.user.id },
+        select: { id: true, passwordHash: true },
+      });
+
+      if (!user.passwordHash) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No password is set on this account. Use a different verification method.",
+        });
+      }
+
+      const valid = await bcrypt.compare(input.password, user.passwordHash);
+      if (!valid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Incorrect password",
+        });
+      }
+
+      const existing = await ctx.db.user.findUnique({
+        where: { email: input.newEmail },
+        select: { id: true },
+      });
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "That email address is already in use",
+        });
+      }
+
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await ctx.db.emailChangeToken.create({
+        data: {
+          userId: ctx.user.id,
+          newEmail: input.newEmail,
+          token,
+          expiresAt,
+        },
+      });
+
+      try {
+        await sendEmailChangeVerificationEmail(input.newEmail, token);
+      } catch {
+        // Don't expose email delivery failures
+      }
+
+      return { ok: true };
+    }),
+
+  confirmEmailChange: protectedProcedure
+    .input(confirmEmailChangeSchema)
+    .mutation(async ({ ctx, input }) => {
+      const tokenRecord = await ctx.db.emailChangeToken.findUnique({
+        where: { token: input.token },
+        include: { user: { select: { id: true } } },
+      });
+
+      if (!tokenRecord || tokenRecord.used || tokenRecord.expiresAt < new Date()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid or expired email change token",
+        });
+      }
+
+      // Verify the token belongs to the authenticated user
+      if (tokenRecord.userId !== ctx.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This email change link does not belong to your account",
+        });
+      }
+
+      const newEmail = tokenRecord.newEmail;
+
+      // Check the new email is still available
+      const conflicting = await ctx.db.user.findUnique({
+        where: { email: newEmail },
+        select: { id: true },
+      });
+      if (conflicting) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "That email address is already in use",
+        });
+      }
+
+      await ctx.db.$transaction([
+        ctx.db.emailChangeToken.update({
+          where: { id: tokenRecord.id },
+          data: { used: true },
+        }),
+        ctx.db.user.update({
+          where: { id: tokenRecord.userId },
+          data: { email: newEmail },
+        }),
+        // Update the email provider account's providerAccountId to match the new email
+        ctx.db.account.updateMany({
+          where: { userId: tokenRecord.userId, provider: "email" },
+          data: { providerAccountId: newEmail },
+        }),
+      ]);
+
+      return { ok: true, newEmail };
     }),
 
   requestDeletion: protectedProcedure.mutation(async ({ ctx }) => {

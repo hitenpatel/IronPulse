@@ -84,3 +84,14 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(128),
 });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const changeEmailSchema = z.object({
+  newEmail: z.string().email(),
+  password: z.string().min(1),
+});
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
+
+export const confirmEmailChangeSchema = z.object({
+  token: z.string(),
+});
+export type ConfirmEmailChangeInput = z.infer<typeof confirmEmailChangeSchema>;
