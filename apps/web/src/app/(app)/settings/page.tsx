@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import {
   Card,
@@ -18,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Upload } from "lucide-react";
 
 export default function SettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -51,6 +52,28 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Settings</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Import Workouts
+          </CardTitle>
+          <CardDescription>
+            Import your workout history from Strong, Hevy, or FitNotes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Upload a CSV export to bring your existing workout data into IronPulse.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/settings/import">Go to Import</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-destructive">
         <CardHeader>
