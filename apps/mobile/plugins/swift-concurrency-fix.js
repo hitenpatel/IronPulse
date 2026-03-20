@@ -18,27 +18,26 @@ module.exports = function swiftConcurrencyFix(config) {
 
       const postInstallSnippet = `
     # Fix Swift strict concurrency errors in expo-modules-core (Xcode 16.x)
-    # Force Swift 5 language mode to prevent Swift 6 concurrency enforcement
+    # Downgrade concurrency checking and treat errors as warnings
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
-        config.build_settings['SWIFT_VERSION'] = '5.0'
-        config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-        unless config.build_settings['OTHER_SWIFT_FLAGS'].include?('-swift-version')
-          config.build_settings['OTHER_SWIFT_FLAGS'] << '-swift-version' << '5'
+        config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        swflags = config.build_settings['OTHER_SWIFT_FLAGS'] || ['$(inherited)']
+        unless swflags.to_s.include?('-strict-concurrency')
+          config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -Xfrontend -strict-concurrency=minimal'
         end
       end
     end`;
 
       // Insert before the last `end` in post_install, or add a new post_install
       if (podfile.includes("post_install do |installer|")) {
-        // Add our fix inside the existing post_install block
         podfile = podfile.replace(
           /post_install do \|installer\|/,
           `post_install do |installer|${postInstallSnippet}`
         );
       } else {
-        // Add a new post_install block before the final end
         podfile += `\npost_install do |installer|${postInstallSnippet}\nend\n`;
       }
 
