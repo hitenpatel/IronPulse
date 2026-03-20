@@ -9,6 +9,7 @@ import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { formatDuration, formatVolume } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@powersync/react";
 
 function formatFullDate(date: Date): string {
@@ -123,7 +124,7 @@ export default function WorkoutDetailPage() {
           Workouts
         </Link>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{workout.name || "Workout"}</h1>
+          <h1 className="font-display font-semibold text-[28px] text-foreground">{workout.name || "Workout"}</h1>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -193,19 +194,19 @@ export default function WorkoutDetailPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4 text-center">
+        <Card className="bg-muted border-0 p-4 text-center rounded-lg">
           <Dumbbell className="mx-auto h-5 w-5 text-muted-foreground" />
-          <p className="mt-1 text-xl font-semibold">{totalExercises}</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">{totalExercises}</p>
           <p className="text-xs text-muted-foreground">Exercises</p>
         </Card>
-        <Card className="p-4 text-center">
+        <Card className="bg-muted border-0 p-4 text-center rounded-lg">
           <Target className="mx-auto h-5 w-5 text-muted-foreground" />
-          <p className="mt-1 text-xl font-semibold">{totalSets}</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">{totalSets}</p>
           <p className="text-xs text-muted-foreground">Sets</p>
         </Card>
-        <Card className="p-4 text-center">
+        <Card className="bg-muted border-0 p-4 text-center rounded-lg">
           <BarChart3 className="mx-auto h-5 w-5 text-muted-foreground" />
-          <p className="mt-1 text-xl font-semibold">
+          <p className="mt-1 text-xl font-semibold text-foreground">
             {totalVolume > 0 ? formatVolume(totalVolume) : "--"}
           </p>
           <p className="text-xs text-muted-foreground">Volume</p>
@@ -214,7 +215,7 @@ export default function WorkoutDetailPage() {
 
       {/* Notes */}
       {workout.notes && (
-        <Card className="p-4">
+        <Card className="bg-card border border-border p-4 rounded-lg">
           <p className="text-sm text-muted-foreground">{workout.notes}</p>
         </Card>
       )}
@@ -224,14 +225,14 @@ export default function WorkoutDetailPage() {
         {exercises.map((we) => {
           const exerciseSets = setsByExercise.get(we.id) ?? [];
           return (
-            <Card key={we.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{we.exercise_name}</CardTitle>
+            <Card key={we.id} className="bg-card border border-border rounded-lg">
+              <CardHeader className="pb-3 p-5">
+                <CardTitle className="text-base text-foreground">{we.exercise_name}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-5 pb-5">
                 <div className="space-y-0">
                   {/* Table header */}
-                  <div className="grid grid-cols-[2rem_1fr_1fr_auto] gap-2 border-b pb-2 text-xs font-medium text-muted-foreground">
+                  <div className="grid grid-cols-[2rem_1fr_1fr_auto] gap-2 border-b border-border pb-2 text-xs font-medium text-muted-foreground">
                     <span>Set</span>
                     <span>Weight</span>
                     <span>Reps</span>
@@ -240,34 +241,40 @@ export default function WorkoutDetailPage() {
                   {/* Set rows */}
                   {exerciseSets
                     .sort((a, b) => a.set_number - b.set_number)
-                    .map((set) => (
-                      <div
-                        key={set.id}
-                        className={`grid grid-cols-[2rem_1fr_1fr_auto] gap-2 border-b border-border/50 py-2 text-sm last:border-0 ${
-                          !set.completed ? "opacity-40" : ""
-                        }`}
-                      >
-                        <span className="text-muted-foreground">
-                          {set.set_number}
-                        </span>
-                        <span>
-                          {set.weight_kg != null ? `${set.weight_kg} kg` : "--"}
-                        </span>
-                        <span>{set.reps ?? "--"}</span>
-                        <span className="flex w-16 items-center justify-end gap-1">
-                          {set.type && set.type !== "working" && (
-                            <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium uppercase text-secondary-foreground">
-                              {set.type}
-                            </span>
-                          )}
-                          {set.rpe != null && (
-                            <span className="text-xs text-muted-foreground">
-                              @{Number(set.rpe)}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    ))}
+                    .map((set) => {
+                      const isPR = set.is_pr === 1 || set.is_pr === true;
+                      return (
+                        <div
+                          key={set.id}
+                          className={`grid grid-cols-[2rem_1fr_1fr_auto] gap-2 border-b border-border/50 py-2 text-sm last:border-0 ${
+                            !set.completed ? "opacity-40" : ""
+                          } ${isPR ? "border-l-2 border-l-pr-gold pl-2" : ""}`}
+                        >
+                          <span className="text-muted-foreground">
+                            {set.set_number}
+                          </span>
+                          <span className="text-foreground">
+                            {set.weight_kg != null ? `${set.weight_kg} kg` : "--"}
+                          </span>
+                          <span className="text-foreground">{set.reps ?? "--"}</span>
+                          <span className="flex w-16 items-center justify-end gap-1">
+                            {isPR && (
+                              <Badge variant="gold" className="text-[10px] px-1.5 py-0">PR</Badge>
+                            )}
+                            {set.type && set.type !== "working" && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 uppercase">
+                                {set.type}
+                              </Badge>
+                            )}
+                            {set.rpe != null && (
+                              <span className="text-xs text-muted-foreground">
+                                @{Number(set.rpe)}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
                 </div>
               </CardContent>
             </Card>

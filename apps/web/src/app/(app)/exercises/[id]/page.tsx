@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
   Dumbbell,
@@ -72,22 +73,22 @@ export default function ExerciseDetailPage() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold">{exercise.name}</h1>
+        <h1 className="font-display font-semibold text-[28px] text-foreground">{exercise.name}</h1>
         <div className="mt-2 flex flex-wrap gap-2">
           {exercise.category && (
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <Badge variant="default" className="rounded-pill capitalize">
               {exercise.category}
-            </span>
+            </Badge>
           )}
           {exercise.equipment && (
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+            <Badge variant="outline" className="rounded-pill capitalize">
               {exercise.equipment}
-            </span>
+            </Badge>
           )}
           {exercise.isCustom && (
-            <span className="rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-600">
+            <Badge variant="gold" className="rounded-pill">
               Custom
-            </span>
+            </Badge>
           )}
         </div>
       </div>
@@ -95,22 +96,19 @@ export default function ExerciseDetailPage() {
       {/* Muscles */}
       {(exercise.primaryMuscles.length > 0 ||
         exercise.secondaryMuscles.length > 0) && (
-        <Card>
+        <Card className="bg-card border border-border">
           <CardContent className="py-4">
             {exercise.primaryMuscles.length > 0 && (
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Target className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Primary Muscles</span>
+                  <span className="text-sm font-medium text-foreground">Primary Muscles</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 ml-6">
                   {exercise.primaryMuscles.map((m) => (
-                    <span
-                      key={m}
-                      className="rounded bg-primary/10 px-2 py-0.5 text-xs text-primary"
-                    >
+                    <Badge key={m} variant="default" className="rounded-pill capitalize">
                       {m}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -119,18 +117,15 @@ export default function ExerciseDetailPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Target className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium text-foreground">
                     Secondary Muscles
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 ml-6">
                   {exercise.secondaryMuscles.map((m) => (
-                    <span
-                      key={m}
-                      className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                    >
+                    <Badge key={m} variant="outline" className="rounded-pill capitalize">
                       {m}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -141,9 +136,9 @@ export default function ExerciseDetailPage() {
 
       {/* Instructions */}
       {exercise.instructions && (
-        <Card>
+        <Card className="bg-card border border-border">
           <CardContent className="py-4">
-            <h2 className="mb-2 font-semibold">Instructions</h2>
+            <h2 className="mb-2 font-semibold text-foreground">Instructions</h2>
             <p className="text-sm text-muted-foreground whitespace-pre-line">
               {exercise.instructions}
             </p>
@@ -154,29 +149,29 @@ export default function ExerciseDetailPage() {
       {/* Personal Records */}
       {personalRecords.length > 0 && (
         <>
-          <h2 className="text-lg font-semibold">Personal Records</h2>
+          <h2 className="text-lg font-semibold text-foreground">Personal Records</h2>
           <div className="grid grid-cols-3 gap-3">
-            <Card className="p-4 text-center">
-              <Trophy className="mx-auto h-5 w-5 text-yellow-400" />
-              <p className="mt-1 text-xl font-semibold">
+            <Card className="bg-card border border-border p-4 text-center">
+              <Trophy className="mx-auto h-5 w-5 text-pr-gold" />
+              <p className="mt-1 text-xl font-semibold text-pr-gold">
                 {bestWeight
                   ? `${formatWeight(Number(bestWeight.value))} kg`
                   : "—"}
               </p>
               <p className="text-xs text-muted-foreground">Best Weight</p>
             </Card>
-            <Card className="p-4 text-center">
-              <Dumbbell className="mx-auto h-5 w-5 text-blue-400" />
-              <p className="mt-1 text-xl font-semibold">
+            <Card className="bg-card border border-border p-4 text-center">
+              <Dumbbell className="mx-auto h-5 w-5 text-pr-gold" />
+              <p className="mt-1 text-xl font-semibold text-pr-gold">
                 {bestVolume
                   ? `${formatWeight(Number(bestVolume.value))} kg`
                   : "—"}
               </p>
               <p className="text-xs text-muted-foreground">Best Volume</p>
             </Card>
-            <Card className="p-4 text-center">
-              <Target className="mx-auto h-5 w-5 text-green-400" />
-              <p className="mt-1 text-xl font-semibold">
+            <Card className="bg-card border border-border p-4 text-center">
+              <Target className="mx-auto h-5 w-5 text-success" />
+              <p className="mt-1 text-xl font-semibold text-foreground">
                 {bestReps ? Number(bestReps.value) : "—"}
               </p>
               <p className="text-xs text-muted-foreground">Best Reps</p>
@@ -187,18 +182,19 @@ export default function ExerciseDetailPage() {
             <h3 className="mb-2 text-sm font-medium text-muted-foreground">
               PR History
             </h3>
-            <div className="space-y-1.5">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               {personalRecords.map((pr) => (
                 <div
                   key={pr.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+                  className="flex items-center justify-between border-b border-border last:border-0 px-3 py-2 text-sm border-l-2 border-l-pr-gold"
                 >
                   <div className="flex items-center gap-2">
-                    <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-                    <span className="capitalize">{pr.type}</span>
+                    <Trophy className="h-3.5 w-3.5 text-pr-gold" />
+                    <span className="capitalize text-foreground">{pr.type}</span>
+                    <Badge variant="gold" className="text-[10px]">PR</Badge>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-medium">
+                    <span className="font-semibold text-pr-gold">
                       {formatWeight(Number(pr.value))}
                       {pr.type === "reps" ? "" : " kg"}
                     </span>
@@ -219,22 +215,22 @@ export default function ExerciseDetailPage() {
       {/* Recent Sets */}
       {recentSets.length > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Recent Sets</h2>
-          <div className="overflow-x-auto">
+          <h2 className="mb-3 text-lg font-semibold text-foreground">Recent Sets</h2>
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">Date</th>
-                  <th className="pb-2 font-medium">Set</th>
-                  <th className="pb-2 font-medium text-right">Weight</th>
-                  <th className="pb-2 font-medium text-right">Reps</th>
-                  <th className="pb-2 font-medium text-right">RPE</th>
+                <tr className="border-b border-border text-left text-muted-foreground bg-muted/30">
+                  <th className="px-4 py-2 font-medium">Date</th>
+                  <th className="px-4 py-2 font-medium">Set</th>
+                  <th className="px-4 py-2 font-medium text-right">Weight</th>
+                  <th className="px-4 py-2 font-medium text-right">Reps</th>
+                  <th className="px-4 py-2 font-medium text-right">RPE</th>
                 </tr>
               </thead>
               <tbody>
                 {recentSets.map((set) => (
-                  <tr key={set.id} className="border-b last:border-0">
-                    <td className="py-2">
+                  <tr key={set.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-2">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                         {set.workoutExercise.workout.startedAt
@@ -247,14 +243,14 @@ export default function ExerciseDetailPage() {
                           : "—"}
                       </div>
                     </td>
-                    <td className="py-2">#{set.setNumber}</td>
-                    <td className="py-2 text-right">
+                    <td className="px-4 py-2 text-foreground">#{set.setNumber}</td>
+                    <td className="px-4 py-2 text-right text-foreground">
                       {set.weightKg != null
                         ? `${formatWeight(Number(set.weightKg))} kg`
                         : "—"}
                     </td>
-                    <td className="py-2 text-right">{set.reps ?? "—"}</td>
-                    <td className="py-2 text-right">
+                    <td className="px-4 py-2 text-right text-foreground">{set.reps ?? "—"}</td>
+                    <td className="px-4 py-2 text-right text-foreground">
                       {set.rpe != null ? Number(set.rpe) : "—"}
                     </td>
                   </tr>
@@ -270,7 +266,7 @@ export default function ExerciseDetailPage() {
         <>
           {exercise.videoUrls.length > 0 && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold">Videos</h2>
+              <h2 className="mb-3 text-lg font-semibold text-foreground">Videos</h2>
               <div className="space-y-4">
                 {exercise.videoUrls.map((url, i) => (
                   <video
@@ -286,7 +282,7 @@ export default function ExerciseDetailPage() {
 
           {exercise.imageUrls.length > 0 && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold">Images</h2>
+              <h2 className="mb-3 text-lg font-semibold text-foreground">Images</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {exercise.imageUrls.map((url, i) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer">
@@ -303,7 +299,7 @@ export default function ExerciseDetailPage() {
           )}
         </>
       ) : (
-        <Card>
+        <Card className="bg-card border border-border">
           <CardContent className="py-6 text-center text-sm text-muted-foreground">
             No media available.
           </CardContent>
@@ -311,7 +307,7 @@ export default function ExerciseDetailPage() {
       )}
 
       {personalRecords.length === 0 && recentSets.length === 0 && (
-        <Card>
+        <Card className="bg-card border border-border">
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No history yet. Complete a workout with this exercise to see your
             stats.
