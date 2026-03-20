@@ -39,7 +39,7 @@
     "nativewind": "^4.2.3",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-gesture-handler": "~2.24.0",
+    "react-native-gesture-handler": "^2.30.0",
     "react-native-google-fit": "^0.22.1",
     "react-native-health": "^1.19.0",
     "react-native-maps": "^1.27.2",
