@@ -12,6 +12,17 @@ import { isBiometricEnabled, isBiometricAvailable, getBiometricLabel } from "@/l
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
+// Pulse design system tokens
+const C = {
+  bg: "#060B14",
+  card: "#0F1629",
+  primary: "#0077FF",
+  primaryMuted: "rgba(0, 119, 255, 0.10)",
+  border: "#1E2B47",
+  text: "#F0F4F8",
+  textSecondary: "#4E6180",
+};
+
 export default function LoginScreen() {
   const { signIn, signInWithBiometric, signInWithOAuth } = useAuth();
   const googleDiscovery = AuthSession.useAutoDiscovery("https://accounts.google.com");
@@ -109,21 +120,39 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+      {/* Gradient glow at top */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 220,
+          backgroundColor: C.primaryMuted,
+          opacity: 0.6,
+        }}
+        pointerEvents="none"
+      />
+
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}>
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "bold",
-            color: "hsl(213, 31%, 91%)",
-            marginBottom: 8,
-          }}
-        >
-          IronPulse
-        </Text>
-        <Text style={{ color: "hsl(215, 20%, 65%)", marginBottom: 32 }}>
-          Sign in to your account
-        </Text>
+        {/* Logo + tagline */}
+        <View style={{ alignItems: "center", marginBottom: 40 }}>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: "800",
+              color: C.text,
+              letterSpacing: -0.5,
+              fontFamily: "SpaceGrotesk-Bold",
+            }}
+          >
+            IronPulse
+          </Text>
+          <Text style={{ color: C.textSecondary, fontSize: 13, marginTop: 6 }}>
+            Strength + Cardio. One Tracker.
+          </Text>
+        </View>
 
         <View style={{ gap: 16 }}>
           <Input
@@ -135,6 +164,7 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            placeholder="you@example.com"
           />
           <Input
             label="Password"
@@ -143,11 +173,23 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            placeholder="••••••••"
           />
+
+          {/* Forgot password */}
+          <Link href="/(auth)/forgot-password" asChild>
+            <Pressable style={{ alignSelf: "flex-end", marginTop: -4 }}>
+              <Text style={{ fontSize: 13, color: C.primary, fontWeight: "500" }}>
+                Forgot password?
+              </Text>
+            </Pressable>
+          </Link>
+
           <Button testID="signin-button" onPress={handleSignIn} disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Signing in..." : "Log In"}
           </Button>
 
+          {/* Passkey / biometric link */}
           {biometricAvailable && (
             <Pressable
               testID="biometric-signin-button"
@@ -158,77 +200,97 @@ export default function LoginScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
-                paddingVertical: 12,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: "hsl(215, 20%, 65%)",
+                gap: 6,
+                paddingVertical: 4,
                 opacity: loading ? 0.5 : 1,
               }}
             >
-              <Fingerprint size={20} color="hsl(213, 31%, 91%)" />
-              <Text style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}>
+              <Fingerprint size={16} color={C.textSecondary} />
+              <Text style={{ color: C.textSecondary, fontSize: 13 }}>
                 Sign in with {biometricLabel}
               </Text>
             </Pressable>
           )}
-          {/* OAuth Divider */}
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: "hsl(217, 33%, 17%)" }} />
-            <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12, marginHorizontal: 12 }}>
+
+          {/* Divider */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+            <Text style={{ color: C.textSecondary, fontSize: 12, marginHorizontal: 12 }}>
               or continue with
             </Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: "hsl(217, 33%, 17%)" }} />
+            <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
           </View>
 
-          {/* Google Sign-In */}
-          <Pressable
-            testID="google-signin-button"
-            onPress={handleGoogleSignIn}
-            disabled={loading || !GOOGLE_CLIENT_ID}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              paddingVertical: 12,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: "hsl(215, 20%, 65%)",
-              opacity: loading || !GOOGLE_CLIENT_ID ? 0.5 : 1,
-            }}
-          >
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}>
-              Continue with Google
-            </Text>
-          </Pressable>
+          {/* Social buttons — side by side */}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <Pressable
+              testID="google-signin-button"
+              onPress={handleGoogleSignIn}
+              disabled={loading || !GOOGLE_CLIENT_ID}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                height: 48,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: C.border,
+                backgroundColor: "transparent",
+                opacity: loading || !GOOGLE_CLIENT_ID ? 0.5 : 1,
+              }}
+            >
+              <Text style={{ color: C.text, fontWeight: "600", fontSize: 14 }}>
+                Google
+              </Text>
+            </Pressable>
 
-          {/* Apple Sign-In (iOS only) */}
-          {Platform.OS === "ios" && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-              cornerRadius={8}
-              style={{ height: 48 }}
-              onPress={handleAppleSignIn}
-            />
-          )}
+            {Platform.OS === "ios" ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={8}
+                style={{ flex: 1, height: 48 }}
+                onPress={handleAppleSignIn}
+              />
+            ) : (
+              <Pressable
+                disabled
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  backgroundColor: "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: 0.3,
+                }}
+              >
+                <Text style={{ color: C.text, fontWeight: "600", fontSize: 14 }}>
+                  Apple
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
+        {/* Bottom sign-up link */}
         <Link href="/(auth)/signup" asChild>
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 14,
-              color: "hsl(215, 20%, 65%)",
-              marginTop: 24,
-            }}
-          >
-            Don't have an account?{" "}
-            <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "500" }}>
-              Sign Up
+          <Pressable style={{ marginTop: 28 }}>
+            <Text
+              style={{
+                textAlign: "center",
+                fontSize: 14,
+                color: C.textSecondary,
+              }}
+            >
+              Don't have an account?{" "}
+              <Text style={{ color: C.primary, fontWeight: "600" }}>Sign up</Text>
             </Text>
-          </Text>
+          </Pressable>
         </Link>
       </View>
     </SafeAreaView>
