@@ -8,30 +8,67 @@ export default {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      fontFamily: {
+        display: ["ClashDisplay", "System"],
+        sans: ["Inter", "System"],
+      },
       colors: {
-        background: "hsl(224 71% 4%)",
-        foreground: "hsl(213 31% 91%)",
+        /* Pulse Dark Mode (always-dark on mobile) */
+        background: "#060B14",
+        foreground: "#F0F4F8",
         primary: {
-          DEFAULT: "hsl(210 40% 98%)",
-          foreground: "hsl(222.2 47.4% 11.2%)",
+          DEFAULT: "#0077FF",
+          foreground: "#FFFFFF",
+          light: "rgba(0, 119, 255, 0.1)",
         },
-        muted: {
-          DEFAULT: "hsl(223 47% 11%)",
-          foreground: "hsl(215 20% 65%)",
+        secondary: {
+          DEFAULT: "#10B981",
+          foreground: "#FFFFFF",
         },
         accent: {
-          DEFAULT: "hsl(216 34% 17%)",
-          foreground: "hsl(210 40% 98%)",
+          DEFAULT: "#1A2340",
+          foreground: "#F0F4F8",
+        },
+        warning: {
+          DEFAULT: "#F59E0B",
+          foreground: "#FFFFFF",
+        },
+        muted: {
+          DEFAULT: "#243052",
+          foreground: "#8899B4",
         },
         card: {
-          DEFAULT: "hsl(224 71% 4%)",
-          foreground: "hsl(213 31% 91%)",
+          DEFAULT: "#0F1629",
+          foreground: "#F0F4F8",
         },
-        border: "hsl(216 34% 17%)",
+        popover: {
+          DEFAULT: "#1A2340",
+          foreground: "#F0F4F8",
+        },
         destructive: {
-          DEFAULT: "hsl(0 63% 31%)",
-          foreground: "hsl(210 40% 98%)",
+          DEFAULT: "#EF4444",
+          foreground: "#FFFFFF",
         },
+        success: {
+          DEFAULT: "#10B981",
+          foreground: "#FFFFFF",
+        },
+        border: {
+          DEFAULT: "#1E2B47",
+          subtle: "#152035",
+        },
+        input: "#1E2B47",
+        ring: "#0077FF",
+        "text-secondary": "#8899B4",
+        "text-tertiary": "#4E6180",
+        "pr-gold": "#FFD700",
+        "streak-orange": "#FF6B2C",
+      },
+      borderRadius: {
+        lg: "12px",
+        md: "8px",
+        sm: "4px",
+        pill: "24px",
       },
     },
   },
