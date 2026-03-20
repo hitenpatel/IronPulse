@@ -87,6 +87,10 @@ function RootNavigator() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  if (user.onboardingComplete === false) {
+    return <Redirect href="/(auth)/onboarding" />;
+  }
+
   // Wrap in PowerSync provider if available
   if (PowerSyncProvider && db) {
     return (
