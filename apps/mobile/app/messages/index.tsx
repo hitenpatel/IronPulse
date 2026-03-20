@@ -11,12 +11,15 @@ import { trpc } from "@/lib/trpc";
 import { MessageCircle, ChevronRight } from "lucide-react-native";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  muted: "hsl(223, 47%, 11%)",
-  accent: "hsl(216, 34%, 17%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  primary: "#0077FF",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
 };
 
 type Conversation = {
@@ -59,7 +62,7 @@ export default function MessagesScreen() {
         }}
       >
         <Stack.Screen options={{ title: "Messages" }} />
-        <ActivityIndicator color={colors.foreground} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -77,10 +80,10 @@ export default function MessagesScreen() {
             padding: 32,
           }}
         >
-          <MessageCircle size={40} color={colors.mutedFg} />
+          <MessageCircle size={40} color={colors.textFaint} />
           <Text
             style={{
-              color: colors.mutedFg,
+              color: colors.textFaint,
               fontSize: 15,
               textAlign: "center",
               marginTop: 12,
@@ -93,95 +96,104 @@ export default function MessagesScreen() {
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.partnerId}
-          contentContainerStyle={{ padding: 16, gap: 10 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/messages/${item.partnerId}`)}
-            >
-              <View
-                style={{
-                  backgroundColor: colors.muted,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.accent,
-                  padding: 14,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                }}
+          contentContainerStyle={{ paddingVertical: 8 }}
+          renderItem={({ item }) => {
+            const hasUnread = item.unreadCount > 0;
+            return (
+              <Pressable
+                onPress={() => router.push(`/messages/${item.partnerId}`)}
               >
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: colors.accent,
-                    justifyContent: "center",
+                    backgroundColor: hasUnread ? colors.accent : colors.background,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    flexDirection: "row",
                     alignItems: "center",
+                    gap: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.borderSubtle,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: colors.foreground,
-                      fontWeight: "700",
-                      fontSize: 16,
-                    }}
-                  >
-                    {item.partnerName?.charAt(0).toUpperCase() ?? "?"}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
+                  {/* Avatar */}
                   <View
                     style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      backgroundColor: colors.accent,
+                      justifyContent: "center",
                       alignItems: "center",
+                      borderWidth: 1,
+                      borderColor: colors.border,
                     }}
                   >
                     <Text
                       style={{
-                        color: colors.foreground,
-                        fontWeight: "600",
-                        fontSize: 15,
+                        color: colors.text,
+                        fontWeight: "700",
+                        fontSize: 18,
                       }}
                     >
-                      {item.partnerName}
+                      {item.partnerName?.charAt(0).toUpperCase() ?? "?"}
                     </Text>
-                    {item.unreadCount > 0 && (
-                      <View
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 2,
+                      }}
+                    >
+                      <Text
                         style={{
-                          backgroundColor: "#3b82f6",
-                          borderRadius: 10,
-                          minWidth: 20,
-                          height: 20,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          paddingHorizontal: 6,
+                          color: colors.text,
+                          fontWeight: "600",
+                          fontSize: 15,
                         }}
                       >
-                        <Text
+                        {item.partnerName}
+                      </Text>
+                      {hasUnread && (
+                        <View
                           style={{
-                            color: "#fff",
-                            fontSize: 11,
-                            fontWeight: "700",
+                            backgroundColor: colors.primary,
+                            borderRadius: 10,
+                            minWidth: 20,
+                            height: 20,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            paddingHorizontal: 6,
                           }}
                         >
-                          {item.unreadCount}
-                        </Text>
-                      </View>
-                    )}
+                          <Text
+                            style={{
+                              color: "#fff",
+                              fontSize: 11,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {item.unreadCount}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={{ color: colors.textMuted, fontSize: 13 }}
+                    >
+                      {item.lastMessage}
+                    </Text>
                   </View>
-                  <Text
-                    numberOfLines={1}
-                    style={{ color: colors.mutedFg, fontSize: 13, marginTop: 2 }}
-                  >
-                    {item.lastMessage}
-                  </Text>
+
+                  <ChevronRight size={16} color={colors.textFaint} />
                 </View>
-                <ChevronRight size={16} color={colors.mutedFg} />
-              </View>
-            </Pressable>
-          )}
+              </Pressable>
+            );
+          }}
         />
       )}
     </View>

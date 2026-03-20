@@ -12,12 +12,17 @@ import { trpc } from "@/lib/trpc";
 import { ChevronRight, Users } from "lucide-react-native";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  muted: "hsl(223, 47%, 11%)",
-  accent: "hsl(216, 34%, 17%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  primary: "#0077FF",
+  success: "#10B981",
+  warning: "#F59E0B",
+  border: "#1E2B47",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
 };
 
 type Client = {
@@ -66,7 +71,7 @@ export default function CoachScreen() {
         }}
       >
         <Stack.Screen options={{ title: "Coaching" }} />
-        <ActivityIndicator color={colors.foreground} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -83,10 +88,10 @@ export default function CoachScreen() {
         }}
       >
         <Stack.Screen options={{ title: "Coaching" }} />
-        <Users size={40} color={colors.mutedFg} />
+        <Users size={40} color={colors.textFaint} />
         <Text
           style={{
-            color: colors.mutedFg,
+            color: colors.textFaint,
             fontSize: 15,
             textAlign: "center",
             marginTop: 12,
@@ -111,10 +116,10 @@ export default function CoachScreen() {
             padding: 32,
           }}
         >
-          <Users size={40} color={colors.mutedFg} />
+          <Users size={40} color={colors.textFaint} />
           <Text
             style={{
-              color: colors.mutedFg,
+              color: colors.textFaint,
               fontSize: 15,
               textAlign: "center",
               marginTop: 12,
@@ -128,60 +133,88 @@ export default function CoachScreen() {
           data={clients}
           keyExtractor={(item) => item.assignmentId}
           contentContainerStyle={{ padding: 16, gap: 10 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/coach/clients/${item.athleteId}`)}
-            >
-              <View
-                style={{
-                  backgroundColor: colors.muted,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.accent,
-                  padding: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                }}
+          renderItem={({ item }) => {
+            const isLowAdherence = item.status === "inactive";
+            return (
+              <Pressable
+                onPress={() => router.push(`/coach/clients/${item.athleteId}`)}
               >
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: colors.accent,
-                    justifyContent: "center",
+                    backgroundColor: colors.card,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    padding: 16,
+                    flexDirection: "row",
                     alignItems: "center",
+                    gap: 12,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: colors.foreground,
-                      fontWeight: "700",
-                      fontSize: 16,
-                    }}
-                  >
-                    {item.athleteName?.charAt(0).toUpperCase() ?? "?"}
-                  </Text>
+                  {/* Avatar with status dot */}
+                  <View style={{ position: "relative" }}>
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: colors.accent,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.text,
+                          fontWeight: "700",
+                          fontSize: 18,
+                        }}
+                      >
+                        {item.athleteName?.charAt(0).toUpperCase() ?? "?"}
+                      </Text>
+                    </View>
+                    {/* Status dot */}
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        width: 12,
+                        height: 12,
+                        borderRadius: 6,
+                        backgroundColor:
+                          item.status === "active" ? colors.success : colors.textFaint,
+                        borderWidth: 2,
+                        borderColor: colors.card,
+                      }}
+                    />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontWeight: "600",
+                        fontSize: 15,
+                      }}
+                    >
+                      {item.athleteName}
+                    </Text>
+                    <Text
+                      style={{
+                        color: isLowAdherence ? colors.warning : colors.textMuted,
+                        fontSize: 12,
+                        marginTop: 2,
+                      }}
+                    >
+                      {item.programName ?? "No program assigned"}
+                    </Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.textFaint} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: colors.foreground,
-                      fontWeight: "600",
-                      fontSize: 15,
-                    }}
-                  >
-                    {item.athleteName}
-                  </Text>
-                  <Text style={{ color: colors.mutedFg, fontSize: 12, marginTop: 2 }}>
-                    {item.programName ?? "No program assigned"}
-                  </Text>
-                </View>
-                <ChevronRight size={16} color={colors.mutedFg} />
-              </View>
-            </Pressable>
-          )}
+              </Pressable>
+            );
+          }}
         />
       )}
     </View>

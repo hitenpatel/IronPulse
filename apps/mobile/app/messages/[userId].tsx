@@ -15,12 +15,14 @@ import { trpc } from "@/lib/trpc";
 import { Send } from "lucide-react-native";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  muted: "hsl(223, 47%, 11%)",
-  accent: "hsl(216, 34%, 17%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  primary: "#0077FF",
+  border: "#1E2B47",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
 };
 
 type Message = {
@@ -101,7 +103,7 @@ export default function MessageThreadScreen() {
         }}
       >
         <Stack.Screen options={{ title: "Chat" }} />
-        <ActivityIndicator color={colors.foreground} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -129,17 +131,17 @@ export default function MessageThreadScreen() {
             >
               <View
                 style={{
-                  backgroundColor: isOwn ? "#3b82f6" : colors.accent,
-                  borderRadius: 16,
-                  borderBottomRightRadius: isOwn ? 4 : 16,
-                  borderBottomLeftRadius: isOwn ? 16 : 4,
+                  backgroundColor: isOwn ? colors.primary : colors.card,
+                  borderRadius: 12,
+                  borderBottomRightRadius: isOwn ? 4 : 12,
+                  borderBottomLeftRadius: isOwn ? 12 : 4,
                   paddingHorizontal: 14,
                   paddingVertical: 10,
                 }}
               >
                 <Text
                   style={{
-                    color: isOwn ? "#fff" : colors.foreground,
+                    color: isOwn ? "#fff" : colors.text,
                     fontSize: 14,
                   }}
                 >
@@ -148,7 +150,7 @@ export default function MessageThreadScreen() {
               </View>
               <Text
                 style={{
-                  color: colors.mutedFg,
+                  color: colors.textFaint,
                   fontSize: 10,
                   marginTop: 4,
                   alignSelf: isOwn ? "flex-end" : "flex-start",
@@ -172,8 +174,8 @@ export default function MessageThreadScreen() {
           paddingHorizontal: 12,
           paddingVertical: 10,
           borderTopWidth: 1,
-          borderTopColor: colors.accent,
-          backgroundColor: colors.muted,
+          borderTopColor: colors.border,
+          backgroundColor: colors.background,
           gap: 10,
         }}
       >
@@ -181,14 +183,14 @@ export default function MessageThreadScreen() {
           value={text}
           onChangeText={setText}
           placeholder="Type a message..."
-          placeholderTextColor={colors.mutedFg}
+          placeholderTextColor={colors.textFaint}
           style={{
             flex: 1,
             backgroundColor: colors.accent,
-            borderRadius: 20,
+            borderRadius: 24,
             paddingHorizontal: 16,
             paddingVertical: 10,
-            color: colors.foreground,
+            color: colors.text,
             fontSize: 14,
           }}
           onSubmitEditing={handleSend}
@@ -201,13 +203,13 @@ export default function MessageThreadScreen() {
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: text.trim() ? "#3b82f6" : colors.accent,
+            backgroundColor: text.trim() ? colors.primary : colors.accent,
             justifyContent: "center",
             alignItems: "center",
             opacity: sending ? 0.5 : 1,
           }}
         >
-          <Send size={18} color={text.trim() ? "#fff" : colors.mutedFg} />
+          <Send size={18} color={text.trim() ? "#fff" : colors.textFaint} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
