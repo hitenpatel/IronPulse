@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Play, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ClipboardList, Pencil, Play, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { usePowerSync } from "@powersync/react";
 import { useTemplates } from "@ironpulse/sync";
@@ -108,6 +109,16 @@ export default function TemplatesPage() {
                 aria-label="Start workout from template"
               >
                 <Play className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                asChild
+                aria-label="Edit template"
+              >
+                <Link href={`/templates/${template.id}`}>
+                  <Pencil className="h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 size="icon"
