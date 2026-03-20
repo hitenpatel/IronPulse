@@ -408,6 +408,25 @@ Top: IronPulse logo + wordmark (Clash Display), collapses to logo mark.
 - Same fields as mobile, adapted for keyboard/mouse (tab order, autofill)
 - Social login buttons full-width, side by side
 
+### 10.3 Forgot Password
+
+- Same centered card layout as login (max 420px)
+- Single email input + "Send Reset Link" primary button
+- Success state: "Check your email" message with envelope icon
+
+### 10.4 Reset Password
+
+- Centered card, reached via email link
+- New password + confirm password fields with strength indicator
+- "Reset Password" primary button
+- Success: "Password reset" confirmation with "Log In" link
+
+### 10.5 Confirm Email Change
+
+- Centered card, reached via email verification link
+- Auto-confirms on load, shows success state: "Email updated" with checkmark
+- Error state if token expired: "Link expired — request a new one" with action
+
 ---
 
 ## 11. Web App — Core Pages
@@ -573,12 +592,20 @@ Full analytics dashboard, 2-column responsive grid:
 - IronPulse branding, workout summary, compact exercise list, PR highlights in gold
 - CTA: "Track your workouts with IronPulse"
 
-### 15.2 Shared PR (`/share/pr/[id]`)
+### 15.2 Shared Cardio (`/share/cardio/[id]`)
+
+- Dark background, centered card (max 640px)
+- IronPulse branding, activity type icon + name
+- Route map (dark tiles, compact)
+- Stats: distance, duration, avg pace, elevation
+- CTA: "Track your runs with IronPulse"
+
+### 15.3 Shared PR (`/share/pr/[id]`)
 
 - Dark background, celebratory card: exercise name Display, "New Personal Record" headline, record in Display `pr-gold`, user avatar + name, date
 - IronPulse branding + CTA
 
-### 15.3 Legal Pages
+### 15.4 Legal Pages
 
 - Centered prose (max 720px), standard styling
 
@@ -590,8 +617,8 @@ The Stitch project will be organized as:
 
 ### Screen Groups (Web)
 
-1. Landing & Public (landing, pricing, coach profile, share pages, legal)
-2. Auth (login, signup, forgot password, reset password, onboarding, confirm email)
+1. Landing & Public (landing, pricing, coach profile, share pages including shared cardio, legal)
+2. Auth (login, signup, forgot password, reset password, onboarding, confirm email change)
 3. Dashboard
 4. Workouts (list, detail, active workout)
 5. Cardio (list, new, detail)
