@@ -200,7 +200,7 @@ jobs:
         run: |
           # List available Xcode versions and pick the oldest 16.x (pre-strict-concurrency)
           ls /Applications | grep Xcode | sort
-          for ver in 16.0 16.1; do
+          for ver in 16.3 16.2; do
             if [ -d "/Applications/Xcode_${ver}.app" ]; then
               echo "Selecting Xcode ${ver}"
               sudo xcode-select -s "/Applications/Xcode_${ver}.app/Contents/Developer"
