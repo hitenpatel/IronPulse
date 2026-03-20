@@ -34,7 +34,6 @@ appId: com.ironpulse.app
     commands:
       - tapOn:
           index: 0
-          type: "view"
       - extendedWaitUntil:
           visible: "Duration"
           timeout: 10000
