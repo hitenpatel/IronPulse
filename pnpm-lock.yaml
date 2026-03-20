@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  expo-modules-core: 55.0.17
+  expo-modules-core: 56.0.0-canary-20260305-5163746
 
 importers:
 
@@ -4966,8 +4966,8 @@ packages:
     resolution: {integrity: sha512-OXIrxSYKlT/1Av1AMyUWeSTW1GChGofWV14sB73o5eFbfuz6ocv18fnKx+Ji67ZC7a0RztDctcZTuEQK84S4iw==}
     hasBin: true
 
-  expo-modules-core@55.0.17:
-    resolution: {integrity: sha512-pw3cZiaSlBrqRJUD/pHuMnKGsRTW6XJ255FrjDd3HC4QrqErCnfSQPmz+Sv4Qkelcvd9UGdAewyTqZdFwjLwOw==}
+  expo-modules-core@56.0.0-canary-20260305-5163746:
+    resolution: {integrity: sha512-SZ1ocfiCDWWYOziWy7AW1HXRIE1KaUQ/rfr4HOoY0TZwgUUOlGm2QZjh6PyucIsEt4hQ1tL2wPRgPn8YxusTdQ==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -13853,7 +13853,7 @@ snapshots:
       - supports-color
       - typescript
 
-  expo-modules-core@55.0.17(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
+  expo-modules-core@56.0.0-canary-20260305-5163746(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
     dependencies:
       invariant: 2.2.4
       react: 19.2.0
@@ -13985,7 +13985,7 @@ snapshots:
       expo-font: 55.0.4(expo@55.0.6)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       expo-keep-awake: 55.0.4(expo@55.0.6)(react@19.2.0)
       expo-modules-autolinking: 55.0.9(typescript@5.9.3)
-      expo-modules-core: 55.0.17(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
+      expo-modules-core: 56.0.0-canary-20260305-5163746(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       pretty-format: 29.7.0
       react: 19.2.0
       react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
