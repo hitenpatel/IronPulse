@@ -30,6 +30,20 @@ export const createExerciseSchema = z.object({
 });
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>;
 
+export const uploadExerciseMediaSchema = z.object({
+  exerciseId: z.string().uuid(),
+  contentType: z.enum([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+  ]),
+  mediaType: z.enum(["image", "video"]),
+});
+export type UploadExerciseMediaInput = z.infer<typeof uploadExerciseMediaSchema>;
+
 export const listExercisesSchema = cursorPaginationSchema.extend({
   muscleGroup: z.string().optional(),
   equipment: z.string().optional(),

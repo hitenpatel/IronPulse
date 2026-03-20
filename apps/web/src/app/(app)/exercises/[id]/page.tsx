@@ -265,6 +265,51 @@ export default function ExerciseDetailPage() {
         </div>
       )}
 
+      {/* Media */}
+      {exercise.videoUrls.length > 0 || exercise.imageUrls.length > 0 ? (
+        <>
+          {exercise.videoUrls.length > 0 && (
+            <div>
+              <h2 className="mb-3 text-lg font-semibold">Videos</h2>
+              <div className="space-y-4">
+                {exercise.videoUrls.map((url, i) => (
+                  <video
+                    key={i}
+                    src={url}
+                    controls
+                    className="w-full rounded-xl bg-black"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {exercise.imageUrls.length > 0 && (
+            <div>
+              <h2 className="mb-3 text-lg font-semibold">Images</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {exercise.imageUrls.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`${exercise.name} image ${i + 1}`}
+                      className="aspect-square w-full rounded-lg object-cover ring-1 ring-border transition hover:opacity-80"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <Card>
+          <CardContent className="py-6 text-center text-sm text-muted-foreground">
+            No media available.
+          </CardContent>
+        </Card>
+      )}
+
       {personalRecords.length === 0 && recentSets.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">

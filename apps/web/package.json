@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test e2e/visual-regression.spec.ts --update-snapshots",
     "postinstall": "npx @powersync/web copy-assets -o public"
   },
   "dependencies": {

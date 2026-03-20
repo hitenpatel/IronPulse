@@ -2,7 +2,9 @@ import { z } from "zod";
 import {
   createExerciseSchema,
   listExercisesSchema,
+  uploadExerciseMediaSchema,
 } from "@ironpulse/shared";
+import { getPresignedUploadUrl } from "../lib/s3";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -160,5 +162,34 @@ export const exerciseRouter = createTRPCRouter({
       });
 
       return { exercise };
+    }),
+
+  uploadExerciseMedia: rateLimitedProcedure
+    .input(uploadExerciseMediaSchema)
+    .mutation(async ({ ctx, input }) => {
+      const ext = input.contentType.split("/")[1];
+      const folder = input.mediaType === "image" ? "images" : "videos";
+      const key = `exercises/${input.exerciseId}/${folder}/${Date.now()}.${ext}`;
+      const uploadUrl = await getPresignedUploadUrl(key, input.contentType);
+
+      // Persist the key into the exercise's media arrays
+      const exercise = await ctx.db.exercise.findUniqueOrThrow({
+        where: { id: input.exerciseId },
+        select: { imageUrls: true, videoUrls: true },
+      });
+
+      if (input.mediaType === "image") {
+        await ctx.db.exercise.update({
+          where: { id: input.exerciseId },
+          data: { imageUrls: [...exercise.imageUrls, key] },
+        });
+      } else {
+        await ctx.db.exercise.update({
+          where: { id: input.exerciseId },
+          data: { videoUrls: [...exercise.videoUrls, key] },
+        });
+      }
+
+      return { uploadUrl, key };
     }),
 });
