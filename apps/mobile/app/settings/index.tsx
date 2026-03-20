@@ -15,12 +15,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
-const MUTED = "hsl(215, 20%, 65%)";
-const TEXT = "hsl(213, 31%, 91%)";
+const colors = {
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  primary: "#0077FF",
+  error: "#EF4444",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
+};
+
 const LABEL_STYLE = {
   fontSize: 10,
-  color: MUTED,
+  color: colors.textFaint,
   textTransform: "uppercase" as const,
+  fontWeight: "500" as const,
   letterSpacing: 1,
   marginBottom: 8,
 };
@@ -209,7 +221,7 @@ export default function SettingsScreen() {
       <Stack.Screen options={{ title: "Settings" }} />
 
       <ScrollView
-        style={{ flex: 1 }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{ padding: 16, gap: 16 }}
       >
         {/* Profile */}
@@ -251,9 +263,7 @@ export default function SettingsScreen() {
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: "center",
-                    backgroundColor: isActive
-                      ? "hsl(210, 40%, 98%)"
-                      : "hsl(216, 34%, 17%)",
+                    backgroundColor: isActive ? colors.primary : colors.accent,
                     opacity: unitSaving ? 0.6 : 1,
                   }}
                 >
@@ -261,9 +271,7 @@ export default function SettingsScreen() {
                     style={{
                       fontWeight: "600",
                       textTransform: "capitalize",
-                      color: isActive
-                        ? "hsl(222.2, 47.4%, 11.2%)"
-                        : MUTED,
+                      color: isActive ? "#fff" : colors.textMuted,
                     }}
                   >
                     {unit}
@@ -285,7 +293,7 @@ export default function SettingsScreen() {
             returnKeyType="done"
             onSubmitEditing={handleSaveRestTimer}
           />
-          <Text style={{ color: MUTED, fontSize: 12 }}>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
             Between 15 and 600 seconds
           </Text>
           <Button
@@ -308,10 +316,10 @@ export default function SettingsScreen() {
             }}
           >
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={{ color: TEXT, fontSize: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 16 }}>
                 Workout Reminders
               </Text>
-              <Text style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
                 Receive push notifications for reminders and updates
               </Text>
             </View>
@@ -320,8 +328,8 @@ export default function SettingsScreen() {
               onValueChange={handleNotificationToggle}
               disabled={notifLoading}
               trackColor={{
-                false: "hsl(216, 34%, 17%)",
-                true: "hsl(142, 71%, 45%)",
+                false: colors.accent,
+                true: colors.primary,
               }}
             />
           </View>
@@ -331,14 +339,15 @@ export default function SettingsScreen() {
         <Card
           style={{
             gap: 12,
-            borderColor: "hsl(0, 63%, 31%)",
+            borderColor: colors.error,
           }}
         >
           <Text
             style={{
               fontSize: 10,
-              color: "hsl(0, 72%, 51%)",
+              color: colors.error,
               textTransform: "uppercase",
+              fontWeight: "500",
               letterSpacing: 1,
             }}
           >
@@ -347,7 +356,7 @@ export default function SettingsScreen() {
 
           {deletionRequested ? (
             <View style={{ gap: 8 }}>
-              <Text style={{ color: MUTED, fontSize: 14 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>
                 Your account is scheduled for deletion. All data will be
                 permanently removed after 7 days.
               </Text>
@@ -361,7 +370,7 @@ export default function SettingsScreen() {
             </View>
           ) : (
             <View style={{ gap: 8 }}>
-              <Text style={{ color: MUTED, fontSize: 14 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>
                 Permanently delete your account and all associated data.
               </Text>
               <Pressable
@@ -372,7 +381,7 @@ export default function SettingsScreen() {
                   paddingHorizontal: 16,
                   paddingVertical: 12,
                   alignItems: "center",
-                  backgroundColor: "hsl(0, 63%, 31%)",
+                  backgroundColor: "rgba(239, 68, 68, 0.15)",
                   opacity: deletionLoading ? 0.6 : 1,
                 }}
               >
@@ -380,7 +389,7 @@ export default function SettingsScreen() {
                   style={{
                     fontSize: 14,
                     fontWeight: "600",
-                    color: "hsl(210, 40%, 98%)",
+                    color: colors.error,
                   }}
                 >
                   {deletionLoading ? "Requesting…" : "Delete Account"}

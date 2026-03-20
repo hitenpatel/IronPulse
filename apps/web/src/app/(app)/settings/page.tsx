@@ -4,14 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -19,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { AlertTriangle, Upload } from "lucide-react";
 
 export default function SettingsPage() {
@@ -51,79 +44,73 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="font-display text-2xl font-bold text-foreground">Settings</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Import Workouts
-          </CardTitle>
-          <CardDescription>
-            Import your workout history from Strong, Hevy, or FitNotes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
+      {/* Import Card */}
+      <div className="bg-card rounded-lg border border-border p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Upload className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold text-foreground">Import Workouts</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Import your workout history from Strong, Hevy, or FitNotes.
+        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Upload a CSV export to bring your existing workout data into IronPulse.
+          </p>
+          <Button asChild variant="outline">
+            <Link href="/settings/import">Go to Import</Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Danger Zone Card */}
+      <div className="bg-card rounded-lg border border-border p-5 border-t-2 border-t-destructive">
+        <div className="flex items-center gap-2 mb-1">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <h2 className="font-semibold text-destructive">Danger Zone</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Irreversible actions that affect your account.
+        </p>
+        {isLoading ? (
+          <div className="h-10 animate-pulse rounded-md bg-muted" />
+        ) : deletionRequestedAt ? (
+          <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Upload a CSV export to bring your existing workout data into IronPulse.
+              Your account is scheduled for deletion on{" "}
+              <span className="font-medium text-destructive">
+                {deletionDeadline?.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+              . All your data will be permanently removed.
             </p>
-            <Button asChild variant="outline">
-              <Link href="/settings/import">Go to Import</Link>
+            <Button
+              variant="outline"
+              disabled={cancelDeletion.isPending}
+              onClick={() => cancelDeletion.mutate()}
+            >
+              Cancel Deletion
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription>
-            Irreversible actions that affect your account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="h-10 animate-pulse rounded-md bg-muted" />
-          ) : deletionRequestedAt ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Your account is scheduled for deletion on{" "}
-                <span className="font-medium text-destructive">
-                  {deletionDeadline?.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-                . All your data will be permanently removed.
-              </p>
-              <Button
-                variant="outline"
-                disabled={cancelDeletion.isPending}
-                onClick={() => cancelDeletion.mutate()}
-              >
-                Cancel Deletion
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Permanently delete your account and all associated data.
-              </p>
-              <Button
-                variant="destructive"
-                onClick={() => setConfirmOpen(true)}
-              >
-                Delete Account
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Permanently delete your account and all associated data.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setConfirmOpen(true)}
+            >
+              Delete Account
+            </Button>
+          </div>
+        )}
+      </div>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>

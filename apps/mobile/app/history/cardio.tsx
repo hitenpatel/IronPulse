@@ -8,11 +8,23 @@ import { formatElapsed } from "@/lib/workout-utils";
 import { metersToKm } from "@/lib/geo-utils";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  accent: "hsl(216, 34%, 17%)",
-  muted: "hsl(223, 47%, 11%)",
+  background: "#060B14",
+  card: "#0F1629",
+  border: "#1E2B47",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  dimFg: "#4E6180",
+  primary: "#0077FF",
+  success: "#10B981",
+  warning: "#F59E0B",
+};
+
+// Per-activity icon background colours for the colored circle
+const typeIconColors: Record<string, string> = {
+  run: "#0077FF",
+  walk: "#10B981",
+  hike: "#F59E0B",
+  cycle: "#8B5CF6",
 };
 
 const typeIcons: Record<string, React.ComponentType<{ size: number; color: string }>> = {
@@ -24,6 +36,10 @@ const typeIcons: Record<string, React.ComponentType<{ size: number; color: strin
 
 function getTypeIcon(type: string) {
   return typeIcons[type] ?? Heart;
+}
+
+function getTypeIconColor(type: string): string {
+  return typeIconColors[type] ?? "#8899B4";
 }
 
 function formatDate(iso: string): string {
@@ -47,29 +63,42 @@ function CardioCard({
   onPress: () => void;
 }) {
   const Icon = getTypeIcon(item.type);
+  const iconBg = getTypeIconColor(item.type);
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPress={onPress} style={{ marginBottom: 10 }}>
       <View
         style={{
-          backgroundColor: colors.muted,
+          backgroundColor: colors.card,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: colors.accent,
+          borderColor: colors.border,
           padding: 16,
-          marginBottom: 10,
           flexDirection: "row",
           alignItems: "center",
           gap: 14,
         }}
       >
-        <Icon size={24} color={colors.mutedFg} />
+        {/* Activity icon in colored circle */}
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: `${iconBg}26`,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon size={22} color={iconBg} />
+        </View>
+
         <View style={{ flex: 1 }}>
           <Text
             style={{
               color: colors.foreground,
               fontSize: 16,
-              fontWeight: "700",
+              fontWeight: "600",
             }}
           >
             {capitalize(item.type)}
@@ -78,12 +107,12 @@ function CardioCard({
             style={{
               color: colors.mutedFg,
               fontSize: 13,
-              marginTop: 4,
+              marginTop: 3,
             }}
           >
             {formatDate(item.started_at)}
           </Text>
-          <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
+          <View style={{ flexDirection: "row", gap: 16, marginTop: 6 }}>
             <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
               {formatElapsed(item.duration_seconds)}
             </Text>
@@ -125,7 +154,7 @@ export default function CardioHistoryScreen() {
               paddingTop: 80,
             }}
           >
-            <Heart size={48} color={colors.mutedFg} />
+            <Heart size={48} color={colors.dimFg} />
             <Text
               style={{
                 color: colors.mutedFg,

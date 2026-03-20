@@ -9,12 +9,14 @@ import {
 } from "react-native";
 import { formatElapsed } from "../../lib/workout-utils";
 
+// Pulse design system tokens
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  destructive: "hsl(0, 63%, 31%)",
+  background: "#060B14",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  primary: "#0077FF",
+  error: "#EF4444",
+  border: "#1E2B47",
 };
 
 interface WorkoutHeaderProps {
@@ -77,9 +79,11 @@ export function WorkoutHeader({
           paddingHorizontal: 16,
           paddingVertical: 12,
           backgroundColor: colors.background,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
         }}
       >
-        {/* Cancel */}
+        {/* Elapsed timer — left */}
         <Pressable
           onPress={onCancel}
           hitSlop={8}
@@ -87,16 +91,16 @@ export function WorkoutHeader({
         >
           <Text
             style={{
-              color: colors.destructive,
-              fontSize: 16,
-              fontWeight: "600",
+              color: colors.mutedFg,
+              fontSize: 15,
+              fontVariant: ["tabular-nums"],
             }}
           >
-            Cancel
+            {formatElapsed(elapsed)}
           </Text>
         </Pressable>
 
-        {/* Center: Name + Timer */}
+        {/* Workout name — center */}
         <Pressable
           onPress={handleNamePress}
           style={{ alignItems: "center", flex: 1 }}
@@ -104,26 +108,17 @@ export function WorkoutHeader({
           <Text
             style={{
               color: colors.foreground,
-              fontSize: 17,
-              fontWeight: "700",
+              fontSize: 18,
+              fontWeight: "500",
+              fontFamily: "ClashDisplay",
             }}
             numberOfLines={1}
           >
             {name}
           </Text>
-          <Text
-            style={{
-              color: colors.mutedFg,
-              fontSize: 14,
-              fontVariant: ["tabular-nums"],
-              marginTop: 2,
-            }}
-          >
-            {formatElapsed(elapsed)}
-          </Text>
         </Pressable>
 
-        {/* Finish */}
+        {/* Finish — right */}
         <Pressable
           onPress={onFinish}
           testID="finish-button"

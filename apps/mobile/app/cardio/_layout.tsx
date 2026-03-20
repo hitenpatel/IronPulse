@@ -5,7 +5,7 @@ export default function CardioLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "hsl(224, 71%, 4%)" },
+        contentStyle: { backgroundColor: "#060B14" },
       }}
     />
   );

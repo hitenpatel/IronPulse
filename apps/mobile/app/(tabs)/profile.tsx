@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, Alert, Platform, Switch } from "react-native";
+import { View, Text, Pressable, Alert, Platform, Switch, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, Flame } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import {
   isBiometricAvailable,
@@ -14,6 +14,22 @@ import {
   disableBiometric,
   getBiometricLabel,
 } from "@/lib/biometric";
+
+const colors = {
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  primary: "#0077FF",
+  success: "#10B981",
+  error: "#EF4444",
+  streakOrange: "#FF6B2C",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
+};
 
 export default function ProfileScreen() {
   const { user, signOut, updateUser } = useAuth();
@@ -77,66 +93,146 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}>
+        {/* Header */}
         <Text
           style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "hsl(213, 31%, 91%)",
+            fontFamily: "ClashDisplay",
+            fontWeight: "600",
+            fontSize: 28,
+            color: colors.text,
             marginBottom: 24,
           }}
         >
           Profile
         </Text>
 
-        <Card style={{ gap: 16, marginBottom: 24 }}>
-          <Pressable onPress={handleEditName}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <View>
+        {/* Avatar + name + tier badge + streak */}
+        <View style={{ alignItems: "center", marginBottom: 28 }}>
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: colors.accent,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 12,
+              borderWidth: 2,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: "700", fontSize: 30 }}>
+              {user?.name?.charAt(0).toUpperCase() ?? "?"}
+            </Text>
+          </View>
+
+          <Text
+            style={{
+              fontFamily: "ClashDisplay",
+              fontWeight: "600",
+              fontSize: 22,
+              color: colors.text,
+              marginBottom: 8,
+            }}
+          >
+            {user?.name ?? "Athlete"}
+          </Text>
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            {/* Tier badge */}
+            {user?.tier && (
+              <View
+                style={{
+                  backgroundColor: "rgba(0, 119, 255, 0.15)",
+                  borderRadius: 24,
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                }}
+              >
                 <Text
                   style={{
-                    fontSize: 10,
-                    color: "hsl(215, 20%, 65%)",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
+                    color: colors.primary,
+                    fontSize: 12,
+                    fontWeight: "600",
+                    textTransform: "capitalize",
                   }}
                 >
-                  Name
-                </Text>
-                <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 18 }}>
-                  {user?.name}
+                  {user.tier}
                 </Text>
               </View>
-              <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
+            )}
+
+            {/* Streak */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Flame size={16} color={colors.streakOrange} />
+              <Text style={{ color: colors.streakOrange, fontSize: 13, fontWeight: "600" }}>
+                0 day streak
+              </Text>
             </View>
+          </View>
+        </View>
+
+        {/* Profile info card */}
+        <Card style={{ gap: 0, marginBottom: 8, padding: 0, overflow: "hidden" }}>
+          <Pressable
+            onPress={handleEditName}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              height: 48,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <View>
+              <Text
+                style={{
+                  fontSize: 10,
+                  color: colors.textFaint,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Name
+              </Text>
+              <Text style={{ color: colors.text, fontSize: 15 }}>
+                {user?.name}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.textFaint} />
           </Pressable>
 
-          <View>
+          <View
+            style={{
+              paddingHorizontal: 16,
+              height: 48,
+              justifyContent: "center",
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
             <Text
               style={{
                 fontSize: 10,
-                color: "hsl(215, 20%, 65%)",
+                color: colors.textFaint,
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
             >
               Email
             </Text>
-            <Text style={{ color: "hsl(213, 31%, 91%)" }}>{user?.email}</Text>
+            <Text style={{ color: colors.text, fontSize: 15 }}>{user?.email}</Text>
           </View>
 
-          <View>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
             <Text
               style={{
                 fontSize: 10,
-                color: "hsl(215, 20%, 65%)",
+                color: colors.textFaint,
                 textTransform: "uppercase",
                 letterSpacing: 1,
                 marginBottom: 8,
@@ -156,18 +252,14 @@ export default function ProfileScreen() {
                       paddingVertical: 10,
                       borderRadius: 8,
                       alignItems: "center",
-                      backgroundColor: isActive
-                        ? "hsl(210, 40%, 98%)"
-                        : "hsl(216, 34%, 17%)",
+                      backgroundColor: isActive ? colors.primary : colors.accent,
                     }}
                   >
                     <Text
                       style={{
                         fontWeight: "600",
                         textTransform: "capitalize",
-                        color: isActive
-                          ? "hsl(222.2, 47.4%, 11.2%)"
-                          : "hsl(215, 20%, 65%)",
+                        color: isActive ? "#fff" : colors.textMuted,
                       }}
                     >
                       {unit}
@@ -179,82 +271,65 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        <Pressable
-          onPress={() => router.push("/settings" as any)}
+        {/* Settings nav rows */}
+        <View
           style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
+            marginBottom: 8,
+            borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
         >
-          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
-              Settings
-            </Text>
-            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
-          </Card>
-        </Pressable>
+          {[
+            { label: "Settings", path: "/settings" },
+            { label: "Connected Apps", path: "/settings/integrations" },
+            { label: "Subscription", path: "/settings/subscription" },
+            { label: "Coaching", path: "/coach" },
+          ].map((item, idx, arr) => (
+            <Pressable
+              key={item.path}
+              onPress={() => router.push(item.path as any)}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                height: 48,
+                borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
+                borderBottomColor: colors.borderSubtle,
+              }}
+            >
+              <Text style={{ color: colors.text, fontSize: 16 }}>
+                {item.label}
+              </Text>
+              <ChevronRight size={18} color={colors.textFaint} />
+            </Pressable>
+          ))}
+        </View>
 
-        <Pressable
-          onPress={() => router.push("/settings/integrations")}
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-          }}
-        >
-          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
-              Connected Apps
-            </Text>
-            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
-          </Card>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/settings/subscription" as any)}
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-          }}
-        >
-          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
-              Subscription
-            </Text>
-            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
-          </Card>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/coach" as any)}
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-          }}
-        >
-          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
-              Coaching
-            </Text>
-            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
-          </Card>
-        </Pressable>
-
+        {/* Biometric security */}
         {bioAvailable && (
-          <Card style={{ marginBottom: 16, gap: 8 }}>
+          <View
+            style={{
+              marginBottom: 8,
+              borderRadius: 12,
+              overflow: "hidden",
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
             <Text
               style={{
                 fontSize: 10,
-                color: "hsl(215, 20%, 65%)",
+                color: colors.textFaint,
                 textTransform: "uppercase",
                 letterSpacing: 1,
+                paddingHorizontal: 16,
+                paddingTop: 12,
+                paddingBottom: 4,
               }}
             >
               Security
@@ -264,41 +339,69 @@ export default function ProfileScreen() {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
+                paddingHorizontal: 16,
+                height: 48,
               }}
             >
-              <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 16 }}>
                 {bioLabel} Unlock
               </Text>
               <Switch
                 value={bioEnabled}
                 onValueChange={handleBiometricToggle}
                 disabled={bioLoading}
-                trackColor={{ false: "hsl(216, 34%, 17%)", true: "hsl(142, 71%, 45%)" }}
+                trackColor={{ false: colors.accent, true: colors.primary }}
               />
             </View>
-          </Card>
+          </View>
         )}
 
-        <Card style={{ marginBottom: 16, gap: 8 }}>
+        {/* Export data */}
+        <View
+          style={{
+            marginBottom: 24,
+            borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: 16,
+          }}
+        >
           <Text
             style={{
               fontSize: 10,
-              color: "hsl(215, 20%, 65%)",
+              color: colors.textFaint,
               textTransform: "uppercase",
               letterSpacing: 1,
+              marginBottom: 6,
             }}
           >
             Export Data
           </Text>
-          <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 13 }}>
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>
             Export your data on the web app at ironpulse.com/profile
           </Text>
-        </Card>
+        </View>
 
-        <Button variant="outline" onPress={signOut}>
-          Sign Out
-        </Button>
-      </View>
+        {/* Sign Out */}
+        <Pressable
+          onPress={signOut}
+          style={{
+            height: 48,
+            borderRadius: 12,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text style={{ color: colors.error, fontSize: 16, fontWeight: "600" }}>
+            Sign Out
+          </Text>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }

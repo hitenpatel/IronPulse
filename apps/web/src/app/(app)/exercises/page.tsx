@@ -82,12 +82,12 @@ function FilterChips<T extends string>({
         )}
       </Button>
       {open && (
-        <div className="absolute left-0 top-full z-10 mt-1 max-h-60 w-48 overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
+        <div className="absolute left-0 top-full z-10 mt-1 max-h-60 w-48 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md">
           {options.map((opt) => (
             <button
               key={opt}
-              className={`w-full rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${
-                value === opt ? "bg-accent font-medium" : ""
+              className={`w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/50 ${
+                value === opt ? "bg-muted font-medium text-foreground" : "text-foreground"
               }`}
               onClick={() => {
                 onChange(value === opt ? undefined : opt);
@@ -139,7 +139,7 @@ export default function ExercisesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Exercises</h1>
+      <h1 className="font-display font-semibold text-[28px] text-foreground">Exercises</h1>
 
       {/* Search */}
       <div className="relative">
@@ -210,26 +210,27 @@ export default function ExercisesPage() {
 
       {/* Exercise list */}
       {exercises.length > 0 && (
-        <div className="space-y-3">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
           {exercises.map((exercise) => {
             const primaryMuscles = exercise.primary_muscles
               ? exercise.primary_muscles.split(",").map((s) => s.trim()).filter(Boolean)
               : [];
 
             return (
-              <Card
+              <div
                 key={exercise.id}
-                className="p-4 transition-colors hover:bg-accent/50"
+                className="px-4 py-3 transition-colors hover:bg-muted/30 border-b border-border last:border-b-0"
+                style={{ minHeight: "48px" }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
-                    <Dumbbell className="h-5 w-5 text-secondary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Dumbbell className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{exercise.name}</span>
+                      <span className="font-medium text-foreground">{exercise.name}</span>
                       {exercise.is_custom === 1 && (
-                        <Badge variant="outline" className="shrink-0 text-[10px]">
+                        <Badge variant="outline" className="shrink-0 text-[10px] rounded-pill">
                           Custom
                         </Badge>
                       )}
@@ -259,7 +260,7 @@ export default function ExercisesPage() {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>

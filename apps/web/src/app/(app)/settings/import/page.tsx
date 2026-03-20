@@ -2,13 +2,6 @@
 
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
@@ -150,18 +143,17 @@ export default function ImportPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Import Workouts</h1>
+      <h1 className="font-display text-2xl font-bold text-foreground">Import Workouts</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload CSV File</CardTitle>
-          <CardDescription>
-            Import workouts from Strong, Hevy, or FitNotes. Export a CSV from
-            your app and upload it here — your workout history will be added to
-            IronPulse automatically.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Upload Card */}
+      <div className="bg-card rounded-lg border border-border p-5">
+        <h2 className="font-semibold text-foreground mb-1">Upload CSV File</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Import workouts from Strong, Hevy, or FitNotes. Export a CSV from
+          your app and upload it here — your workout history will be added to
+          IronPulse automatically.
+        </p>
+        <div className="space-y-4">
           {/* Drop zone */}
           <div
             role="button"
@@ -188,7 +180,7 @@ export default function ImportPage() {
           >
             <Upload className="h-8 w-8 text-muted-foreground" />
             <div className="text-center">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-medium text-foreground">
                 {fileName ? fileName : "Drop your CSV here or click to browse"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -228,100 +220,94 @@ export default function ImportPage() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Preview table */}
       {preview && preview.headers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Preview</CardTitle>
-            <CardDescription>First 5 rows of your CSV file.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
+        <div className="bg-card rounded-lg border border-border p-5">
+          <h2 className="font-semibold text-foreground mb-1">Preview</h2>
+          <p className="text-sm text-muted-foreground mb-4">First 5 rows of your CSV file.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  {preview.headers.map((h) => (
+                    <th
+                      key={h}
+                      className="whitespace-nowrap px-3 py-2 text-left font-medium text-muted-foreground"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {preview.rows.map((row, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-border last:border-0 even:bg-muted/20 hover:bg-muted/30 transition-colors"
+                  >
                     {preview.headers.map((h) => (
-                      <th
+                      <td
                         key={h}
-                        className="whitespace-nowrap px-3 py-2 text-left font-medium text-muted-foreground"
+                        className="max-w-[200px] truncate whitespace-nowrap px-3 py-2 text-foreground"
+                        title={row[h]}
                       >
-                        {h}
-                      </th>
+                        {row[h]}
+                      </td>
                     ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {preview.rows.map((row, i) => (
-                    <tr
-                      key={i}
-                      className="border-b border-border last:border-0 hover:bg-muted/30"
-                    >
-                      {preview.headers.map((h) => (
-                        <td
-                          key={h}
-                          className="max-w-[200px] truncate whitespace-nowrap px-3 py-2 text-foreground"
-                          title={row[h]}
-                        >
-                          {row[h]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* Import action */}
       {csvContent !== null && (
-        <Card>
-          <CardContent className="pt-6">
-            {isSuccess && result ? (
-              <div className="flex items-start gap-3 rounded-lg bg-green-500/10 p-4 text-green-700 dark:text-green-400">
-                <CheckCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                <div className="space-y-1">
-                  <p className="font-medium">Import complete!</p>
-                  <ul className="text-sm space-y-0.5">
-                    <li>{result.workoutsImported} workouts imported</li>
-                    <li>{result.setsImported} sets imported</li>
-                    {result.exercisesCreated > 0 && (
-                      <li>{result.exercisesCreated} new exercises created</li>
-                    )}
-                  </ul>
+        <div className="bg-card rounded-lg border border-border p-5">
+          {isSuccess && result ? (
+            <div className="flex items-start gap-3 rounded-lg bg-success/10 p-4 text-success">
+              <CheckCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-medium">Import complete!</p>
+                <ul className="text-sm space-y-0.5">
+                  <li>{result.workoutsImported} workouts imported</li>
+                  <li>{result.setsImported} sets imported</li>
+                  {result.exercisesCreated > 0 && (
+                    <li>{result.exercisesCreated} new exercises created</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          ) : importMutation.isError ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 rounded-lg bg-destructive/10 p-4 text-destructive">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-medium">Import failed</p>
+                  <p className="text-sm">
+                    {importMutation.error.message}
+                  </p>
                 </div>
               </div>
-            ) : importMutation.isError ? (
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 rounded-lg bg-destructive/10 p-4 text-destructive">
-                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Import failed</p>
-                    <p className="text-sm">
-                      {importMutation.error.message}
-                    </p>
-                  </div>
-                </div>
-                <Button onClick={handleImport} disabled={!canImport}>
-                  Retry Import
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Ready to import your workout history.
-                </p>
-                <Button onClick={handleImport} disabled={!canImport}>
-                  {importMutation.isPending ? "Importing…" : "Import Workouts"}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <Button onClick={handleImport} disabled={!canImport}>
+                Retry Import
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Ready to import your workout history.
+              </p>
+              <Button onClick={handleImport} disabled={!canImport}>
+                {importMutation.isPending ? "Importing…" : "Import Workouts"}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

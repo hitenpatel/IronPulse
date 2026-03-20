@@ -1,0 +1,13 @@
+appId: com.ironpulse.app
+tags:
+  - redesign
+  - navigation
+---
+# Navigation — Pulse Redesign
+- launchApp:
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+# TODO: sign in and verify tab navigation

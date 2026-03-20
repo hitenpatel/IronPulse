@@ -4,53 +4,71 @@
 
 @layer base {
   :root {
+    /* Light Mode */
     --background: 0 0% 100%;
-    --foreground: 240 10% 6%;
-    --card: 0 0% 98%;
-    --card-foreground: 240 10% 6%;
+    --foreground: 220 13% 10%;
+    --card: 220 14% 97%;
+    --card-foreground: 220 13% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 6%;
-    --primary: 348 83% 60%;
+    --popover-foreground: 220 13% 10%;
+    --primary: 213 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 199 89% 48%;
+    --primary-light: 213 100% 50% / 0.1;
+    --secondary: 142 69% 45%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 142 71% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 13% 10%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 5% 40%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 43%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 348 83% 60%;
-    --radius: 0.5rem;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --pr-gold: 51 100% 50%;
+    --streak-orange: 16 100% 59%;
+    --border: 220 13% 87%;
+    --border-subtle: 220 14% 93%;
+    --input: 220 13% 87%;
+    --ring: 213 100% 50%;
+    --radius: 0.75rem;
+    --radius-input: 0.5rem;
+    --radius-pill: 1.5rem;
   }
 
   .dark {
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
-    --card: 240 15% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 15% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 348 83% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 199 89% 48%;
-    --secondary-foreground: 0 0% 98%;
-    --accent: 142 71% 45%;
-    --accent-foreground: 0 0% 98%;
+    /* Dark Mode (Pulse hero) */
+    --background: 222 78% 4%;
+    --foreground: 213 31% 95%;
+    --card: 222 52% 11%;
+    --card-foreground: 213 31% 95%;
+    --popover: 222 40% 17%;
+    --popover-foreground: 213 31% 95%;
+    --primary: 213 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 213 100% 50% / 0.1;
+    --secondary: 160 84% 39%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 222 40% 17%;
+    --accent-foreground: 213 31% 95%;
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
-    --muted: 240 10% 16%;
-    --muted-foreground: 240 5% 55%;
+    --warning-foreground: 0 0% 100%;
+    --muted: 222 32% 23%;
+    --muted-foreground: 215 20% 65%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 10% 14%;
-    --input: 240 10% 14%;
-    --ring: 348 83% 60%;
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --pr-gold: 51 100% 50%;
+    --streak-orange: 16 100% 59%;
+    --border: 219 35% 20%;
+    --border-subtle: 220 40% 14%;
+    --input: 219 35% 20%;
+    --ring: 213 100% 50%;
+    --radius: 0.75rem;
+    --radius-input: 0.5rem;
+    --radius-pill: 1.5rem;
   }
 
   * {
@@ -59,5 +77,19 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Focus visible styles for keyboard navigation */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

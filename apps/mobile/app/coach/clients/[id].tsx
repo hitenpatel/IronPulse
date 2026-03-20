@@ -11,12 +11,16 @@ import { trpc } from "@/lib/trpc";
 import { Dumbbell, Activity, Trophy, MessageCircle } from "lucide-react-native";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  muted: "hsl(223, 47%, 11%)",
-  accent: "hsl(216, 34%, 17%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  primary: "#0077FF",
+  success: "#10B981",
+  prGold: "#FFD700",
+  border: "#1E2B47",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
 };
 
 type ClientProgress = {
@@ -74,7 +78,7 @@ export default function ClientDetailScreen() {
         }}
       >
         <Stack.Screen options={{ title: "Client Progress" }} />
-        <ActivityIndicator color={colors.foreground} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -83,12 +87,41 @@ export default function ClientDetailScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: "Client Progress" }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        {/* Client avatar + name header */}
+        <View style={{ alignItems: "center", marginBottom: 20 }}>
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: colors.accent,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: "700", fontSize: 24 }}>
+              {id?.charAt(0).toUpperCase() ?? "?"}
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontFamily: "ClashDisplay",
+              fontWeight: "600",
+              fontSize: 22,
+              color: colors.text,
+            }}
+          >
+            Client Detail
+          </Text>
+        </View>
+
         {/* Message button */}
         <Pressable
           onPress={() => router.push(`/messages/${id}`)}
           style={{
-            backgroundColor: "#3b82f6",
-            borderRadius: 10,
+            backgroundColor: colors.primary,
+            borderRadius: 12,
             paddingVertical: 12,
             flexDirection: "row",
             justifyContent: "center",
@@ -106,7 +139,7 @@ export default function ClientDetailScreen() {
         {/* Recent Workouts */}
         <Text
           style={{
-            color: colors.foreground,
+            color: colors.text,
             fontSize: 16,
             fontWeight: "700",
             marginBottom: 10,
@@ -117,16 +150,16 @@ export default function ClientDetailScreen() {
         {(progress?.workouts ?? []).length === 0 ? (
           <View
             style={{
-              backgroundColor: colors.muted,
+              backgroundColor: colors.card,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: colors.accent,
+              borderColor: colors.border,
               padding: 24,
               alignItems: "center",
               marginBottom: 20,
             }}
           >
-            <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+            <Text style={{ color: colors.textFaint, fontSize: 13 }}>
               No workouts yet
             </Text>
           </View>
@@ -136,28 +169,28 @@ export default function ClientDetailScreen() {
               <View
                 key={w.id}
                 style={{
-                  backgroundColor: colors.muted,
+                  backgroundColor: colors.card,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: colors.accent,
+                  borderColor: colors.border,
                   padding: 14,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
                 }}
               >
-                <Dumbbell size={18} color="#3b82f6" />
+                <Dumbbell size={18} color={colors.primary} />
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
-                      color: colors.foreground,
+                      color: colors.text,
                       fontWeight: "600",
                       fontSize: 14,
                     }}
                   >
                     {w.name ?? "Workout"}
                   </Text>
-                  <Text style={{ color: colors.mutedFg, fontSize: 12, marginTop: 2 }}>
+                  <Text style={{ color: colors.textFaint, fontSize: 12, marginTop: 2 }}>
                     {new Date(w.startedAt).toLocaleDateString(undefined, {
                       weekday: "short",
                       month: "short",
@@ -173,7 +206,7 @@ export default function ClientDetailScreen() {
         {/* Cardio Sessions */}
         <Text
           style={{
-            color: colors.foreground,
+            color: colors.text,
             fontSize: 16,
             fontWeight: "700",
             marginBottom: 10,
@@ -184,16 +217,16 @@ export default function ClientDetailScreen() {
         {(progress?.cardioSessions ?? []).length === 0 ? (
           <View
             style={{
-              backgroundColor: colors.muted,
+              backgroundColor: colors.card,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: colors.accent,
+              borderColor: colors.border,
               padding: 24,
               alignItems: "center",
               marginBottom: 20,
             }}
           >
-            <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+            <Text style={{ color: colors.textFaint, fontSize: 13 }}>
               No cardio sessions yet
             </Text>
           </View>
@@ -203,21 +236,21 @@ export default function ClientDetailScreen() {
               <View
                 key={c.id}
                 style={{
-                  backgroundColor: colors.muted,
+                  backgroundColor: colors.card,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: colors.accent,
+                  borderColor: colors.border,
                   padding: 14,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
                 }}
               >
-                <Activity size={18} color="#22c55e" />
+                <Activity size={18} color={colors.success} />
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
-                      color: colors.foreground,
+                      color: colors.text,
                       fontWeight: "600",
                       fontSize: 14,
                       textTransform: "capitalize",
@@ -225,7 +258,7 @@ export default function ClientDetailScreen() {
                   >
                     {c.type}
                   </Text>
-                  <Text style={{ color: colors.mutedFg, fontSize: 12, marginTop: 2 }}>
+                  <Text style={{ color: colors.textFaint, fontSize: 12, marginTop: 2 }}>
                     {new Date(c.startedAt).toLocaleDateString(undefined, {
                       weekday: "short",
                       month: "short",
@@ -241,7 +274,7 @@ export default function ClientDetailScreen() {
         {/* Personal Records */}
         <Text
           style={{
-            color: colors.foreground,
+            color: colors.text,
             fontSize: 16,
             fontWeight: "700",
             marginBottom: 10,
@@ -252,16 +285,16 @@ export default function ClientDetailScreen() {
         {(progress?.personalRecords ?? []).length === 0 ? (
           <View
             style={{
-              backgroundColor: colors.muted,
+              backgroundColor: colors.card,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: colors.accent,
+              borderColor: colors.border,
               padding: 24,
               alignItems: "center",
               marginBottom: 20,
             }}
           >
-            <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+            <Text style={{ color: colors.textFaint, fontSize: 13 }}>
               No PRs yet
             </Text>
           </View>
@@ -271,28 +304,31 @@ export default function ClientDetailScreen() {
               <View
                 key={pr.id}
                 style={{
-                  backgroundColor: colors.muted,
+                  backgroundColor: colors.card,
                   borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.accent,
+                  borderWidth: 2,
+                  borderTopColor: colors.prGold,
+                  borderLeftColor: colors.border,
+                  borderRightColor: colors.border,
+                  borderBottomColor: colors.border,
                   padding: 14,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
                 }}
               >
-                <Trophy size={18} color="#eab308" />
+                <Trophy size={18} color={colors.prGold} />
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
-                      color: colors.foreground,
+                      color: colors.text,
                       fontWeight: "600",
                       fontSize: 14,
                     }}
                   >
                     {pr.exercise.name}
                   </Text>
-                  <Text style={{ color: colors.mutedFg, fontSize: 12, marginTop: 2 }}>
+                  <Text style={{ color: colors.textFaint, fontSize: 12, marginTop: 2 }}>
                     {pr.weightKg} kg
                   </Text>
                 </View>

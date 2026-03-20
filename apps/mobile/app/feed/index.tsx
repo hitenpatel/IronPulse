@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Text, View, ActivityIndicator } from "react-native";
+import { FlatList, Pressable, Text, View, ActivityIndicator } from "react-native";
 import { Stack } from "expo-router";
 import { trpc } from "@/lib/trpc";
-import { Dumbbell, Activity, Trophy } from "lucide-react-native";
+import { Dumbbell, Activity, Trophy, Heart, MessageCircle, Share2 } from "lucide-react-native";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  muted: "hsl(223, 47%, 11%)",
-  accent: "hsl(216, 34%, 17%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  primary: "#0077FF",
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
+  prGold: "#FFD700",
+  streakOrange: "#FF6B2C",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
 };
 
 type FeedItem = {
@@ -22,13 +32,13 @@ type FeedItem = {
 function getActivityIcon(type: string) {
   switch (type) {
     case "workout":
-      return <Dumbbell size={20} color="#3b82f6" />;
+      return <Dumbbell size={20} color={colors.primary} />;
     case "cardio":
-      return <Activity size={20} color="#22c55e" />;
+      return <Activity size={20} color={colors.success} />;
     case "pr":
-      return <Trophy size={20} color="#eab308" />;
+      return <Trophy size={20} color={colors.prGold} />;
     default:
-      return <Activity size={20} color={colors.mutedFg} />;
+      return <Activity size={20} color={colors.textFaint} />;
   }
 }
 
@@ -86,49 +96,124 @@ export default function FeedScreen() {
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator color={colors.foreground} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : items.length === 0 ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 32 }}>
-          <Text style={{ color: colors.mutedFg, fontSize: 15, textAlign: "center" }}>
+          <Text style={{ color: colors.textFaint, fontSize: 15, textAlign: "center" }}>
             No activity yet
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, gap: 10 }}
-          renderItem={({ item }) => (
-            <View
+        <>
+          <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>
+            <Text
               style={{
-                backgroundColor: colors.muted,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: colors.accent,
-                padding: 14,
-                flexDirection: "row",
-                alignItems: "flex-start",
-                gap: 12,
+                fontFamily: "ClashDisplay",
+                fontWeight: "600",
+                fontSize: 28,
+                color: colors.text,
               }}
             >
-              <View style={{ marginTop: 2 }}>{getActivityIcon(item.type)}</View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontSize: 14 }}>
-                  <Text style={{ fontWeight: "600" }}>
-                    {item.user.name ?? "Unknown"}
-                  </Text>{" "}
-                  <Text style={{ color: colors.mutedFg }}>
+              Feed
+            </Text>
+          </View>
+          <FlatList
+            data={items}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: 16, gap: 10 }}
+            renderItem={({ item }) => {
+              const isPR = item.type === "pr";
+              return (
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    ...(isPR
+                      ? {
+                          borderTopWidth: 2,
+                          borderTopColor: colors.prGold,
+                        }
+                      : {}),
+                    padding: 16,
+                  }}
+                >
+                  {/* Header row: avatar + name + timestamp */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: colors.accent,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.text,
+                          fontWeight: "700",
+                          fontSize: 16,
+                        }}
+                      >
+                        {item.user.name?.charAt(0).toUpperCase() ?? "?"}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontWeight: "600", fontSize: 14 }}>
+                        {item.user.name ?? "Unknown"}
+                      </Text>
+                      <Text style={{ color: colors.textFaint, fontSize: 11, marginTop: 1 }}>
+                        {timeAgo(new Date(item.createdAt))}
+                      </Text>
+                    </View>
+                    <View style={{ marginTop: 2 }}>{getActivityIcon(item.type)}</View>
+                  </View>
+
+                  {/* Activity text */}
+                  <Text style={{ color: colors.textMuted, fontSize: 14 }}>
                     {getActivityText(item.type)}
                   </Text>
-                </Text>
-                <Text style={{ color: colors.mutedFg, fontSize: 12, marginTop: 4 }}>
-                  {timeAgo(new Date(item.createdAt))}
-                </Text>
-              </View>
-            </View>
-          )}
-        />
+
+                  {/* Reactions row */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      gap: 16,
+                      marginTop: 12,
+                      paddingTop: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.borderSubtle,
+                    }}
+                  >
+                    <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Heart size={14} color={colors.textMuted} />
+                      <Text style={{ color: colors.textMuted, fontSize: 11 }}>0</Text>
+                    </Pressable>
+                    <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <MessageCircle size={14} color={colors.textMuted} />
+                      <Text style={{ color: colors.textMuted, fontSize: 11 }}>0</Text>
+                    </Pressable>
+                    <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Share2 size={14} color={colors.textMuted} />
+                      <Text style={{ color: colors.textMuted, fontSize: 11 }}>0</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            }}
+          />
+        </>
       )}
     </View>
   );

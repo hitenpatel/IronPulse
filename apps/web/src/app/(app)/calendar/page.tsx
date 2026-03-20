@@ -119,15 +119,15 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Calendar</h1>
+      <h1 className="font-display font-semibold text-[28px] text-foreground">Calendar</h1>
 
-      <Card className="p-4">
+      <Card className="bg-card border border-border p-4">
         {/* Month navigation */}
         <div className="mb-4 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={prevMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-semibold">{formatMonth(year, month)}</span>
+          <span className="font-display font-semibold text-[28px] text-foreground">{formatMonth(year, month)}</span>
           <Button variant="ghost" size="sm" onClick={nextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -164,8 +164,8 @@ export default function CalendarPage() {
                   isSelected
                     ? "bg-primary text-primary-foreground"
                     : isToday
-                      ? "bg-muted font-semibold"
-                      : "hover:bg-muted/50"
+                      ? "bg-card font-semibold ring-2 ring-primary"
+                      : "bg-card hover:bg-muted/50 border border-border-subtle"
                 }`}
               >
                 {day}
@@ -183,7 +183,7 @@ export default function CalendarPage() {
                         className={`h-1.5 w-1.5 rounded-full ${
                           isSelected
                             ? "bg-primary-foreground/70"
-                            : "bg-secondary"
+                            : "bg-success"
                         }`}
                       />
                     )}
@@ -203,11 +203,11 @@ export default function CalendarPage() {
         {/* Legend */}
         <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-primary" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Workout
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-secondary" />
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
             Cardio
           </div>
         </div>
@@ -230,12 +230,12 @@ export default function CalendarPage() {
 
           {selectedData?.workouts.map((w) => (
             <Link key={w.id} href={`/workouts/${w.id}`}>
-              <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/50">
+              <Card className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg transition-colors hover:bg-muted/30">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                   <Dumbbell className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {w.name || "Workout"}
                   </p>
                   {w.durationSeconds != null && (
@@ -250,12 +250,12 @@ export default function CalendarPage() {
 
           {selectedData?.cardio.map((c) => (
             <Link key={c.id} href={`/cardio/${c.id}`}>
-              <Card className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/50">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary/10">
-                  <Activity className="h-4 w-4 text-secondary" />
+              <Card className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg transition-colors hover:bg-muted/30">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10">
+                  <Activity className="h-4 w-4 text-success" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium capitalize truncate">
+                  <p className="text-sm font-medium text-foreground capitalize truncate">
                     {capitalize(c.type)}
                   </p>
                   <p className="text-xs text-muted-foreground">

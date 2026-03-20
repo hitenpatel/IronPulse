@@ -6,12 +6,15 @@ import { getProducts, purchaseSubscription, restorePurchases, initializeIAP } fr
 import type { IAPItemDetails } from "expo-in-app-purchases";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  accent: "hsl(216, 34%, 17%)",
-  muted: "hsl(223, 47%, 11%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  primary: "#0077FF",
+  border: "#1E2B47",
+  borderSubtle: "#152035",
+  text: "#F0F4F8",
+  textMuted: "#8899B4",
+  textFaint: "#4E6180",
 };
 
 export default function SubscriptionScreen() {
@@ -61,29 +64,47 @@ export default function SubscriptionScreen() {
       <View style={{ padding: 16 }}>
         <Text
           style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: colors.foreground,
-            marginBottom: 8,
+            fontFamily: "ClashDisplay",
+            fontWeight: "600",
+            fontSize: 28,
+            color: colors.text,
+            marginBottom: 20,
           }}
         >
           Subscription
         </Text>
 
+        {/* Current plan card */}
         <View
           style={{
-            backgroundColor: colors.muted,
+            backgroundColor: colors.card,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: colors.accent,
+            borderColor: colors.border,
             padding: 16,
             marginBottom: 24,
           }}
         >
-          <Text style={{ color: colors.mutedFg, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>
+          <Text
+            style={{
+              fontSize: 10,
+              color: colors.textFaint,
+              textTransform: "uppercase",
+              fontWeight: "500",
+              letterSpacing: 1,
+            }}
+          >
             Current Plan
           </Text>
-          <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "700", marginTop: 4, textTransform: "capitalize" }}>
+          <Text
+            style={{
+              color: colors.text,
+              fontSize: 18,
+              fontWeight: "700",
+              marginTop: 4,
+              textTransform: "capitalize",
+            }}
+          >
             {user?.tier ?? "free"}
           </Text>
         </View>
@@ -93,15 +114,15 @@ export default function SubscriptionScreen() {
         ) : products.length === 0 ? (
           <View
             style={{
-              backgroundColor: colors.muted,
+              backgroundColor: colors.card,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: colors.accent,
+              borderColor: colors.border,
               padding: 24,
               alignItems: "center",
             }}
           >
-            <Text style={{ color: colors.mutedFg, textAlign: "center" }}>
+            <Text style={{ color: colors.textMuted, textAlign: "center" }}>
               In-app purchases are not available on this device. Subscriptions can be managed on the web.
             </Text>
           </View>
@@ -115,10 +136,10 @@ export default function SubscriptionScreen() {
               >
                 <View
                   style={{
-                    backgroundColor: colors.muted,
+                    backgroundColor: colors.card,
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: colors.accent,
+                    borderColor: colors.border,
                     padding: 16,
                     flexDirection: "row",
                     justifyContent: "space-between",
@@ -127,10 +148,10 @@ export default function SubscriptionScreen() {
                   }}
                 >
                   <View>
-                    <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 16 }}>
+                    <Text style={{ color: colors.text, fontWeight: "600", fontSize: 16 }}>
                       {product.title}
                     </Text>
-                    <Text style={{ color: colors.mutedFg, fontSize: 13, marginTop: 2 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
                       {product.description}
                     </Text>
                   </View>
@@ -144,7 +165,7 @@ export default function SubscriptionScreen() {
         )}
 
         <Pressable onPress={handleRestore} style={{ marginTop: 24, alignItems: "center" }}>
-          <Text style={{ color: colors.mutedFg, fontSize: 14, textDecorationLine: "underline" }}>
+          <Text style={{ color: colors.textMuted, fontSize: 14, textDecorationLine: "underline" }}>
             Restore Purchases
           </Text>
         </Pressable>

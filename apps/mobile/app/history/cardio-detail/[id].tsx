@@ -19,11 +19,13 @@ import {
 } from "@ironpulse/shared";
 
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  accent: "hsl(216, 34%, 17%)",
-  muted: "hsl(223, 47%, 11%)",
+  background: "#060B14",
+  card: "#0F1629",
+  muted: "#243052",
+  border: "#1E2B47",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  dimFg: "#4E6180",
 };
 
 interface CardioRow {
@@ -54,8 +56,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.muted,
+        backgroundColor: colors.card,
         borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
         padding: 16,
         alignItems: "center",
       }}
@@ -63,8 +67,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <Text
         style={{
           color: colors.mutedFg,
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: "600",
+          textTransform: "uppercase",
+          letterSpacing: 0.4,
           marginBottom: 4,
         }}
       >
@@ -129,7 +135,7 @@ export default function CardioDetailScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
       <Stack.Screen options={{ title: capitalize(session.type) }} />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {/* Route map for GPS sessions */}
+        {/* Route map for GPS sessions — full-width at top */}
         {session.source === "gps" && (
           <View
             style={{
@@ -137,13 +143,15 @@ export default function CardioDetailScreen() {
               borderRadius: 12,
               overflow: "hidden",
               marginBottom: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
             }}
           >
             {loadingRoute ? (
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: colors.muted,
+                  backgroundColor: colors.card,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -156,7 +164,7 @@ export default function CardioDetailScreen() {
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: colors.muted,
+                  backgroundColor: colors.card,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -169,29 +177,29 @@ export default function CardioDetailScreen() {
           </View>
         )}
 
-        {/* Stats row 1: Duration + Distance */}
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
-          <StatCard label="Duration" value={formatElapsed(session.duration_seconds)} />
-          <StatCard
-            label="Distance"
-            value={distanceKm != null ? `${distanceKm.toFixed(2)} km` : "-"}
-          />
-        </View>
-
-        {/* Stats row 2: Pace + Elevation */}
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
-          <StatCard
-            label="Pace"
-            value={pace != null ? `${formatPace(pace)} /km` : "-"}
-          />
-          <StatCard
-            label="Elevation"
-            value={
-              session.elevation_gain_m != null
-                ? `${Math.round(session.elevation_gain_m)} m`
-                : "-"
-            }
-          />
+        {/* Stats grid: 2×2 */}
+        <View style={{ gap: 12, marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <StatCard label="Duration" value={formatElapsed(session.duration_seconds)} />
+            <StatCard
+              label="Distance"
+              value={distanceKm != null ? `${distanceKm.toFixed(2)} km` : "-"}
+            />
+          </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <StatCard
+              label="Pace"
+              value={pace != null ? `${formatPace(pace)} /km` : "-"}
+            />
+            <StatCard
+              label="Elevation"
+              value={
+                session.elevation_gain_m != null
+                  ? `${Math.round(session.elevation_gain_m)} m`
+                  : "-"
+              }
+            />
+          </View>
         </View>
 
         {/* Heart Rate Zone */}
@@ -203,8 +211,10 @@ export default function CardioDetailScreen() {
           return (
             <View
               style={{
-                backgroundColor: colors.muted,
+                backgroundColor: colors.card,
                 borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
                 padding: 16,
                 marginBottom: 12,
               }}
@@ -258,8 +268,10 @@ export default function CardioDetailScreen() {
         {session.notes != null && session.notes.length > 0 && (
           <View
             style={{
-              backgroundColor: colors.muted,
+              backgroundColor: colors.card,
               borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
               padding: 16,
               marginTop: 4,
             }}

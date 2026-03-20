@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,7 +145,7 @@ export default function SecurityPage() {
     return (
       <div className="space-y-6">
         <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
-        <div className="h-[200px] animate-pulse rounded-xl bg-muted" />
+        <div className="h-[200px] animate-pulse rounded-lg bg-muted" />
       </div>
     );
   }
@@ -159,11 +158,11 @@ export default function SecurityPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Security</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">Security</h1>
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">
             Dismiss
@@ -172,85 +171,81 @@ export default function SecurityPage() {
       )}
 
       {changePasswordSuccess && (
-        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
+        <div className="rounded-lg border border-success/50 bg-success/10 p-3 text-sm text-success">
           Password changed successfully.
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5" />
-            Change Password
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {showChangePassword ? (
-            <div className="space-y-3">
-              <Input
-                type="password"
-                placeholder="Current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-              <Input
-                type="password"
-                placeholder="New password (min. 8 characters)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-              <Input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleChangePassword}
-                  disabled={
-                    !currentPassword ||
-                    !newPassword ||
-                    !confirmNewPassword ||
-                    changePasswordMutation.isPending
-                  }
-                >
-                  {changePasswordMutation.isPending ? "Saving..." : "Save new password"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowChangePassword(false);
-                    setCurrentPassword("");
-                    setNewPassword("");
-                    setConfirmNewPassword("");
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
+      {/* Change Password Card */}
+      <div className="bg-card rounded-lg border border-border p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <KeyRound className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold text-foreground">Change Password</h2>
+        </div>
+        {showChangePassword ? (
+          <div className="space-y-3">
+            <Input
+              type="password"
+              placeholder="Current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <Input
+              type="password"
+              placeholder="New password (min. 8 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+            <Input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleChangePassword}
+                disabled={
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmNewPassword ||
+                  changePasswordMutation.isPending
+                }
+              >
+                {changePasswordMutation.isPending ? "Saving..." : "Save new password"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowChangePassword(false);
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setConfirmNewPassword("");
+                }}
+              >
+                Cancel
+              </Button>
             </div>
-          ) : (
-            <Button variant="outline" onClick={() => setShowChangePassword(true)}>
-              Change password
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={() => setShowChangePassword(true)}>
+            Change password
+          </Button>
+        )}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Fingerprint className="h-5 w-5" />
-            Passkeys
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      {/* Passkeys Card */}
+      <div className="bg-card rounded-lg border border-border p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Fingerprint className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold text-foreground">Passkeys</h2>
+        </div>
+        <div className="space-y-3">
           {passkeys.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No passkeys registered. Add one to sign in without a password.
@@ -259,7 +254,7 @@ export default function SecurityPage() {
             passkeys.map((pk) => (
               <div
                 key={pk.id}
-                className="flex items-center justify-between rounded-md border p-3"
+                className="flex items-center justify-between rounded-lg border border-border p-3"
               >
                 <div className="flex-1">
                   {editingId === pk.id ? (
@@ -279,7 +274,7 @@ export default function SecurityPage() {
                     </div>
                   ) : (
                     <>
-                      <p className="font-medium">{pk.name ?? "Unnamed passkey"}</p>
+                      <p className="font-medium text-foreground">{pk.name ?? "Unnamed passkey"}</p>
                       <p className="text-xs text-muted-foreground">
                         {pk.deviceType === "multiDevice" ? "Synced" : "Single device"}{" "}
                         &middot; Added {new Date(pk.createdAt).toLocaleDateString()}
@@ -306,67 +301,65 @@ export default function SecurityPage() {
             <Plus className="h-4 w-4" />
             {atLimit ? "Maximum passkeys reached (5)" : addingPasskey ? "Registering..." : "Add passkey"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5" />
-            Password
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {showPasswordRemoval ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Make sure you have access to your passkey device. If you lose it
-                and have no OAuth provider linked, you&apos;ll be locked out.
-              </p>
-              <div className="flex gap-2 mb-2">
-                <Button variant={reAuthMethod === "password" ? "default" : "outline"} size="sm" onClick={() => setReAuthMethod("password")}>
-                  Confirm with password
-                </Button>
-                {passkeys.length > 0 && (
-                  <Button variant={reAuthMethod === "passkey" ? "default" : "outline"} size="sm" onClick={() => setReAuthMethod("passkey")}>
-                    Confirm with passkey
-                  </Button>
-                )}
-              </div>
-              {reAuthMethod === "password" && (
-                <Input
-                  type="password"
-                  placeholder="Enter current password to confirm"
-                  value={passwordRemovalPassword}
-                  onChange={(e) => setPasswordRemovalPassword(e.target.value)}
-                />
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleRemovePassword}
-                  disabled={(reAuthMethod === "password" && !passwordRemovalPassword) || removePasswordMutation.isPending}
-                >
-                  {removePasswordMutation.isPending ? "Removing..." : reAuthMethod === "passkey" ? "Verify passkey & remove" : "Remove password"}
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => { setShowPasswordRemoval(false); setPasswordRemovalPassword(""); }}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button variant="outline" onClick={() => setShowPasswordRemoval(true)} disabled={!canRemovePassword}>
-              Remove password (go passwordless)
-            </Button>
-          )}
-          {!canRemovePassword && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Register a passkey or link an OAuth provider before removing your password.
+      {/* Password / Passwordless Card */}
+      <div className="bg-card rounded-lg border border-border p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold text-foreground">Password</h2>
+        </div>
+        {showPasswordRemoval ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Make sure you have access to your passkey device. If you lose it
+              and have no OAuth provider linked, you&apos;ll be locked out.
             </p>
-          )}
-        </CardContent>
-      </Card>
+            <div className="flex gap-2 mb-2">
+              <Button variant={reAuthMethod === "password" ? "default" : "outline"} size="sm" onClick={() => setReAuthMethod("password")}>
+                Confirm with password
+              </Button>
+              {passkeys.length > 0 && (
+                <Button variant={reAuthMethod === "passkey" ? "default" : "outline"} size="sm" onClick={() => setReAuthMethod("passkey")}>
+                  Confirm with passkey
+                </Button>
+              )}
+            </div>
+            {reAuthMethod === "password" && (
+              <Input
+                type="password"
+                placeholder="Enter current password to confirm"
+                value={passwordRemovalPassword}
+                onChange={(e) => setPasswordRemovalPassword(e.target.value)}
+              />
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleRemovePassword}
+                disabled={(reAuthMethod === "password" && !passwordRemovalPassword) || removePasswordMutation.isPending}
+              >
+                {removePasswordMutation.isPending ? "Removing..." : reAuthMethod === "passkey" ? "Verify passkey & remove" : "Remove password"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setShowPasswordRemoval(false); setPasswordRemovalPassword(""); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={() => setShowPasswordRemoval(true)} disabled={!canRemovePassword}>
+            Remove password (go passwordless)
+          </Button>
+        )}
+        {!canRemovePassword && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Register a passkey or link an OAuth provider before removing your password.
+          </p>
+        )}
+      </div>
+
       <ConfirmDialog
         open={!!deletePasskeyId}
         onOpenChange={(open) => !open && setDeletePasskeyId(null)}
