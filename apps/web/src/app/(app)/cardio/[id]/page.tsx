@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { useCardioSession } from "@ironpulse/sync";
+import { useCardioSession, useCardioLaps, type LapRow } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import {
   formatDuration,
@@ -48,6 +48,87 @@ function StatItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+function LapSplitsSection({ laps }: { laps: LapRow[] }) {
+  if (laps.length === 0) return null;
+
+  // Compute pace (sec/km) for each lap to find fastest/slowest
+  const lapPaces = laps.map((lap) =>
+    lap.distance_meters > 0 ? lap.duration_seconds / (lap.distance_meters / 1000) : Infinity
+  );
+  const validPaces = lapPaces.filter((p) => p !== Infinity);
+  const fastestPace = validPaces.length > 0 ? Math.min(...validPaces) : null;
+  const slowestPace = validPaces.length > 0 ? Math.max(...validPaces) : null;
+
+  const totalDistance = laps.reduce((sum, l) => sum + l.distance_meters, 0);
+  const totalDuration = laps.reduce((sum, l) => sum + l.duration_seconds, 0);
+  const avgPaceOverall =
+    totalDistance > 0 ? formatPace(totalDistance, totalDuration) : "--";
+
+  return (
+    <Card className="p-6">
+      <h2 className="mb-4 text-base font-semibold">Lap Splits</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-xs text-muted-foreground">
+              <th className="pb-2 pr-4 font-medium">Lap</th>
+              <th className="pb-2 pr-4 font-medium">Distance</th>
+              <th className="pb-2 pr-4 font-medium">Duration</th>
+              <th className="pb-2 pr-4 font-medium">Avg Pace</th>
+              <th className="pb-2 font-medium">Avg HR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {laps.map((lap, i) => {
+              const pace = lapPaces[i]!;
+              const isFastest = fastestPace !== null && pace === fastestPace;
+              const isSlowest = slowestPace !== null && pace === slowestPace && fastestPace !== slowestPace;
+              const rowClass = isFastest
+                ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                : isSlowest
+                ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                : "";
+              return (
+                <tr key={lap.id} className={`border-b last:border-0 ${rowClass}`}>
+                  <td className="py-2 pr-4 font-medium">{lap.lap_number}</td>
+                  <td className="py-2 pr-4">
+                    {lap.distance_meters > 0
+                      ? formatDistance(lap.distance_meters)
+                      : "--"}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {formatDuration(lap.duration_seconds)}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {lap.distance_meters > 0
+                      ? formatPace(lap.distance_meters, lap.duration_seconds)
+                      : "--"}
+                  </td>
+                  <td className="py-2">
+                    {lap.avg_heart_rate != null
+                      ? `${lap.avg_heart_rate} bpm`
+                      : "--"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-sm text-muted-foreground">
+        <span>
+          <span className="font-medium text-foreground">{laps.length}</span>{" "}
+          {laps.length === 1 ? "lap" : "laps"}
+        </span>
+        <span>
+          Avg pace:{" "}
+          <span className="font-medium text-foreground">{avgPaceOverall}</span>
+        </span>
+      </div>
+    </Card>
+  );
+}
+
 function DetailSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
@@ -85,6 +166,10 @@ export default function CardioDetailPage() {
     calories: number | null;
     notes: string | null;
   } | undefined;
+
+  // Laps from PowerSync local SQLite
+  const { data: lapRows } = useCardioLaps(id);
+  const laps = (lapRows ?? []) as LapRow[];
 
   // Keep tRPC for route points (not synced via PowerSync)
   const { data: routeData } = trpc.cardio.getRoutePoints.useQuery(
@@ -234,6 +319,8 @@ export default function CardioDetailPage() {
               </p>
             </Card>
           )}
+
+          <LapSplitsSection laps={laps} />
 
           {points && points.length > 0 && (
             <Card className="overflow-hidden">

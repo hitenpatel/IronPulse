@@ -76,6 +76,16 @@ export const cardioRouter = createTRPCRouter({
           id: true, type: true, source: true, startedAt: true,
           durationSeconds: true, distanceMeters: true, elevationGainM: true,
           avgHeartRate: true, maxHeartRate: true, calories: true, notes: true,
+          laps: {
+            select: {
+              id: true,
+              lapNumber: true,
+              distanceMeters: true,
+              durationSeconds: true,
+              avgHeartRate: true,
+            },
+            orderBy: { lapNumber: "asc" },
+          },
         },
       });
 
