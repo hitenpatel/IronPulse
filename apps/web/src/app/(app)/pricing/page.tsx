@@ -1,7 +1,6 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Dumbbell } from "lucide-react";
 
@@ -63,7 +62,7 @@ export default function PricingPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">Plans & Pricing</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">Plans & Pricing</h1>
         <p className="mt-1 text-muted-foreground">
           Choose the plan that fits your needs
         </p>
@@ -74,56 +73,59 @@ export default function PricingPage() {
           const isCurrentTier = currentTier === tier.tier;
 
           return (
-            <Card
+            <div
               key={tier.name}
-              className={
-                tier.tier === "coach" ? "border-primary" : undefined
-              }
+              className={`bg-card rounded-lg border p-6 flex flex-col ${
+                tier.tier === "coach"
+                  ? "border-primary"
+                  : "border-border"
+              }`}
             >
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-2">
+              <div className="text-center mb-4">
+                <div className="mx-auto mb-3 w-fit">
                   {tier.tier === "coach" ? (
-                    <Crown className="h-8 w-8 text-amber-500" />
+                    <Crown className="h-8 w-8 text-pr-gold" />
                   ) : (
                     <Dumbbell className="h-8 w-8 text-muted-foreground" />
                   )}
                 </div>
-                <CardTitle>{tier.name}</CardTitle>
-                <p className="text-2xl font-bold">{tier.price}</p>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="font-display font-bold text-xl text-foreground">{tier.name}</h2>
+                <p className="font-display font-bold text-[32px] text-foreground leading-tight mt-1">
+                  {tier.price}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
                   {tier.description}
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2">
-                  {tier.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Check className="h-4 w-4 shrink-0 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+              </div>
 
-                {tier.priceId && !isCurrentTier ? (
-                  <Button
-                    className="w-full"
-                    disabled={createCheckout.isPending}
-                    onClick={() => handleUpgrade(tier.priceId!, tier.tier)}
+              <ul className="space-y-2 flex-1 mb-6">
+                {tier.features.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-center gap-2 text-sm text-foreground"
                   >
-                    {createCheckout.isPending
-                      ? "Redirecting..."
-                      : "Start Free Trial"}
-                  </Button>
-                ) : isCurrentTier ? (
-                  <Button className="w-full" variant="outline" disabled>
-                    Current Plan
-                  </Button>
-                ) : null}
-              </CardContent>
-            </Card>
+                    <Check className="h-4 w-4 shrink-0 text-success" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              {tier.priceId && !isCurrentTier ? (
+                <Button
+                  className="w-full"
+                  disabled={createCheckout.isPending}
+                  onClick={() => handleUpgrade(tier.priceId!, tier.tier)}
+                >
+                  {createCheckout.isPending
+                    ? "Redirecting..."
+                    : "Start Free Trial"}
+                </Button>
+              ) : isCurrentTier ? (
+                <Button className="w-full" variant="outline" disabled>
+                  Current Plan
+                </Button>
+              ) : null}
+            </div>
           );
         })}
       </div>

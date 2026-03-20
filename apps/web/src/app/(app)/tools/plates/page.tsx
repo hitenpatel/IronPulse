@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,21 +143,21 @@ export default function PlatesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Dumbbell className="h-6 w-6" />
-        Plate Calculator
-      </h1>
-      <p className="text-sm text-muted-foreground">
-        Find the exact plates to load per side for any barbell weight.
-      </p>
+    <div className="mx-auto max-w-[600px] space-y-6 p-4">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
+          <Dumbbell className="h-6 w-6" />
+          Plate Calculator
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Find the exact plates to load per side for any barbell weight.
+        </p>
+      </div>
 
       {/* Input Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Enter target weight</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-card rounded-lg border border-border p-5">
+        <h2 className="font-semibold text-foreground mb-4">Enter target weight</h2>
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="target">Target weight (kg)</Label>
@@ -171,6 +170,7 @@ export default function PlatesPage() {
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value)}
                 onKeyDown={handleKeyDown}
+                className="h-14 font-display font-semibold text-2xl"
               />
             </div>
             <div className="space-y-1.5">
@@ -184,6 +184,7 @@ export default function PlatesPage() {
                 value={barWeight}
                 onChange={(e) => setBarWeight(e.target.value)}
                 onKeyDown={handleKeyDown}
+                className="h-14 font-display font-semibold text-2xl"
               />
             </div>
           </div>
@@ -193,23 +194,22 @@ export default function PlatesPage() {
           <Button onClick={handleCalculate} className="w-full">
             Calculate Plates
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Results */}
       {result && (
         <>
           {/* Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Result</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-card rounded-lg border border-border p-5">
+            <h2 className="font-semibold text-foreground mb-4">Result</h2>
+            <div className="space-y-4">
               <div className="flex items-center gap-6">
                 <div>
                   <p className="text-xs text-muted-foreground">Total loaded</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {result.totalLoaded.toFixed(2).replace(/\.?0+$/, "")} kg
+                  <p className="font-display font-bold text-5xl text-primary leading-tight">
+                    {result.totalLoaded.toFixed(2).replace(/\.?0+$/, "")}
+                    <span className="text-lg font-normal text-muted-foreground ml-1">kg</span>
                   </p>
                 </div>
                 {result.remainder > 0 && (
@@ -232,12 +232,12 @@ export default function PlatesPage() {
                     {result.platesPerSide.map(({ size, count }) => (
                       <div
                         key={size}
-                        className="flex items-center gap-1.5 rounded-md border bg-muted px-3 py-1.5"
+                        className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1.5"
                       >
                         <div
                           className={`h-4 w-4 rounded-sm ${PLATE_COLORS[size]}`}
                         />
-                        <span className="text-sm font-semibold">{count} × {size} kg</span>
+                        <span className="text-sm font-semibold text-foreground">{count} × {size} kg</span>
                       </div>
                     ))}
                   </div>
@@ -247,40 +247,32 @@ export default function PlatesPage() {
                   No plates needed — target equals bar weight.
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Visual representation */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Visual</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="py-4">
-                <PlateStack plates={result.platesPerSide} />
-              </div>
-              <p className="text-center text-xs text-muted-foreground mt-2">
-                Showing one side — mirror for the other side
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-card rounded-lg border border-border p-5">
+            <h2 className="font-semibold text-foreground mb-4">Visual</h2>
+            <div className="py-4">
+              <PlateStack plates={result.platesPerSide} />
+            </div>
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              Showing one side — mirror for the other side
+            </p>
+          </div>
 
           {/* Available plate sizes legend */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Available plates</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                {PLATE_SIZES.map((size) => (
-                  <div key={size} className="flex items-center gap-1.5">
-                    <div className={`h-3 w-3 rounded-sm ${PLATE_COLORS[size]}`} />
-                    <span className="text-xs text-muted-foreground">{size} kg</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-card rounded-lg border border-border p-5">
+            <h2 className="font-semibold text-foreground mb-4">Available plates</h2>
+            <div className="flex flex-wrap gap-3">
+              {PLATE_SIZES.map((size) => (
+                <div key={size} className="flex items-center gap-1.5">
+                  <div className={`h-3 w-3 rounded-sm ${PLATE_COLORS[size]}`} />
+                  <span className="text-xs text-muted-foreground">{size} kg</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </>
       )}
     </div>
