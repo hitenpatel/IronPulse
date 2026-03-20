@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Activity } from "lucide-react";
+import { Activity, Bike, Mountain, Footprints } from "lucide-react";
 import { useCardioSessions } from "@ironpulse/sync";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   formatDuration,
@@ -16,17 +15,45 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-function SessionSkeleton() {
+function getTypeIcon(type: string) {
+  switch (type.toLowerCase()) {
+    case "run":
+      return { Icon: Footprints, className: "text-success" };
+    case "cycle":
+      return { Icon: Bike, className: "text-primary" };
+    case "hike":
+      return { Icon: Mountain, className: "text-warning" };
+    default:
+      return { Icon: Activity, className: "text-muted-foreground" };
+  }
+}
+
+function TableSkeleton() {
   return (
-    <Card className="animate-pulse p-4">
-      <div className="flex items-center gap-4">
-        <div className="h-10 w-10 rounded-lg bg-muted" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-24 rounded bg-muted" />
-          <div className="h-3 w-40 rounded bg-muted" />
-        </div>
-      </div>
-    </Card>
+    <div className="rounded-lg border border-border bg-card overflow-hidden animate-pulse">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border">
+            {["DATE", "TYPE", "DISTANCE", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
+              <th key={col} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <tr key={i} className="border-b border-border last:border-0">
+              {Array.from({ length: 6 }).map((_, j) => (
+                <td key={j} className="px-4 py-3">
+                  <div className="h-4 rounded bg-muted" style={{ width: j === 0 ? 80 : j === 1 ? 60 : 48 }} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -35,15 +62,14 @@ export default function CardioHistoryPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Cardio</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display font-semibold text-[28px] text-foreground">Cardio</h1>
+        <Link href="/cardio/new">
+          <Button>New Session</Button>
+        </Link>
+      </div>
 
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SessionSkeleton key={i} />
-          ))}
-        </div>
-      )}
+      {isLoading && <TableSkeleton />}
 
       {!isLoading && sessions.length === 0 && (
         <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
@@ -57,45 +83,63 @@ export default function CardioHistoryPage() {
       )}
 
       {sessions.length > 0 && (
-        <div className="space-y-3">
-          {sessions.map((session) => (
-            <Link key={session.id} href={`/cardio/${session.id}`}>
-              <Card className="p-4 transition-colors hover:bg-accent/50">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-                    <Activity className="h-5 w-5 text-secondary" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">
-                        {capitalize(session.type)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                {["DATE", "TYPE", "DISTANCE", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
+                  <th key={col} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((session) => {
+                const { Icon, className: iconClass } = getTypeIcon(session.type);
+                const distance =
+                  session.distance_meters != null && Number(session.distance_meters) > 0
+                    ? Number(session.distance_meters)
+                    : null;
+                const pace =
+                  distance != null && session.duration_seconds > 0
+                    ? formatPace(distance, session.duration_seconds)
+                    : null;
+                return (
+                  <tr
+                    key={session.id}
+                    className="border-b border-border last:border-0 transition-colors hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      <Link href={`/cardio/${session.id}`} className="hover:text-foreground transition-colors">
                         {formatRelativeDate(new Date(session.started_at))}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex gap-3 text-sm text-muted-foreground">
-                      <span>{formatDuration(session.duration_seconds)}</span>
-                      {session.distance_meters != null &&
-                        Number(session.distance_meters) > 0 && (
-                          <span>{formatDistance(Number(session.distance_meters))}</span>
-                        )}
-                      {session.distance_meters != null &&
-                        Number(session.distance_meters) > 0 &&
-                        session.duration_seconds > 0 && (
-                          <span>
-                            {formatPace(
-                              Number(session.distance_meters),
-                              session.duration_seconds
-                            )}
-                          </span>
-                        )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link href={`/cardio/${session.id}`} className="inline-flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                        <Icon className={`h-4 w-4 ${iconClass}`} />
+                        {capitalize(session.type)}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {distance != null ? formatDistance(distance) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {formatDuration(session.duration_seconds)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {pace ?? <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {session.elevation_gain_m != null && Number(session.elevation_gain_m) > 0
+                        ? `${Math.round(Number(session.elevation_gain_m))} m`
+                        : <span className="text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

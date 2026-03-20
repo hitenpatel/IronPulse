@@ -9,17 +9,24 @@ import {
   Mountain,
   Footprints,
   Activity,
+  Rows2,
+  Ellipsis,
   X,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { TypeCard } from "@/components/cardio/type-card";
 
-const colors = {
-  bg: "hsl(224, 71%, 4%)",
-  card: "hsl(216, 34%, 17%)",
-  foreground: "hsl(213, 31%, 91%)",
-  primary: "hsl(210, 40%, 98%)",
-  muted: "hsl(215, 20%, 65%)",
+// Pulse design system tokens
+const C = {
+  bg: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  primary: "#0077FF",
+  border: "#1E2B47",
+  text: "#F0F4F8",
+  textSecondary: "#8899B4",
+  textTertiary: "#4E6180",
 };
 
 interface ActivityType {
@@ -35,6 +42,8 @@ const activityTypes: ActivityType[] = [
   { key: "swim", label: "Swim", icon: Waves, gps: false },
   { key: "hike", label: "Hike", icon: Mountain, gps: true },
   { key: "walk", label: "Walk", icon: Footprints, gps: true },
+  { key: "row", label: "Row", icon: Rows2, gps: false },
+  { key: "elliptical", label: "Elliptical", icon: Ellipsis, gps: false },
   { key: "other", label: "Other", icon: Activity, gps: false },
 ];
 
@@ -51,7 +60,7 @@ export default function TypePickerScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}>
         {/* Header */}
         <View
@@ -64,15 +73,26 @@ export default function TypePickerScreen() {
         >
           <Text
             style={{
-              fontSize: 22,
-              fontWeight: "bold",
-              color: colors.foreground,
+              fontSize: 18,
+              fontWeight: "500",
+              color: C.text,
+              letterSpacing: -0.3,
             }}
           >
-            Log Cardio
+            Start Cardio
           </Text>
-          <Pressable onPress={() => router.back()}>
-            <X size={24} color={colors.muted} />
+          <Pressable
+            onPress={() => router.back()}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: C.accent,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <X size={16} color={C.textSecondary} />
           </Pressable>
         </View>
 
@@ -80,19 +100,20 @@ export default function TypePickerScreen() {
           <>
             <Text
               style={{
-                fontSize: 15,
-                color: colors.muted,
-                marginBottom: 20,
+                fontSize: 13,
+                color: C.textSecondary,
+                marginBottom: 16,
               }}
             >
               Choose an activity
             </Text>
+
+            {/* 2-column grid */}
             <View
               style={{
                 flexDirection: "row",
                 flexWrap: "wrap",
                 gap: 12,
-                justifyContent: "space-between",
               }}
             >
               {activityTypes.map((a) => (
@@ -104,14 +125,24 @@ export default function TypePickerScreen() {
                 />
               ))}
             </View>
+
+            {/* Or log manually link */}
+            <Pressable
+              style={{ alignItems: "center", marginTop: 24 }}
+              onPress={() => router.push({ pathname: "/cardio/manual", params: { type: "other" } })}
+            >
+              <Text style={{ color: C.primary, fontSize: 14, fontWeight: "500" }}>
+                Or log manually
+              </Text>
+            </Pressable>
           </>
         ) : (
           <View style={{ flex: 1, justifyContent: "center", gap: 16, paddingHorizontal: 12 }}>
             <Text
               style={{
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: "600",
-                color: colors.foreground,
+                color: C.text,
                 textAlign: "center",
                 marginBottom: 8,
               }}
@@ -121,7 +152,7 @@ export default function TypePickerScreen() {
 
             <Pressable
               style={{
-                backgroundColor: colors.primary,
+                backgroundColor: C.primary,
                 borderRadius: 12,
                 padding: 18,
                 alignItems: "center",
@@ -137,7 +168,7 @@ export default function TypePickerScreen() {
                 style={{
                   fontSize: 16,
                   fontWeight: "600",
-                  color: colors.bg,
+                  color: "#FFFFFF",
                 }}
               >
                 Track with GPS
@@ -146,8 +177,10 @@ export default function TypePickerScreen() {
 
             <Pressable
               style={{
-                backgroundColor: colors.card,
+                backgroundColor: C.card,
                 borderRadius: 12,
+                borderWidth: 1,
+                borderColor: C.border,
                 padding: 18,
                 alignItems: "center",
               }}
@@ -162,7 +195,7 @@ export default function TypePickerScreen() {
                 style={{
                   fontSize: 16,
                   fontWeight: "600",
-                  color: colors.foreground,
+                  color: C.text,
                 }}
               >
                 Log Manually
@@ -173,7 +206,7 @@ export default function TypePickerScreen() {
               style={{ alignItems: "center", paddingTop: 12 }}
               onPress={() => setSelectedType(null)}
             >
-              <Text style={{ color: colors.muted, fontSize: 14 }}>Back</Text>
+              <Text style={{ color: C.textSecondary, fontSize: 14 }}>Back</Text>
             </Pressable>
           </View>
         )}

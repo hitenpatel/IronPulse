@@ -4,15 +4,20 @@ import { Swipeable } from "react-native-gesture-handler";
 import { usePowerSync } from "@powersync/react";
 import { Plus, Trash2 } from "lucide-react-native";
 import { SetRow } from "./set-row";
+import { Badge } from "../ui/badge";
 
+// Pulse design system tokens
 const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  muted: "hsl(223, 47%, 11%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  accent: "hsl(216, 34%, 17%)",
-  destructive: "hsl(0, 63%, 31%)",
+  background: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  foreground: "#F0F4F8",
+  mutedFg: "#8899B4",
+  dimFg: "#4E6180",
+  primary: "#0077FF",
+  error: "#EF4444",
+  border: "#1E2B47",
 };
 
 interface SetData {
@@ -84,7 +89,7 @@ export function ExerciseCard({
     <Pressable
       onPress={handleDeleteExercise}
       style={{
-        backgroundColor: colors.destructive,
+        backgroundColor: colors.error,
         justifyContent: "center",
         alignItems: "center",
         width: 80,
@@ -92,7 +97,7 @@ export function ExerciseCard({
         borderBottomRightRadius: 12,
       }}
     >
-      <Trash2 size={22} color={colors.foreground} />
+      <Trash2 size={22} color="#FFFFFF" />
     </Pressable>
   );
 
@@ -104,38 +109,50 @@ export function ExerciseCard({
     >
       <View
         style={{
-          backgroundColor: colors.muted,
+          backgroundColor: colors.card,
           borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
           paddingVertical: 12,
           marginHorizontal: 16,
           marginBottom: 12,
         }}
       >
-        {/* Exercise name header */}
-        <Text
+        {/* Exercise name header + muscle badge */}
+        <View
           style={{
-            color: colors.primary,
-            fontSize: 16,
-            fontWeight: "700",
-            paddingHorizontal: 12,
-            marginBottom: 8,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            marginBottom: 6,
           }}
         >
-          {exerciseName}
-        </Text>
+          <Text
+            style={{
+              color: colors.foreground,
+              fontSize: 18,
+              fontWeight: "500",
+              fontFamily: "ClashDisplay",
+              flex: 1,
+            }}
+          >
+            {exerciseName}
+          </Text>
+        </View>
 
         {/* Previous performance */}
         {previousSets && previousSets.length > 0 && (
           <Text
             style={{
-              color: colors.mutedFg,
+              color: colors.dimFg,
               fontSize: 12,
-              paddingHorizontal: 12,
-              marginBottom: 8,
+              paddingHorizontal: 16,
+              marginBottom: 10,
             }}
             numberOfLines={2}
           >
-            <Text style={{ fontWeight: "600" }}>Last: </Text>
+            <Text style={{ fontWeight: "600", color: colors.mutedFg }}>Last: </Text>
             {previousSets
               .map((s) => {
                 if (s.weight_kg != null && s.reps != null)
@@ -147,21 +164,23 @@ export function ExerciseCard({
           </Text>
         )}
 
-        {/* Column headers */}
+        {/* Column headers: SET | PREVIOUS | KG | REPS | ✓ */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            gap: 8,
-            paddingHorizontal: 12,
-            paddingBottom: 4,
+            paddingHorizontal: 16,
+            paddingBottom: 6,
           }}
         >
-          <Text style={headerText(28)}>#</Text>
-          <Text style={{ ...headerText(0), flex: 1 }}>KG</Text>
-          <Text style={{ ...headerText(0), flex: 1 }}>REPS</Text>
-          <Text style={headerText(44)}>RPE</Text>
+          <Text style={[headerText, { width: 28 }]}>SET</Text>
+          <Text style={[headerText, { flex: 1.2 }]}>PREVIOUS</Text>
+          <Text style={[headerText, { flex: 1 }]}>KG</Text>
+          <Text style={[headerText, { flex: 1 }]}>REPS</Text>
+          <Text style={[headerText, { width: 44 }]}>RPE</Text>
+          {/* checkmark column spacer */}
           <View style={{ width: 44 }} />
+          {/* delete column spacer */}
           <View style={{ width: 32 }} />
         </View>
 
@@ -177,35 +196,34 @@ export function ExerciseCard({
             completed={set.completed}
             exerciseIndex={exerciseIndex}
             setIndex={idx}
+            previousSet={previousSets?.[idx]}
             onComplete={onSetComplete}
             onRpePick={onRpePick}
           />
         ))}
 
-        {/* Add Set button */}
+        {/* + Add Set button */}
         <Pressable
           onPress={handleAddSet}
           style={{
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: 4,
-            marginHorizontal: 12,
-            backgroundColor: colors.accent,
-            borderRadius: 8,
+            paddingVertical: 12,
+            marginTop: 6,
+            marginHorizontal: 16,
             gap: 6,
           }}
         >
-          <Plus size={16} color={colors.mutedFg} />
+          <Plus size={16} color={colors.primary} />
           <Text
             style={{
-              color: colors.mutedFg,
+              color: colors.primary,
               fontSize: 14,
               fontWeight: "600",
             }}
           >
-            Add Set
+            + Add Set
           </Text>
         </Pressable>
       </View>
@@ -213,12 +231,10 @@ export function ExerciseCard({
   );
 }
 
-function headerText(width: number) {
-  return {
-    color: colors.mutedFg,
-    fontSize: 12,
-    fontWeight: "600" as const,
-    textAlign: "center" as const,
-    width: width || undefined,
-  };
-}
+const headerText = {
+  color: "#8899B4",
+  fontSize: 11,
+  fontWeight: "600" as const,
+  textAlign: "center" as const,
+  letterSpacing: 0.5,
+};
