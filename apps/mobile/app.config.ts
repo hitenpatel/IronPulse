@@ -37,6 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   plugins: [
+    "./plugins/swift-concurrency-fix",
     "expo-router",
     "expo-secure-store",
     [
