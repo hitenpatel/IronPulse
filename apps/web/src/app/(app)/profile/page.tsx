@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,9 +79,9 @@ export default function ProfilePage() {
       <div className="space-y-6">
         <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
         <div className="space-y-4">
-          <div className="h-[200px] animate-pulse rounded-xl bg-muted" />
-          <div className="h-[160px] animate-pulse rounded-xl bg-muted" />
-          <div className="h-[80px] animate-pulse rounded-xl bg-muted" />
+          <div className="h-[200px] animate-pulse rounded-lg bg-muted" />
+          <div className="h-[160px] animate-pulse rounded-lg bg-muted" />
+          <div className="h-[80px] animate-pulse rounded-lg bg-muted" />
         </div>
       </div>
     );
@@ -148,263 +147,257 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Profile</h1>
+      <h1 className="font-display text-2xl font-bold text-foreground">Profile</h1>
 
-      {/* User Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={handleAvatarClick}
-              disabled={avatarUploading}
-              className="group relative cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Upload avatar"
-            >
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={avatarDisplayUrl} alt={user.name ?? "Avatar"} />
-                <AvatarFallback className="text-2xl">
-                  {user.name ? user.name.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
-                </AvatarFallback>
-              </Avatar>
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 group-disabled:opacity-0">
-                <Camera className="h-6 w-6 text-white" />
-              </div>
-            </button>
-            <p className="text-xs text-muted-foreground">
-              {avatarUploading ? "Uploading..." : "Click to change photo"}
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handleAvatarFileChange}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Name</Label>
-            <div className="flex gap-2">
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-              />
-              <Button
-                size="sm"
-                disabled={!nameChanged || updateProfile.isPending}
-                onClick={handleSaveName}
-                className="shrink-0"
-              >
-                {saveStatus === "saved" ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Saved!
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Left column */}
+        <div className="space-y-6">
+          {/* Account Card */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Account</h2>
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Email</Label>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-              {!showEmailForm && (
-                <Button size="sm" variant="outline" onClick={handleEmailChangeOpen}>
-                  Change
-                </Button>
-              )}
-            </div>
-            {showEmailForm && (
-              emailChangeStatus === "sent" ? (
-                <p className="text-sm text-green-600">
-                  Check your new email for a verification link.
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAvatarClick}
+                  disabled={avatarUploading}
+                  className="group relative cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Upload avatar"
+                >
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={avatarDisplayUrl} alt={user.name ?? "Avatar"} />
+                    <AvatarFallback className="text-2xl">
+                      {user.name ? user.name.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 group-disabled:opacity-0">
+                    <Camera className="h-6 w-6 text-white" />
+                  </div>
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  {avatarUploading ? "Uploading..." : "Click to change photo"}
                 </p>
-              ) : (
-                <form onSubmit={handleEmailChangeSubmit} className="space-y-2 pt-1">
-                  <div className="space-y-1">
-                    <Label htmlFor="new-email">New email address</Label>
-                    <Input
-                      id="new-email"
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="new@example.com"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="email-password">Current password</Label>
-                    <Input
-                      id="email-password"
-                      type="password"
-                      value={emailPassword}
-                      onChange={(e) => setEmailPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                  {emailChangeError && (
-                    <p className="text-sm text-destructive">{emailChangeError}</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarFileChange}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Name</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={!nameChanged || updateProfile.isPending}
+                    onClick={handleSaveName}
+                    className="shrink-0"
+                  >
+                    {saveStatus === "saved" ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Saved!
+                      </>
+                    ) : (
+                      "Save"
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                  {!showEmailForm && (
+                    <Button size="sm" variant="outline" onClick={handleEmailChangeOpen}>
+                      Change
+                    </Button>
                   )}
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={requestEmailChange.isPending}
-                    >
-                      {requestEmailChange.isPending ? "Sending..." : "Send verification"}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setShowEmailForm(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              )
-            )}
-          </div>
+                </div>
+                {showEmailForm && (
+                  emailChangeStatus === "sent" ? (
+                    <p className="text-sm text-success">
+                      Check your new email for a verification link.
+                    </p>
+                  ) : (
+                    <form onSubmit={handleEmailChangeSubmit} className="space-y-2 pt-1">
+                      <div className="space-y-1">
+                        <Label htmlFor="new-email">New email address</Label>
+                        <Input
+                          id="new-email"
+                          type="email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          placeholder="new@example.com"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="email-password">Current password</Label>
+                        <Input
+                          id="email-password"
+                          type="password"
+                          value={emailPassword}
+                          onChange={(e) => setEmailPassword(e.target.value)}
+                          placeholder="••••••••"
+                          required
+                        />
+                      </div>
+                      {emailChangeError && (
+                        <p className="text-sm text-destructive">{emailChangeError}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={requestEmailChange.isPending}
+                        >
+                          {requestEmailChange.isPending ? "Sending..." : "Send verification"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowEmailForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  )
+                )}
+              </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Tier</span>
-            <span className="font-medium capitalize">{user.tier}</span>
-          </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Tier</span>
+                <span className="font-medium capitalize text-foreground">{user.tier}</span>
+              </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Member since</span>
-            <span className="font-medium">{memberSince}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Social Stats */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="h-5 w-5" />
-            <h3 className="font-semibold">Social</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold">
-                {followersData?.followers.length ?? 0}
-              </p>
-              <p className="text-sm text-muted-foreground">Followers</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold">
-                {followingData?.following.length ?? 0}
-              </p>
-              <p className="text-sm text-muted-foreground">Following</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Unit System</Label>
-            <div className="flex gap-2">
-              <Button
-                variant={
-                  user.unitSystem === "metric" ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => handleUnitToggle("metric")}
-                disabled={updateProfile.isPending}
-              >
-                Metric (kg/km)
-              </Button>
-              <Button
-                variant={
-                  user.unitSystem === "imperial" ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => handleUnitToggle("imperial")}
-                disabled={updateProfile.isPending}
-              >
-                Imperial (lb/mi)
-              </Button>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Member since</span>
+                <span className="font-medium text-foreground">{memberSince}</span>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Export Data */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Export Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <ExportButton label="Export Workouts (CSV)" mutationKey="workouts" format="csv" />
-          <ExportButton label="Export Cardio (CSV)" mutationKey="cardio" format="csv" />
-          <ExportButton label="Export All (JSON)" mutationKey="allData" format="json" />
-        </CardContent>
-      </Card>
+          {/* Settings Card */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Settings className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Settings</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Unit System</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={
+                      user.unitSystem === "metric" ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => handleUnitToggle("metric")}
+                    disabled={updateProfile.isPending}
+                  >
+                    Metric (kg/km)
+                  </Button>
+                  <Button
+                    variant={
+                      user.unitSystem === "imperial" ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => handleUnitToggle("imperial")}
+                    disabled={updateProfile.isPending}
+                  >
+                    Imperial (lb/mi)
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Security */}
-      <Card>
-        <CardContent className="pt-6">
-          <Button variant="outline" className="w-full" asChild>
-            <Link href="/profile/security">
-              <Shield className="h-4 w-4" />
-              Security (Passkeys & Password)
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+          {/* Export Data Card */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Download className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Export Data</h2>
+            </div>
+            <div className="space-y-2">
+              <ExportButton label="Export Workouts (CSV)" mutationKey="workouts" format="csv" />
+              <ExportButton label="Export Cardio (CSV)" mutationKey="cardio" format="csv" />
+              <ExportButton label="Export All (JSON)" mutationKey="allData" format="json" />
+            </div>
+          </div>
+        </div>
 
-      {/* Connected Apps */}
-      <Card>
-        <CardContent className="pt-6">
-          <Button variant="outline" className="w-full" asChild>
-            <Link href="/settings/integrations">
-              <Link2 className="h-4 w-4" />
-              Connected Apps
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+        {/* Right column */}
+        <div className="space-y-6">
+          {/* Stats Card */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Social</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p className="font-display font-bold text-[32px] text-foreground leading-none">
+                  {followersData?.followers.length ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Followers</p>
+              </div>
+              <div>
+                <p className="font-display font-bold text-[32px] text-foreground leading-none">
+                  {followingData?.following.length ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Following</p>
+              </div>
+            </div>
+          </div>
 
-      {/* Sign Out */}
-      <Card>
-        <CardContent className="pt-6">
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-        </CardContent>
-      </Card>
+          {/* Security Link */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/profile/security">
+                <Shield className="h-4 w-4" />
+                Security (Passkeys & Password)
+              </Link>
+            </Button>
+          </div>
+
+          {/* Connected Apps Link */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/settings/integrations">
+                <Link2 className="h-4 w-4" />
+                Connected Apps
+              </Link>
+            </Button>
+          </div>
+
+          {/* Sign Out */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

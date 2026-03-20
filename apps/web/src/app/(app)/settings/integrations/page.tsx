@@ -1,12 +1,6 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/client";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link2, Link2Off, Watch } from "lucide-react";
 
@@ -26,15 +20,15 @@ export default function IntegrationsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Connected Apps</h1>
+      <h1 className="font-display text-2xl font-bold text-foreground">Connected Apps</h1>
 
       {isLoading ? (
-        <div className="h-[140px] animate-pulse rounded-xl bg-muted" />
+        <div className="h-[140px] animate-pulse rounded-lg bg-muted" />
       ) : (
         <>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
+          {/* Strava Card */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <div className="flex items-center gap-3 mb-4">
               <svg
                 viewBox="0 0 24 24"
                 className="h-6 w-6 fill-[#FC4C02]"
@@ -42,14 +36,12 @@ export default function IntegrationsPage() {
               >
                 <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
               </svg>
-              Strava
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+              <h2 className="font-semibold text-foreground">Strava</h2>
+            </div>
             {stravaConnection ? (
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-medium text-green-500">
+                  <div className="flex items-center gap-2 text-sm font-medium text-success">
                     <Link2 className="h-4 w-4" />
                     Connected
                   </div>
@@ -87,21 +79,18 @@ export default function IntegrationsPage() {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
+          {/* Garmin Card */}
+          <div className="bg-card rounded-lg border border-border p-5">
+            <div className="flex items-center gap-3 mb-4">
               <Watch className="h-6 w-6 text-[#007CC3]" aria-hidden />
-              Garmin Connect
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+              <h2 className="font-semibold text-foreground">Garmin Connect</h2>
+            </div>
             {garminConnection ? (
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm font-medium text-green-500">
+                  <div className="flex items-center gap-2 text-sm font-medium text-success">
                     <Link2 className="h-4 w-4" />
                     Connected
                   </div>
@@ -139,8 +128,7 @@ export default function IntegrationsPage() {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
         </>
       )}
     </div>

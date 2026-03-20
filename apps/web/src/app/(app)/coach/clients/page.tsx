@@ -3,10 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Crown, ArrowLeft } from "lucide-react";
 
 export default function CoachClientsPage() {
@@ -19,7 +17,7 @@ export default function CoachClientsPage() {
         <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-[72px] animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="h-[72px] animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       </div>
@@ -30,8 +28,8 @@ export default function CoachClientsPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center space-y-4 max-w-md">
-          <Crown className="mx-auto h-12 w-12 text-amber-500" />
-          <h1 className="text-2xl font-bold">Coach Feature</h1>
+          <Crown className="mx-auto h-12 w-12 text-pr-gold" />
+          <h1 className="font-display text-2xl font-bold text-foreground">Coach Feature</h1>
           <p className="text-muted-foreground">
             Upgrade to the Coach tier to manage clients.
           </p>
@@ -74,18 +72,18 @@ function ClientList() {
       <div className="flex items-center gap-3">
         <Link
           href="/coach"
-          className="rounded-md p-1 hover:bg-muted transition-colors"
+          className="rounded-md p-1 hover:bg-muted transition-colors text-foreground"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold">Clients</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">Clients</h1>
       </div>
 
       {/* Add Client */}
-      <Card className="p-4">
+      <div className="bg-card rounded-lg border border-border p-5">
         <div className="flex items-center gap-2 mb-3">
           <UserPlus className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Add Client</span>
+          <span className="text-sm font-medium text-foreground">Add Client</span>
         </div>
         <div className="flex gap-2">
           <Input
@@ -106,63 +104,69 @@ function ClientList() {
         {error && (
           <p className="mt-2 text-sm text-destructive">{error}</p>
         )}
-      </Card>
+      </div>
 
-      {/* Client List */}
+      {/* Client Table */}
       {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="flex items-center gap-4 p-4">
-              <div className="h-10 w-10 animate-pulse rounded-full bg-muted" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-                <div className="h-3 w-48 animate-pulse rounded bg-muted" />
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="space-y-0">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-4 border-b border-border last:border-0">
+                <div className="h-10 w-10 animate-pulse rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-48 animate-pulse rounded bg-muted" />
+                </div>
               </div>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
       ) : !clients || clients.length === 0 ? (
         <div className="flex min-h-[30vh] items-center justify-center">
           <div className="text-center">
             <Users className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-3 text-lg font-medium">No clients yet</p>
+            <p className="mt-3 text-lg font-medium text-foreground">No clients yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Add an athlete by their email address above.
             </p>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
           {clients.map((client) => (
             <Link key={client.assignmentId} href={`/coach/clients/${client.athleteId}`}>
-              <Card className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <div className="flex items-center gap-4 p-4 border-b border-border last:border-0 transition-colors hover:bg-muted/30">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
                   <span className="text-sm font-semibold text-primary">
                     {(client.athleteName ?? client.athleteEmail)?.[0]?.toUpperCase() ?? "?"}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">
+                  <p className="font-medium truncate text-foreground">
                     {client.athleteName ?? "Unnamed"}
                   </p>
                   <p className="text-sm text-muted-foreground truncate">
                     {client.athleteEmail}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-end gap-2 shrink-0">
                   {client.programName && (
-                    <Badge variant="secondary" className="text-xs">
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                       {client.programName}
-                    </Badge>
+                    </span>
                   )}
-                  <Badge
-                    variant={client.status === "active" ? "default" : "outline"}
-                    className="text-xs"
-                  >
-                    {client.status}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        client.status === "active" ? "bg-success" : "bg-muted-foreground"
+                      }`}
+                    />
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {client.status}
+                    </span>
+                  </div>
                 </div>
-              </Card>
+              </div>
             </Link>
           ))}
         </div>

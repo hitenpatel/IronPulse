@@ -33,7 +33,7 @@ export default function CoachDashboardPage() {
         <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
         <div className="grid gap-4 sm:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-[120px] animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="h-[120px] animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       </div>
@@ -44,8 +44,8 @@ export default function CoachDashboardPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center space-y-4 max-w-md">
-          <Crown className="mx-auto h-12 w-12 text-amber-500" />
-          <h1 className="text-2xl font-bold">Coach Dashboard</h1>
+          <Crown className="mx-auto h-12 w-12 text-pr-gold" />
+          <h1 className="font-display text-2xl font-bold text-foreground">Coach Dashboard</h1>
           <p className="text-muted-foreground">
             Upgrade to the Coach tier to manage clients, build programs, and
             communicate with athletes.
@@ -94,27 +94,27 @@ function CoachOverview() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Coach Dashboard</h1>
+      <h1 className="font-display text-2xl font-bold text-foreground">Coach Dashboard</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {cards.map((card) => (
           <Link key={card.title} href={card.href}>
-            <Card className="transition-colors hover:bg-muted/50">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+            <div className="bg-card rounded-lg border border-border p-5 transition-colors hover:bg-muted/30 cursor-pointer">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-muted-foreground">
                   {card.title}
-                </CardTitle>
+                </span>
                 <card.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {card.value !== null && (
-                  <p className="text-2xl font-bold">{card.value}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {card.description}
+              </div>
+              {card.value !== null && (
+                <p className="font-display font-bold text-[32px] text-foreground leading-none mb-1">
+                  {card.value}
                 </p>
-              </CardContent>
-            </Card>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {card.description}
+              </p>
+            </div>
           </Link>
         ))}
       </div>
@@ -208,23 +208,21 @@ function EditCoachProfile() {
   const imageDisplayUrl = imageUrl ? `${S3_PUBLIC_URL}/${imageUrl}` : undefined;
 
   if (isLoading) {
-    return <div className="h-[200px] animate-pulse rounded-xl bg-muted" />;
+    return <div className="h-[200px] animate-pulse rounded-lg bg-muted" />;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Pencil className="h-4 w-4" />
-          Coach Profile
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="bg-card rounded-lg border border-border p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Pencil className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-base text-foreground">Coach Profile</h2>
+      </div>
+      <div className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="coach-bio">Bio</Label>
           <textarea
             id="coach-bio"
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px] resize-y"
+            className="flex w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary min-h-[80px] resize-y"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             placeholder="Tell athletes about yourself..."
@@ -338,7 +336,7 @@ function EditCoachProfile() {
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
