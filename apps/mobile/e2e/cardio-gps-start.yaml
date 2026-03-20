@@ -1,6 +1,9 @@
 appId: com.ironpulse.app
 ---
-- launchApp
+- launchApp:
+    permissions:
+      location: allow
+      notifications: allow
 - waitForAnimationToEnd
 - tapOn:
     id: "email-input"
@@ -16,6 +19,4 @@ appId: com.ironpulse.app
 - tapOn: "Start Cardio"
 - tapOn: "Run"
 - tapOn: "Track with GPS"
-- allowPermission
-- allowPermission
 - assertVisible: "Stop"
