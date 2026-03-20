@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
@@ -48,6 +48,30 @@ export function ActiveWorkout({
   const [completionPRs, setCompletionPRs] = useState<
     { exerciseId: string; type: string; value: number; setId: string }[] | null
   >(null);
+  const [notes, setNotes] = useState("");
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveNotes = useCallback(
+    (value: string) => {
+      db.execute(`UPDATE workouts SET notes = ? WHERE id = ?`, [value || null, workoutId]);
+    },
+    [db, workoutId]
+  );
+
+  function handleNotesChange(value: string) {
+    setNotes(value);
+    if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current);
+    notesDebounceRef.current = setTimeout(() => saveNotes(value), 800);
+  }
+
+  function handleNotesBlur() {
+    if (notesDebounceRef.current) {
+      clearTimeout(notesDebounceRef.current);
+      notesDebounceRef.current = null;
+    }
+    saveNotes(notes);
+  }
 
   // Read exercises and sets from PowerSync (reactive local reads)
   const { data: exercises } = useWorkoutExercises(workoutId);
@@ -313,6 +337,27 @@ export function ActiveWorkout({
       >
         + Add Exercise
       </button>
+
+      {/* Workout notes */}
+      <div className="mt-4">
+        <button
+          onClick={() => setNotesOpen((o) => !o)}
+          className="flex w-full items-center justify-between rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+        >
+          <span>{notes ? "Workout notes" : "Add workout notes"}</span>
+          <span className="text-xs">{notesOpen ? "▲" : "▼"}</span>
+        </button>
+        {notesOpen && (
+          <textarea
+            value={notes}
+            onChange={(e) => handleNotesChange(e.target.value)}
+            onBlur={handleNotesBlur}
+            placeholder="How did this workout feel? Any PRs, injuries, or observations..."
+            rows={4}
+            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          />
+        )}
+      </div>
 
       {/* Exercise search sheet */}
       <AddExerciseSheet
