@@ -13,7 +13,7 @@ appId: com.ironpulse.app
     id: "password-input"
 - inputText: "password123"
 - tapOn:
-    id: "signin-button"
+    id: "login-button"
 - extendedWaitUntil:
     visible: "Good morning"
     timeout: 15000
@@ -21,9 +21,9 @@ appId: com.ironpulse.app
 - tapOn:
     id: "fab-button"
 - extendedWaitUntil:
-    visible: "Log Cardio"
+    visible: "Start Cardio"
     timeout: 10000
-- tapOn: "Log Cardio"
+- tapOn: "Start Cardio"
 - extendedWaitUntil:
     visible: "Run"
     timeout: 10000

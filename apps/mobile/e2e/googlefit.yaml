@@ -9,7 +9,7 @@ appId: com.ironpulse.app
     id: "password-input"
 - inputText: "password123"
 - tapOn:
-    id: "signin-button"
+    id: "login-button"
 - assertVisible: "Good morning"
 - tapOn: "Profile"
 - tapOn: "Connected Apps"

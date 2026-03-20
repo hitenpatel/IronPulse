@@ -13,7 +13,7 @@ appId: com.ironpulse.app
     id: "password-input"
 - inputText: "password123"
 - tapOn:
-    id: "signin-button"
+    id: "login-button"
 - extendedWaitUntil:
     visible: "Good morning"
     timeout: 15000
@@ -24,5 +24,5 @@ appId: com.ironpulse.app
     timeout: 10000
 - tapOn: "Sign Out"
 - extendedWaitUntil:
-    visible: "Sign In"
+    visible: "Log In"
     timeout: 10000

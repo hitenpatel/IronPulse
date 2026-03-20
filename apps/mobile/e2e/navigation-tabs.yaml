@@ -13,27 +13,31 @@ appId: com.ironpulse.app
     id: "password-input"
 - inputText: "password123"
 - tapOn:
-    id: "signin-button"
+    id: "login-button"
 - extendedWaitUntil:
     visible: "Good morning"
     timeout: 15000
 - waitForAnimationToEnd
-- tapOn: "Stats"
+- tapOn:
+    id: "tab-stats"
 - extendedWaitUntil:
     visible: "Stats"
     timeout: 10000
 - waitForAnimationToEnd
-- tapOn: "Exercises"
+- tapOn:
+    id: "tab-exercises"
 - extendedWaitUntil:
     visible: "Exercises"
     timeout: 10000
 - waitForAnimationToEnd
-- tapOn: "Profile"
+- tapOn:
+    id: "tab-profile"
 - extendedWaitUntil:
     visible: "Profile"
     timeout: 10000
 - waitForAnimationToEnd
-- tapOn: "Dashboard"
+- tapOn:
+    id: "tab-home"
 - extendedWaitUntil:
     visible: "Good morning"
     timeout: 10000
