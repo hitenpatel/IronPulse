@@ -1,20 +1,23 @@
 import { Pressable, Text, type PressableProps } from "react-native";
 
 interface ButtonProps extends PressableProps {
-  variant?: "default" | "outline" | "ghost";
+  variant?: "default" | "outline" | "ghost" | "destructive";
   children: React.ReactNode;
 }
 
+// Pulse design system — hex values sourced from tailwind.config.ts tokens
 const variantStyles = {
-  default: { backgroundColor: "hsl(210, 40%, 98%)" },
-  outline: { borderWidth: 1, borderColor: "hsl(216, 34%, 17%)", backgroundColor: "transparent" },
+  default: { backgroundColor: "#0077FF" },
+  outline: { borderWidth: 1, borderColor: "#1E2B47", backgroundColor: "transparent" },
   ghost: { backgroundColor: "transparent" },
+  destructive: { backgroundColor: "#EF4444" },
 };
 
 const textColorMap = {
-  default: "hsl(222.2, 47.4%, 11.2%)",
-  outline: "hsl(213, 31%, 91%)",
-  ghost: "hsl(213, 31%, 91%)",
+  default: "#FFFFFF",
+  outline: "#F0F4F8",
+  ghost: "#0077FF",
+  destructive: "#FFFFFF",
 };
 
 export function Button({ variant = "default", children, ...props }: ButtonProps) {
@@ -23,8 +26,8 @@ export function Button({ variant = "default", children, ...props }: ButtonProps)
       style={[
         {
           borderRadius: 8,
+          height: 48,
           paddingHorizontal: 16,
-          paddingVertical: 12,
           alignItems: "center",
           justifyContent: "center",
         },
@@ -34,7 +37,7 @@ export function Button({ variant = "default", children, ...props }: ButtonProps)
     >
       <Text
         style={{
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: "600",
           color: textColorMap[variant],
         }}
