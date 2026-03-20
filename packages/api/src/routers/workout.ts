@@ -14,6 +14,7 @@ import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
 import { createFeedItem } from "../lib/feed";
 import { notifyNewPR } from "../lib/notifications";
+import { checkAndUnlock } from "./achievement";
 
 export const workoutRouter = createTRPCRouter({
   create: rateLimitedProcedure
@@ -361,6 +362,9 @@ export const workoutRouter = createTRPCRouter({
           ).catch(() => {});
         }
       }
+
+      // Achievement checks (fire-and-forget — never block the response)
+      checkAndUnlock(ctx.db, ctx.user.id).catch(() => {});
 
       return { workout, newPRs };
     }),

@@ -55,6 +55,7 @@ model User {
   pushTokens              PushToken[]
   passkeys                Passkey[]
   emailChangeTokens       EmailChangeToken[]
+  achievements            Achievement[]
 
   @@map("users")
 }
@@ -548,4 +549,18 @@ model Message {
 
   @@index([senderId, receiverId, createdAt])
   @@map("messages")
+}
+
+// ─── Achievements ────────────────────────────────────────
+
+model Achievement {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  type       String   // first_workout, streak_7, streak_30, pr_count_10, workouts_50, workouts_100
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("achievements")
 }

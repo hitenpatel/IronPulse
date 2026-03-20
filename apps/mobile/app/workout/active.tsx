@@ -20,6 +20,7 @@ import { RpePicker } from "../../components/workout/rpe-picker";
 import { calculateVolume } from "../../lib/workout-utils";
 import { trpc } from "../../lib/trpc";
 import { useAuth } from "../../lib/auth";
+import { maybeRequestReview } from "../../lib/review-prompt";
 
 const colors = {
   background: "hsl(224, 71%, 4%)",
@@ -189,6 +190,9 @@ export default function ActiveWorkoutScreen() {
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    // Fire-and-forget — never block navigation
+    maybeRequestReview().catch(() => {});
 
     router.replace({
       pathname: "/workout/complete",

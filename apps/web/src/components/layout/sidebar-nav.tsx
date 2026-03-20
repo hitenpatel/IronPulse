@@ -16,6 +16,7 @@ import {
   ClipboardList,
   BookOpen,
   Calculator,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -34,6 +35,7 @@ const navItems = [
   { icon: UserSearch, label: "Find a Coach", href: "/coaches" },
   { icon: User, label: "Profile", href: "/profile" },
   { icon: Calculator, label: "Tools", href: "/tools/1rm" },
+  { icon: Trophy, label: "Achievements", href: "/achievements" },
 ];
 
 interface SidebarNavProps {
