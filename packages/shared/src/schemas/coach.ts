@@ -9,3 +9,7 @@ export const updateCoachProfileSchema = z.object({
   imageUrl: z.string().optional(),
   isPublic: z.boolean().optional(),
 });
+
+export const uploadCoachProfileImageSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});

@@ -5,7 +5,9 @@ import {
   removeClientSchema,
   clientProgressSchema,
   updateCoachProfileSchema,
+  uploadCoachProfileImageSchema,
 } from "@ironpulse/shared";
+import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 
 const coachProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -183,6 +185,16 @@ export const coachRouter = createTRPCRouter({
       });
 
       return profile;
+    }),
+
+  uploadProfileImage: coachProcedure
+    .input(uploadCoachProfileImageSchema)
+    .mutation(async ({ ctx, input }) => {
+      const ext = input.contentType.split("/")[1];
+      const imageKey = `coach-profiles/${ctx.user.id}/${Date.now()}.${ext}`;
+      const uploadUrl = await getPresignedUploadUrl(imageKey, input.contentType);
+
+      return { uploadUrl, imageKey };
     }),
 
   listPublicCoaches: rateLimitedProcedure

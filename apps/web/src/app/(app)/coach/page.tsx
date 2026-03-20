@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,10 @@ import {
   Pencil,
   Check,
   ExternalLink,
+  Upload,
 } from "lucide-react";
+
+const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/ironpulse";
 
 export default function CoachDashboardPage() {
   const { data, isLoading } = trpc.user.me.useQuery();
@@ -132,6 +136,28 @@ function EditCoachProfile() {
     },
   });
 
+  const pendingFile = useRef<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+
+  const uploadProfileImage = trpc.coach.uploadProfileImage.useMutation({
+    onSuccess: async ({ uploadUrl, imageKey }, { contentType }) => {
+      if (!pendingFile.current) return;
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: pendingFile.current,
+        headers: { "Content-Type": contentType },
+      });
+      pendingFile.current = null;
+      setImageUploading(false);
+      updateProfile.mutate({ imageUrl: imageKey });
+    },
+    onError: () => {
+      pendingFile.current = null;
+      setImageUploading(false);
+    },
+  });
+
   const [bio, setBio] = useState("");
   const [specialtiesInput, setSpecialtiesInput] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -158,10 +184,28 @@ function EditCoachProfile() {
     updateProfile.mutate({
       bio: bio.trim() || undefined,
       specialties,
-      imageUrl: imageUrl.trim() || undefined,
+      imageUrl: imageUrl || undefined,
       isPublic,
     });
   }
+
+  function handleImageClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"] as const;
+    type AllowedType = (typeof allowedTypes)[number];
+    if (!allowedTypes.includes(file.type as AllowedType)) return;
+    pendingFile.current = file;
+    setImageUploading(true);
+    uploadProfileImage.mutate({ contentType: file.type as AllowedType });
+    e.target.value = "";
+  }
+
+  const imageDisplayUrl = imageUrl ? `${S3_PUBLIC_URL}/${imageUrl}` : undefined;
 
   if (isLoading) {
     return <div className="h-[200px] animate-pulse rounded-xl bg-muted" />;
@@ -213,13 +257,40 @@ function EditCoachProfile() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="coach-image">Profile Image URL</Label>
-          <Input
-            id="coach-image"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          <Label>Profile Image</Label>
+          <div className="flex items-center gap-4">
+            {imageDisplayUrl && (
+              <div className="relative h-16 w-16 overflow-hidden rounded-full border border-border">
+                <Image
+                  src={imageDisplayUrl}
+                  alt="Coach profile image"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleImageFileChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleImageClick}
+              disabled={imageUploading}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {imageUploading
+                ? "Uploading..."
+                : imageDisplayUrl
+                ? "Change Image"
+                : "Upload Image"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center justify-between">
@@ -241,7 +312,7 @@ function EditCoachProfile() {
         <div className="flex items-center gap-2">
           <Button
             onClick={handleSave}
-            disabled={updateProfile.isPending}
+            disabled={updateProfile.isPending || imageUploading}
           >
             {saveStatus === "saved" ? (
               <>
