@@ -13,6 +13,8 @@ import {
   Trophy,
   MessageSquare,
   Crown,
+  ClipboardList,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Props {
@@ -92,7 +94,7 @@ function ClientDetail({ athleteId }: { athleteId: string }) {
     );
   }
 
-  const { workouts, cardioSessions, personalRecords } = data!;
+  const { workouts, cardioSessions, personalRecords, programAdherence } = data!;
 
   return (
     <div className="space-y-6">
@@ -113,6 +115,38 @@ function ClientDetail({ athleteId }: { athleteId: string }) {
           </Link>
         </Button>
       </div>
+
+      {/* Program Adherence */}
+      {programAdherence && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardList className="h-4 w-4" />
+              Program Adherence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">{programAdherence.programName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {programAdherence.completedDays} of {programAdherence.totalDays} scheduled workouts completed
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span className="text-2xl font-bold">{programAdherence.adherencePct}%</span>
+              </div>
+            </div>
+            <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-green-500 transition-all"
+                style={{ width: `${programAdherence.adherencePct}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Workouts */}
       <Card>

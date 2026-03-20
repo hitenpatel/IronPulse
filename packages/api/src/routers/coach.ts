@@ -120,6 +120,8 @@ export const coachRouter = createTRPCRouter({
       // Verify coach-athlete relationship
       const relationship = await ctx.db.programAssignment.findFirst({
         where: { coachId: ctx.user.id, athleteId: input.athleteId },
+        include: { program: true },
+        orderBy: { startedAt: "desc" },
       });
 
       if (!relationship) {
@@ -159,7 +161,71 @@ export const coachRouter = createTRPCRouter({
           }),
         ]);
 
-      return { workouts, cardioSessions, personalRecords, bodyMetrics };
+      // Calculate program adherence if athlete has an active program assignment
+      let programAdherence: { programName: string; adherencePct: number; completedDays: number; totalDays: number } | null = null;
+      if (relationship.program && relationship.status === "active") {
+        const program = relationship.program;
+        type ScheduleCell = { templateId: string; templateName: string | null; isRestDay?: boolean } | null;
+        const rawSchedule = (program.schedule ?? {}) as Record<string, Record<string, string | ScheduleCell>>;
+
+        const templateIds = new Set<string>();
+        for (const week of Object.values(rawSchedule)) {
+          for (const cell of Object.values(week)) {
+            if (typeof cell === "string" && cell) templateIds.add(cell);
+            else if (cell && typeof cell === "object" && cell.templateId) templateIds.add(cell.templateId);
+          }
+        }
+
+        const completedWorkouts = templateIds.size
+          ? await ctx.db.workout.findMany({
+              where: {
+                userId: input.athleteId,
+                templateId: { in: [...templateIds] },
+                completedAt: { not: null },
+              },
+              select: { templateId: true, completedAt: true },
+            })
+          : [];
+
+        const startDate = new Date(relationship.startedAt);
+        let totalScheduledDays = 0;
+        let totalCompletedDays = 0;
+
+        for (const [weekStr, days] of Object.entries(rawSchedule)) {
+          const weekNum = parseInt(weekStr, 10);
+          const weekStart = new Date(startDate.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000);
+          const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+          for (const [, cell] of Object.entries(days)) {
+            const templateId =
+              typeof cell === "string" ? cell : cell && typeof cell === "object" ? cell.templateId : null;
+            const isRestDay =
+              cell && typeof cell === "object" ? (cell as { isRestDay?: boolean }).isRestDay : false;
+
+            if (isRestDay || !templateId) continue;
+            totalScheduledDays++;
+
+            const matched = completedWorkouts.some(
+              (w) =>
+                w.templateId === templateId &&
+                w.completedAt !== null &&
+                w.completedAt >= weekStart &&
+                w.completedAt < weekEnd
+            );
+            if (matched) totalCompletedDays++;
+          }
+        }
+
+        programAdherence = {
+          programName: program.name,
+          adherencePct:
+            totalScheduledDays > 0 ? Math.round((totalCompletedDays / totalScheduledDays) * 100) : 0,
+          completedDays: totalCompletedDays,
+          totalDays: totalScheduledDays,
+        };
+      }
+
+      return { workouts, cardioSessions, personalRecords, bodyMetrics, programAdherence };
     }),
 
   profile: coachProcedure.query(async ({ ctx }) => {

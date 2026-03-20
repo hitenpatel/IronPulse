@@ -304,6 +304,56 @@ export const programRouter = createTRPCRouter({
     const diffMs = now.getTime() - startDate.getTime();
     const currentWeek = Math.max(1, Math.min(program.durationWeeks, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000))));
 
+    // Calculate completion status
+    // Fetch all completed workouts for this athlete that have a templateId matching any template in the schedule
+    const completedWorkouts = templateIds.size
+      ? await ctx.db.workout.findMany({
+          where: {
+            userId: ctx.user.id,
+            templateId: { in: [...templateIds] },
+            completedAt: { not: null },
+          },
+          select: { templateId: true, completedAt: true },
+        })
+      : [];
+
+    // For each week/day in schedule, determine if a workout was completed with the matching templateId
+    // within that week's date range (startDate + (weekNum-1)*7 days to startDate + weekNum*7 days)
+    const completedDays: Record<string, string[]> = {};
+    let totalScheduledDays = 0;
+    let totalCompletedDays = 0;
+
+    for (const [weekStr, days] of Object.entries(resolvedSchedule)) {
+      const weekNum = parseInt(weekStr, 10);
+      const weekStart = new Date(startDate.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000);
+      const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      completedDays[weekStr] = [];
+
+      for (const [day, cell] of Object.entries(days)) {
+        if (cell.isRestDay || !cell.templateId) continue;
+
+        totalScheduledDays++;
+
+        // Check if any completed workout matches the templateId within this week's range
+        const matched = completedWorkouts.some(
+          (w) =>
+            w.templateId === cell.templateId &&
+            w.completedAt !== null &&
+            w.completedAt >= weekStart &&
+            w.completedAt < weekEnd
+        );
+
+        if (matched) {
+          completedDays[weekStr].push(day);
+          totalCompletedDays++;
+        }
+      }
+    }
+
+    const adherencePct =
+      totalScheduledDays > 0 ? Math.round((totalCompletedDays / totalScheduledDays) * 100) : 0;
+
     return {
       assignmentId: assignment.id,
       startedAt: assignment.startedAt,
@@ -316,6 +366,8 @@ export const programRouter = createTRPCRouter({
       },
       coach: assignment.coach,
       currentWeek,
+      completedDays,
+      adherencePct,
     };
   }),
 

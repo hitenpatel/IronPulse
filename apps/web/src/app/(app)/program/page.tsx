@@ -11,6 +11,9 @@ import {
   Calendar,
   Play,
   Moon,
+  CheckCircle2,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +24,16 @@ function getCurrentDayOfWeek(): string {
   const jsDay = new Date().getDay(); // 0=Sun
   return DAYS[jsDay === 0 ? 6 : jsDay - 1];
 }
+
+/** Returns the date for a given week + dayOfWeek offset from startDate */
+function getDayDate(startDate: Date, weekNum: number, dayIndex: number): Date {
+  // Week 1 starts on startDate; dayIndex is 0=Mon … 6=Sun
+  const weekOffset = (weekNum - 1) * 7;
+  const d = new Date(startDate.getTime() + (weekOffset + dayIndex) * 24 * 60 * 60 * 1000);
+  return d;
+}
+
+type DayStatus = "done" | "missed" | "today" | "upcoming" | "rest" | "empty";
 
 export default function MyProgramPage() {
   const router = useRouter();
@@ -59,9 +72,11 @@ export default function MyProgramPage() {
     );
   }
 
-  const { program, coach, currentWeek } = data;
+  const { program, coach, currentWeek, completedDays, adherencePct, startedAt } = data;
   const schedule = program.schedule;
   const today = getCurrentDayOfWeek();
+  const programStartDate = new Date(startedAt);
+  const now = new Date();
 
   const coachInitials = (coach.name ?? "?")
     .split(" ")
@@ -72,6 +87,29 @@ export default function MyProgramPage() {
 
   function handleStartWorkout(templateId: string) {
     createWorkout.mutate({ templateId });
+  }
+
+  function getDayStatus(weekNum: number, day: string, dayIdx: number, cell: { templateId?: string; isRestDay?: boolean } | undefined): DayStatus {
+    if (!cell) return "empty";
+    if (cell.isRestDay) return "rest";
+    if (!cell.templateId) return "empty";
+
+    const weekKey = String(weekNum);
+    const isDone = completedDays?.[weekKey]?.includes(day) ?? false;
+    if (isDone) return "done";
+
+    // Determine if today or in the past
+    const dayDate = getDayDate(programStartDate, weekNum, dayIdx);
+    const isCurrentWeek = weekNum === currentWeek;
+    const isToday = isCurrentWeek && day === today;
+    if (isToday) return "today";
+
+    // If the day is in the past (before today's date)
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayMidnight = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate());
+    if (dayMidnight < todayMidnight) return "missed";
+
+    return "upcoming";
   }
 
   return (
@@ -93,7 +131,7 @@ export default function MyProgramPage() {
         <p className="text-sm text-muted-foreground">{program.description}</p>
       )}
 
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
         <div className="flex items-center gap-1.5">
           <Calendar className="h-4 w-4" />
           {program.durationWeeks} weeks
@@ -102,6 +140,14 @@ export default function MyProgramPage() {
           <Dumbbell className="h-4 w-4" />
           Week {currentWeek} of {program.durationWeeks}
         </div>
+        {adherencePct !== undefined && (
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>
+              <span className="font-semibold text-foreground">{adherencePct}%</span> adherence
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Week tabs */}
@@ -150,14 +196,18 @@ export default function MyProgramPage() {
               <CardContent className="space-y-2">
                 {DAYS.map((day, dayIdx) => {
                   const cell = weekSchedule[day];
-                  const isToday = isCurrentWeek && day === today;
+                  const status = getDayStatus(week, day, dayIdx, cell);
+                  const isToday = status === "today";
 
                   return (
                     <div
                       key={day}
                       className={cn(
-                        "flex items-center justify-between rounded-lg border px-3 py-2.5",
-                        isToday && "border-primary bg-primary/5"
+                        "flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors",
+                        status === "done" && "border-green-500/40 bg-green-500/5",
+                        status === "missed" && "border-destructive/30 bg-destructive/5",
+                        isToday && "border-primary bg-primary/5",
+                        status === "upcoming" && "opacity-70",
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -166,18 +216,25 @@ export default function MyProgramPage() {
                             "w-8 text-xs font-medium",
                             isToday
                               ? "text-primary"
+                              : status === "done"
+                              ? "text-green-600 dark:text-green-400"
+                              : status === "missed"
+                              ? "text-destructive"
                               : "text-muted-foreground"
                           )}
                         >
                           {DAY_LABELS[dayIdx]}
                         </span>
-                        {cell?.isRestDay ? (
+                        {status === "rest" ? (
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <Moon className="h-3.5 w-3.5" />
                             Rest Day
                           </div>
                         ) : cell?.templateName ? (
-                          <span className="text-sm font-medium">
+                          <span className={cn(
+                            "text-sm font-medium",
+                            status === "missed" && "text-muted-foreground line-through"
+                          )}>
                             {cell.templateName}
                           </span>
                         ) : (
@@ -186,18 +243,30 @@ export default function MyProgramPage() {
                           </span>
                         )}
                       </div>
-                      {cell && !cell.isRestDay && cell.templateId && (
-                        <Button
-                          size="sm"
-                          variant={isToday ? "default" : "outline"}
-                          className="h-7 gap-1 text-xs"
-                          disabled={createWorkout.isPending}
-                          onClick={() => handleStartWorkout(cell.templateId)}
-                        >
-                          <Play className="h-3 w-3" />
-                          Start
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {status === "done" && (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        )}
+                        {status === "missed" && (
+                          <XCircle className="h-4 w-4 text-destructive/70" />
+                        )}
+                        {status === "upcoming" && cell && !cell.isRestDay && cell.templateId && (
+                          <Clock className="h-4 w-4 text-muted-foreground/50" />
+                        )}
+                        {(status === "today" || (status === "upcoming" && isCurrentWeek)) &&
+                          cell && !cell.isRestDay && cell.templateId && (
+                          <Button
+                            size="sm"
+                            variant={isToday ? "default" : "outline"}
+                            className="h-7 gap-1 text-xs"
+                            disabled={createWorkout.isPending}
+                            onClick={() => handleStartWorkout(cell.templateId!)}
+                          >
+                            <Play className="h-3 w-3" />
+                            Start
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
