@@ -931,7 +931,7 @@ prompt: |
 
 ---
 
-### Task 20: Mobile — Cardio History & Detail
+### Task 20: Mobile — Cardio History List
 
 - [ ] **Step 1: Generate cardio history screen**
 
