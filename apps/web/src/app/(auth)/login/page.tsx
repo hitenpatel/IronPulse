@@ -169,7 +169,7 @@ export default function LoginPage() {
           <p className="text-sm text-destructive">{error}</p>
         )}
 
-        <Button type="submit" className="w-full" disabled={loading} data-testid="signin-button">
+        <Button type="submit" className="w-full" disabled={loading} data-testid="login-button">
           {loading ? "Signing in..." : "Log In"}
         </Button>
       </form>

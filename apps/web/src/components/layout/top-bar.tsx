@@ -80,6 +80,7 @@ interface NotificationBellProps {
 function NotificationBell({ count = 0 }: NotificationBellProps) {
   return (
     <button
+      data-testid="notification-bell"
       aria-label={count > 0 ? `${count} notifications` : "Notifications"}
       className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
@@ -104,6 +105,7 @@ function SearchHint() {
   return (
     <div
       role="button"
+      data-testid="search-trigger"
       aria-label="Search (Command+K)"
       tabIndex={0}
       className="hidden items-center gap-1 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground md:flex"

@@ -60,10 +60,12 @@ function PulseTabBar({
     const routeIndex = routeNames.indexOf(name);
     const isActive = state.index === routeIndex;
     const color = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
+    const tabTestId = `tab-${name === "index" ? "home" : name}`;
 
     return (
       <Pressable
         key={name}
+        testID={tabTestId}
         style={styles.tabItem}
         onPress={() => handleTabPress(name, routeIndex)}
         accessibilityRole="button"
@@ -87,6 +89,7 @@ function PulseTabBar({
       {/* Center FAB */}
       <View style={styles.fabContainer}>
         <Pressable
+          testID="fab-button"
           style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.85 : 1 }]}
           onPress={onFabPress}
           accessibilityRole="button"

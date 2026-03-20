@@ -185,7 +185,7 @@ export default function LoginScreen() {
             </Pressable>
           </Link>
 
-          <Button testID="signin-button" onPress={handleSignIn} disabled={loading}>
+          <Button testID="login-button" onPress={handleSignIn} disabled={loading}>
             {loading ? "Signing in..." : "Log In"}
           </Button>
 

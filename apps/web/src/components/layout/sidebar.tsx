@@ -112,9 +112,11 @@ interface NavLinkProps {
 }
 
 function NavLink({ item, isActive, collapsed }: NavLinkProps) {
+  const testId = `nav-${item.label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`;
   return (
     <Link
       href={item.href}
+      data-testid={testId}
       aria-label={item.label}
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
@@ -154,10 +156,32 @@ function NavLink({ item, isActive, collapsed }: NavLinkProps) {
 interface SidebarProps {
   /** Unread message count for the Messages badge */
   unreadMessages?: number;
+  /** Controlled collapsed state. When provided, the component is controlled. */
+  collapsed?: boolean;
+  /** Called when the user toggles the collapse button in controlled mode. */
+  onCollapsedChange?: (value: boolean) => void;
+  /** Initial collapsed state when uncontrolled. Defaults to false. */
+  defaultCollapsed?: boolean;
 }
 
-export function Sidebar({ unreadMessages = 0 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function Sidebar({
+  unreadMessages = 0,
+  collapsed: collapsedProp,
+  onCollapsedChange,
+  defaultCollapsed = false,
+}: SidebarProps) {
+  const [collapsedInternal, setCollapsedInternal] = useState(defaultCollapsed);
+  const isControlled = collapsedProp !== undefined;
+  const collapsed = isControlled ? collapsedProp : collapsedInternal;
+
+  function setCollapsed(value: boolean) {
+    if (isControlled) {
+      onCollapsedChange?.(value);
+    } else {
+      setCollapsedInternal(value);
+    }
+  }
+
   const pathname = usePathname();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
@@ -188,6 +212,7 @@ export function Sidebar({ unreadMessages = 0 }: SidebarProps) {
 
   return (
     <aside
+      data-testid="sidebar"
       className={cn(
         "fixed left-0 top-0 z-40 flex h-full flex-col bg-[#0A0F1A] transition-all duration-200",
         collapsed ? "w-16" : "w-[260px]"
@@ -255,6 +280,7 @@ export function Sidebar({ unreadMessages = 0 }: SidebarProps) {
             onClick={() =>
               setTheme(resolvedTheme === "dark" ? "light" : "dark")
             }
+            data-testid="theme-toggle"
             aria-label="Toggle theme"
             title={collapsed ? "Toggle theme" : undefined}
             className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
@@ -282,6 +308,7 @@ export function Sidebar({ unreadMessages = 0 }: SidebarProps) {
           {!collapsed && (
             <button
               onClick={() => setCollapsed(true)}
+              data-testid="sidebar-collapse"
               aria-label="Collapse sidebar"
               className="ml-auto flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
             >
@@ -295,6 +322,7 @@ export function Sidebar({ unreadMessages = 0 }: SidebarProps) {
           <div className="mb-3 flex justify-center">
             <button
               onClick={() => setCollapsed(false)}
+              data-testid="sidebar-collapse"
               aria-label="Expand sidebar"
               className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
             >
