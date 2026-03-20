@@ -7,7 +7,7 @@ import { useBodyMetrics } from "@ironpulse/sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, BarChart3, Scale, Activity } from "lucide-react";
+import { TrendingUp, BarChart3, Scale, Activity, Ruler } from "lucide-react";
 import { FitnessChart } from "@/components/analytics/fitness-chart";
 import { TrainingLoadChart } from "@/components/analytics/training-load-chart";
 import { MuscleHeatmap } from "@/components/analytics/muscle-heatmap";
@@ -553,6 +553,270 @@ function MuscleVolumeSection() {
   return <MuscleHeatmap data={data?.data ?? []} />;
 }
 
+// --- Body Measurements ---
+
+interface MeasurementValues {
+  chest: string;
+  waist: string;
+  hips: string;
+  left_bicep: string;
+  right_bicep: string;
+  left_thigh: string;
+  right_thigh: string;
+}
+
+const MEASUREMENT_FIELDS: { key: keyof MeasurementValues; label: string }[] = [
+  { key: "chest", label: "Chest" },
+  { key: "waist", label: "Waist" },
+  { key: "hips", label: "Hips" },
+  { key: "left_bicep", label: "Left Bicep" },
+  { key: "right_bicep", label: "Right Bicep" },
+  { key: "left_thigh", label: "Left Thigh" },
+  { key: "right_thigh", label: "Right Thigh" },
+];
+
+const EMPTY_MEASUREMENTS: MeasurementValues = {
+  chest: "",
+  waist: "",
+  hips: "",
+  left_bicep: "",
+  right_bicep: "",
+  left_thigh: "",
+  right_thigh: "",
+};
+
+type StoredMeasurements = Partial<Record<keyof MeasurementValues, number>>;
+
+function parseMeasurements(raw: string | null): StoredMeasurements | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoredMeasurements;
+  } catch {
+    return null;
+  }
+}
+
+function BodyMeasurementsTrend() {
+  const { data: metrics, isLoading } = useBodyMetrics();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Ruler className="h-5 w-5" />
+            Latest Measurements
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LoadingSkeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Find entries with measurements, sorted DESC (useBodyMetrics returns DESC)
+  const withMeasurements = (metrics ?? []).filter(
+    (m) => m.measurements != null && m.measurements !== ""
+  );
+
+  if (withMeasurements.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Ruler className="h-5 w-5" />
+            Latest Measurements
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No measurements logged yet. Use the form below to start tracking.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const latest = parseMeasurements(withMeasurements[0].measurements);
+  const previous =
+    withMeasurements.length >= 2
+      ? parseMeasurements(withMeasurements[1].measurements)
+      : null;
+
+  const latestDate = new Date(withMeasurements[0].date).toLocaleDateString(
+    undefined,
+    { month: "short", day: "numeric", year: "numeric" }
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Ruler className="h-5 w-5" />
+          Latest Measurements
+          <span className="ml-auto text-xs font-normal text-muted-foreground">
+            {latestDate}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+          {MEASUREMENT_FIELDS.map(({ key, label }) => {
+            const value = latest?.[key];
+            const prevValue = previous?.[key];
+            const diff =
+              value != null && prevValue != null ? value - prevValue : null;
+
+            if (value == null) return null;
+
+            return (
+              <div key={key}>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-semibold">{value.toFixed(1)}</span>
+                  <span className="text-xs text-muted-foreground">cm</span>
+                  {diff !== null && (
+                    <span
+                      className={`text-xs font-medium ${
+                        diff > 0
+                          ? "text-red-500"
+                          : diff < 0
+                          ? "text-green-500"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {diff > 0 ? "+" : ""}
+                      {diff.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BodyMeasurementsLogForm() {
+  const [values, setValues] = useState<MeasurementValues>(EMPTY_MEASUREMENTS);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const db = usePowerSync();
+  const { data: metrics } = useBodyMetrics();
+
+  const hasAnyValue = Object.values(values).some((v) => v.trim() !== "");
+
+  const handleChange = (key: keyof MeasurementValues, val: string) => {
+    setValues((prev) => ({ ...prev, [key]: val }));
+    setError(false);
+    setSuccess(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hasAnyValue) return;
+
+    // Validate: parse each non-empty field as a positive number
+    const parsed: StoredMeasurements = {};
+    for (const { key } of MEASUREMENT_FIELDS) {
+      const raw = values[key].trim();
+      if (raw === "") continue;
+      const num = parseFloat(raw);
+      if (isNaN(num) || num <= 0 || num > 500) return;
+      parsed[key] = num;
+    }
+
+    setIsPending(true);
+    setError(false);
+    setSuccess(false);
+
+    try {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const measurementsJson = JSON.stringify(parsed);
+
+      // Check if there's already an entry for today
+      const existing = (metrics ?? []).find((m) => m.date === dateStr);
+
+      if (existing) {
+        // Merge with existing measurements for today
+        const existingMeasurements = parseMeasurements(existing.measurements) ?? {};
+        const merged = { ...existingMeasurements, ...parsed };
+        await db.execute(
+          `UPDATE body_metrics SET measurements = ? WHERE id = ?`,
+          [JSON.stringify(merged), existing.id]
+        );
+      } else {
+        const id = crypto.randomUUID();
+        await db.execute(
+          `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, measurements, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [id, dateStr, null, null, measurementsJson, now.toISOString()]
+        );
+      }
+
+      setValues(EMPTY_MEASUREMENTS);
+      setSuccess(true);
+    } catch {
+      setError(true);
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Ruler className="h-5 w-5" />
+          Log Measurements
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {MEASUREMENT_FIELDS.map(({ key, label }) => (
+              <div key={key} className="space-y-1">
+                <label className="text-xs text-muted-foreground">{label} (cm)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="500"
+                  placeholder="—"
+                  value={values[key]}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending || !hasAnyValue}
+            className="w-full"
+          >
+            {isPending ? "Saving..." : "Save Measurements"}
+          </Button>
+        </form>
+        {error && (
+          <p className="text-xs text-destructive mt-2">
+            Failed to save. Please try again.
+          </p>
+        )}
+        {success && (
+          <p className="text-xs text-green-600 mt-2">
+            Measurements saved successfully.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // --- Main Page ---
 
 export default function StatsPage() {
@@ -588,6 +852,15 @@ export default function StatsPage() {
         <div className="space-y-4">
           <BodyWeightTrend />
           <BodyWeightLogForm />
+        </div>
+      </section>
+
+      {/* Body Measurements */}
+      <section>
+        <h2 className="text-lg font-semibold mb-2">Body Measurements</h2>
+        <div className="space-y-4">
+          <BodyMeasurementsTrend />
+          <BodyMeasurementsLogForm />
         </div>
       </section>
 
