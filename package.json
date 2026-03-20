@@ -14,11 +14,6 @@
     "cleanup:tokens": "tsx packages/db/scripts/cleanup-expired-tokens.ts"
   },
   "packageManager": "pnpm@9.15.4",
-  "pnpm": {
-    "overrides": {
-      "expo-modules-core": "56.0.0-canary-20260305-5163746"
-    }
-  },
   "devDependencies": {
     "@types/node": "^25.4.0",
     "changelogen": "^0.6.2",

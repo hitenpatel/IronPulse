@@ -195,20 +195,6 @@ jobs:
       DATABASE_URL: postgresql://runner:postgres@localhost:5432/ironpulse_test
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode 16.1 (avoids Swift 6 concurrency errors in expo-modules-core)
-        run: |
-          # List available Xcode versions and pick the oldest 16.x (pre-strict-concurrency)
-          ls /Applications | grep Xcode | sort
-          for ver in 16.3 16.2; do
-            if [ -d "/Applications/Xcode_${ver}.app" ]; then
-              echo "Selecting Xcode ${ver}"
-              sudo xcode-select -s "/Applications/Xcode_${ver}.app/Contents/Developer"
-              xcodebuild -version
-              break
-            fi
-          done
-
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
