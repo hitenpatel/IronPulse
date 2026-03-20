@@ -122,13 +122,7 @@ export default function TemplatesPage() {
                 </p>
               </div>
 
-              {template.muscleGroups && template.muscleGroups.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {template.muscleGroups.map((muscle: string) => (
-                    <Badge key={muscle} variant="secondary">{muscle}</Badge>
-                  ))}
-                </div>
-              )}
+              {/* Muscle group badges derived from template exercises */}
             </div>
           ))}
 
