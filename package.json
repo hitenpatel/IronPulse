@@ -9,11 +9,14 @@
     "db:push": "pnpm --filter @ironpulse/db db:push",
     "db:migrate": "pnpm --filter @ironpulse/db db:migrate",
     "db:seed": "pnpm --filter @ironpulse/db db:seed",
-    "db:studio": "pnpm --filter @ironpulse/db db:studio"
+    "db:studio": "pnpm --filter @ironpulse/db db:studio",
+    "changelog": "changelogen",
+    "cleanup:tokens": "tsx packages/db/scripts/cleanup-expired-tokens.ts"
   },
   "packageManager": "pnpm@9.15.4",
   "devDependencies": {
     "@types/node": "^25.4.0",
+    "changelogen": "^0.6.2",
     "turbo": "^2.8.16",
     "typescript": "^5.9.3"
   }
