@@ -14,20 +14,20 @@ import { MuscleHeatmap } from "@/components/analytics/muscle-heatmap";
 import { ProgressPhotos } from "@/components/analytics/progress-photos";
 
 const MUSCLE_GROUP_COLORS: Record<string, string> = {
-  chest: "bg-red-500",
-  back: "bg-blue-500",
-  shoulders: "bg-yellow-500",
-  biceps: "bg-green-500",
-  triceps: "bg-purple-500",
-  legs: "bg-orange-500",
-  core: "bg-pink-500",
-  glutes: "bg-teal-500",
-  forearms: "bg-indigo-500",
-  calves: "bg-cyan-500",
+  chest: "bg-primary",
+  back: "bg-success",
+  shoulders: "bg-warning",
+  biceps: "bg-[#8B5CF6]",
+  triceps: "bg-[#8B5CF6]",
+  legs: "bg-destructive",
+  core: "bg-streak-orange",
+  glutes: "bg-success",
+  forearms: "bg-[#8B5CF6]",
+  calves: "bg-destructive",
 };
 
 function getMuscleColor(group: string): string {
-  return MUSCLE_GROUP_COLORS[group.toLowerCase()] ?? "bg-gray-500";
+  return MUSCLE_GROUP_COLORS[group.toLowerCase()] ?? "bg-muted";
 }
 
 function LoadingSkeleton({ className = "" }: { className?: string }) {
@@ -260,12 +260,12 @@ function BodyWeightTrend() {
       </CardHeader>
       <CardContent>
         <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-2xl font-bold">{latestWeight.toFixed(1)}</span>
-          <span className="text-sm text-muted-foreground">kg</span>
+          <span className="font-semibold text-xl text-foreground">{latestWeight.toFixed(1)}</span>
+          <span className="text-xs text-muted-foreground">kg</span>
           {diff !== null && (
             <span
               className={`text-xs font-medium ${
-                diff > 0 ? "text-red-500" : diff < 0 ? "text-green-500" : "text-muted-foreground"
+                diff > 0 ? "text-destructive" : diff < 0 ? "text-success" : "text-muted-foreground"
               }`}
             >
               {diff > 0 ? "+" : ""}
@@ -273,12 +273,12 @@ function BodyWeightTrend() {
             </span>
           )}
           {latestBodyFat !== null && (
-            <span className="text-sm text-muted-foreground ml-2">
+            <span className="text-xs text-muted-foreground ml-2">
               {latestBodyFat.toFixed(1)}% body fat
               {bodyFatDiff !== null && (
                 <span
                   className={`ml-1 text-xs font-medium ${
-                    bodyFatDiff > 0 ? "text-red-500" : bodyFatDiff < 0 ? "text-green-500" : "text-muted-foreground"
+                    bodyFatDiff > 0 ? "text-destructive" : bodyFatDiff < 0 ? "text-success" : "text-muted-foreground"
                   }`}
                 >
                   ({bodyFatDiff > 0 ? "+" : ""}
@@ -427,7 +427,7 @@ function BodyWeightLogForm() {
           </p>
         )}
         {success && (
-          <p className="text-xs text-green-600 mt-2">
+          <p className="text-xs text-success mt-2">
             Weight logged successfully.
           </p>
         )}
@@ -502,22 +502,22 @@ function WorkoutFrequency() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">This week</p>
-            <p className="text-2xl font-bold">{thisWeekGroups}</p>
+            <p className="font-semibold text-xl text-foreground">{thisWeekGroups}</p>
             <p className="text-xs text-muted-foreground">muscle groups hit</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Last week</p>
-            <p className="text-2xl font-bold">{lastWeekGroups}</p>
+            <p className="font-semibold text-xl text-foreground">{lastWeekGroups}</p>
             <p className="text-xs text-muted-foreground">muscle groups hit</p>
           </div>
         </div>
         {lastWeekVolume > 0 && (
-          <div className="mt-3 pt-3 border-t">
+          <div className="mt-3 pt-3 border-t border-border">
             <p className="text-xs text-muted-foreground">
               Volume change:{" "}
               <span
                 className={`font-medium ${
-                  volDiff > 0 ? "text-green-600" : volDiff < 0 ? "text-red-500" : ""
+                  volDiff > 0 ? "text-success" : volDiff < 0 ? "text-destructive" : ""
                 }`}
               >
                 {volDiff > 0 ? "+" : ""}
@@ -674,15 +674,15 @@ function BodyMeasurementsTrend() {
               <div key={key}>
                 <p className="text-xs text-muted-foreground">{label}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-semibold">{value.toFixed(1)}</span>
+                  <span className="font-semibold text-xl text-foreground">{value.toFixed(1)}</span>
                   <span className="text-xs text-muted-foreground">cm</span>
                   {diff !== null && (
                     <span
                       className={`text-xs font-medium ${
                         diff > 0
-                          ? "text-red-500"
+                          ? "text-destructive"
                           : diff < 0
-                          ? "text-green-500"
+                          ? "text-success"
                           : "text-muted-foreground"
                       }`}
                     >
@@ -808,7 +808,7 @@ function BodyMeasurementsLogForm() {
           </p>
         )}
         {success && (
-          <p className="text-xs text-green-600 mt-2">
+          <p className="text-xs text-success mt-2">
             Measurements saved successfully.
           </p>
         )}
@@ -822,23 +822,23 @@ function BodyMeasurementsLogForm() {
 export default function StatsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
-      <h1 className="text-2xl font-bold">Stats</h1>
+      <h1 className="font-display font-semibold text-[28px] text-foreground">Stats</h1>
 
       {/* Training Status */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Training Status</h2>
+        <h2 className="font-display font-semibold text-base text-foreground mb-2">Training Status</h2>
         <FitnessChart />
       </section>
 
       {/* Training Load */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Training Load</h2>
+        <h2 className="font-display font-semibold text-base text-foreground mb-2">Training Load</h2>
         <TrainingLoadChart />
       </section>
 
       {/* Muscle Volume */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Muscle Volume</h2>
+        <h2 className="font-display font-semibold text-base text-foreground mb-2">Muscle Volume</h2>
         <MuscleVolumeSection />
       </section>
 
@@ -848,7 +848,7 @@ export default function StatsPage() {
 
       {/* Body Weight */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Body Weight</h2>
+        <h2 className="font-display font-semibold text-base text-foreground mb-2">Body Weight</h2>
         <div className="space-y-4">
           <BodyWeightTrend />
           <BodyWeightLogForm />
@@ -857,7 +857,7 @@ export default function StatsPage() {
 
       {/* Body Measurements */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Body Measurements</h2>
+        <h2 className="font-display font-semibold text-base text-foreground mb-2">Body Measurements</h2>
         <div className="space-y-4">
           <BodyMeasurementsTrend />
           <BodyMeasurementsLogForm />
@@ -866,7 +866,7 @@ export default function StatsPage() {
 
       {/* Progress Photos */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Progress Photos</h2>
+        <h2 className="font-display font-semibold text-base text-foreground mb-2">Progress Photos</h2>
         <ProgressPhotos />
       </section>
     </div>

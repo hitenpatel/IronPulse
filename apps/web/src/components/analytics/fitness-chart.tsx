@@ -4,10 +4,10 @@ import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const STATUS_COLORS: Record<string, string> = {
-  Fresh: "bg-blue-500/20 text-blue-400 border-blue-500/40",
-  Optimal: "bg-green-500/20 text-green-400 border-green-500/40",
-  Fatigued: "bg-orange-500/20 text-orange-400 border-orange-500/40",
-  Overreaching: "bg-red-500/20 text-red-400 border-red-500/40",
+  Fresh: "bg-primary/15 text-primary border-primary/30",
+  Optimal: "bg-success/15 text-success border-success/30",
+  Fatigued: "bg-warning/15 text-warning border-warning/30",
+  Overreaching: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
 export function FitnessChart() {
@@ -92,15 +92,15 @@ export function FitnessChart() {
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div>
             <p className="text-xs text-muted-foreground">Fatigue (ATL)</p>
-            <p className="text-lg font-bold text-red-400">{atl.toFixed(0)}</p>
+            <p className="font-semibold text-xl text-destructive">{atl.toFixed(0)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Fitness (CTL)</p>
-            <p className="text-lg font-bold text-blue-400">{ctl.toFixed(0)}</p>
+            <p className="font-semibold text-xl text-primary">{ctl.toFixed(0)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Form (TSB)</p>
-            <p className="text-lg font-bold text-green-400">{tsb.toFixed(0)}</p>
+            <p className="font-semibold text-xl text-success">{tsb.toFixed(0)}</p>
           </div>
         </div>
 

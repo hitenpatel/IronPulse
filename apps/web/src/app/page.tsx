@@ -125,8 +125,9 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="mx-auto max-w-4xl px-6 py-24 text-center">
-        <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
+      <section className="relative mx-auto max-w-4xl px-6 py-24 text-center">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_rgba(0,119,255,0.08)_0%,_transparent_60%)]" />
+        <h1 className="font-display font-bold text-6xl tracking-tight">
           Strength + Cardio.
           <br />
           <span className="text-primary">One Tracker.</span>
@@ -154,7 +155,7 @@ export default function LandingPage() {
 
       {/* Features */}
       <section id="features" className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12">
+        <h2 className="font-display font-bold text-3xl text-center mb-12">
           Everything you need to train smarter
         </h2>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,7 +176,7 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="text-3xl font-bold text-center mb-4">
+        <h2 className="font-display font-bold text-3xl text-center mb-4">
           Simple, honest pricing
         </h2>
         <p className="text-center text-muted-foreground mb-12">
@@ -187,16 +188,23 @@ export default function LandingPage() {
               key={plan.name}
               className={`rounded-lg border p-6 flex flex-col ${
                 plan.highlighted
-                  ? "border-primary bg-card ring-1 ring-primary"
+                  ? "border-2 border-primary bg-card"
                   : "border-border bg-card"
               }`}
             >
-              <h3 className="text-lg font-semibold">{plan.name}</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">{plan.name}</h3>
+                {plan.highlighted && (
+                  <span className="rounded-pill bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
+                    Most Popular
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
                 {plan.description}
               </p>
               <div className="mt-4 mb-6">
-                <span className="text-4xl font-bold">{plan.price}</span>
+                <span className="font-display font-bold text-4xl">{plan.price}</span>
                 <span className="text-muted-foreground">{plan.period}</span>
                 {plan.annual && (
                   <p className="text-xs text-muted-foreground mt-1">

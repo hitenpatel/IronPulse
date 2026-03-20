@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dumbbell, Activity, Trophy, Users } from "lucide-react";
 
 const REACTIONS = [
@@ -18,11 +17,11 @@ type ReactionType = (typeof REACTIONS)[number]["type"];
 function getActivityIcon(type: string) {
   switch (type) {
     case "workout":
-      return <Dumbbell className="h-5 w-5 text-blue-400" />;
+      return <Dumbbell className="h-5 w-5 text-primary" />;
     case "cardio":
-      return <Activity className="h-5 w-5 text-green-400" />;
+      return <Activity className="h-5 w-5 text-success" />;
     case "pr":
-      return <Trophy className="h-5 w-5 text-yellow-400" />;
+      return <Trophy className="h-5 w-5 text-pr-gold" />;
     default:
       return <Activity className="h-5 w-5 text-muted-foreground" />;
   }
@@ -128,7 +127,7 @@ function FeedItemReactions({ feedItemId, reactionCounts, myReactions }: FeedItem
             }`}
           >
             <span>{emoji}</span>
-            {count > 0 && <span>{count}</span>}
+            {count > 0 && <span className="text-xs text-muted-foreground">{count}</span>}
           </button>
         );
       })}
@@ -187,7 +186,7 @@ function WorkoutPreviewCard({ preview }: { preview: WorkoutPreview }) {
           <span>{formatDuration(preview.durationSeconds)}</span>
         )}
         {preview.prCount > 0 && (
-          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] bg-yellow-500/20 text-yellow-400 border-0">
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] bg-pr-gold/20 text-pr-gold border-0">
             {preview.prCount} PR{preview.prCount !== 1 ? "s" : ""}
           </Badge>
         )}
@@ -212,8 +211,8 @@ function CardioPreviewCard({ preview }: { preview: CardioPreview }) {
 
 function PrPreviewCard({ preview }: { preview: PrPreview }) {
   return (
-    <div className="mt-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 px-3 py-2 text-xs flex items-center gap-2">
-      <Trophy className="h-3.5 w-3.5 text-yellow-400 shrink-0" />
+    <div className="mt-2 rounded-lg bg-pr-gold/10 border border-pr-gold/20 px-3 py-2 text-xs flex items-center gap-2">
+      <Trophy className="h-3.5 w-3.5 text-pr-gold shrink-0" />
       <span className="font-medium text-foreground">{preview.exerciseName}</span>
       <span className="text-muted-foreground">
         {preview.prType === "1rm"
@@ -238,78 +237,91 @@ export default function FeedPage() {
   const items = data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Activity Feed</h1>
+    <div className="max-w-[640px] mx-auto space-y-6">
+      <h1 className="font-display font-semibold text-[28px] text-foreground">Feed</h1>
 
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="h-20 animate-pulse rounded-xl bg-muted"
+              className="h-20 animate-pulse rounded-lg bg-muted"
             />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <Users className="h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              No activity yet. Follow some users to see their workouts.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-card rounded-lg border border-border p-5 flex flex-col items-center gap-3 py-12 text-center">
+          <Users className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground">
+            No activity yet. Follow some users to see their workouts.
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
           {items.map((item) => {
             const href = getActivityHref(item.type, item.referenceId);
-            const content = (
-              <CardContent className="flex items-start gap-3 py-4">
-                <div className="mt-0.5 shrink-0">
-                  {getActivityIcon(item.type)}
+            const isPr = item.type === "pr";
+
+            const cardContent = (
+              <div className={`bg-card rounded-lg border border-border p-5 transition-colors${href ? " hover:bg-muted/30" : ""}${isPr ? " border-t-2 border-t-pr-gold" : ""}`}>
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0">
+                    <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                      {item.user.avatarUrl ? (
+                        <img
+                          src={item.user.avatarUrl}
+                          alt={item.user.name ?? "User"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          {(item.user.name ?? "?")[0]?.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link
+                        href={`/users/${item.user.id}`}
+                        className="font-semibold text-sm text-foreground hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {item.user.name ?? "Unknown"}
+                      </Link>
+                      <span className="text-muted-foreground text-sm">
+                        {getActivityText(item.type)}
+                      </span>
+                      {getActivityIcon(item.type)}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {timeAgo(new Date(item.createdAt))}
+                    </p>
+                    {item.workoutPreview && (
+                      <WorkoutPreviewCard preview={item.workoutPreview} />
+                    )}
+                    {item.cardioPreview && (
+                      <CardioPreviewCard preview={item.cardioPreview} />
+                    )}
+                    {item.prPreview && (
+                      <PrPreviewCard preview={item.prPreview} />
+                    )}
+                    <FeedItemReactions
+                      feedItemId={item.id}
+                      reactionCounts={item.reactionCounts}
+                      myReactions={item.myReactions}
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm">
-                    <Link
-                      href={`/users/${item.user.id}`}
-                      className="font-medium hover:underline"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {item.user.name ?? "Unknown"}
-                    </Link>{" "}
-                    <span className="text-muted-foreground">
-                      {getActivityText(item.type)}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {timeAgo(new Date(item.createdAt))}
-                  </p>
-                  {item.workoutPreview && (
-                    <WorkoutPreviewCard preview={item.workoutPreview} />
-                  )}
-                  {item.cardioPreview && (
-                    <CardioPreviewCard preview={item.cardioPreview} />
-                  )}
-                  {item.prPreview && (
-                    <PrPreviewCard preview={item.prPreview} />
-                  )}
-                  <FeedItemReactions
-                    feedItemId={item.id}
-                    reactionCounts={item.reactionCounts}
-                    myReactions={item.myReactions}
-                  />
-                </div>
-              </CardContent>
+              </div>
             );
 
             return href ? (
               <Link key={item.id} href={href} className="block">
-                <Card className="transition-colors hover:bg-muted/50">
-                  {content}
-                </Card>
+                {cardContent}
               </Link>
             ) : (
-              <Card key={item.id}>{content}</Card>
+              <div key={item.id}>{cardContent}</div>
             );
           })}
 

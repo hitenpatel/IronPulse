@@ -15,16 +15,33 @@ import { useBodyMetrics } from "@ironpulse/sync";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WeightChart } from "@/components/stats/weight-chart";
 import { writeWeightToHealthKit } from "@/lib/healthkit";
 import { writeWeightToGoogleFit } from "@/lib/googlefit";
 
-const STATUS_COLORS: Record<string, string> = {
-  Fresh: "#22c55e",
-  Optimal: "#3b82f6",
-  Fatigued: "#f97316",
-  Overreaching: "#ef4444",
+// Pulse design system tokens
+const C = {
+  bg: "#060B14",
+  card: "#0F1629",
+  accent: "#1A2340",
+  muted: "#243052",
+  primary: "#0077FF",
+  success: "#10B981",
+  warning: "#F59E0B",
+  border: "#1E2B47",
+  text: "#F0F4F8",
+  textSecondary: "#8899B4",
+  textTertiary: "#4E6180",
+};
+
+// Map fitness status to Badge variant
+const STATUS_BADGE_VARIANT: Record<string, "success" | "default" | "warning" | "destructive"> = {
+  Fresh: "success",
+  Optimal: "default",
+  Fatigued: "warning",
+  Overreaching: "destructive",
 };
 
 type FitnessStatus = {
@@ -121,60 +138,55 @@ export default function StatsScreen() {
   const maxVolume = muscleVolume.length > 0 ? muscleVolume[0].volume : 1;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          {/* Page heading */}
           <Text
             style={{
-              fontSize: 24,
-              fontWeight: "bold",
-              color: "hsl(213, 31%, 91%)",
+              fontSize: 28,
+              fontWeight: "600",
+              fontFamily: "SpaceGrotesk-Bold",
+              color: C.text,
               marginBottom: 16,
             }}
           >
             Stats
           </Text>
 
-          {/* Training Status Badge */}
-          <Card style={{ marginBottom: 16 }}>
+          {/* Training Status card */}
+          <Card style={{ marginBottom: 12 }}>
             <Text
               style={{
-                color: "hsl(213, 31%, 91%)",
+                color: C.textSecondary,
                 fontWeight: "600",
-                fontSize: 14,
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
                 marginBottom: 12,
               }}
             >
               Training Status
             </Text>
             {loading ? (
-              <ActivityIndicator color="hsl(215, 20%, 65%)" />
+              <ActivityIndicator color={C.textSecondary} />
             ) : fitnessStatus ? (
               <View>
-                <View
-                  style={{
-                    alignSelf: "flex-start",
-                    backgroundColor:
-                      STATUS_COLORS[fitnessStatus.status] ?? "#6b7280",
-                    paddingHorizontal: 16,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontWeight: "700",
-                      fontSize: 16,
-                    }}
+                {/* Status pill — Badge component */}
+                <View style={{ alignSelf: "flex-start", marginBottom: 16 }}>
+                  <Badge
+                    variant={
+                      STATUS_BADGE_VARIANT[fitnessStatus.status] ?? "default"
+                    }
                   >
                     {fitnessStatus.status}
-                  </Text>
+                  </Badge>
                 </View>
+
+                {/* 3-metric row */}
                 <View
                   style={{
                     flexDirection: "row",
@@ -184,58 +196,72 @@ export default function StatsScreen() {
                   <View style={{ alignItems: "center", flex: 1 }}>
                     <Text
                       style={{
-                        color: "hsl(215, 20%, 65%)",
-                        fontSize: 12,
-                        marginBottom: 2,
+                        color: C.textSecondary,
+                        fontSize: 11,
+                        marginBottom: 4,
                       }}
                     >
                       ATL (Fatigue)
                     </Text>
                     <Text
                       style={{
-                        color: "hsl(213, 31%, 91%)",
+                        color: C.text,
                         fontWeight: "600",
-                        fontSize: 18,
+                        fontSize: 20,
                       }}
                     >
                       {fitnessStatus.atl}
                     </Text>
                   </View>
+                  <View
+                    style={{
+                      width: 1,
+                      backgroundColor: C.border,
+                      marginVertical: 2,
+                    }}
+                  />
                   <View style={{ alignItems: "center", flex: 1 }}>
                     <Text
                       style={{
-                        color: "hsl(215, 20%, 65%)",
-                        fontSize: 12,
-                        marginBottom: 2,
+                        color: C.textSecondary,
+                        fontSize: 11,
+                        marginBottom: 4,
                       }}
                     >
                       CTL (Fitness)
                     </Text>
                     <Text
                       style={{
-                        color: "hsl(213, 31%, 91%)",
+                        color: C.text,
                         fontWeight: "600",
-                        fontSize: 18,
+                        fontSize: 20,
                       }}
                     >
                       {fitnessStatus.ctl}
                     </Text>
                   </View>
+                  <View
+                    style={{
+                      width: 1,
+                      backgroundColor: C.border,
+                      marginVertical: 2,
+                    }}
+                  />
                   <View style={{ alignItems: "center", flex: 1 }}>
                     <Text
                       style={{
-                        color: "hsl(215, 20%, 65%)",
-                        fontSize: 12,
-                        marginBottom: 2,
+                        color: C.textSecondary,
+                        fontSize: 11,
+                        marginBottom: 4,
                       }}
                     >
                       TSB (Form)
                     </Text>
                     <Text
                       style={{
-                        color: "hsl(213, 31%, 91%)",
+                        color: C.text,
                         fontWeight: "600",
-                        fontSize: 18,
+                        fontSize: 20,
                       }}
                     >
                       {fitnessStatus.tsb}
@@ -244,66 +270,70 @@ export default function StatsScreen() {
                 </View>
               </View>
             ) : (
-              <Text style={{ color: "hsl(215, 20%, 65%)" }}>
+              <Text style={{ color: C.textSecondary }}>
                 No training data yet
               </Text>
             )}
           </Card>
 
-          {/* Muscle Volume - Top 5 */}
-          <Card style={{ marginBottom: 16 }}>
+          {/* Volume chart card — stacked bars */}
+          <Card style={{ marginBottom: 12 }}>
             <Text
               style={{
-                color: "hsl(213, 31%, 91%)",
+                color: C.textSecondary,
                 fontWeight: "600",
-                fontSize: 14,
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
                 marginBottom: 12,
               }}
             >
               Top Muscle Groups (7 days)
             </Text>
             {loading ? (
-              <ActivityIndicator color="hsl(215, 20%, 65%)" />
+              <ActivityIndicator color={C.textSecondary} />
             ) : muscleVolume.length > 0 ? (
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: 10 }}>
                 {muscleVolume.map((m) => (
                   <View key={m.muscle}>
                     <View
                       style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
-                        marginBottom: 4,
+                        marginBottom: 5,
                       }}
                     >
                       <Text
                         style={{
-                          color: "hsl(213, 31%, 91%)",
+                          color: C.text,
                           fontSize: 13,
+                          fontWeight: "500",
                           textTransform: "capitalize",
                         }}
                       >
                         {m.muscle}
                       </Text>
                       <Text
-                        style={{ color: "hsl(215, 20%, 65%)", fontSize: 12 }}
+                        style={{ color: C.textSecondary, fontSize: 12 }}
                       >
                         {m.percentage}%
                       </Text>
                     </View>
+                    {/* Bar track */}
                     <View
                       style={{
-                        height: 8,
-                        backgroundColor: "hsl(217, 33%, 17%)",
-                        borderRadius: 4,
+                        height: 6,
+                        backgroundColor: C.accent,
+                        borderRadius: 3,
                         overflow: "hidden",
                       }}
                     >
                       <View
                         style={{
-                          height: 8,
+                          height: 6,
                           width: `${(m.volume / maxVolume) * 100}%`,
-                          backgroundColor: "#3b82f6",
-                          borderRadius: 4,
+                          backgroundColor: C.primary,
+                          borderRadius: 3,
                         }}
                       />
                     </View>
@@ -311,7 +341,7 @@ export default function StatsScreen() {
                 ))}
               </View>
             ) : (
-              <Text style={{ color: "hsl(215, 20%, 65%)" }}>
+              <Text style={{ color: C.textSecondary }}>
                 No volume data this week
               </Text>
             )}
@@ -319,12 +349,14 @@ export default function StatsScreen() {
 
           {/* Progress Photos */}
           {photos.length > 0 && (
-            <Card style={{ marginBottom: 16 }}>
+            <Card style={{ marginBottom: 12 }}>
               <Text
                 style={{
-                  color: "hsl(213, 31%, 91%)",
+                  color: C.textSecondary,
                   fontWeight: "600",
-                  fontSize: 14,
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.6,
                   marginBottom: 12,
                 }}
               >
@@ -340,8 +372,10 @@ export default function StatsScreen() {
                   <View
                     style={{
                       width: 140,
-                      backgroundColor: "hsl(217, 33%, 17%)",
+                      backgroundColor: C.accent,
                       borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: C.border,
                       overflow: "hidden",
                     }}
                   >
@@ -353,7 +387,7 @@ export default function StatsScreen() {
                     <View style={{ padding: 8 }}>
                       <Text
                         style={{
-                          color: "hsl(213, 31%, 91%)",
+                          color: C.text,
                           fontWeight: "600",
                           fontSize: 12,
                         }}
@@ -363,7 +397,7 @@ export default function StatsScreen() {
                       {item.notes && (
                         <Text
                           style={{
-                            color: "hsl(215, 20%, 65%)",
+                            color: C.textSecondary,
                             fontSize: 11,
                             marginTop: 2,
                           }}
@@ -379,14 +413,14 @@ export default function StatsScreen() {
             </Card>
           )}
 
-          {/* Weight Chart */}
+          {/* Body weight line chart */}
           <WeightChart data={weightData} />
 
-          {/* Log Weight Form */}
-          <Card style={{ gap: 12, marginBottom: 16 }}>
+          {/* Inline log weight form */}
+          <Card style={{ gap: 12, marginBottom: 12 }}>
             <Text
               style={{
-                color: "hsl(213, 31%, 91%)",
+                color: C.text,
                 fontWeight: "600",
                 fontSize: 14,
               }}
@@ -396,37 +430,39 @@ export default function StatsScreen() {
             <TextInput
               testID="weight-input"
               placeholder="Weight (kg)"
-              placeholderTextColor="hsl(215, 20%, 65%)"
+              placeholderTextColor={C.textTertiary}
               keyboardType="decimal-pad"
               value={weight}
               onChangeText={setWeight}
               style={{
                 borderWidth: 1,
-                borderColor: "hsl(217, 33%, 17%)",
+                borderColor: C.border,
                 borderRadius: 8,
-                backgroundColor: "hsl(224, 71%, 4%)",
-                color: "hsl(213, 31%, 91%)",
+                backgroundColor: C.accent,
+                color: C.text,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: 16,
+                height: 44,
               }}
             />
             <TextInput
               testID="body-fat-input"
               placeholder="Body fat % (optional)"
-              placeholderTextColor="hsl(215, 20%, 65%)"
+              placeholderTextColor={C.textTertiary}
               keyboardType="decimal-pad"
               value={bodyFat}
               onChangeText={setBodyFat}
               style={{
                 borderWidth: 1,
-                borderColor: "hsl(217, 33%, 17%)",
+                borderColor: C.border,
                 borderRadius: 8,
-                backgroundColor: "hsl(224, 71%, 4%)",
-                color: "hsl(213, 31%, 91%)",
+                backgroundColor: C.accent,
+                color: C.text,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: 16,
+                height: 44,
               }}
             />
             <Button testID="log-weight" onPress={handleLogWeight}>
@@ -446,18 +482,18 @@ export default function StatsScreen() {
                     justifyContent: "space-between",
                   }}
                 >
-                  <Text style={{ color: "hsl(213, 31%, 91%)" }}>
+                  <Text style={{ color: C.textSecondary, fontSize: 13 }}>
                     {new Date(item.date).toLocaleDateString()}
                   </Text>
                   <View style={{ alignItems: "flex-end" }}>
                     <Text
-                      style={{ color: "hsl(213, 31%, 91%)", fontWeight: "500" }}
+                      style={{ color: C.text, fontWeight: "500" }}
                     >
                       {item.weight_kg != null ? `${item.weight_kg} kg` : "\u2014"}
                     </Text>
                     {item.body_fat_pct != null && (
                       <Text
-                        style={{ color: "hsl(215, 20%, 65%)", fontSize: 12 }}
+                        style={{ color: C.textSecondary, fontSize: 12 }}
                       >
                         {Number(item.body_fat_pct).toFixed(1)}% body fat
                       </Text>
@@ -475,7 +511,7 @@ export default function StatsScreen() {
               }}
             >
               <Text
-                style={{ color: "hsl(215, 20%, 65%)", textAlign: "center" }}
+                style={{ color: C.textSecondary, textAlign: "center" }}
               >
                 No weight entries yet. Log your first weight above to start
                 tracking.
