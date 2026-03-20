@@ -18,12 +18,14 @@ module.exports = function swiftConcurrencyFix(config) {
 
       const postInstallSnippet = `
     # Fix Swift strict concurrency errors in expo-modules-core (Xcode 16.x)
+    # Force Swift 5 language mode to prevent Swift 6 concurrency enforcement
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
         config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-        unless config.build_settings['OTHER_SWIFT_FLAGS'].include?('-strict-concurrency=minimal')
-          config.build_settings['OTHER_SWIFT_FLAGS'] << '-Xfrontend' << '-strict-concurrency=minimal'
+        unless config.build_settings['OTHER_SWIFT_FLAGS'].include?('-swift-version')
+          config.build_settings['OTHER_SWIFT_FLAGS'] << '-swift-version' << '5'
         end
       end
     end`;
