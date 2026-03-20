@@ -56,6 +56,8 @@ model User {
   passkeys                Passkey[]
   emailChangeTokens       EmailChangeToken[]
   achievements            Achievement[]
+  mealLogs                MealLog[]
+  sleepLogs               SleepLog[]
 
   @@map("users")
 }
@@ -563,4 +565,45 @@ model Achievement {
 
   @@unique([userId, type])
   @@map("achievements")
+}
+
+// ─── Nutrition ──────────────────────────────────────────
+
+model MealLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  date      DateTime @db.Date
+  mealType  String   @map("meal_type") // breakfast, lunch, dinner, snack
+  name      String
+  calories  Int?
+  proteinG  Decimal? @map("protein_g") @db.Decimal(7, 1)
+  carbsG    Decimal? @map("carbs_g") @db.Decimal(7, 1)
+  fatG      Decimal? @map("fat_g") @db.Decimal(7, 1)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("meal_logs")
+}
+
+// ─── Sleep ──────────────────────────────────────────────
+
+model SleepLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  date         DateTime  @db.Date
+  bedtime      DateTime?
+  wakeTime     DateTime? @map("wake_time")
+  durationMins Int?      @map("duration_mins")
+  quality      String?   // poor, fair, good, excellent
+  source       String?   // manual, garmin, apple_health
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("sleep_logs")
 }
