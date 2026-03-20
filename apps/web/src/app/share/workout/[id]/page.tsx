@@ -6,9 +6,9 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-async function getWorkout(shareToken: string) {
+async function getWorkout(id: string) {
   const workout = await db.workout.findFirst({
-    where: { shareToken, isPublic: true },
+    where: { id, isPublic: true },
     include: {
       user: { select: { name: true } },
       workoutExercises: {

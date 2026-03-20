@@ -33,6 +33,7 @@ export default function WorkoutDetailPage() {
     started_at: string;
     duration_seconds: number | null;
     notes: string | null;
+    is_public: number | null;
   } | undefined;
 
   // Read exercises and sets from PowerSync
@@ -41,6 +42,8 @@ export default function WorkoutDetailPage() {
 
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const toggleShare = trpc.workout.toggleShare.useMutation();
   const saveTemplate = trpc.template.saveFromWorkout.useMutation({
     onSuccess: () => {
       setSaved(true);
@@ -125,11 +128,34 @@ export default function WorkoutDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                const url = `${window.location.origin}/share/workout/${id}`;
-                navigator.clipboard.writeText(url);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+              disabled={sharing}
+              onClick={async () => {
+                setSharing(true);
+                try {
+                  // Make the workout public if it isn't already
+                  if (!workout.is_public) {
+                    await toggleShare.mutateAsync({ workoutId: id });
+                  }
+                  const url = `${window.location.origin}/share/workout/${id}`;
+                  const shareData = {
+                    title: workout.name || "Workout",
+                    text: `Check out my workout on IronPulse!`,
+                    url,
+                  };
+                  if (typeof navigator.share === "function" && navigator.canShare?.(shareData)) {
+                    try {
+                      await navigator.share(shareData);
+                      return;
+                    } catch {
+                      // User cancelled or share failed — fall through to clipboard
+                    }
+                  }
+                  await navigator.clipboard.writeText(url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } finally {
+                  setSharing(false);
+                }
               }}
             >
               {copied ? (
