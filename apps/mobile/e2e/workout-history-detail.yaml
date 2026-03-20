@@ -30,8 +30,7 @@ appId: com.ironpulse.app
       - assertVisible: "No workouts yet"
 - runFlow:
     when:
-      NOT:
-        visible: "No workouts yet"
+      notVisible: "No workouts yet"
     commands:
       - tapOn:
           index: 0

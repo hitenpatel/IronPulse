@@ -30,7 +30,6 @@ appId: com.ironpulse.app
       - assertVisible: "No messages yet"
 - runFlow:
     when:
-      NOT:
-        visible: "No messages yet"
+      notVisible: "No messages yet"
     commands:
       - assertVisible: "Messages"
