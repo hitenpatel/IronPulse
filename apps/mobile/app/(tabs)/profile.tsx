@@ -180,6 +180,23 @@ export default function ProfileScreen() {
         </Card>
 
         <Pressable
+          onPress={() => router.push("/settings" as any)}
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <Card style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ color: "hsl(213, 31%, 91%)", fontSize: 16 }}>
+              Settings
+            </Text>
+            <ChevronRight size={18} color="hsl(215, 20%, 65%)" />
+          </Card>
+        </Pressable>
+
+        <Pressable
           onPress={() => router.push("/settings/integrations")}
           style={{
             flexDirection: "row",
