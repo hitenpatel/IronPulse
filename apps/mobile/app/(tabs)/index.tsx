@@ -102,6 +102,7 @@ export default function DashboardScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {/* Greeting */}
         <Text
+          accessibilityRole="header"
           style={{
             fontSize: 24,
             fontWeight: "bold",
@@ -189,6 +190,7 @@ export default function DashboardScreen() {
 
         {/* Weekly summary */}
         <Text
+          accessibilityRole="header"
           style={{
             color: colors.foreground,
             fontSize: 16,
@@ -277,6 +279,7 @@ export default function DashboardScreen() {
 
         {/* Recent activity */}
         <Text
+          accessibilityRole="header"
           style={{
             color: colors.foreground,
             fontSize: 16,
@@ -365,6 +368,7 @@ export default function DashboardScreen() {
 
         {/* Navigation links */}
         <Text
+          accessibilityRole="header"
           style={{
             color: colors.foreground,
             fontSize: 16,

@@ -13,9 +13,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop sidebar — hidden on mobile */}
-      <div className="hidden lg:block">
+      <nav aria-label="Main navigation" className="hidden lg:block">
         <Sidebar />
-      </div>
+      </nav>
 
       {/* Mobile bottom nav */}
       <BottomNav onFabClick={() => setSheetOpen(true)} />
@@ -33,9 +33,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       */}
       <div className="flex min-h-screen flex-col lg:pl-[260px]">
         {/* Top bar — desktop only */}
-        <div className="hidden lg:block">
+        <header className="hidden lg:block">
           <TopBar />
-        </div>
+        </header>
 
         <main id="main-content" className="flex-1 pb-20 lg:pb-0">
           <div className="mx-auto max-w-[1280px] p-4 lg:p-8">

@@ -85,7 +85,10 @@ function NotificationBell({ count = 0 }: NotificationBellProps) {
     >
       <Bell className="h-5 w-5" />
       {count > 0 && (
-        <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-semibold text-primary-foreground">
+        <span
+          aria-live="polite"
+          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-semibold text-primary-foreground"
+        >
           {count > 99 ? "99+" : count}
         </span>
       )}
@@ -99,7 +102,12 @@ function NotificationBell({ count = 0 }: NotificationBellProps) {
 
 function SearchHint() {
   return (
-    <div className="hidden items-center gap-1 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground md:flex">
+    <div
+      role="button"
+      aria-label="Search (Command+K)"
+      tabIndex={0}
+      className="hidden items-center gap-1 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground md:flex"
+    >
       <span>Search</span>
       <kbd className="rounded border border-border bg-background px-1 py-0.5 font-mono text-[10px]">
         ⌘K

@@ -102,6 +102,8 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
               opacity: pressed ? 0.75 : 1,
             })}
             onPress={() => handleAction(key)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
           >
             <Icon size={22} color={iconColor} />
             <Text
