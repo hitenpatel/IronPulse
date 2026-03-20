@@ -257,6 +257,9 @@ jobs:
           key: xcode-release-${{ hashFiles('apps/mobile/ios/Podfile.lock', 'apps/mobile/package.json') }}
           restore-keys: xcode-release-
 
+      - name: Select Xcode 16.2
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
       - name: Build iOS (simulator, Release)
         run: |
           cd apps/mobile/ios
@@ -266,7 +269,6 @@ jobs:
             -sdk iphonesimulator \
             -configuration Release \
             -derivedDataPath build \
-            SWIFT_STRICT_CONCURRENCY=minimal \
             build
 
       - name: Save Xcode derived data cache
