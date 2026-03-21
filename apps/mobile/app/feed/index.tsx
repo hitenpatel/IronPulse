@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, Text, View, ActivityIndicator } from "react-native";
-import { Stack } from "expo-router";
+// Navigation header set via App.tsx screen options
 import { trpc } from "@/lib/trpc";
 import { Dumbbell, Activity, Trophy, Heart, MessageCircle, Share2 } from "lucide-react-native";
 
@@ -92,7 +92,6 @@ export default function FeedScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen options={{ title: "Feed" }} />
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

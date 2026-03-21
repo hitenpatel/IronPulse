@@ -7,7 +7,7 @@ import {
   Linking,
   Platform,
 } from "react-native";
-import { Stack } from "expo-router";
+// Navigation header set via App.tsx screen options
 import { Activity, Heart, Watch } from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
@@ -211,8 +211,6 @@ export default function IntegrationsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Connected Apps" }} />
-
       <View style={{ padding: 16 }}>
         {loading ? (
           <ActivityIndicator color="hsl(213, 31%, 91%)" />

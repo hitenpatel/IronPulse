@@ -7,7 +7,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { usePowerSync, useQuery } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import * as Haptics from "expo-haptics";
@@ -32,8 +35,9 @@ const colors = {
 };
 
 export default function ActiveWorkoutScreen() {
-  const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
-  const router = useRouter();
+  const route = useRoute<RouteProp<RootStackParamList, "WorkoutActive">>();
+  const workoutId = route.params?.workoutId;
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const db = usePowerSync();
   const { user } = useAuth();
   const defaultRest = user?.defaultRestSeconds ?? 90;
@@ -162,11 +166,11 @@ export default function ActiveWorkoutScreen() {
             [workoutId]
           );
           await db.execute("DELETE FROM workouts WHERE id = ?", [workoutId]);
-          router.back();
+          navigation.goBack();
         },
       },
     ]);
-  }, [db, workoutId, router]);
+  }, [db, workoutId, navigation]);
 
   const handleFinish = useCallback(async () => {
     if (!workout) return;
@@ -194,21 +198,17 @@ export default function ActiveWorkoutScreen() {
     // Fire-and-forget — never block navigation
     maybeRequestReview().catch(() => {});
 
-    router.replace({
-      pathname: "/workout/complete",
-      params: {
-        workoutId: workoutId!,
-        prs: JSON.stringify(prs),
-      },
-    });
-  }, [workout, db, workoutId, router]);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "WorkoutComplete", params: { workoutId: workoutId!, prs: JSON.stringify(prs) } }],
+      })
+    );
+  }, [workout, db, workoutId, navigation]);
 
   const handleAddExercise = useCallback(() => {
-    router.push({
-      pathname: "/workout/add-exercise",
-      params: { workoutId: workoutId! },
-    });
-  }, [router, workoutId]);
+    navigation.navigate("WorkoutAddExercise", { workoutId: workoutId! });
+  }, [navigation, workoutId]);
 
   if (!workout) return null;
 

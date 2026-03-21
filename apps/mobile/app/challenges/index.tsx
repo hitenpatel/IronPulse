@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, Text, View, ActivityIndicator } from "react-native";
-import { Stack } from "expo-router";
+// Navigation header set via App.tsx screen options
 import { trpc } from "@/lib/trpc";
 import { Trophy, Users } from "lucide-react-native";
 
@@ -76,7 +76,6 @@ export default function ChallengesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen options={{ title: "Challenges" }} />
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

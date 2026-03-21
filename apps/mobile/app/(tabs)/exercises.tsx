@@ -2,8 +2,10 @@ import { useState } from "react";
 import { View, Text, FlatList, Pressable, Alert, ScrollView, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePowerSync } from "@powersync/react";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useExercises, useTemplates, type TemplateRow } from "@ironpulse/sync";
+import type { RootStackParamList } from "../../App";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { getWorkoutName } from "@/lib/workout-utils";
@@ -32,7 +34,7 @@ export default function ExercisesScreen() {
   const { data: exercises } = useExercises({ search: search || undefined });
   const { data: templates } = useTemplates();
   const db = usePowerSync();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
 
   async function startFromTemplate(template: TemplateRow) {
@@ -76,7 +78,7 @@ export default function ExercisesScreen() {
       }
     }
 
-    router.push(`/workout/active?workoutId=${workoutId}`);
+    navigation.navigate("WorkoutActive", { workoutId });
   }
 
   function confirmDeleteTemplate(template: TemplateRow) {

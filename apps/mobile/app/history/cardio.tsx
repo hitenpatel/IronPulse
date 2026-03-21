@@ -1,6 +1,8 @@
 import React from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Bike, Footprints, Heart, Mountain } from "lucide-react-native";
 import { useCardioSessions, type CardioSessionRow } from "@ironpulse/sync";
@@ -130,11 +132,10 @@ function CardioCard({
 
 export default function CardioHistoryScreen() {
   const { data: sessions } = useCardioSessions();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Cardio" }} />
       <FlatList
         data={sessions}
         keyExtractor={(item) => item.id}
@@ -142,7 +143,7 @@ export default function CardioHistoryScreen() {
         renderItem={({ item }) => (
           <CardioCard
             item={item}
-            onPress={() => router.push(`/history/cardio-detail/${item.id}`)}
+            onPress={() => navigation.navigate("HistoryCardioDetail", { id: item.id })}
           />
         )}
         ListEmptyComponent={

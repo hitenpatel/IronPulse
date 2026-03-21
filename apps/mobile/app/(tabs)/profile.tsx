@@ -6,7 +6,9 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronRight, Flame } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -33,7 +35,7 @@ const colors = {
 
 export default function ProfileScreen() {
   const { user, signOut, updateUser } = useAuth();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioEnabled, setBioEnabled] = useState(false);
@@ -283,14 +285,14 @@ export default function ProfileScreen() {
           }}
         >
           {[
-            { label: "Settings", path: "/settings" },
-            { label: "Connected Apps", path: "/settings/integrations" },
-            { label: "Subscription", path: "/settings/subscription" },
-            { label: "Coaching", path: "/coach" },
+            { label: "Settings", screen: "Settings" as const },
+            { label: "Connected Apps", screen: "SettingsIntegrations" as const },
+            { label: "Subscription", screen: "SettingsSubscription" as const },
+            { label: "Coaching", screen: "Coach" as const },
           ].map((item, idx, arr) => (
             <Pressable
-              key={item.path}
-              onPress={() => router.push(item.path as any)}
+              key={item.screen}
+              onPress={() => navigation.navigate(item.screen as any)}
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",

@@ -1,0 +1,412 @@
+import "./global.css";
+import { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { NavigationContainer, useNavigation } from "@react-navigation/native";
+import { createNativeStackNavigator, type NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { StatusBar } from "expo-status-bar";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { trpc } from "@/lib/trpc";
+import { useNotificationDeepLink } from "@/lib/useNotificationDeepLink";
+import { NewSessionSheet } from "@/components/layout/new-session-sheet";
+import { TemplatePicker } from "@/components/workout/template-picker";
+
+// ─── Screen imports ──────────────────────────────────────────────
+// Auth
+import LoginScreen from "./app/(auth)/login";
+import SignupScreen from "./app/(auth)/signup";
+import OnboardingScreen from "./app/(auth)/onboarding";
+import ForgotPasswordScreen from "./app/(auth)/forgot-password";
+
+// Tabs
+import DashboardScreen from "./app/(tabs)/index";
+import StatsScreen from "./app/(tabs)/stats";
+import ExercisesScreen from "./app/(tabs)/exercises";
+import ProfileScreen from "./app/(tabs)/profile";
+
+// Workout
+import ActiveWorkoutScreen from "./app/workout/active";
+import AddExerciseScreen from "./app/workout/add-exercise";
+import WorkoutCompleteScreen from "./app/workout/complete";
+
+// Cardio
+import TypePickerScreen from "./app/cardio/type-picker";
+import TrackingScreen from "./app/cardio/tracking";
+import ManualCardioScreen from "./app/cardio/manual";
+import SummaryScreen from "./app/cardio/summary";
+
+// History
+import WorkoutHistoryScreen from "./app/history/workouts";
+import WorkoutDetailScreen from "./app/history/workout/[id]";
+import CardioHistoryScreen from "./app/history/cardio";
+import CardioDetailScreen from "./app/history/cardio-detail/[id]";
+
+// Settings
+import SettingsScreen from "./app/settings/index";
+import IntegrationsScreen from "./app/settings/integrations";
+import SubscriptionScreen from "./app/settings/subscription";
+
+// Messages
+import MessagesScreen from "./app/messages/index";
+import MessageThreadScreen from "./app/messages/[userId]";
+
+// Coach
+import CoachScreen from "./app/coach/index";
+import ClientDetailScreen from "./app/coach/clients/[id]";
+
+// Calendar, Feed, Challenges
+import CalendarScreen from "./app/calendar/index";
+import FeedScreen from "./app/feed/index";
+import ChallengesScreen from "./app/challenges/index";
+
+// ─── Custom Tab Bar (moved from tabs layout) ─────────────────────
+import { PulseTabBar } from "./app/(tabs)/_layout";
+
+// ─── Type definitions ────────────────────────────────────────────
+export type RootStackParamList = {
+  Auth: undefined;
+  MainTabs: undefined;
+  // Workout
+  WorkoutActive: { workoutId: string };
+  WorkoutAddExercise: { workoutId: string };
+  WorkoutComplete: { workoutId: string; prs: string };
+  // Cardio
+  CardioTypePicker: undefined;
+  CardioTracking: { type: string; sessionId?: string };
+  CardioManual: { type: string };
+  CardioSummary: { sessionId: string; type: string };
+  // History
+  HistoryWorkouts: undefined;
+  HistoryWorkoutDetail: { id: string };
+  HistoryCardio: undefined;
+  HistoryCardioDetail: { id: string };
+  // Settings
+  Settings: undefined;
+  SettingsIntegrations: undefined;
+  SettingsSubscription: undefined;
+  // Messages
+  Messages: undefined;
+  MessageThread: { userId: string };
+  // Coach
+  Coach: undefined;
+  CoachClientDetail: { id: string };
+  // Calendar, Feed, Challenges
+  Calendar: undefined;
+  Feed: undefined;
+  Challenges: undefined;
+};
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Signup: undefined;
+  Onboarding: undefined;
+  ForgotPassword: undefined;
+};
+
+export type MainTabParamList = {
+  Home: undefined;
+  Stats: undefined;
+  Exercises: undefined;
+  Profile: undefined;
+};
+
+// ─── Navigators ──────────────────────────────────────────────────
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+
+const HEADER_STYLE = {
+  headerStyle: { backgroundColor: "hsl(224, 71%, 4%)" },
+  headerTintColor: "hsl(213, 31%, 91%)",
+};
+
+// ─── Auth Navigator ──────────────────────────────────────────────
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "hsl(224, 71%, 4%)" },
+      }}
+    >
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Signup" component={SignupScreen} />
+      <AuthStack.Screen name="Onboarding" component={OnboardingScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+// ─── Main Tab Navigator ──────────────────────────────────────────
+function MainTabNavigator() {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const toggleSheet = () => setSheetOpen((prev) => !prev);
+
+  return (
+    <>
+      <Tab.Navigator
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => (
+          <PulseTabBar
+            {...props}
+            sheetOpen={sheetOpen}
+            onFabPress={toggleSheet}
+          />
+        )}
+      >
+        <Tab.Screen name="Home" component={DashboardScreen} options={{ title: "Home" }} />
+        <Tab.Screen name="Stats" component={StatsScreen} options={{ title: "Stats" }} />
+        <Tab.Screen name="Exercises" component={ExercisesScreen} options={{ title: "Exercises" }} />
+        <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
+      </Tab.Navigator>
+
+      <NewSessionSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onStartWorkout={() => setTemplatePickerOpen(true)}
+        onLogCardio={() => navigation.navigate("CardioTypePicker")}
+      />
+      <TemplatePicker
+        open={templatePickerOpen}
+        onClose={() => setTemplatePickerOpen(false)}
+      />
+    </>
+  );
+}
+
+// ─── Root Navigator (auth-gated) ─────────────────────────────────
+function RootNavigator() {
+  const { user, isLoading } = useAuth();
+  const [powersyncReady, setPowersyncReady] = useState(false);
+  useNotificationDeepLink();
+  const [PowerSyncProvider, setPowerSyncProvider] = useState<any>(null);
+  const [db, setDb] = useState<any>(null);
+
+  // Initialize PowerSync lazily after first render
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getPowerSyncDatabase } = await import("@/lib/powersync");
+        const { PowerSyncContext } = await import("@powersync/react");
+        const database = getPowerSyncDatabase();
+        setDb(database);
+        setPowerSyncProvider(() => PowerSyncContext?.Provider);
+        setPowersyncReady(true);
+      } catch (err) {
+        console.warn("PowerSync init failed:", err);
+        setPowersyncReady(true); // Continue without PowerSync
+      }
+    })();
+  }, []);
+
+  // Connect/disconnect PowerSync based on auth state
+  useEffect(() => {
+    if (!db || !powersyncReady) return;
+    if (user) {
+      try {
+        const { createMobileConnector } = require("@/lib/powersync");
+        const connector = createMobileConnector();
+        db.connect(connector);
+      } catch {}
+
+      // Push notifications (best-effort)
+      (async () => {
+        try {
+          const Device = require("expo-device");
+          const Notifications = require("expo-notifications");
+          if (Device.isDevice) {
+            const { status } = await Notifications.requestPermissionsAsync();
+            if (status === "granted") {
+              const { data: token } = await Notifications.getExpoPushTokenAsync();
+              trpc.user.registerPushToken.mutate({ token, platform: Platform.OS }).catch(() => {});
+            }
+          }
+        } catch {}
+      })();
+
+      // HealthKit / Google Fit sync (best-effort)
+      (async () => {
+        try {
+          const { isHealthKitConnected, syncFromHealthKit } = require("@/lib/healthkit");
+          if (await isHealthKitConnected()) {
+            await syncFromHealthKit(db, user.id);
+          }
+        } catch {}
+        try {
+          const { isGoogleFitConnected, syncFromGoogleFit } = require("@/lib/googlefit");
+          if (await isGoogleFitConnected()) {
+            await syncFromGoogleFit(db, user.id);
+          }
+        } catch {}
+      })();
+    }
+  }, [user, db, powersyncReady]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "hsl(224, 71%, 4%)" }}>
+        <ActivityIndicator color="hsl(210, 40%, 98%)" />
+      </View>
+    );
+  }
+
+  const needsAuth = !user;
+  const needsOnboarding = user && user.onboardingComplete === false;
+
+  const navigator = (
+    <NavigationContainer>
+      <RootStack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={needsAuth ? "Auth" : needsOnboarding ? "Auth" : "MainTabs"}
+      >
+        {/* Auth stack */}
+        <RootStack.Screen name="Auth" component={AuthNavigator} />
+
+        {/* Main tabs */}
+        <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
+
+        {/* Workout stack */}
+        <RootStack.Screen
+          name="WorkoutActive"
+          component={ActiveWorkoutScreen}
+          options={{ gestureEnabled: false, contentStyle: { backgroundColor: "hsl(224, 71%, 4%)" } }}
+        />
+        <RootStack.Screen
+          name="WorkoutAddExercise"
+          component={AddExerciseScreen}
+          options={{ contentStyle: { backgroundColor: "hsl(224, 71%, 4%)" } }}
+        />
+        <RootStack.Screen
+          name="WorkoutComplete"
+          component={WorkoutCompleteScreen}
+          options={{ contentStyle: { backgroundColor: "hsl(224, 71%, 4%)" } }}
+        />
+
+        {/* Cardio stack */}
+        <RootStack.Screen
+          name="CardioTypePicker"
+          component={TypePickerScreen}
+          options={{ contentStyle: { backgroundColor: "#060B14" } }}
+        />
+        <RootStack.Screen
+          name="CardioTracking"
+          component={TrackingScreen}
+          options={{ contentStyle: { backgroundColor: "#060B14" } }}
+        />
+        <RootStack.Screen
+          name="CardioManual"
+          component={ManualCardioScreen}
+          options={{ contentStyle: { backgroundColor: "#060B14" } }}
+        />
+        <RootStack.Screen
+          name="CardioSummary"
+          component={SummaryScreen}
+          options={{ contentStyle: { backgroundColor: "#060B14" } }}
+        />
+
+        {/* History */}
+        <RootStack.Screen
+          name="HistoryWorkouts"
+          component={WorkoutHistoryScreen}
+          options={{ headerShown: true, title: "Workouts", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="HistoryWorkoutDetail"
+          component={WorkoutDetailScreen}
+          options={{ headerShown: true, title: "Workout", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="HistoryCardio"
+          component={CardioHistoryScreen}
+          options={{ headerShown: true, title: "Cardio", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="HistoryCardioDetail"
+          component={CardioDetailScreen}
+          options={{ headerShown: true, title: "Cardio", ...HEADER_STYLE }}
+        />
+
+        {/* Settings */}
+        <RootStack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ headerShown: true, title: "Settings", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="SettingsIntegrations"
+          component={IntegrationsScreen}
+          options={{ headerShown: true, title: "Connected Apps", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="SettingsSubscription"
+          component={SubscriptionScreen}
+          options={{ headerShown: true, title: "Subscription", ...HEADER_STYLE }}
+        />
+
+        {/* Messages */}
+        <RootStack.Screen
+          name="Messages"
+          component={MessagesScreen}
+          options={{ headerShown: true, title: "Messages", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="MessageThread"
+          component={MessageThreadScreen}
+          options={{ headerShown: true, title: "Chat", ...HEADER_STYLE }}
+        />
+
+        {/* Coach */}
+        <RootStack.Screen
+          name="Coach"
+          component={CoachScreen}
+          options={{ headerShown: true, title: "Coaching", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="CoachClientDetail"
+          component={ClientDetailScreen}
+          options={{ headerShown: true, title: "Client Progress", ...HEADER_STYLE }}
+        />
+
+        {/* Calendar, Feed, Challenges */}
+        <RootStack.Screen
+          name="Calendar"
+          component={CalendarScreen}
+          options={{ headerShown: true, title: "Calendar", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="Feed"
+          component={FeedScreen}
+          options={{ headerShown: true, title: "Feed", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="Challenges"
+          component={ChallengesScreen}
+          options={{ headerShown: true, title: "Challenges", ...HEADER_STYLE }}
+        />
+      </RootStack.Navigator>
+    </NavigationContainer>
+  );
+
+  // Wrap in PowerSync provider if available
+  if (PowerSyncProvider && db) {
+    return <PowerSyncProvider value={db}>{navigator}</PowerSyncProvider>;
+  }
+
+  return navigator;
+}
+
+// ─── App Entry ───────────────────────────────────────────────────
+export default function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}

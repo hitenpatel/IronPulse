@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import { FlatList, Text, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@powersync/react";
 import {
@@ -33,7 +35,8 @@ interface WorkoutRow {
 }
 
 export default function WorkoutDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const route = useRoute<RouteProp<RootStackParamList, "HistoryWorkoutDetail">>();
+  const id = route.params?.id;
 
   const { data: workoutRows } = useQuery<WorkoutRow>(
     "SELECT * FROM workouts WHERE id = ?",
@@ -65,7 +68,6 @@ export default function WorkoutDetailScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <Stack.Screen options={{ title: workoutName }} />
       <FlatList
         data={exercises ?? []}
         keyExtractor={(item) => item.id}

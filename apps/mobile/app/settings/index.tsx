@@ -8,7 +8,7 @@ import {
   Platform,
   Pressable,
 } from "react-native";
-import { Stack } from "expo-router";
+// Navigation header set via App.tsx screen options
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -218,8 +218,6 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Settings" }} />
-
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{ padding: 16, gap: 16 }}

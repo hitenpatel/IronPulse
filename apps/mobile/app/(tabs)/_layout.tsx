@@ -1,11 +1,7 @@
-import { useState } from "react";
 import { View, Text, Pressable, Platform, StyleSheet } from "react-native";
-import { Tabs, useRouter } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Home, BarChart3, Dumbbell, User, Plus, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NewSessionSheet } from "@/components/layout/new-session-sheet";
-import { TemplatePicker } from "@/components/workout/template-picker";
 
 // ─── Design tokens ───────────────────────────────────────────────
 const ACTIVE_COLOR = "#0077FF";
@@ -19,17 +15,17 @@ const LABEL_SIZE = 10;
 
 // ─── Tab definitions (minus the center FAB slot) ─────────────────
 const LEFT_TABS = [
-  { name: "index", label: "Home", Icon: Home },
-  { name: "stats", label: "Stats", Icon: BarChart3 },
+  { name: "Home", label: "Home", Icon: Home },
+  { name: "Stats", label: "Stats", Icon: BarChart3 },
 ] as const;
 
 const RIGHT_TABS = [
-  { name: "exercises", label: "Exercises", Icon: Dumbbell },
-  { name: "profile", label: "Profile", Icon: User },
+  { name: "Exercises", label: "Exercises", Icon: Dumbbell },
+  { name: "Profile", label: "Profile", Icon: User },
 ] as const;
 
-// ─── Custom Tab Bar ───────────────────────────────────────────────
-function PulseTabBar({
+// ─── Custom Tab Bar (exported for use in App.tsx) ────────────────
+export function PulseTabBar({
   state,
   navigation,
   sheetOpen,
@@ -38,7 +34,7 @@ function PulseTabBar({
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
 
-  // Map route name → index in the Tabs.Screen order
+  // Map route name → index in the Tab.Screen order
   const routeNames = state.routes.map((r) => r.name);
 
   const handleTabPress = (routeName: string, routeIndex: number) => {
@@ -60,7 +56,7 @@ function PulseTabBar({
     const routeIndex = routeNames.indexOf(name);
     const isActive = state.index === routeIndex;
     const color = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
-    const tabTestId = `tab-${name === "index" ? "home" : name}`;
+    const tabTestId = `tab-${name.toLowerCase() === "home" ? "home" : name.toLowerCase()}`;
 
     return (
       <Pressable
@@ -181,45 +177,3 @@ const styles = StyleSheet.create({
     }),
   },
 });
-
-// ─── Layout ───────────────────────────────────────────────────────
-export default function TabLayout() {
-  const router = useRouter();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
-
-  const toggleSheet = () => setSheetOpen((prev) => !prev);
-
-  return (
-    <>
-      <Tabs
-        screenOptions={{ headerShown: false }}
-        tabBar={(props) => (
-          <PulseTabBar
-            {...props}
-            sheetOpen={sheetOpen}
-            onFabPress={toggleSheet}
-          />
-        )}
-      >
-        <Tabs.Screen name="index" options={{ title: "Home" }} />
-        <Tabs.Screen name="stats" options={{ title: "Stats" }} />
-        {/* fab screen is a placeholder — tab press is intercepted by the custom bar */}
-        <Tabs.Screen name="fab" options={{ title: "", href: null }} />
-        <Tabs.Screen name="exercises" options={{ title: "Exercises" }} />
-        <Tabs.Screen name="profile" options={{ title: "Profile" }} />
-      </Tabs>
-
-      <NewSessionSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        onStartWorkout={() => setTemplatePickerOpen(true)}
-        onLogCardio={() => router.push("/cardio/type-picker")}
-      />
-      <TemplatePicker
-        open={templatePickerOpen}
-        onClose={() => setTemplatePickerOpen(false)}
-      />
-    </>
-  );
-}

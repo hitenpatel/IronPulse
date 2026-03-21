@@ -8,7 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
@@ -26,8 +29,9 @@ const colors = {
 };
 
 export default function ManualCardioScreen() {
-  const router = useRouter();
-  const { type } = useLocalSearchParams<{ type: string }>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "CardioManual">>();
+  const type = route.params?.type;
   const db = usePowerSync();
   const { user } = useAuth();
   const isMetric = user?.unitSystem !== "imperial";
@@ -100,10 +104,7 @@ export default function ManualCardioScreen() {
         calories: calories ? parseInt(calories) : null,
       }).catch(() => {});
 
-      router.push({
-        pathname: "/cardio/summary",
-        params: { sessionId, type },
-      });
+      navigation.navigate("CardioSummary", { sessionId, type: type! });
     } catch (e) {
       console.error("Failed to save cardio session:", e);
       setSaving(false);
@@ -140,7 +141,7 @@ export default function ManualCardioScreen() {
             >
               Log {type}
             </Text>
-            <Pressable onPress={() => router.back()}>
+            <Pressable onPress={() => navigation.goBack()}>
               <X size={24} color={colors.muted} />
             </Pressable>
           </View>

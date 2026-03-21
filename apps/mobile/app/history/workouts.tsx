@@ -1,6 +1,8 @@
 import React from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Dumbbell, Star } from "lucide-react-native";
 import { useWorkouts, type WorkoutRow } from "@ironpulse/sync";
@@ -84,7 +86,7 @@ function WorkoutCard({ item, onPress }: { item: WorkoutRow; onPress: () => void 
 
 export default function WorkoutHistoryScreen() {
   const { data: workouts } = useWorkouts();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Group workouts by month
   const grouped = React.useMemo(() => {
@@ -112,7 +114,6 @@ export default function WorkoutHistoryScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Workouts" }} />
       <FlatList
         data={flatData}
         keyExtractor={(item, index) =>
@@ -139,7 +140,7 @@ export default function WorkoutHistoryScreen() {
           return (
             <WorkoutCard
               item={item.item}
-              onPress={() => router.push(`/history/workout/${item.item.id}`)}
+              onPress={() => navigation.navigate("HistoryWorkoutDetail", { id: item.item.id })}
             />
           );
         }}

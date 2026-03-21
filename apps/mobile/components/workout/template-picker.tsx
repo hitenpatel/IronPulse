@@ -2,7 +2,9 @@ import { useRef, useEffect } from "react";
 import { Text, Pressable, View, FlatList } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { usePowerSync } from "@powersync/react";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { Play, FileText } from "lucide-react-native";
 import { useTemplates, type TemplateRow } from "@ironpulse/sync";
 import { useAuth } from "@/lib/auth";
@@ -17,7 +19,7 @@ interface Props {
 export function TemplatePicker({ open, onClose }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const db = usePowerSync();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const { data: templates } = useTemplates();
 
@@ -37,7 +39,7 @@ export function TemplatePicker({ open, onClose }: Props) {
       [id, user!.id, getWorkoutName(), now, now]
     );
     onClose();
-    router.push(`/workout/active?workoutId=${id}`);
+    navigation.navigate("WorkoutActive", { workoutId: id });
   }
 
   async function createFromTemplate(template: TemplateRow) {
@@ -82,7 +84,7 @@ export function TemplatePicker({ open, onClose }: Props) {
     }
 
     onClose();
-    router.push(`/workout/active?workoutId=${workoutId}`);
+    navigation.navigate("WorkoutActive", { workoutId });
   }
 
   const hasTemplates = templates.length > 0;

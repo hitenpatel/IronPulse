@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/lib/auth";
+import type { RootStackParamList } from "../../App";
 import { trpc } from "@/lib/trpc";
 import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
 import { Dumbbell, Activity, Calendar, ChevronRight, Timer, Rss, Trophy, Users, MessageCircle, Flame } from "lucide-react-native";
@@ -42,7 +44,7 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [streak, setStreak] = React.useState<{ current: number; longest: number } | null>(null);
 
   React.useEffect(() => {
@@ -145,7 +147,7 @@ export default function DashboardScreen() {
         {/* Quick-start cards */}
         <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
           <Pressable
-            onPress={() => router.push("/workout/active")}
+            onPress={() => navigation.navigate("WorkoutActive", { workoutId: "" })}
             style={{ flex: 1 }}
           >
             <View
@@ -166,7 +168,7 @@ export default function DashboardScreen() {
             </View>
           </Pressable>
           <Pressable
-            onPress={() => router.push("/cardio/type-picker")}
+            onPress={() => navigation.navigate("CardioTypePicker")}
             style={{ flex: 1 }}
           >
             <View
@@ -312,8 +314,8 @@ export default function DashboardScreen() {
                 key={item.id}
                 onPress={() =>
                   item.type === "workout"
-                    ? router.push(`/history/workout/${item.id}`)
-                    : router.push(`/history/cardio-detail/${item.id}`)
+                    ? navigation.navigate("HistoryWorkoutDetail", { id: item.id })
+                    : navigation.navigate("HistoryCardioDetail", { id: item.id })
                 }
               >
                 <View
@@ -379,17 +381,17 @@ export default function DashboardScreen() {
           Explore
         </Text>
         {[
-          { label: "Workout History", route: "/history/workouts" },
-          { label: "Cardio History", route: "/history/cardio" },
-          { label: "Calendar", route: "/calendar" },
-          { label: "Feed", route: "/feed" },
-          { label: "Challenges", route: "/challenges" },
-          { label: "Coaching", route: "/coach" },
-          { label: "Messages", route: "/messages" },
+          { label: "Workout History", screen: "HistoryWorkouts" as const },
+          { label: "Cardio History", screen: "HistoryCardio" as const },
+          { label: "Calendar", screen: "Calendar" as const },
+          { label: "Feed", screen: "Feed" as const },
+          { label: "Challenges", screen: "Challenges" as const },
+          { label: "Coaching", screen: "Coach" as const },
+          { label: "Messages", screen: "Messages" as const },
         ].map((link) => (
           <Pressable
-            key={link.route}
-            onPress={() => router.push(link.route as any)}
+            key={link.screen}
+            onPress={() => navigation.navigate(link.screen as any)}
           >
             <View
               style={{

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@powersync/react";
 import { RouteMap } from "@/components/cardio/route-map";
@@ -91,7 +93,8 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 export default function CardioDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const route = useRoute<RouteProp<RootStackParamList, "HistoryCardioDetail">>();
+  const id = route.params?.id;
 
   const { data: rows } = useQuery<CardioRow>(
     "SELECT * FROM cardio_sessions WHERE id = ?",
@@ -133,7 +136,7 @@ export default function CardioDetailScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <Stack.Screen options={{ title: capitalize(session.type) }} />
+      {/* Title set via navigation options in App.tsx */}
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Route map for GPS sessions — full-width at top */}
         {session.source === "gps" && (

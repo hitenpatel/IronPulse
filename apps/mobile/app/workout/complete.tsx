@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
 import { FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { useQuery } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { Trophy } from "lucide-react-native";
@@ -25,9 +28,9 @@ interface PR {
 }
 
 export default function WorkoutCompleteScreen() {
-  const { workoutId, prs: prsParam } =
-    useLocalSearchParams<{ workoutId: string; prs: string }>();
-  const router = useRouter();
+  const route = useRoute<RouteProp<RootStackParamList, "WorkoutComplete">>();
+  const { workoutId, prs: prsParam } = route.params ?? { workoutId: "", prs: "" };
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Parse PRs from route params
   const prs = useMemo<PR[]>(() => {
@@ -280,7 +283,7 @@ export default function WorkoutCompleteScreen() {
         }}
         ListFooterComponent={
           <Pressable
-            onPress={() => router.replace("/(tabs)")}
+            onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }))}
             style={{
               backgroundColor: colors.primary,
               borderRadius: 12,

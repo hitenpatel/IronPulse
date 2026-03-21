@@ -1,6 +1,9 @@
 import React from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
@@ -55,11 +58,10 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function SummaryScreen() {
-  const router = useRouter();
-  const { sessionId, type } = useLocalSearchParams<{
-    sessionId: string;
-    type: string;
-  }>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "CardioSummary">>();
+  const sessionId = route.params?.sessionId;
+  const type = route.params?.type;
   const { user } = useAuth();
   const isMetric = user?.unitSystem !== "imperial";
 
@@ -303,7 +305,7 @@ export default function SummaryScreen() {
             alignItems: "center",
             marginTop: 8,
           }}
-          onPress={() => router.replace("/(tabs)")}
+          onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }))}
         >
           <Text
             style={{

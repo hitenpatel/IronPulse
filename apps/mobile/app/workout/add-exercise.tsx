@@ -7,7 +7,9 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { usePowerSync } from "@powersync/react";
 import { useExercises } from "@ironpulse/sync";
 import { X } from "lucide-react-native";
@@ -23,8 +25,9 @@ const colors = {
 };
 
 export default function AddExerciseScreen() {
-  const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
-  const router = useRouter();
+  const route = useRoute<RouteProp<RootStackParamList, "WorkoutAddExercise">>();
+  const workoutId = route.params?.workoutId;
+  const navigation = useNavigation();
   const db = usePowerSync();
 
   const [search, setSearch] = useState("");
@@ -57,9 +60,9 @@ export default function AddExerciseScreen() {
         [setId, weId]
       );
 
-      router.back();
+      navigation.goBack();
     },
-    [db, workoutId, router]
+    [db, workoutId, navigation]
   );
 
   return (

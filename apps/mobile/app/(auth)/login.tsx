@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { View, Text, Alert, Pressable, Platform } from "react-native";
-import { Link } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { AuthStackParamList } from "../../App";
 import { Fingerprint } from "lucide-react-native";
 import * as AuthSession from "expo-auth-session";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -24,6 +26,7 @@ const C = {
 };
 
 export default function LoginScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { signIn, signInWithBiometric, signInWithOAuth } = useAuth();
   const googleDiscovery = AuthSession.useAutoDiscovery("https://accounts.google.com");
   const [email, setEmail] = useState("");
@@ -177,13 +180,14 @@ export default function LoginScreen() {
           />
 
           {/* Forgot password */}
-          <Link href="/(auth)/forgot-password" asChild>
-            <Pressable style={{ alignSelf: "flex-end", marginTop: -4 }}>
-              <Text style={{ fontSize: 13, color: C.primary, fontWeight: "500" }}>
-                Forgot password?
-              </Text>
-            </Pressable>
-          </Link>
+          <Pressable
+            style={{ alignSelf: "flex-end", marginTop: -4 }}
+            onPress={() => navigation.navigate("ForgotPassword")}
+          >
+            <Text style={{ fontSize: 13, color: C.primary, fontWeight: "500" }}>
+              Forgot password?
+            </Text>
+          </Pressable>
 
           <Button testID="login-button" onPress={handleSignIn} disabled={loading}>
             {loading ? "Signing in..." : "Log In"}
@@ -278,20 +282,18 @@ export default function LoginScreen() {
         </View>
 
         {/* Bottom sign-up link */}
-        <Link href="/(auth)/signup" asChild>
-          <Pressable style={{ marginTop: 28 }}>
-            <Text
-              style={{
-                textAlign: "center",
-                fontSize: 14,
-                color: C.textSecondary,
-              }}
-            >
-              Don't have an account?{" "}
-              <Text style={{ color: C.primary, fontWeight: "600" }}>Sign up</Text>
-            </Text>
-          </Pressable>
-        </Link>
+        <Pressable style={{ marginTop: 28 }} onPress={() => navigation.navigate("Signup")}>
+          <Text
+            style={{
+              textAlign: "center",
+              fontSize: 14,
+              color: C.textSecondary,
+            }}
+          >
+            Don't have an account?{" "}
+            <Text style={{ color: C.primary, fontWeight: "600" }}>Sign up</Text>
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

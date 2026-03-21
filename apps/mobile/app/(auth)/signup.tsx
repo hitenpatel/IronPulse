@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { View, Text, Alert, Pressable, Platform } from "react-native";
-import { Link } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { AuthStackParamList } from "../../App";
 import * as AuthSession from "expo-auth-session";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useAuth } from "@/lib/auth";
@@ -60,6 +62,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
 }
 
 export default function SignupScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { signUp, signInWithOAuth } = useAuth();
   const googleDiscovery = AuthSession.useAutoDiscovery("https://accounts.google.com");
   const [name, setName] = useState("");
@@ -286,20 +289,18 @@ export default function SignupScreen() {
         </View>
 
         {/* Bottom log-in link */}
-        <Link href="/(auth)/login" asChild>
-          <Pressable style={{ marginTop: 28 }}>
-            <Text
-              style={{
-                textAlign: "center",
-                fontSize: 14,
-                color: C.textSecondary,
-              }}
-            >
-              Already have an account?{" "}
-              <Text style={{ color: C.primary, fontWeight: "600" }}>Log in</Text>
-            </Text>
-          </Pressable>
-        </Link>
+        <Pressable style={{ marginTop: 28 }} onPress={() => navigation.navigate("Login")}>
+          <Text
+            style={{
+              textAlign: "center",
+              fontSize: 14,
+              color: C.textSecondary,
+            }}
+          >
+            Already have an account?{" "}
+            <Text style={{ color: C.primary, fontWeight: "600" }}>Log in</Text>
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

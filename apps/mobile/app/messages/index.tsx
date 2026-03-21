@@ -6,7 +6,9 @@ import {
   Text,
   View,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { trpc } from "@/lib/trpc";
 import { MessageCircle, ChevronRight } from "lucide-react-native";
 
@@ -32,7 +34,7 @@ type Conversation = {
 };
 
 export default function MessagesScreen() {
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +63,7 @@ export default function MessagesScreen() {
           alignItems: "center",
         }}
       >
-        <Stack.Screen options={{ title: "Messages" }} />
+
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -101,7 +103,7 @@ export default function MessagesScreen() {
             const hasUnread = item.unreadCount > 0;
             return (
               <Pressable
-                onPress={() => router.push(`/messages/${item.partnerId}`)}
+                onPress={() => navigation.navigate("MessageThread", { userId: item.partnerId })}
               >
                 <View
                   style={{

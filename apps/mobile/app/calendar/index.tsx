@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, Dumbbell, Activity } from "lucide-react-native";
 import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
@@ -34,7 +36,7 @@ export default function CalendarScreen() {
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
@@ -83,7 +85,7 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Calendar" }} />
+      {/* Title set via navigation options in App.tsx */}
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Month navigation */}
         <View
@@ -173,7 +175,7 @@ export default function CalendarScreen() {
             {selectedWorkouts.map((w) => (
               <Pressable
                 key={w.id}
-                onPress={() => router.push(`/history/workout/${w.id}`)}
+                onPress={() => navigation.navigate("HistoryWorkoutDetail", { id: w.id })}
                 style={{ marginBottom: 10 }}
               >
                 <View
@@ -222,7 +224,7 @@ export default function CalendarScreen() {
             {selectedCardio.map((c) => (
               <Pressable
                 key={c.id}
-                onPress={() => router.push(`/history/cardio-detail/${c.id}`)}
+                onPress={() => navigation.navigate("HistoryCardioDetail", { id: c.id })}
                 style={{ marginBottom: 10 }}
               >
                 <View

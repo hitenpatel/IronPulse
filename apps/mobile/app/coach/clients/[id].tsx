@@ -6,7 +6,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../../App";
 import { trpc } from "@/lib/trpc";
 import { Dumbbell, Activity, Trophy, MessageCircle } from "lucide-react-native";
 
@@ -46,8 +49,9 @@ type ClientProgress = {
 };
 
 export default function ClientDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const route = useRoute<RouteProp<RootStackParamList, "CoachClientDetail">>();
+  const id = route.params?.id;
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [progress, setProgress] = useState<ClientProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +81,7 @@ export default function ClientDetailScreen() {
           alignItems: "center",
         }}
       >
-        <Stack.Screen options={{ title: "Client Progress" }} />
+
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -118,7 +122,7 @@ export default function ClientDetailScreen() {
 
         {/* Message button */}
         <Pressable
-          onPress={() => router.push(`/messages/${id}`)}
+          onPress={() => navigation.navigate("MessageThread", { userId: id! })}
           style={{
             backgroundColor: colors.primary,
             borderRadius: 12,

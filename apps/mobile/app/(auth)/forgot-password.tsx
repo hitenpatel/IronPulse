@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { View, Text, Pressable, TextInput, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
 import { Mail } from "lucide-react-native";
 
 export default function ForgotPasswordScreen() {
-  const router = useRouter();
+  const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
 
@@ -42,7 +42,7 @@ export default function ForgotPasswordScreen() {
           </>
         )}
 
-        <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+        <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
           <Text style={styles.link}>Back to login</Text>
         </Pressable>
       </View>

@@ -6,7 +6,9 @@ import {
   Text,
   View,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { ChevronRight, Users } from "lucide-react-native";
@@ -37,7 +39,7 @@ type Client = {
 
 export default function CoachScreen() {
   const { user } = useAuth();
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +72,7 @@ export default function CoachScreen() {
           alignItems: "center",
         }}
       >
-        <Stack.Screen options={{ title: "Coaching" }} />
+
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -87,7 +89,7 @@ export default function CoachScreen() {
           padding: 32,
         }}
       >
-        <Stack.Screen options={{ title: "Coaching" }} />
+
         <Users size={40} color={colors.textFaint} />
         <Text
           style={{
@@ -137,7 +139,7 @@ export default function CoachScreen() {
             const isLowAdherence = item.status === "inactive";
             return (
               <Pressable
-                onPress={() => router.push(`/coach/clients/${item.athleteId}`)}
+                onPress={() => navigation.navigate("CoachClientDetail", { id: item.athleteId })}
               >
                 <View
                   style={{

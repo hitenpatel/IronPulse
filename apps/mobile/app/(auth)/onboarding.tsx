@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { View, Text, Pressable, Alert, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { useNavigation, CommonActions } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { RootStackParamList } from "../../App";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -37,7 +39,7 @@ const COLORS = {
 };
 
 export default function OnboardingScreen() {
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, updateUser } = useAuth();
 
   const [step, setStep] = useState(1);
@@ -77,7 +79,9 @@ export default function OnboardingScreen() {
         unitSystem,
         onboardingComplete: true,
       });
-      router.replace("/(tabs)");
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] })
+      );
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong. Please try again.");
       Alert.alert("Error", err?.message ?? "Something went wrong. Please try again.");

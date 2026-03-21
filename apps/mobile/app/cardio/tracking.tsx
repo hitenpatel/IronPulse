@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Pressable } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import * as Battery from "expo-battery";
@@ -36,11 +39,10 @@ interface RoutePoint {
 }
 
 export default function TrackingScreen() {
-  const router = useRouter();
-  const { type, sessionId: resumeSessionId } = useLocalSearchParams<{
-    type: string;
-    sessionId?: string;
-  }>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "CardioTracking">>();
+  const type = route.params?.type;
+  const resumeSessionId = route.params?.sessionId;
   const db = usePowerSync();
   const { user } = useAuth();
   const unitSystem = (user?.unitSystem as "metric" | "imperial") ?? "metric";
@@ -242,15 +244,12 @@ export default function TrackingScreen() {
         calories: null,
       }).catch(() => {});
 
-      router.push({
-        pathname: "/cardio/summary",
-        params: { sessionId: sid, type },
-      });
+      navigation.navigate("CardioSummary", { sessionId: sid, type: type! });
     } catch (e) {
       console.error("Failed to stop tracking:", e);
       setStopping(false);
     }
-  }, [stopping, db, router, type]);
+  }, [stopping, db, navigation, type]);
 
   const pace = calculatePace(distanceMeters, durationSeconds);
 

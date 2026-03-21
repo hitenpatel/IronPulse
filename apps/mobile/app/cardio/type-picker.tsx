@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   PersonStanding,
@@ -48,12 +50,12 @@ const activityTypes: ActivityType[] = [
 ];
 
 export default function TypePickerScreen() {
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [selectedType, setSelectedType] = useState<ActivityType | null>(null);
 
   function handleTypePress(activity: ActivityType) {
     if (!activity.gps) {
-      router.push({ pathname: "/cardio/manual", params: { type: activity.key } });
+      navigation.navigate("CardioManual", { type: activity.key });
       return;
     }
     setSelectedType(activity);
@@ -82,7 +84,7 @@ export default function TypePickerScreen() {
             Start Cardio
           </Text>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => navigation.goBack()}
             style={{
               width: 32,
               height: 32,
@@ -129,7 +131,7 @@ export default function TypePickerScreen() {
             {/* Or log manually link */}
             <Pressable
               style={{ alignItems: "center", marginTop: 24 }}
-              onPress={() => router.push({ pathname: "/cardio/manual", params: { type: "other" } })}
+              onPress={() => navigation.navigate("CardioManual", { type: "other" })}
             >
               <Text style={{ color: C.primary, fontSize: 14, fontWeight: "500" }}>
                 Or log manually
@@ -158,10 +160,7 @@ export default function TypePickerScreen() {
                 alignItems: "center",
               }}
               onPress={() =>
-                router.push({
-                  pathname: "/cardio/tracking",
-                  params: { type: selectedType.key },
-                })
+                navigation.navigate("CardioTracking", { type: selectedType.key })
               }
             >
               <Text
@@ -185,10 +184,7 @@ export default function TypePickerScreen() {
                 alignItems: "center",
               }}
               onPress={() =>
-                router.push({
-                  pathname: "/cardio/manual",
-                  params: { type: selectedType.key },
-                })
+                navigation.navigate("CardioManual", { type: selectedType.key })
               }
             >
               <Text

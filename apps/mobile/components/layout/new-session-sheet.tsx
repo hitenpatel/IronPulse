@@ -3,7 +3,9 @@ import { View, Text, Pressable } from "react-native";
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { Dumbbell, Activity, Scale, ChevronRight } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 
 interface Props {
   open: boolean;
@@ -35,7 +37,7 @@ const ACTIONS = [
 
 export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const router = useRouter();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     if (open) {
@@ -62,7 +64,7 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
     } else if (key === "cardio") {
       onLogCardio?.();
     } else if (key === "metrics") {
-      router.push("/settings/body-metrics");
+      navigation.navigate("Settings" as any);
     }
   };
 

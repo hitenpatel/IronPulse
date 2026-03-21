@@ -9,7 +9,9 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../../App";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { Send } from "lucide-react-native";
@@ -35,7 +37,8 @@ type Message = {
 };
 
 export default function MessageThreadScreen() {
-  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const route = useRoute<RouteProp<RootStackParamList, "MessageThread">>();
+  const userId = route.params?.userId;
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +105,7 @@ export default function MessageThreadScreen() {
           alignItems: "center",
         }}
       >
-        <Stack.Screen options={{ title: "Chat" }} />
+
         <ActivityIndicator color={colors.primary} />
       </View>
     );
