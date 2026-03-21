@@ -61,7 +61,7 @@ import FeedScreen from "./app/feed/index";
 import ChallengesScreen from "./app/challenges/index";
 
 // ─── Custom Tab Bar (moved from tabs layout) ─────────────────────
-import { PulseTabBar } from "./app/(tabs)/_layout";
+import { PulseTabBar } from "./components/layout/pulse-tab-bar";
 
 // ─── Type definitions ────────────────────────────────────────────
 export type RootStackParamList = {
