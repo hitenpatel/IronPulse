@@ -402,14 +402,37 @@ function RootNavigator() {
   return navigator;
 }
 
+// ─── Error Boundary ──────────────────────────────────────────────
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error: any}> {
+  state = { error: null as any };
+  static getDerivedStateFromError(error: any) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#060B14", padding: 20 }}>
+          <Text style={{ color: "#EF4444", fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>App Error</Text>
+          <Text style={{ color: "#F0F4F8", fontSize: 14 }} testID="error-message">
+            {String(this.state.error?.message || this.state.error)}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+import React from "react";
+
 // ─── App Entry ───────────────────────────────────────────────────
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <StatusBar style="light" />
-        <RootNavigator />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <StatusBar style="light" />
+          <RootNavigator />
+        </AuthProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }
