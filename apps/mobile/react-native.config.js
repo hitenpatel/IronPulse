@@ -1,5 +1,13 @@
 module.exports = {
   dependencies: {
+    // react-native-worklets: only needed for Babel plugin, native code
+    // conflicts with react-native-reanimated which bundles its own worklets
+    'react-native-worklets': {
+      platforms: {
+        android: null,
+        ios: null,
+      },
+    },
     // react-native-google-fit uses jcenter() which is removed in Gradle 9
     // Exclude from autolinking - Google Fit accessed via JS API wrapper
     'react-native-google-fit': {
