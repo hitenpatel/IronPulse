@@ -251,8 +251,9 @@ function RootNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "hsl(224, 71%, 4%)" }}>
-        <ActivityIndicator color="hsl(210, 40%, 98%)" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#060B14" }}>
+        <ActivityIndicator color="#F0F4F8" size="large" />
+        <Text style={{ color: "#F0F4F8", marginTop: 16, fontSize: 16 }} testID="loading-text">Loading IronPulse...</Text>
       </View>
     );
   }
