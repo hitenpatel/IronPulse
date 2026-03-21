@@ -1,4 +1,3 @@
-import "./global.css";
 import { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -6,11 +5,15 @@ import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator, type NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { trpc } from "@/lib/trpc";
-import { useNotificationDeepLink } from "@/lib/useNotificationDeepLink";
-import { NewSessionSheet } from "@/components/layout/new-session-sheet";
-import { TemplatePicker } from "@/components/workout/template-picker";
+
+// NativeWind CSS — import conditionally to avoid breaking without expo-router's Metro setup
+try { require("./global.css"); } catch {}
+
+import { AuthProvider, useAuth } from "./lib/auth";
+import { trpc } from "./lib/trpc";
+import { useNotificationDeepLink } from "./lib/useNotificationDeepLink";
+import { NewSessionSheet } from "./components/layout/new-session-sheet";
+import { TemplatePicker } from "./components/workout/template-picker";
 
 // ─── Screen imports ──────────────────────────────────────────────
 // Auth
