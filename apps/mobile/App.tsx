@@ -168,10 +168,15 @@ function MainTabNavigator() {
 }
 
 // ─── Root Navigator (auth-gated) ─────────────────────────────────
+// Component that must be inside NavigationContainer
+function NotificationHandler() {
+  useNotificationDeepLink();
+  return null;
+}
+
 function RootNavigator() {
   const { user, isLoading } = useAuth();
   const [powersyncReady, setPowersyncReady] = useState(false);
-  useNotificationDeepLink();
   const [PowerSyncProvider, setPowerSyncProvider] = useState<any>(null);
   const [db, setDb] = useState<any>(null);
 
@@ -249,6 +254,7 @@ function RootNavigator() {
 
   const navigator = (
     <NavigationContainer>
+      <NotificationHandler />
       <RootStack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={needsAuth ? "Auth" : needsOnboarding ? "Auth" : "MainTabs"}
