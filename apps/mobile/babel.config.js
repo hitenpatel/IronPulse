@@ -5,5 +5,9 @@ module.exports = function (api) {
       ["babel-preset-expo", { jsxImportSource: "nativewind" }],
       "nativewind/babel",
     ],
+    plugins: [
+      // Must be listed LAST — fixes "_toString" ReferenceError with Hermes
+      "react-native-reanimated/plugin",
+    ],
   };
 };
