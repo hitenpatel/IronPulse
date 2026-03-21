@@ -128,13 +128,21 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
 
-      # Deduplicate React for Metro bundling (prevents "useRef is null" crash)
-      - name: Deduplicate React
+      # Deduplicate React for Metro bundling and verify version
+      - name: Deduplicate React and verify 19.1.0
         run: |
+          # Remove nested react copies
           find node_modules -path "*/node_modules/react/index.js" \
             -not -path "node_modules/react/index.js" \
             -not -path "apps/mobile/node_modules/react/index.js" \
             | while read f; do rm -rf "$(dirname "$f")"; done
+          # Verify correct version is installed (19.2.0 has _toString ReferenceError on RN 0.81)
+          REACT_VER=$(node -e "console.log(require('react/package.json').version)")
+          echo "Root react version: $REACT_VER"
+          if [[ "$REACT_VER" != "19.1.0" ]]; then
+            echo "ERROR: Expected react@19.1.0 but got $REACT_VER — forcing install"
+            pnpm add react@19.1.0 react-dom@19.1.0 --save-exact -w
+          fi
 
       - name: Expo prebuild Android
         run: |
