@@ -14,7 +14,13 @@
     "cleanup:tokens": "tsx packages/db/scripts/cleanup-expired-tokens.ts"
   },
   "packageManager": "pnpm@9.15.4",
+  "pnpm": {
+    "overrides": {
+      "babel-preset-expo": "~54.0.10"
+    }
+  },
   "devDependencies": {
+    "react-native-worklets": "^0.7.4",
     "@types/node": "^25.4.0",
     "changelogen": "^0.6.2",
     "turbo": "^2.8.16",
