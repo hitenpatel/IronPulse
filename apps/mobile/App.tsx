@@ -145,39 +145,25 @@ function AuthNavigator() {
 function MainTabNavigator() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const toggleSheet = () => setSheetOpen((prev) => !prev);
 
   return (
-    <>
-      <Tab.Navigator
-        screenOptions={{ headerShown: false }}
-        tabBar={(props) => (
-          <PulseTabBar
-            {...props}
-            sheetOpen={sheetOpen}
-            onFabPress={toggleSheet}
-          />
-        )}
-      >
-        <Tab.Screen name="Home" component={DashboardScreen} options={{ title: "Home" }} />
-        <Tab.Screen name="Stats" component={StatsScreen} options={{ title: "Stats" }} />
-        <Tab.Screen name="Exercises" component={ExercisesScreen} options={{ title: "Exercises" }} />
-        <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
-      </Tab.Navigator>
-
-      <NewSessionSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        onStartWorkout={() => setTemplatePickerOpen(true)}
-        onLogCardio={() => navigation.navigate("CardioTypePicker")}
-      />
-      <TemplatePicker
-        open={templatePickerOpen}
-        onClose={() => setTemplatePickerOpen(false)}
-      />
-    </>
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => (
+        <PulseTabBar
+          {...props}
+          sheetOpen={sheetOpen}
+          onFabPress={toggleSheet}
+        />
+      )}
+    >
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ title: "Home" }} />
+      <Tab.Screen name="Stats" component={StatsScreen} options={{ title: "Stats" }} />
+      <Tab.Screen name="Exercises" component={ExercisesScreen} options={{ title: "Exercises" }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
+    </Tab.Navigator>
   );
 }
 
