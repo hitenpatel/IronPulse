@@ -1,5 +1,13 @@
 module.exports = {
   dependencies: {
+    // @powersync/react-native: uses SharedArrayBuffer which crashes on Hermes Android debug
+    // In E2E builds, PowerSync is stubbed via Metro config
+    '@powersync/react-native': {
+      platforms: {
+        android: null,
+        ios: null,
+      },
+    },
     // react-native-worklets: only needed for Babel plugin, native code
     // conflicts with react-native-reanimated which bundles its own worklets
     'react-native-worklets': {
