@@ -16,24 +16,27 @@ config.resolver.nodeModulesPaths = [
 config.resolver.disableHierarchicalLookup = true;
 
 // In E2E mode, stub out PowerSync modules that crash on Hermes (SharedArrayBuffer)
-console.log("[Metro Config] EXPO_PUBLIC_E2E =", process.env.EXPO_PUBLIC_E2E);
-if (process.env.EXPO_PUBLIC_E2E === "1") {
-  console.log("[Metro Config] Stubbing PowerSync modules for E2E build");
-  const originalResolveRequest = config.resolver.resolveRequest;
+const isE2E = process.env.EXPO_PUBLIC_E2E === "1";
+console.log("[Metro Config] EXPO_PUBLIC_E2E =", process.env.EXPO_PUBLIC_E2E, "isE2E =", isE2E);
+
+if (isE2E) {
+  console.log("[Metro Config] Stubbing ALL PowerSync imports for E2E build");
+  const stubPath = path.resolve(projectRoot, "lib/powersync-stub.js");
+
+  // Use resolveRequest to intercept ALL module resolutions
   config.resolver.resolveRequest = (context, moduleName, platform) => {
-    // Stub PowerSync modules with empty modules
+    // Match any powersync or ironpulse/sync import from ANY location
     if (
+      moduleName === "@powersync/react" ||
+      moduleName === "@powersync/react-native" ||
+      moduleName === "@powersync/common" ||
       moduleName.startsWith("@powersync/") ||
       moduleName === "@ironpulse/sync"
     ) {
-      return {
-        filePath: path.resolve(projectRoot, "lib/powersync-stub.js"),
-        type: "sourceFile",
-      };
+      console.log(`[Metro Stub] Stubbing: ${moduleName}`);
+      return { filePath: stubPath, type: "sourceFile" };
     }
-    if (originalResolveRequest) {
-      return originalResolveRequest(context, moduleName, platform);
-    }
+    // Default resolution
     return context.resolveRequest(context, moduleName, platform);
   };
 }
