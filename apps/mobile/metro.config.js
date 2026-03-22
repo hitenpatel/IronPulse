@@ -15,4 +15,25 @@ config.resolver.nodeModulesPaths = [
 
 config.resolver.disableHierarchicalLookup = true;
 
+// In E2E mode, stub out PowerSync modules that crash on Hermes (SharedArrayBuffer)
+if (process.env.EXPO_PUBLIC_E2E === "1") {
+  const originalResolveRequest = config.resolver.resolveRequest;
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    // Stub PowerSync modules with empty modules
+    if (
+      moduleName.startsWith("@powersync/") ||
+      moduleName === "@ironpulse/sync"
+    ) {
+      return {
+        filePath: path.resolve(projectRoot, "lib/powersync-stub.js"),
+        type: "sourceFile",
+      };
+    }
+    if (originalResolveRequest) {
+      return originalResolveRequest(context, moduleName, platform);
+    }
+    return context.resolveRequest(context, moduleName, platform);
+  };
+}
+
 module.exports = config;
