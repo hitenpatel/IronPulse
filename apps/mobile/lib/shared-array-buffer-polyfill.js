@@ -4,6 +4,9 @@ if (typeof globalThis.SharedArrayBuffer === "undefined") {
   globalThis.SharedArrayBuffer = ArrayBuffer;
 }
 
+// Note: URL polyfill is handled by react-native's own setup (InitializeCore)
+// If it's still missing, it means the RN polyfills haven't run yet
+
 if (typeof globalThis.Atomics === "undefined") {
   globalThis.Atomics = {
     add: function () { return 0; },
