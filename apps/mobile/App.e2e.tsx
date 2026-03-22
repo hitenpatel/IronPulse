@@ -184,12 +184,10 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error:
 export default function App() {
   return (
     <View style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <AuthProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </AuthProvider>
-      </ErrorBoundary>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </AuthProvider>
     </View>
   );
 }
