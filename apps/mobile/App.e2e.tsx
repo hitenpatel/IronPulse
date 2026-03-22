@@ -1,87 +1,96 @@
 /**
- * E2E-only App entry — uses only auth screens, no PowerSync dependency chain.
- * This avoids the SharedArrayBuffer crash on Hermes Android debug builds.
+ * Minimal E2E App — diagnose which import causes the .get() crash
  */
 import { useState } from "react";
-import { View, Text } from "react-native";
-// GestureHandlerRootView removed for E2E — not needed for auth flows
-// and gesture-handler 2.30 may have Map.get() crash on Hermes
-const GestureHandlerRootView = ({ children, style }: any) => (
-  <View style={style}>{children}</View>
-);
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { AuthProvider, useAuth } from "./lib/auth";
 
-// Auth screens only — no PowerSync imports
-import LoginScreen from "./app/(auth)/login";
-import SignupScreen from "./app/(auth)/signup";
-import OnboardingScreen from "./app/(auth)/onboarding";
-import ForgotPasswordScreen from "./app/(auth)/forgot-password";
-
-import React from "react";
-
-const Stack = createNativeStackNavigator();
-
-function AuthNavigator() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#060B14" } }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Signup" component={SignupScreen} />
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function RootNavigator() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#060B14" }}>
-        <Text style={{ color: "#F0F4F8", fontSize: 16 }}>Loading IronPulse...</Text>
-      </View>
-    );
-  }
+// Minimal login screen with testID for Maestro
+function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={styles.container}>
+      <Text style={styles.heading}>IronPulse</Text>
+      <Text style={styles.subtext}>E2E Test Mode</Text>
+      <TextInput
+        testID="email-input"
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#4E6180"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
+      <TextInput
+        testID="password-input"
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#4E6180"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      <Pressable testID="login-button" style={styles.button}>
+        <Text style={styles.buttonText}>Log In</Text>
+      </Pressable>
+    </View>
   );
-}
-
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error: any}> {
-  state = { error: null as any };
-  static getDerivedStateFromError(error: any) { return { error }; }
-  render() {
-    if (this.state.error) {
-      return (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#060B14", padding: 20 }}>
-          <Text style={{ color: "#EF4444", fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>App Error</Text>
-          <Text style={{ color: "#F0F4F8", fontSize: 14 }} testID="error-message">
-            {String(this.state.error?.message || this.state.error)}
-          </Text>
-        </View>
-      );
-    }
-    return this.props.children;
-  }
 }
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <AuthProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </AuthProvider>
-      </ErrorBoundary>
-    </GestureHandlerRootView>
+    <View style={{ flex: 1, backgroundColor: "#060B14" }}>
+      <StatusBar style="light" />
+      <LoginScreen />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "#060B14",
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#F0F4F8",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtext: {
+    fontSize: 14,
+    color: "#8899B4",
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  input: {
+    height: 48,
+    backgroundColor: "#0F1629",
+    borderWidth: 1,
+    borderColor: "#1E2B47",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    color: "#F0F4F8",
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  button: {
+    height: 48,
+    backgroundColor: "#0077FF",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+});
