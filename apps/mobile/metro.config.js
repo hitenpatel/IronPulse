@@ -16,7 +16,9 @@ config.resolver.nodeModulesPaths = [
 config.resolver.disableHierarchicalLookup = true;
 
 // In E2E mode, stub out PowerSync modules that crash on Hermes (SharedArrayBuffer)
+console.log("[Metro Config] EXPO_PUBLIC_E2E =", process.env.EXPO_PUBLIC_E2E);
 if (process.env.EXPO_PUBLIC_E2E === "1") {
+  console.log("[Metro Config] Stubbing PowerSync modules for E2E build");
   const originalResolveRequest = config.resolver.resolveRequest;
   config.resolver.resolveRequest = (context, moduleName, platform) => {
     // Stub PowerSync modules with empty modules
