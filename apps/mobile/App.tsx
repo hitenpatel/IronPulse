@@ -181,10 +181,23 @@ function RootNavigator() {
   const [db, setDb] = useState<any>(null);
 
   // Initialize PowerSync lazily after first render
+  // Skip in E2E mode or if SharedArrayBuffer is not available (Android debug)
   useEffect(() => {
+    const isE2E = process.env.EXPO_PUBLIC_E2E === "1";
+    if (isE2E) {
+      setPowersyncReady(true);
+      return;
+    }
+
     (async () => {
       try {
-        const { getPowerSyncDatabase } = await import("@/lib/powersync");
+        // Check SharedArrayBuffer support before importing PowerSync
+        if (typeof SharedArrayBuffer === "undefined") {
+          console.warn("SharedArrayBuffer not available — skipping PowerSync");
+          setPowersyncReady(true);
+          return;
+        }
+        const { getPowerSyncDatabase } = await import("./lib/powersync");
         const { PowerSyncContext } = await import("@powersync/react");
         const database = getPowerSyncDatabase();
         setDb(database);
