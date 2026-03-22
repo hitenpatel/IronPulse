@@ -63,7 +63,7 @@ import CalendarScreen from "./app/calendar/index";
 import FeedScreen from "./app/feed/index";
 import ChallengesScreen from "./app/challenges/index";
 
-// ─── Custom Tab Bar (moved from tabs layout) ─────────────────────
+// Custom Tab Bar
 import { PulseTabBar } from "./components/layout/pulse-tab-bar";
 
 // ─── Type definitions ────────────────────────────────────────────
@@ -431,26 +431,6 @@ import React from "react";
 
 // ─── App Entry ───────────────────────────────────────────────────
 export default function App() {
-  const isE2E = process.env.EXPO_PUBLIC_E2E === "1";
-
-  // In E2E mode, use a simplified app that skips PowerSync entirely
-  if (isE2E) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ErrorBoundary>
-          <AuthProvider>
-            <StatusBar style="light" />
-            <NavigationContainer>
-              <RootStack.Navigator screenOptions={{ headerShown: false }}>
-                <RootStack.Screen name="Auth" component={AuthNavigator} />
-              </RootStack.Navigator>
-            </NavigationContainer>
-          </AuthProvider>
-        </ErrorBoundary>
-      </GestureHandlerRootView>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
