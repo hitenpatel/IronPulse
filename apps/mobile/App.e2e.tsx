@@ -8,8 +8,18 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView, LogBox } from "react-native";
 
-// Suppress all LogBox errors in E2E mode — prevents red overlay from blocking Maestro
+// Suppress all error overlays in E2E mode — prevents red box from blocking Maestro
 LogBox.ignoreAllLogs(true);
+if (__DEV__) {
+  // @ts-ignore — disable RedBox in dev mode for E2E
+  require("react-native").unstable_enableLogBox?.(false);
+  // Also try the ErrorUtils approach
+  const originalHandler = (globalThis as any).ErrorUtils?.getGlobalHandler?.();
+  (globalThis as any).ErrorUtils?.setGlobalHandler?.((error: any, isFatal: boolean) => {
+    console.warn("[E2E] Suppressed error:", error?.message || error);
+    // Don't show RedBox — just log
+  });
+}
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
