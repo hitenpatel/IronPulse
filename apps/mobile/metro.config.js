@@ -15,6 +15,19 @@ config.resolver.nodeModulesPaths = [
 
 config.resolver.disableHierarchicalLookup = true;
 
+// Inject SharedArrayBuffer polyfill at the very start of the bundle
+// This runs before ANY module evaluation, including native module init
+config.serializer = {
+  ...config.serializer,
+  getPolyfills: () => {
+    const defaultPolyfills = require("react-native/rn-get-polyfills")();
+    return [
+      path.resolve(projectRoot, "lib/shared-array-buffer-polyfill.js"),
+      ...defaultPolyfills,
+    ];
+  },
+};
+
 // In E2E mode, stub out PowerSync modules that crash on Hermes (SharedArrayBuffer)
 const isE2E = process.env.EXPO_PUBLIC_E2E === "1";
 console.log("[Metro Config] EXPO_PUBLIC_E2E =", process.env.EXPO_PUBLIC_E2E, "isE2E =", isE2E);
