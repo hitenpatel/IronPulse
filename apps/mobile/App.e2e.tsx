@@ -4,7 +4,11 @@
  */
 import { useState } from "react";
 import { View, Text } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+// GestureHandlerRootView removed for E2E — not needed for auth flows
+// and gesture-handler 2.30 may have Map.get() crash on Hermes
+const GestureHandlerRootView = ({ children, style }: any) => (
+  <View style={style}>{children}</View>
+);
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
