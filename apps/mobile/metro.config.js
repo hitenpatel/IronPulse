@@ -38,13 +38,16 @@ if (isE2E) {
 
   // Use resolveRequest to intercept ALL module resolutions
   config.resolver.resolveRequest = (context, moduleName, platform) => {
-    // Match any powersync or ironpulse/sync import from ANY location
+    // Match any powersync or ironpulse/sync import from ANY location.
+    // Also catch @journeyapps/react-native-quick-sqlite (peer dep of
+    // @powersync/react-native) which may be hoisted in CI builds.
     if (
       moduleName === "@powersync/react" ||
       moduleName === "@powersync/react-native" ||
       moduleName === "@powersync/common" ||
       moduleName.startsWith("@powersync/") ||
-      moduleName === "@ironpulse/sync"
+      moduleName === "@ironpulse/sync" ||
+      moduleName.startsWith("@journeyapps/react-native-quick-sqlite")
     ) {
       console.log(`[Metro Stub] Stubbing: ${moduleName}`);
       return { filePath: stubPath, type: "sourceFile" };
