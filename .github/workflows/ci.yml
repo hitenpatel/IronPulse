@@ -233,8 +233,10 @@ jobs:
             -not -path "apps/mobile/node_modules/react/index.js" \
             | while read f; do rm -rf "$(dirname "$f")"; done
 
-      - name: Push database schema
-        run: pnpm --filter @ironpulse/db db:push
+      - name: Push database schema and seed
+        run: |
+          pnpm --filter @ironpulse/db db:push
+          pnpm --filter @ironpulse/db db:seed || true
 
       - name: Expo prebuild iOS
         run: |
@@ -297,6 +299,15 @@ jobs:
             sleep 2
             if [ "$i" -eq 60 ]; then echo "ERROR: API failed to start"; cat /tmp/api-server.log; exit 1; fi
           done
+
+      - name: Create E2E test user
+        run: |
+          curl -s -X POST http://localhost:3000/api/trpc/auth.signUp \
+            -H "Content-Type: application/json" \
+            -d '{"json":{"name":"Test User","email":"test@example.com","password":"password123"}}' \
+            -o /tmp/signup-resp.json -w "Signup: HTTP %{http_code}\n"
+          cat /tmp/signup-resp.json | head -c 200
+          echo ""
 
       - name: Install Maestro CLI
         run: |
@@ -396,8 +407,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Push database schema
-        run: pnpm --filter @ironpulse/db db:push
+      - name: Push database schema and seed
+        run: |
+          pnpm --filter @ironpulse/db db:push
+          pnpm --filter @ironpulse/db db:seed || true
 
       - name: Install Maestro CLI
         run: |
@@ -429,6 +442,15 @@ jobs:
           for i in {1..30}; do
             curl -sf http://localhost:3000/api/health && break || sleep 2
           done
+
+      - name: Create E2E test user
+        run: |
+          curl -s -X POST http://localhost:3000/api/trpc/auth.signUp \
+            -H "Content-Type: application/json" \
+            -d '{"json":{"name":"Test User","email":"test@example.com","password":"password123"}}' \
+            -o /tmp/signup-resp.json -w "Signup: HTTP %{http_code}\n"
+          cat /tmp/signup-resp.json | head -c 200
+          echo ""
 
       - name: Run Maestro tests
         uses: reactivecircus/android-emulator-runner@v2
