@@ -6,7 +6,10 @@
  * instead of importing the complex auth screen components.
  */
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView, LogBox } from "react-native";
+
+// Suppress all LogBox errors in E2E mode — prevents red overlay from blocking Maestro
+LogBox.ignoreAllLogs(true);
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
