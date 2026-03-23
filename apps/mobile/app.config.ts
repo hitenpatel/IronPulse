@@ -22,8 +22,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     adaptiveIcon: {
       backgroundColor: "#0a0e1a",
     },
-    // Allow cleartext HTTP for E2E tests (API runs on localhost without TLS)
-    usesCleartextTraffic: true,
     config: {
       googleMaps: {
         apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
@@ -40,6 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "./plugins/swift-concurrency-fix",
+    "./plugins/android-cleartext",
     "expo-secure-store",
     [
       "expo-location",
