@@ -35,6 +35,11 @@ if (typeof globalThis.URL === "undefined") {
   };
 }
 
+// Also set on global/self if they exist (some libraries check window.URL or self.URL)
+if (typeof global !== "undefined" && typeof global.URL === "undefined") {
+  global.URL = globalThis.URL;
+}
+
 if (typeof globalThis.URLSearchParams === "undefined") {
   globalThis.URLSearchParams = function URLSearchParams(init) {
     this._params = {};
