@@ -7,6 +7,18 @@ import {
 } from "react";
 import * as SecureStore from "expo-secure-store";
 import type { SessionUser } from "@ironpulse/shared";
+
+// Ensure URL is available before tRPC makes HTTP requests (Hermes may not have it)
+if (typeof globalThis.URL === "undefined" || typeof globalThis.URL !== "function") {
+  globalThis.URL = function URL(url: string, base?: string) {
+    if (base && typeof url === "string" && !url.match(/^https?:/)) {
+      url = String(base).replace(/\/$/, "") + "/" + url.replace(/^\//, "");
+    }
+    (this as any).href = String(url);
+    (this as any).toString = () => (this as any).href;
+  } as any;
+}
+
 import { trpc } from "./trpc";
 import { isBiometricEnabled, isBiometricAvailable, authenticateWithBiometric, disableBiometric } from "./biometric";
 
