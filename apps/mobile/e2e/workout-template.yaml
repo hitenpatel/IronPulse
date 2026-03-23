@@ -1,7 +1,13 @@
 appId: com.ironpulse.app
 ---
-- launchApp
+- launchApp:
+    clearKeychain: true
+    clearState: true
 - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
 - tapOn:
     id: "email-input"
 - inputText: "test@example.com"
