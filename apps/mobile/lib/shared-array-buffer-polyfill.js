@@ -15,35 +15,41 @@ if (typeof globalThis.Atomics === "undefined") {
   };
 }
 
-// Ensure URL is available (some Hermes builds don't have it)
+// Pure JS URL polyfill (no require calls — safe for polyfill phase)
 if (typeof globalThis.URL === "undefined") {
-  try {
-    // React Native provides URL in its Blob module
-    const { URL, URLSearchParams } = require("react-native/Libraries/Blob/URL");
-    if (URL) globalThis.URL = URL;
-    if (URLSearchParams && typeof globalThis.URLSearchParams === "undefined") {
-      globalThis.URLSearchParams = URLSearchParams;
+  globalThis.URL = function URL(url, base) {
+    if (base && typeof url === "string" && !url.match(/^https?:/)) {
+      url = String(base).replace(/\/$/, "") + "/" + url.replace(/^\//, "");
     }
-  } catch (e) {
-    // Fallback: minimal URL implementation for tRPC httpBatchLink
-    globalThis.URL = class URL {
-      constructor(url, base) {
-        if (base && !url.startsWith("http")) {
-          url = base.replace(/\/$/, "") + "/" + url.replace(/^\//, "");
-        }
-        this.href = url;
-        const match = url.match(/^(https?:)\/\/([^/:]+)(:\d+)?(\/[^?#]*)?(\?[^#]*)?(#.*)?$/);
-        this.protocol = match?.[1] || "https:";
-        this.hostname = match?.[2] || "";
-        this.port = match?.[3]?.slice(1) || "";
-        this.pathname = match?.[4] || "/";
-        this.search = match?.[5] || "";
-        this.hash = match?.[6] || "";
-        this.host = this.hostname + (this.port ? ":" + this.port : "");
-        this.origin = this.protocol + "//" + this.host;
-        this.searchParams = new URLSearchParams(this.search.slice(1));
-      }
-      toString() { return this.href; }
+    this.href = String(url);
+    var m = this.href.match(/^(https?:)\/\/([^/:]+)(:\d+)?(\/[^?#]*)?(\?[^#]*)?(#.*)?$/);
+    this.protocol = m && m[1] || "https:";
+    this.hostname = m && m[2] || "";
+    this.port = m && m[3] ? m[3].slice(1) : "";
+    this.pathname = m && m[4] || "/";
+    this.search = m && m[5] || "";
+    this.hash = m && m[6] || "";
+    this.host = this.hostname + (this.port ? ":" + this.port : "");
+    this.origin = this.protocol + "//" + this.host;
+    this.toString = function() { return this.href; };
+  };
+}
+
+if (typeof globalThis.URLSearchParams === "undefined") {
+  globalThis.URLSearchParams = function URLSearchParams(init) {
+    this._params = {};
+    if (typeof init === "string") {
+      init.split("&").forEach(function(pair) {
+        var parts = pair.split("=");
+        if (parts[0]) this._params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1] || "");
+      }.bind(this));
+    }
+    this.get = function(key) { return this._params[key] || null; };
+    this.has = function(key) { return key in this._params; };
+    this.toString = function() {
+      return Object.keys(this._params).map(function(k) {
+        return encodeURIComponent(k) + "=" + encodeURIComponent(this._params[k]);
+      }.bind(this)).join("&");
     };
-  }
+  };
 }
