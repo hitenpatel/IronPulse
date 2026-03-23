@@ -173,7 +173,7 @@ jobs:
         run: |
           cd apps/mobile/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Save Gradle cache
         if: always()
@@ -189,7 +189,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 1
 
   # ── iOS: build simulator .app + Maestro E2E on macOS ──
@@ -464,7 +464,7 @@ jobs:
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
             sleep 5
-            adb install apk/app-debug.apk
+            adb install apk/app-release.apk
             adb reverse tcp:3000 tcp:3000
             adb logcat -G 16M
             adb logcat -c
