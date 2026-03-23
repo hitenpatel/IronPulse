@@ -20,6 +20,17 @@ if (typeof globalThis.self === "undefined") {
   globalThis.self = globalThis;
 }
 
+// Suppress RedBox error overlay in E2E mode
+// This runs at polyfill level — before any module errors can trigger the overlay
+if (typeof ErrorUtils !== "undefined" && typeof process !== "undefined" && process.env && process.env.EXPO_PUBLIC_E2E === "1") {
+  ErrorUtils.setGlobalHandler(function(error, isFatal) {
+    // Swallow non-fatal errors silently in E2E
+    if (!isFatal && typeof console !== "undefined") {
+      console.warn("[E2E Polyfill] Suppressed:", error && error.message || error);
+    }
+  });
+}
+
 // Pure JS URL polyfill (no require calls — safe for polyfill phase)
 if (typeof globalThis.URL === "undefined") {
   globalThis.URL = function URL(url, base) {
