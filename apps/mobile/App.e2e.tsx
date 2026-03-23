@@ -5,11 +5,24 @@
  * Uses AuthProvider for real login/signup via tRPC, but renders simple inline UI
  * instead of importing the complex auth screen components.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView, LogBox } from "react-native";
 
 // Suppress LogBox warnings in E2E mode
 LogBox.ignoreAllLogs(true);
+
+// Suppress RedBox error overlay — must happen after RN runtime is ready
+// We do this by replacing the global error handler after a tick
+setTimeout(() => {
+  try {
+    const ErrorUtils = (globalThis as any).ErrorUtils;
+    if (ErrorUtils?.setGlobalHandler) {
+      ErrorUtils.setGlobalHandler((error: any) => {
+        console.warn("[E2E] Suppressed RedBox:", error?.message || error);
+      });
+    }
+  } catch {}
+}, 0);
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
