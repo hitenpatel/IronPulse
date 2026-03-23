@@ -5,6 +5,7 @@ appId: com.ironpulse.app
 # verifies the button renders when biometric is enrolled
 - launchApp:
     clearKeychain: true
+    clearState: true
 - extendedWaitUntil:
     visible:
       id: "email-input"
