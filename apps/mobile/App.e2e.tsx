@@ -38,7 +38,7 @@ const Tab = createBottomTabNavigator();
 // ─── Inline Auth Screens (no external deps that crash Hermes) ────
 
 function E2ELoginScreen({ navigation }: any) {
-  const { signIn } = useAuth();
+  const auth = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,7 +46,17 @@ function E2ELoginScreen({ navigation }: any) {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      await signIn(email, password);
+      // Use direct fetch + setAuthDirect to bypass tRPC's URL dependency on Hermes
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
+      const resp = await fetch(apiUrl + "/api/trpc/auth.mobileSignIn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: { email, password } }),
+      });
+      const data = await resp.json();
+      const result = data?.result?.data?.json;
+      if (!result?.token) throw new Error(data?.error?.json?.message || "Login failed");
+      await auth.setAuthDirect(result.token, result.user);
     } catch (err: any) {
       Alert.alert("Login Failed", String(err?.message || err || "Unknown error"));
     } finally {
@@ -73,14 +83,23 @@ function E2ELoginScreen({ navigation }: any) {
 }
 
 function E2ESignupScreen({ navigation }: any) {
-  const { signUp } = useAuth();
+  const { signUp, setAuthDirect } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSignup = async () => {
     try {
-      await signUp(name, email, password);
+      // Use direct fetch to bypass tRPC URL issue
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
+      const resp = await fetch(apiUrl + "/api/trpc/auth.signUp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: { name, email, password } }),
+      });
+      const data = await resp.json();
+      const result = data?.result?.data?.json;
+      if (result?.token) await setAuthDirect(result.token, result.user);
     } catch (err: any) {
       Alert.alert("Signup Failed", err?.message || "Try again");
     }

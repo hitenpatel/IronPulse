@@ -23,6 +23,8 @@ interface AuthContextValue {
   updateUser: (updates: Partial<SessionUser>) => Promise<void>;
   showBiometricPrompt: boolean;
   dismissBiometricPrompt: () => void;
+  /** Direct state setter for E2E — bypasses tRPC */
+  setAuthDirect: (token: string, user: SessionUser) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -82,23 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    let result: any;
-    try {
-      result = await trpc.auth.mobileSignIn.mutate({ email, password });
-    } catch (tRPCErr) {
-      // Fallback: direct fetch (works when tRPC fails on Hermes due to URL polyfill issues)
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
-      const resp = await fetch(`${apiUrl}/api/trpc/auth.mobileSignIn`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ json: { email, password } }),
-      });
-      if (!resp.ok) throw new Error(`Login failed: HTTP ${resp.status}`);
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error.json?.message || "Login failed");
-      result = data.result?.data?.json;
-      if (!result?.token) throw new Error("No token in response");
-    }
+    const result = await trpc.auth.mobileSignIn.mutate({ email, password });
     await SecureStore.setItemAsync("auth-token", result.token);
     await SecureStore.setItemAsync("auth-user", JSON.stringify(result.user));
     setToken(result.token);
@@ -179,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, signIn, signInWithBiometric, signInWithOAuth, signUp, signOut, updateUser, showBiometricPrompt, dismissBiometricPrompt }}
+      value={{ user, token, isLoading, signIn, signInWithBiometric, signInWithOAuth, signUp, signOut, updateUser, showBiometricPrompt, dismissBiometricPrompt, setAuthDirect: async (t: string, u: SessionUser) => { await SecureStore.setItemAsync("auth-token", t); await SecureStore.setItemAsync("auth-user", JSON.stringify(u)); setToken(t); setUser(u); } }}
     >
       {children}
     </AuthContext.Provider>
