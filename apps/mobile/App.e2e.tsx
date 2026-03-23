@@ -48,7 +48,7 @@ function E2ELoginScreen({ navigation }: any) {
     try {
       await signIn(email, password);
     } catch (err: any) {
-      Alert.alert("Login Failed", err?.message || "Check your credentials");
+      Alert.alert("Login Failed", String(err?.message || err || "Unknown error"));
     } finally {
       setLoading(false);
     }

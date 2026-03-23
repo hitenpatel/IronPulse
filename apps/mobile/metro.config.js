@@ -22,8 +22,8 @@ config.serializer = {
   getPolyfills: () => {
     const defaultPolyfills = require("react-native/rn-get-polyfills")();
     return [
-      ...defaultPolyfills,
       path.resolve(projectRoot, "lib/shared-array-buffer-polyfill.js"),
+      ...defaultPolyfills,
     ];
   },
 };
