@@ -15,12 +15,9 @@ if (typeof globalThis.Atomics === "undefined") {
   };
 }
 
-// Debug: check what's available
-if (typeof console !== "undefined" && console.log) {
-  console.log("[Polyfill] globalThis.URL exists:", typeof globalThis.URL !== "undefined");
-  console.log("[Polyfill] global.URL exists:", typeof global !== "undefined" && typeof global.URL !== "undefined");
-  console.log("[Polyfill] self exists:", typeof self !== "undefined");
-  console.log("[Polyfill] window exists:", typeof window !== "undefined");
+// Ensure 'self' exists (some libraries like tRPC check self.URL)
+if (typeof globalThis.self === "undefined") {
+  globalThis.self = globalThis;
 }
 
 // Pure JS URL polyfill (no require calls — safe for polyfill phase)
