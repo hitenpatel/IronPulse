@@ -15,7 +15,6 @@ import {
   Alert,
   ScrollView,
   LogBox,
-  Modal,
   Keyboard,
 } from "react-native";
 
@@ -248,13 +247,8 @@ function E2EDashboard() {
         <Text style={{ color: "#FFF", fontSize: 28, lineHeight: 32 }}>+</Text>
       </Pressable>
 
-      {/* FAB Modal */}
-      <Modal
-        visible={fabOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFabOpen(false)}
-      >
+      {/* FAB overlay — absolute View instead of Modal so iOS exposes testIDs */}
+      {fabOpen && (
         <Pressable style={styles.fabOverlay} onPress={() => setFabOpen(false)}>
           <View style={styles.fabMenu}>
             <Pressable
@@ -281,7 +275,7 @@ function E2EDashboard() {
             </Pressable>
           </View>
         </Pressable>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -594,14 +588,9 @@ function E2EWorkoutActiveScreen() {
         <Text style={styles.primaryBtnText}>+ Add Exercise</Text>
       </Pressable>
 
-      {/* Exercise search modal */}
-      <Modal
-        visible={searchOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSearchOpen(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "#060B14" }}>
+      {/* Exercise search overlay — absolute View instead of Modal so iOS exposes testIDs */}
+      {searchOpen && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#060B14", zIndex: 100 }}>
           <View style={styles.navHeader}>
             <Pressable onPress={() => setSearchOpen(false)}>
               <Text style={{ color: "#0077FF", fontSize: 16 }}>Cancel</Text>
@@ -632,7 +621,7 @@ function E2EWorkoutActiveScreen() {
             ))}
           </ScrollView>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -1114,12 +1103,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabOverlay: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
     paddingBottom: 104,
     paddingRight: 24,
     alignItems: "flex-end",
+    zIndex: 100,
   },
   fabMenu: {
     backgroundColor: "#0F1629",

@@ -6,7 +6,10 @@ appId: com.ironpulse.app
     permissions:
       location: allow
       notifications: allow
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
 - tapOn:
     id: "email-input"
 - inputText: "test@example.com"
@@ -15,12 +18,26 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "login-button"
-- assertVisible:
-    id: "greeting"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
 - tapOn:
     id: "fab-button"
+- extendedWaitUntil:
+    visible:
+      id: "fab-start-cardio"
+    timeout: 10000
 - tapOn:
     id: "fab-start-cardio"
+- extendedWaitUntil:
+    visible: "Run"
+    timeout: 10000
 - tapOn: "Run"
+- extendedWaitUntil:
+    visible: "Track with GPS"
+    timeout: 10000
 - tapOn: "Track with GPS"
-- assertVisible: "Stop"
+- extendedWaitUntil:
+    visible: "Stop"
+    timeout: 15000

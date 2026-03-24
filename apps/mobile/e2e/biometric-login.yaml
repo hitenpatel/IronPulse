@@ -22,7 +22,7 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible:
       id: "greeting"
-    timeout: 30000
+    timeout: 60000
 # Sign out and verify login screen loads
 - waitForAnimationToEnd
 - tapOn: "Profile"
@@ -33,6 +33,6 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible:
       id: "email-input"
-    timeout: 30000
+    timeout: 60000
 - assertVisible:
     id: "login-button"

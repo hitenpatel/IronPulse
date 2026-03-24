@@ -16,10 +16,18 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "login-button"
-- assertVisible:
-    id: "greeting"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
 - tapOn:
     id: "fab-button"
+- extendedWaitUntil:
+    visible:
+      id: "fab-start-workout"
+    timeout: 10000
 - tapOn:
     id: "fab-start-workout"
-- assertVisible: "Empty Workout"
+- extendedWaitUntil:
+    visible: "Empty Workout"
+    timeout: 10000

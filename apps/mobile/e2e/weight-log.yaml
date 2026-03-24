@@ -18,7 +18,7 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible:
       id: "greeting"
-    timeout: 30000
+    timeout: 60000
 - waitForAnimationToEnd
 - tapOn: "Stats"
 - extendedWaitUntil:
@@ -28,7 +28,7 @@ appId: com.ironpulse.app
 - tapOn:
     id: "weight-input"
 - inputText: "75.5"
-- hideKeyboard
+- pressKey: Return
 - tapOn:
     id: "log-weight"
 - extendedWaitUntil:

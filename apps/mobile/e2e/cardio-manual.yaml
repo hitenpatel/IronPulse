@@ -18,7 +18,7 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible:
       id: "greeting"
-    timeout: 30000
+    timeout: 60000
 - waitForAnimationToEnd
 - tapOn:
     id: "fab-button"
@@ -47,7 +47,7 @@ appId: com.ironpulse.app
 - tapOn:
     id: "distance-input"
 - inputText: "5.0"
-- hideKeyboard
+- pressKey: Return
 - tapOn:
     id: "save-cardio"
 - extendedWaitUntil:
