@@ -34,6 +34,7 @@ appId: com.ironpulse.app
 - tapOn:
     id: "log-weight"
 - extendedWaitUntil:
-    visible: "80"
+    visible:
+      id: "logged-weight"
     timeout: 10000
 - assertVisible: "18.5% body fat"

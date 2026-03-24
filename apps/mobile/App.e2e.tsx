@@ -106,7 +106,7 @@ function E2ELoginScreen({ navigation }: any) {
       </Pressable>
       <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 16 }}>
         <Text style={styles.link}>Don't have an account? </Text>
-        <Pressable onPress={() => navigation.navigate("Signup")}>
+        <Pressable testID="signup-link" onPress={() => navigation.navigate("Signup")}>
           <Text style={{ color: "#0077FF", fontWeight: "600", fontSize: 14 }}>Sign Up</Text>
         </Pressable>
       </View>
@@ -241,6 +241,8 @@ function E2EDashboard() {
         <Pressable style={styles.fabOverlay} onPress={() => setFabOpen(false)}>
           <View style={styles.fabMenu}>
             <Pressable
+              testID="fab-start-workout"
+              accessibilityLabel="Start Workout"
               style={styles.fabMenuItem}
               onPress={() => {
                 setFabOpen(false);
@@ -250,6 +252,8 @@ function E2EDashboard() {
               <Text style={styles.fabMenuText}>Start Workout</Text>
             </Pressable>
             <Pressable
+              testID="fab-start-cardio"
+              accessibilityLabel="Start Cardio"
               style={styles.fabMenuItem}
               onPress={() => {
                 setFabOpen(false);
@@ -313,7 +317,7 @@ function E2EStatsScreen() {
           <Text style={{ color: "#F0F4F8", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>
             Latest Entry
           </Text>
-          <Text style={{ color: "#8899B4" }}>{String(parseFloat(logged.weight))} kg</Text>
+          <Text testID="logged-weight" style={{ color: "#8899B4" }}>{String(parseFloat(logged.weight))} kg</Text>
           {logged.bodyFat ? (
             <Text style={{ color: "#8899B4" }}>{logged.bodyFat}% body fat</Text>
           ) : null}
@@ -787,7 +791,7 @@ function E2ECardioSummaryScreen({ route }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#060B14", justifyContent: "center", alignItems: "center", padding: 24 }}>
-      <Text style={{ color: "#0077FF", fontSize: 18, fontWeight: "600", marginBottom: 4 }}>
+      <Text testID="cardio-type" style={{ color: "#0077FF", fontSize: 18, fontWeight: "600", marginBottom: 4 }}>
         {type}
       </Text>
       <Text style={{ color: "#F0F4F8", fontSize: 28, fontWeight: "bold", marginBottom: 8 }}>
@@ -924,22 +928,22 @@ function MainTabs() {
       <Tab.Screen
         name="Home"
         component={E2EDashboard}
-        options={{ tabBarTestID: "tab-home", tabBarLabel: "Home" }}
+        options={{ tabBarTestID: "tab-home", tabBarLabel: "Home", tabBarAccessibilityLabel: "Home" }}
       />
       <Tab.Screen
         name="Stats"
         component={E2EStatsScreen}
-        options={{ tabBarTestID: "tab-stats", tabBarLabel: "Stats" }}
+        options={{ tabBarTestID: "tab-stats", tabBarLabel: "Stats", tabBarAccessibilityLabel: "Stats" }}
       />
       <Tab.Screen
         name="Exercises"
         component={E2EExercisesScreen}
-        options={{ tabBarTestID: "tab-exercises", tabBarLabel: "Exercises" }}
+        options={{ tabBarTestID: "tab-exercises", tabBarLabel: "Exercises", tabBarAccessibilityLabel: "Exercises" }}
       />
       <Tab.Screen
         name="Profile"
         component={E2EProfileScreen}
-        options={{ tabBarTestID: "tab-profile", tabBarLabel: "Profile" }}
+        options={{ tabBarTestID: "tab-profile", tabBarLabel: "Profile", tabBarAccessibilityLabel: "Profile" }}
       />
     </Tab.Navigator>
   );

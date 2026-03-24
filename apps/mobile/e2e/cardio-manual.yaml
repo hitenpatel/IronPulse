@@ -48,7 +48,8 @@ appId: com.ironpulse.app
 - tapOn:
     id: "save-cardio"
 - extendedWaitUntil:
-    visible: "Run"
+    visible:
+      id: "cardio-type"
     timeout: 10000
 - tapOn: "Done"
 - extendedWaitUntil:

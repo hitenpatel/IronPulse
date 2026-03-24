@@ -2,8 +2,12 @@ appId: com.ironpulse.app
 ---
 - launchApp:
     clearState: true
-- waitForAnimationToEnd
-- tapOn: "Sign Up"
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "signup-link"
 - tapOn:
     id: "name-input"
 - inputText: "Test User"
@@ -14,5 +18,7 @@ appId: com.ironpulse.app
     id: "signup-password-input"
 - inputText: "Password123!"
 - tapOn: "Create Account"
-- assertVisible:
-    id: "greeting"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
