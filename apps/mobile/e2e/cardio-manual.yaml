@@ -16,7 +16,8 @@ appId: com.ironpulse.app
 - tapOn:
     id: "login-button"
 - extendedWaitUntil:
-    visible: "Good morning"
+    visible:
+      id: "greeting"
     timeout: 30000
 - waitForAnimationToEnd
 - tapOn:
@@ -51,5 +52,6 @@ appId: com.ironpulse.app
     timeout: 10000
 - tapOn: "Done"
 - extendedWaitUntil:
-    visible: "Good morning"
+    visible:
+      id: "greeting"
     timeout: 10000

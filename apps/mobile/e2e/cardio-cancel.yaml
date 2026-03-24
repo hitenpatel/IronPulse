@@ -16,10 +16,12 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "login-button"
-- assertVisible: "Good morning"
+- assertVisible:
+    id: "greeting"
 - tapOn:
     id: "fab-button"
 - tapOn: "Start Cardio"
 - assertVisible: "Run"
 - back
-- assertVisible: "Good morning"
+- assertVisible:
+    id: "greeting"

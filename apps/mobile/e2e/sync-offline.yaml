@@ -16,7 +16,9 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "login-button"
-- assertVisible: "Good morning"
+- assertVisible:
+    id: "greeting"
 - toggleAirplaneMode
-- assertVisible: "Good morning"
+- assertVisible:
+    id: "greeting"
 - toggleAirplaneMode

@@ -188,7 +188,7 @@ function E2EDashboard() {
   return (
     <View style={{ flex: 1, backgroundColor: "#060B14" }}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 120 }}>
-        <Text style={{ color: "#F0F4F8", fontSize: 28, fontWeight: "bold" }}>
+        <Text testID="greeting" accessibilityLabel={`Good morning${user?.name ? `, ${user.name}` : ""}`} style={{ color: "#F0F4F8", fontSize: 28, fontWeight: "bold" }}>
           Good morning{user?.name ? `, ${user.name}` : ""}
         </Text>
         <Text style={{ color: "#8899B4", fontSize: 14, marginBottom: 24 }}>

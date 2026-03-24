@@ -16,5 +16,6 @@ appId: com.ironpulse.app
 - tapOn:
     id: "login-button"
 - extendedWaitUntil:
-    visible: "Good morning"
+    visible:
+      id: "greeting"
     timeout: 30000
