@@ -16,6 +16,7 @@ import {
   ScrollView,
   LogBox,
   Modal,
+  Keyboard,
 } from "react-native";
 
 // Suppress LogBox warnings in E2E mode
@@ -130,7 +131,23 @@ function E2ESignupScreen({ navigation }: any) {
       });
       const data = await resp.json();
       const result = data?.result?.data?.json;
-      if (result?.token) await setAuthDirect(result.token, result.user);
+      if (result?.token) {
+        await setAuthDirect(result.token, result.user);
+        return;
+      }
+      // Signup failed (e.g. user already exists) — try signing in instead
+      const loginResp = await fetch(apiUrl + "/api/trpc/auth.mobileSignIn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: { email, password } }),
+      });
+      const loginData = await loginResp.json();
+      const loginResult = loginData?.result?.data?.json;
+      if (loginResult?.token) {
+        await setAuthDirect(loginResult.token, loginResult.user);
+      } else {
+        Alert.alert("Signup Failed", data?.error?.json?.message || "Try again");
+      }
     } catch (err: any) {
       Alert.alert("Signup Failed", err?.message || "Try again");
     }
@@ -165,7 +182,7 @@ function E2ESignupScreen({ navigation }: any) {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <Pressable style={styles.primaryBtn} onPress={handleSignup}>
+      <Pressable testID="create-account-button" style={styles.primaryBtn} onPress={handleSignup}>
         <Text style={styles.primaryBtnText}>Create Account</Text>
       </Pressable>
       <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
@@ -277,6 +294,7 @@ function E2EStatsScreen() {
   const [logged, setLogged] = useState<{ weight: string; bodyFat: string } | null>(null);
 
   const handleLog = () => {
+    Keyboard.dismiss();
     if (weight) {
       setLogged({ weight, bodyFat });
     }

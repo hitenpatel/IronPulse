@@ -20,5 +20,6 @@ appId: com.ironpulse.app
     id: "greeting"
 - tapOn:
     id: "fab-button"
-- tapOn: "Start Workout"
+- tapOn:
+    id: "fab-start-workout"
 - assertVisible: "Empty Workout"

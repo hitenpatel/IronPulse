@@ -1,6 +1,7 @@
 appId: com.ironpulse.app
 ---
 - launchApp:
+    clearKeychain: true
     clearState: true
 - extendedWaitUntil:
     visible:
@@ -17,7 +18,8 @@ appId: com.ironpulse.app
 - tapOn:
     id: "signup-password-input"
 - inputText: "Password123!"
-- tapOn: "Create Account"
+- tapOn:
+    id: "create-account-button"
 - extendedWaitUntil:
     visible:
       id: "greeting"

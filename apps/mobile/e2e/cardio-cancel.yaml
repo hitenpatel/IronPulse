@@ -20,7 +20,8 @@ appId: com.ironpulse.app
     id: "greeting"
 - tapOn:
     id: "fab-button"
-- tapOn: "Start Cardio"
+- tapOn:
+    id: "fab-start-cardio"
 - assertVisible: "Run"
 - back
 - assertVisible:

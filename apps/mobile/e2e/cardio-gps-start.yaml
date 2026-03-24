@@ -19,7 +19,8 @@ appId: com.ironpulse.app
     id: "greeting"
 - tapOn:
     id: "fab-button"
-- tapOn: "Start Cardio"
+- tapOn:
+    id: "fab-start-cardio"
 - tapOn: "Run"
 - tapOn: "Track with GPS"
 - assertVisible: "Stop"
