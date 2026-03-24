@@ -20,9 +20,11 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 30000
 - waitForAnimationToEnd
-- tapOn: "Profile"
+- tapOn:
+    id: "tab-profile"
 - extendedWaitUntil:
-    visible: "Profile"
+    visible:
+      id: "profile-heading"
     timeout: 10000
 - assertVisible: "Name"
 - assertVisible: "Email"

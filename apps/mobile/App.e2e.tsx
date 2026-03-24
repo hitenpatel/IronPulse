@@ -104,12 +104,12 @@ function E2ELoginScreen({ navigation }: any) {
       >
         <Text style={styles.primaryBtnText}>{loading ? "Signing in..." : "Log In"}</Text>
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Signup")} style={{ marginTop: 16 }}>
-        <Text style={styles.link}>
-          Don't have an account?{" "}
-          <Text style={{ color: "#0077FF", fontWeight: "600" }}>Sign Up</Text>
-        </Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 16 }}>
+        <Text style={styles.link}>Don't have an account? </Text>
+        <Pressable onPress={() => navigation.navigate("Signup")}>
+          <Text style={{ color: "#0077FF", fontWeight: "600", fontSize: 14 }}>Sign Up</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -280,7 +280,7 @@ function E2EStatsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#060B14" }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <Text style={styles.screenHeading}>Stats</Text>
+      <Text testID="stats-heading" style={styles.screenHeading}>Stats</Text>
 
       <Text style={styles.label}>Weight (kg)</Text>
       <TextInput
@@ -339,7 +339,7 @@ function E2EExercisesScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#060B14" }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <Text style={styles.screenHeading}>Exercises</Text>
+      <Text testID="exercises-heading" style={styles.screenHeading}>Exercises</Text>
       {exercises.map((name) => (
         <View key={name} style={styles.dashCard}>
           <Text style={styles.dashCardText}>{name}</Text>
@@ -358,7 +358,7 @@ function E2EProfileScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#060B14" }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <Text style={styles.screenHeading}>Profile</Text>
+      <Text testID="profile-heading" style={styles.screenHeading}>Profile</Text>
 
       <View style={styles.profileRow}>
         <Text style={styles.profileLabel}>Name</Text>
@@ -787,7 +787,7 @@ function E2ECardioSummaryScreen({ route }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#060B14", justifyContent: "center", alignItems: "center", padding: 24 }}>
-      <Text style={{ color: "#0077FF", fontSize: 14, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+      <Text style={{ color: "#0077FF", fontSize: 18, fontWeight: "600", marginBottom: 4 }}>
         {type}
       </Text>
       <Text style={{ color: "#F0F4F8", fontSize: 28, fontWeight: "bold", marginBottom: 8 }}>

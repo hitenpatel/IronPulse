@@ -23,19 +23,22 @@ appId: com.ironpulse.app
 - tapOn:
     id: "tab-stats"
 - extendedWaitUntil:
-    visible: "Stats"
+    visible:
+      id: "stats-heading"
     timeout: 10000
 - waitForAnimationToEnd
 - tapOn:
     id: "tab-exercises"
 - extendedWaitUntil:
-    visible: "Exercises"
+    visible:
+      id: "exercises-heading"
     timeout: 10000
 - waitForAnimationToEnd
 - tapOn:
     id: "tab-profile"
 - extendedWaitUntil:
-    visible: "Profile"
+    visible:
+      id: "profile-heading"
     timeout: 10000
 - waitForAnimationToEnd
 - tapOn:

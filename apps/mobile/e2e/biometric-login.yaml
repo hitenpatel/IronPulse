@@ -25,7 +25,8 @@ appId: com.ironpulse.app
     timeout: 30000
 # Sign out and verify login screen loads
 - waitForAnimationToEnd
-- tapOn: "Profile"
+- tapOn:
+    id: "tab-profile"
 - extendedWaitUntil:
     visible: "Sign Out"
     timeout: 10000

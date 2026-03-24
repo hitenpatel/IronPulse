@@ -18,6 +18,7 @@ appId: com.ironpulse.app
     id: "login-button"
 - assertVisible:
     id: "greeting"
-- tapOn: "Profile"
+- tapOn:
+    id: "tab-profile"
 - tapOn: "Connected Apps"
 - assertVisible: "Google Fit"

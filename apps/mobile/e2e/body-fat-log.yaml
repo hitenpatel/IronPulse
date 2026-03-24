@@ -20,7 +20,8 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 30000
 - waitForAnimationToEnd
-- tapOn: "Stats"
+- tapOn:
+    id: "tab-stats"
 - extendedWaitUntil:
     visible:
       id: "weight-input"

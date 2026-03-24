@@ -20,7 +20,8 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 30000
 - waitForAnimationToEnd
-- tapOn: "Profile"
+- tapOn:
+    id: "tab-profile"
 - extendedWaitUntil:
     visible: "Connected Apps"
     timeout: 10000
