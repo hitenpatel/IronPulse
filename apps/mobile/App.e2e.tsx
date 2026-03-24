@@ -107,7 +107,7 @@ function E2ELoginScreen({ navigation }: any) {
       <Pressable onPress={() => navigation.navigate("Signup")} style={{ marginTop: 16 }}>
         <Text style={styles.link}>
           Don't have an account?{" "}
-          <Text style={{ color: "#0077FF", fontWeight: "600" }}>Sign up</Text>
+          <Text style={{ color: "#0077FF", fontWeight: "600" }}>Sign Up</Text>
         </Text>
       </Pressable>
     </View>
@@ -313,7 +313,7 @@ function E2EStatsScreen() {
           <Text style={{ color: "#F0F4F8", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>
             Latest Entry
           </Text>
-          <Text style={{ color: "#8899B4" }}>{logged.weight} kg</Text>
+          <Text style={{ color: "#8899B4" }}>{String(parseFloat(logged.weight))} kg</Text>
           {logged.bodyFat ? (
             <Text style={{ color: "#8899B4" }}>{logged.bodyFat}% body fat</Text>
           ) : null}
@@ -435,8 +435,16 @@ function E2EConnectedAppsScreen() {
 
 // ─── Workout Active screen ────────────────────────────────────────
 
+const ALL_EXERCISES = [
+  "Bench Press", "Squat", "Deadlift", "Overhead Press",
+  "Barbell Row", "Pull Up", "Dumbbell Curl", "Tricep Dip",
+];
+
 function E2EWorkoutActiveScreen() {
   const navigation = useNavigation<any>();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [exercises, setExercises] = useState<Array<{ name: string; sets: Array<{ weight: string; reps: string; done: boolean }> }>>([]);
 
   const handleCancel = () => {
     Alert.alert("Cancel Workout", "Discard this workout?", [
@@ -453,6 +461,49 @@ function E2EWorkoutActiveScreen() {
     navigation.navigate("WorkoutComplete");
   };
 
+  const addExercise = (name: string) => {
+    setExercises((prev) => [
+      ...prev,
+      { name, sets: [{ weight: "", reps: "", done: false }] },
+    ]);
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const updateSet = (exIdx: number, setIdx: number, field: "weight" | "reps", value: string) => {
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== exIdx
+          ? ex
+          : {
+              ...ex,
+              sets: ex.sets.map((s, j) =>
+                j !== setIdx ? s : { ...s, [field]: value }
+              ),
+            }
+      )
+    );
+  };
+
+  const completeSet = (exIdx: number, setIdx: number) => {
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== exIdx
+          ? ex
+          : {
+              ...ex,
+              sets: ex.sets.map((s, j) =>
+                j !== setIdx ? s : { ...s, done: true }
+              ),
+            }
+      )
+    );
+  };
+
+  const filtered = ALL_EXERCISES.filter((e) =>
+    e.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: "#060B14" }}>
       <View style={styles.navHeader}>
@@ -460,16 +511,106 @@ function E2EWorkoutActiveScreen() {
           <Text style={{ color: "#EF4444", fontSize: 16 }}>Cancel</Text>
         </Pressable>
         <Text style={styles.navTitle}>Active Workout</Text>
-        <Pressable onPress={handleFinish}>
+        <Pressable testID="finish-button" onPress={handleFinish}>
           <Text style={{ color: "#0077FF", fontSize: 16 }}>Finish</Text>
         </Pressable>
       </View>
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "#8899B4", fontSize: 18 }}>Empty Workout</Text>
-        <Text style={{ color: "#4E6180", fontSize: 14, marginTop: 8 }}>
-          Add an exercise to get started
-        </Text>
-      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+        {exercises.length === 0 && (
+          <View style={{ alignItems: "center", marginTop: 60 }}>
+            <Text style={{ color: "#8899B4", fontSize: 18 }}>Empty Workout</Text>
+            <Text style={{ color: "#4E6180", fontSize: 14, marginTop: 8 }}>
+              Add an exercise to get started
+            </Text>
+          </View>
+        )}
+
+        {exercises.map((ex, exIdx) => (
+          <View key={exIdx} style={{ marginBottom: 24, backgroundColor: "#0F1629", borderRadius: 12, padding: 16 }}>
+            <Text style={{ color: "#F0F4F8", fontSize: 16, fontWeight: "600", marginBottom: 12 }}>
+              {ex.name}
+            </Text>
+            {ex.sets.map((set, setIdx) => (
+              <View key={setIdx} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  testID={`weight-input-${exIdx}-${setIdx}`}
+                  style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                  placeholder="kg"
+                  placeholderTextColor="#4E6180"
+                  value={set.weight}
+                  onChangeText={(v) => updateSet(exIdx, setIdx, "weight", v)}
+                  keyboardType="decimal-pad"
+                />
+                <TextInput
+                  testID={`reps-input-${exIdx}-${setIdx}`}
+                  style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                  placeholder="reps"
+                  placeholderTextColor="#4E6180"
+                  value={set.reps}
+                  onChangeText={(v) => updateSet(exIdx, setIdx, "reps", v)}
+                  keyboardType="number-pad"
+                />
+                <Pressable
+                  testID={`complete-set-${exIdx}-${setIdx}`}
+                  onPress={() => completeSet(exIdx, setIdx)}
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: set.done ? "#22C55E" : "#1E2B47", justifyContent: "center", alignItems: "center" }}
+                >
+                  <Text style={{ color: "#FFF", fontSize: 16 }}>✓</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+
+      <Pressable
+        testID="add-exercise-button"
+        style={[styles.primaryBtn, { margin: 16, marginBottom: 32 }]}
+        onPress={() => setSearchOpen(true)}
+      >
+        <Text style={styles.primaryBtnText}>+ Add Exercise</Text>
+      </Pressable>
+
+      {/* Exercise search modal */}
+      <Modal
+        visible={searchOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSearchOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "#060B14" }}>
+          <View style={styles.navHeader}>
+            <Pressable onPress={() => setSearchOpen(false)}>
+              <Text style={{ color: "#0077FF", fontSize: 16 }}>Cancel</Text>
+            </Pressable>
+            <Text style={styles.navTitle}>Add Exercise</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <View style={{ padding: 16 }}>
+            <TextInput
+              testID="exercise-search-input"
+              style={styles.input}
+              placeholder="Search exercises..."
+              placeholderTextColor="#4E6180"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+            />
+          </View>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }}>
+            {filtered.map((name) => (
+              <Pressable
+                key={name}
+                style={styles.dashCard}
+                onPress={() => addExercise(name)}
+              >
+                <Text style={styles.dashCardText}>{name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -646,8 +787,11 @@ function E2ECardioSummaryScreen({ route }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#060B14", justifyContent: "center", alignItems: "center", padding: 24 }}>
+      <Text style={{ color: "#0077FF", fontSize: 14, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+        {type}
+      </Text>
       <Text style={{ color: "#F0F4F8", fontSize: 28, fontWeight: "bold", marginBottom: 8 }}>
-        {type} Complete
+        Session Complete
       </Text>
       <Text style={{ color: "#8899B4", fontSize: 16, marginBottom: 4 }}>
         Duration: {duration} min
