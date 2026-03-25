@@ -462,25 +462,18 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
           disable-animations: true
           script: |
-            # Emulator runner already waits for boot — just ensure ADB is responsive
             sleep 10
-            for i in $(seq 1 10); do
-              adb devices | grep -q "device$" && break
-              echo "Waiting for ADB device ($i/10)..."
-              adb kill-server && adb start-server
-              sleep 3
-            done
             adb install apk/app-release.apk
             adb reverse tcp:3000 tcp:3000
             adb logcat -G 16M
             adb logcat -c
-            # Launch app and capture logcat for JS errors
             adb shell am start -n com.ironpulse.app/.MainActivity
             sleep 15
-            adb logcat -d | grep -iE "ReactNative|FATAL|Error|error|Exception|crash" | tail -30 > $GITHUB_WORKSPACE/logcat-errors.txt || true
-            cat $GITHUB_WORKSPACE/logcat-errors.txt
-            echo "=== Running Maestro tests ==="
-            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ --format junit --output $GITHUB_WORKSPACE/maestro-results.xml --debug-output $GITHUB_WORKSPACE/maestro-debug
+            adb logcat -d > /tmp/logcat-full.txt 2>&1 || true
+            grep -iE 'ReactNative|FATAL|Exception|crash' /tmp/logcat-full.txt | tail -30 > logcat-errors.txt || true
+            cat logcat-errors.txt
+            echo '=== Running Maestro tests ==='
+            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug"
 
       - uses: actions/upload-artifact@v4
         if: always()
