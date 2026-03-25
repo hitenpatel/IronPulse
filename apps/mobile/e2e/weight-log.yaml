@@ -28,7 +28,7 @@ appId: com.ironpulse.app
 - tapOn:
     id: "weight-input"
 - inputText: "75.5"
-- pressKey: Return
+- hideKeyboard
 - tapOn:
     id: "log-weight"
 - extendedWaitUntil:
