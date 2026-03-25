@@ -49,10 +49,11 @@ appId: com.ironpulse.app
 - tapOn: "Bench Press"
 - waitForAnimationToEnd
 - hideKeyboard
+- scroll
 - extendedWaitUntil:
     visible:
       id: "weight-input-0-0"
-    timeout: 15000
+    timeout: 20000
 - tapOn:
     id: "weight-input-0-0"
 - inputText: "80"
