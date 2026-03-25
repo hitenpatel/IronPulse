@@ -463,7 +463,14 @@ jobs:
           disable-animations: true
           script: |
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-            sleep 5
+            sleep 10
+            # Retry ADB connection if device is offline
+            for i in $(seq 1 10); do
+              adb devices | grep -q "device$" && break
+              echo "Waiting for ADB device ($i/10)..."
+              adb kill-server && adb start-server
+              sleep 3
+            done
             adb install apk/app-release.apk
             adb reverse tcp:3000 tcp:3000
             adb logcat -G 16M
