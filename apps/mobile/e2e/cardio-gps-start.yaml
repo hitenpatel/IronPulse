@@ -3,9 +3,6 @@ appId: com.ironpulse.app
 - launchApp:
     clearKeychain: true
     clearState: true
-    permissions:
-      location: allow
-      notifications: allow
 - extendedWaitUntil:
     visible:
       id: "email-input"

@@ -465,6 +465,9 @@ jobs:
             sleep 10
             adb install apk/app-release.apk
             adb reverse tcp:3000 tcp:3000
+            adb shell pm grant com.ironpulse.app android.permission.ACCESS_FINE_LOCATION || true
+            adb shell pm grant com.ironpulse.app android.permission.ACCESS_COARSE_LOCATION || true
+            adb shell pm grant com.ironpulse.app android.permission.POST_NOTIFICATIONS || true
             adb logcat -G 16M
             adb logcat -c
             adb shell am start -n com.ironpulse.app/.MainActivity
