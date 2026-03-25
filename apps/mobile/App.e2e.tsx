@@ -613,6 +613,7 @@ function E2EWorkoutActiveScreen() {
             {filtered.map((name) => (
               <Pressable
                 key={name}
+                testID={`exercise-item-${name.replace(/\s+/g, "-").toLowerCase()}`}
                 style={styles.dashCard}
                 onPress={() => addExercise(name)}
               >
