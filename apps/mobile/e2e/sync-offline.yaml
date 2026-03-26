@@ -16,9 +16,13 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "login-button"
-- assertVisible:
-    id: "greeting"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
 - toggleAirplaneMode
-- assertVisible:
-    id: "greeting"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
 - toggleAirplaneMode

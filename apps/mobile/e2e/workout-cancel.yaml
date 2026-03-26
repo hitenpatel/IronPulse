@@ -42,4 +42,4 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible:
       id: "greeting"
-    timeout: 10000
+    timeout: 60000

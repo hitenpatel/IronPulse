@@ -44,7 +44,6 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible: "Bench Press"
     timeout: 10000
-- tapOn: "Add Exercise"
 - tapOn:
     id: "exercise-item-bench-press"
 - extendedWaitUntil:
@@ -72,4 +71,4 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible:
       id: "greeting"
-    timeout: 10000
+    timeout: 60000

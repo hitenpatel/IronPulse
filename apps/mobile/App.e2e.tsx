@@ -617,7 +617,7 @@ function E2EWorkoutActiveScreen() {
               autoFocus
             />
           </View>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }} keyboardShouldPersistTaps="handled">
             {filtered.map((name) => (
               <Pressable
                 key={name}
