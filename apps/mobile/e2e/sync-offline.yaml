@@ -20,9 +20,6 @@ appId: com.ironpulse.app
     visible:
       id: "greeting"
     timeout: 60000
-- toggleAirplaneMode
-- extendedWaitUntil:
-    visible:
-      id: "greeting"
-    timeout: 30000
-- toggleAirplaneMode
+- waitForAnimationToEnd
+- assertVisible:
+    id: "greeting"
