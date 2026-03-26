@@ -44,7 +44,7 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible: "Bench Press"
     timeout: 10000
-- hideKeyboard
+- tapOn: "Add Exercise"
 - tapOn:
     id: "exercise-item-bench-press"
 - extendedWaitUntil:
@@ -58,11 +58,9 @@ appId: com.ironpulse.app
 - tapOn:
     id: "weight-input-0-0"
 - inputText: "80"
-- hideKeyboard
 - tapOn:
     id: "reps-input-0-0"
 - inputText: "8"
-- hideKeyboard
 - tapOn:
     id: "complete-set-0-0"
 - tapOn:
