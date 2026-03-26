@@ -197,6 +197,7 @@ jobs:
     name: Mobile E2E iOS (Maestro)
     runs-on: macos-15
     timeout-minutes: 60
+    continue-on-error: true
     env:
       NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
       NEXTAUTH_URL: http://localhost:3000
@@ -343,6 +344,7 @@ jobs:
           $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
             --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
             --debug-output $GITHUB_WORKSPACE/maestro-debug \
+            --continue-on-failure \
             || MAESTRO_EXIT=$?
 
           # Collect screenshots
@@ -476,7 +478,7 @@ jobs:
             grep -iE 'ReactNative|FATAL|Exception|crash' /tmp/logcat-full.txt | tail -30 > logcat-errors.txt || true
             cat logcat-errors.txt
             echo '=== Running Maestro tests ==='
-            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug"
+            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug" --continue-on-failure
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -501,14 +503,17 @@ jobs:
           echo "build: ${{ needs.build.result }}"
           echo "e2e-maestro: ${{ needs.e2e-maestro.result }}"
           echo "e2e-ios: ${{ needs.e2e-ios.result }}"
-          # Build must pass. E2E tests are advisory until PowerSync/Hermes compat is fixed.
+          # Build and Android E2E must pass. iOS E2E is advisory (simulator flakiness).
           if [[ "${{ needs.build.result }}" != "success" ]]; then
             echo "Build failed — blocking"
             exit 1
           fi
-          if [[ "${{ needs.e2e-maestro.result }}" != "success" || \
-                "${{ needs.e2e-ios.result }}" != "success" ]]; then
-            echo "WARNING: E2E tests failed (non-blocking — PowerSync/Hermes compat issue)"
+          if [[ "${{ needs.e2e-maestro.result }}" != "success" ]]; then
+            echo "Android E2E failed — blocking"
+            exit 1
+          fi
+          if [[ "${{ needs.e2e-ios.result }}" != "success" ]]; then
+            echo "WARNING: iOS E2E failed (non-blocking — simulator flakiness)"
           fi
 
   # ── E2E Dashboard ──
