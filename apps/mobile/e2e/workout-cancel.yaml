@@ -23,11 +23,9 @@ appId: com.ironpulse.app
 - tapOn:
     id: "fab-button"
 - extendedWaitUntil:
-    visible:
-      id: "fab-start-workout"
+    visible: "Start Workout"
     timeout: 10000
-- tapOn:
-    id: "fab-start-workout"
+- tapOn: "Start Workout"
 - extendedWaitUntil:
     visible: "Empty Workout"
     timeout: 10000

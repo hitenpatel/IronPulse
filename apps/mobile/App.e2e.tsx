@@ -247,13 +247,20 @@ function E2EDashboard() {
         <Text style={{ color: "#FFF", fontSize: 28, lineHeight: 32 }}>+</Text>
       </Pressable>
 
-      {/* FAB overlay — absolute View instead of Modal so iOS exposes testIDs */}
+      {/* FAB overlay — use non-accessible backdrop + accessible menu for iOS compat */}
       {fabOpen && (
-        <Pressable style={styles.fabOverlay} onPress={() => setFabOpen(false)}>
-          <View style={styles.fabMenu}>
+        <View style={styles.fabOverlay} accessible={false}>
+          <Pressable
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+            onPress={() => setFabOpen(false)}
+            accessible={false}
+            importantForAccessibility="no"
+          />
+          <View style={styles.fabMenu} accessibilityViewIsModal={true}>
             <Pressable
               testID="fab-start-workout"
               accessibilityLabel="Start Workout"
+              accessibilityRole="button"
               style={styles.fabMenuItem}
               onPress={() => {
                 setFabOpen(false);
@@ -265,6 +272,7 @@ function E2EDashboard() {
             <Pressable
               testID="fab-start-cardio"
               accessibilityLabel="Start Cardio"
+              accessibilityRole="button"
               style={styles.fabMenuItem}
               onPress={() => {
                 setFabOpen(false);
@@ -274,7 +282,7 @@ function E2EDashboard() {
               <Text style={styles.fabMenuText}>Start Cardio</Text>
             </Pressable>
           </View>
-        </Pressable>
+        </View>
       )}
     </View>
   );
@@ -295,7 +303,7 @@ function E2EStatsScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#060B14" }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: "#060B14" }} contentContainerStyle={{ padding: 24, paddingTop: 64 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <Text testID="stats-heading" style={styles.screenHeading}>Stats</Text>
 
       <Text style={styles.label}>Weight (kg)</Text>
@@ -532,7 +540,7 @@ function E2EWorkoutActiveScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {exercises.length === 0 && (
           <View style={{ alignItems: "center", marginTop: 60 }}>
             <Text style={{ color: "#8899B4", fontSize: 18 }}>Empty Workout</Text>
@@ -734,7 +742,7 @@ function E2ECardioManualScreen({ route }: any) {
         <Text style={styles.navTitle}>Log {type}</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={styles.label}>Duration (minutes)</Text>
         <TextInput
           testID="duration-minutes"

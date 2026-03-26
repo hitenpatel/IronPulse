@@ -22,11 +22,9 @@ appId: com.ironpulse.app
 - tapOn:
     id: "fab-button"
 - extendedWaitUntil:
-    visible:
-      id: "fab-start-cardio"
+    visible: "Start Cardio"
     timeout: 10000
-- tapOn:
-    id: "fab-start-cardio"
+- tapOn: "Start Cardio"
 - extendedWaitUntil:
     visible: "Run"
     timeout: 10000
