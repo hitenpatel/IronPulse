@@ -31,7 +31,6 @@ appId: com.ironpulse.app
 - tapOn:
     id: "body-fat-input"
 - inputText: "18.5"
-- hideKeyboard
 - tapOn:
     id: "log-weight"
 - extendedWaitUntil:

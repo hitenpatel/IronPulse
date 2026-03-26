@@ -47,7 +47,6 @@ appId: com.ironpulse.app
 - tapOn:
     id: "distance-input"
 - inputText: "5.0"
-- hideKeyboard
 - tapOn:
     id: "save-cardio"
 - extendedWaitUntil:
