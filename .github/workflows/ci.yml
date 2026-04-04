@@ -344,7 +344,6 @@ jobs:
           $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
             --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
             --debug-output $GITHUB_WORKSPACE/maestro-debug \
-            --continue-on-failure \
             || MAESTRO_EXIT=$?
 
           # Collect screenshots
@@ -478,7 +477,7 @@ jobs:
             grep -iE 'ReactNative|FATAL|Exception|crash' /tmp/logcat-full.txt | tail -30 > logcat-errors.txt || true
             cat logcat-errors.txt
             echo '=== Running Maestro tests ==='
-            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug" --continue-on-failure
+            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug"
 
       - uses: actions/upload-artifact@v4
         if: always()
