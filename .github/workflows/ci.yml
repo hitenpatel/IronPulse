@@ -460,10 +460,25 @@ jobs:
           arch: x86_64
           target: default
           ram-size: 4096
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
           disable-animations: true
           script: |
-            sleep 10
+            # Wait for emulator to be fully booted
+            adb wait-for-device
+            boot=""
+            for i in $(seq 1 60); do
+              boot=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+              if [ "$boot" = "1" ]; then
+                echo "Emulator boot completed after ~${i}s"
+                break
+              fi
+              sleep 2
+            done
+            if [ "$boot" != "1" ]; then
+              echo "ERROR: Emulator did not boot within 120s"
+              exit 1
+            fi
+            sleep 5
             adb install apk/app-release.apk
             adb reverse tcp:3000 tcp:3000
             adb shell pm grant com.ironpulse.app android.permission.ACCESS_FINE_LOCATION || true
