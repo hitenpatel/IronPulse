@@ -18,8 +18,7 @@ appId: com.ironpulse.app
 - tapOn:
     id: "signup-password-input"
 - inputText: "Password123!"
-- tapOn:
-    id: "create-account-button"
+- pressKey: Enter
 - extendedWaitUntil:
     visible:
       id: "greeting"

@@ -123,6 +123,7 @@ function E2ESignupScreen({ navigation }: any) {
   const [password, setPassword] = useState("");
 
   const handleSignup = async () => {
+    Keyboard.dismiss();
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
       const resp = await fetch(apiUrl + "/api/trpc/auth.mobileSignUp", {
@@ -183,6 +184,8 @@ function E2ESignupScreen({ navigation }: any) {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          returnKeyType="go"
+          onSubmitEditing={handleSignup}
         />
         <Pressable testID="create-account-button" style={styles.primaryBtn} onPress={handleSignup}>
           <Text style={styles.primaryBtnText}>Create Account</Text>
