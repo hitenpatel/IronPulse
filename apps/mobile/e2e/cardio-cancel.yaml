@@ -29,7 +29,7 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible: "Run"
     timeout: 10000
-- back
+- tapOn: "Back"
 - extendedWaitUntil:
     visible:
       id: "greeting"
