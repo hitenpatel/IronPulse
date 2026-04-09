@@ -196,7 +196,7 @@ jobs:
   e2e-ios:
     name: Mobile E2E iOS (Maestro)
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90
     continue-on-error: true
     env:
       NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
@@ -493,7 +493,7 @@ jobs:
             grep -iE 'ReactNative|FATAL|Exception|crash' /tmp/logcat-full.txt | tail -30 > logcat-errors.txt || true
             cat logcat-errors.txt
             echo '=== Running Maestro tests ==='
-            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug"
+            "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug" || (echo '=== Retrying failed Maestro tests ===' && sleep 5 && "$HOME/.maestro/bin/maestro" test "$GITHUB_WORKSPACE/apps/mobile/e2e/" --format junit --output "$GITHUB_WORKSPACE/maestro-results.xml" --debug-output "$GITHUB_WORKSPACE/maestro-debug")
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -16,6 +16,8 @@ import {
   ScrollView,
   LogBox,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 
 // Suppress LogBox warnings in E2E mode
@@ -153,7 +155,7 @@ function E2ESignupScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.authContainer}>
+    <KeyboardAvoidingView style={styles.authContainer} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Text style={styles.logo}>Create Account</Text>
       <TextInput
         testID="name-input"
@@ -190,7 +192,7 @@ function E2ESignupScreen({ navigation }: any) {
           <Text style={{ color: "#0077FF", fontWeight: "600" }}>Log in</Text>
         </Text>
       </Pressable>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
