@@ -17,9 +17,12 @@ appId: com.ironpulse.app
 - inputText: "test-signup@example.com"
 - tapOn:
     id: "signup-password-input"
-- inputText: "Password123!"
-- tapOn:
-    point: "50%,5%"
+- inputText: "TestPass123"
+- scrollUntilVisible:
+    element:
+      id: "create-account-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "create-account-button"
 - extendedWaitUntil:
