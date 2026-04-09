@@ -156,42 +156,44 @@ function E2ESignupScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView style={styles.authContainer} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Text style={styles.logo}>Create Account</Text>
-      <TextInput
-        testID="name-input"
-        style={styles.input}
-        placeholder="Full name"
-        placeholderTextColor="#4E6180"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        testID="signup-email-input"
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#4E6180"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-      />
-      <TextInput
-        testID="signup-password-input"
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#4E6180"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Pressable testID="create-account-button" style={styles.primaryBtn} onPress={handleSignup}>
-        <Text style={styles.primaryBtnText}>Create Account</Text>
-      </Pressable>
-      <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-        <Text style={styles.link}>
-          Already have an account?{" "}
-          <Text style={{ color: "#0077FF", fontWeight: "600" }}>Log in</Text>
-        </Text>
-      </Pressable>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }} keyboardShouldPersistTaps="handled">
+        <Text style={styles.logo}>Create Account</Text>
+        <TextInput
+          testID="name-input"
+          style={styles.input}
+          placeholder="Full name"
+          placeholderTextColor="#4E6180"
+          value={name}
+          onChangeText={setName}
+        />
+        <TextInput
+          testID="signup-email-input"
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#4E6180"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+        />
+        <TextInput
+          testID="signup-password-input"
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#4E6180"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Pressable testID="create-account-button" style={styles.primaryBtn} onPress={handleSignup}>
+          <Text style={styles.primaryBtnText}>Create Account</Text>
+        </Pressable>
+        <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
+          <Text style={styles.link}>
+            Already have an account?{" "}
+            <Text style={{ color: "#0077FF", fontWeight: "600" }}>Log in</Text>
+          </Text>
+        </Pressable>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
