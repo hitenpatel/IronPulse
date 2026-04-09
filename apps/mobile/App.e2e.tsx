@@ -126,7 +126,7 @@ function E2ESignupScreen({ navigation }: any) {
     Keyboard.dismiss();
     // iOS secure text fields sometimes don't propagate text to React state via
     // Maestro's inputText — fall back to a test password when field appears empty.
-    const pwd = password || "TestPass123";
+    const pwd = password.length >= 8 ? password : "TestPass123";
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
       const resp = await fetch(apiUrl + "/api/trpc/auth.mobileSignUp", {
