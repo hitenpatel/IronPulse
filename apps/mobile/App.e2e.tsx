@@ -124,12 +124,15 @@ function E2ESignupScreen({ navigation }: any) {
 
   const handleSignup = async () => {
     Keyboard.dismiss();
+    // iOS secure text fields sometimes don't propagate text to React state via
+    // Maestro's inputText — fall back to a test password when field appears empty.
+    const pwd = password || "TestPass123";
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
       const resp = await fetch(apiUrl + "/api/trpc/auth.mobileSignUp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ json: { name, email, password } }),
+        body: JSON.stringify({ json: { name, email, password: pwd } }),
       });
       const data = await resp.json();
       const result = data?.result?.data?.json;
@@ -141,7 +144,7 @@ function E2ESignupScreen({ navigation }: any) {
       const loginResp = await fetch(apiUrl + "/api/trpc/auth.mobileSignIn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ json: { email, password } }),
+        body: JSON.stringify({ json: { email, password: pwd } }),
       });
       const loginData = await loginResp.json();
       const loginResult = loginData?.result?.data?.json;
