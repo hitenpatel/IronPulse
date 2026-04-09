@@ -123,7 +123,7 @@ function E2ESignupScreen({ navigation }: any) {
   const handleSignup = async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
-      const resp = await fetch(apiUrl + "/api/trpc/auth.signUp", {
+      const resp = await fetch(apiUrl + "/api/trpc/auth.mobileSignUp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ json: { name, email, password } }),
