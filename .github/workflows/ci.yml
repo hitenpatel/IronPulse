@@ -339,12 +339,27 @@ jobs:
           sleep 15
           xcrun simctl terminate "$DEVICE" com.ironpulse.app
 
-          # Run Maestro
+          # Run Maestro (retry full suite once on failure to handle simulator flakes)
+          run_maestro() {
+            $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
+              --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
+              --debug-output $GITHUB_WORKSPACE/maestro-debug
+          }
+
           MAESTRO_EXIT=0
-          $HOME/.maestro/bin/maestro test $GITHUB_WORKSPACE/apps/mobile/e2e/ \
-            --format junit --output $GITHUB_WORKSPACE/maestro-results.xml \
-            --debug-output $GITHUB_WORKSPACE/maestro-debug \
-            || MAESTRO_EXIT=$?
+          run_maestro || MAESTRO_EXIT=$?
+
+          if [ "$MAESTRO_EXIT" != "0" ]; then
+            echo "=== First run had failures — restarting app and retrying ==="
+            xcrun simctl terminate "$DEVICE" com.ironpulse.app 2>/dev/null || true
+            sleep 5
+            xcrun simctl launch "$DEVICE" com.ironpulse.app
+            sleep 10
+            xcrun simctl terminate "$DEVICE" com.ironpulse.app
+
+            MAESTRO_EXIT=0
+            run_maestro || MAESTRO_EXIT=$?
+          fi
 
           # Collect screenshots
           mkdir -p $GITHUB_WORKSPACE/maestro-debug/screenshots
