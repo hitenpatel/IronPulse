@@ -16,12 +16,14 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^6.3"
+    "@prisma/client": "^6.3",
+    "bcryptjs": "^2.4"
   },
   "prisma": {
     "seed": "tsx seeds/seed.ts"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4",
     "prisma": "^6.3",
     "tsx": "^4.21.0",
     "typescript": "^5.7"

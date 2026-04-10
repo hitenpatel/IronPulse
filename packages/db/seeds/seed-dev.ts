@@ -76,19 +76,17 @@ async function seedDev() {
   // ── Sample Exercises (pick from seeded library) ──
   const exercises = await db.exercise.findMany({
     where: {
-      name: {
-        in: [
-          "Bench Press",
-          "Squat",
-          "Deadlift",
-          "Overhead Press",
-          "Barbell Row",
-          "Pull Up",
-          "Dumbbell Curl",
-          "Tricep Pushdown",
-        ],
-      },
       isCustom: false,
+      OR: [
+        { name: { contains: "Bench Press" } },
+        { name: { contains: "Squat" } },
+        { name: { contains: "Deadlift" } },
+        { name: { contains: "Overhead Press" } },
+        { name: { contains: "Barbell Row" } },
+        { name: { contains: "Pull Up" } },
+        { name: { contains: "Curl" } },
+        { name: { contains: "Pushdown" } },
+      ],
     },
     take: 8,
   });
@@ -113,20 +111,22 @@ async function seedDev() {
         startedAt: date,
         completedAt: new Date(date.getTime() + 55 * 60 * 1000),
         durationSeconds: 55 * 60,
-        totalVolume: 5000 + Math.floor(Math.random() * 3000),
-        sets: {
-          create: exercises.slice(0, 4).flatMap((ex, exIdx) =>
-            Array.from({ length: 3 }, (_, setIdx) => ({
-              id: crypto.randomUUID(),
-              exerciseId: ex.id,
-              setNumber: setIdx + 1,
-              weightKg: 40 + exIdx * 20 + Math.floor(Math.random() * 10),
-              reps: 8 + Math.floor(Math.random() * 5),
-              rpe: 7 + Math.floor(Math.random() * 3),
-              completed: true,
-              sortOrder: exIdx * 3 + setIdx,
-            })),
-          ),
+        workoutExercises: {
+          create: exercises.slice(0, 4).map((ex, exIdx) => ({
+            id: crypto.randomUUID(),
+            exerciseId: ex.id,
+            order: exIdx,
+            sets: {
+              create: Array.from({ length: 3 }, (_, setIdx) => ({
+                id: crypto.randomUUID(),
+                setNumber: setIdx + 1,
+                weightKg: 40 + exIdx * 20 + Math.floor(Math.random() * 10),
+                reps: 8 + Math.floor(Math.random() * 5),
+                rpe: 7 + Math.floor(Math.random() * 3),
+                completed: true,
+              })),
+            },
+          })),
         },
       },
     });
