@@ -334,11 +334,14 @@ model BodyMetric {
   weightKg     Decimal? @map("weight_kg") @db.Decimal(5, 2)
   bodyFatPct   Decimal? @map("body_fat_pct") @db.Decimal(4, 1)
   measurements Json?
+  source       String?
+  externalId   String?  @map("external_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
+  @@index([externalId])
   @@map("body_metrics")
 }
 
@@ -368,7 +371,7 @@ model DeviceConnection {
   provider          String
   providerAccountId String    @map("provider_account_id")
   accessToken       String    @map("access_token")
-  refreshToken      String    @map("refresh_token")
+  refreshToken      String?   @map("refresh_token")
   tokenExpiresAt    DateTime  @map("token_expires_at")
   lastSyncedAt      DateTime? @map("last_synced_at")
   syncEnabled       Boolean   @default(true) @map("sync_enabled")
@@ -599,11 +602,15 @@ model SleepLog {
   durationMins Int?      @map("duration_mins")
   quality      String?   // poor, fair, good, excellent
   source       String?   // manual, garmin, apple_health
+  stages       Json?
+  score        Int?
+  externalId   String?   @map("external_id")
   notes        String?
   createdAt    DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+  @@index([externalId])
   @@map("sleep_logs")
 }

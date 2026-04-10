@@ -1,7 +1,17 @@
 import { z } from "zod";
 
+export const providerEnum = z.enum([
+  "strava",
+  "garmin",
+  "apple_health",
+  "polar",
+  "withings",
+  "oura",
+  "intervals_icu",
+]);
+
 export const disconnectProviderSchema = z.object({
-  provider: z.enum(["strava", "garmin", "apple_health"]),
+  provider: providerEnum,
 });
 
 export const completeStravaAuthSchema = z.object({
@@ -13,6 +23,11 @@ export const completeGarminAuthSchema = z.object({
   codeVerifier: z.string().min(1),
 });
 
+export const completeIntervalsIcuAuthSchema = z.object({
+  apiKey: z.string().min(1),
+  athleteId: z.string().min(1),
+});
+
 export const syncNowSchema = z.object({
-  provider: z.enum(["strava", "garmin", "apple_health"]),
+  provider: providerEnum,
 });

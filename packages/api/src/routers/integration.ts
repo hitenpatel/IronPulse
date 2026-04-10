@@ -4,6 +4,7 @@ import {
   disconnectProviderSchema,
   completeStravaAuthSchema,
   completeGarminAuthSchema,
+  completeIntervalsIcuAuthSchema,
 } from "@ironpulse/shared/src/schemas/integration";
 import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
@@ -52,6 +53,16 @@ export const integrationRouter = createTRPCRouter({
         if (input.provider === "garmin") {
           const { revokeGarminToken } = await import("../lib/garmin");
           await revokeGarminToken(accessToken);
+        } else if (input.provider === "polar") {
+          const { revokePolarToken } = await import("../lib/polar");
+          await revokePolarToken(accessToken, connection.providerAccountId);
+        } else if (input.provider === "withings") {
+          // Withings does not have a revocation endpoint
+        } else if (input.provider === "oura") {
+          const { revokeOuraToken } = await import("../lib/oura");
+          await revokeOuraToken(accessToken);
+        } else if (input.provider === "intervals_icu") {
+          // API key auth — no revocation needed
         } else {
           await revokeToken(accessToken);
         }
@@ -176,6 +187,56 @@ export const integrationRouter = createTRPCRouter({
           refreshToken: encryptToken(data.refresh_token),
           tokenExpiresAt: new Date(Date.now() + data.expires_in * 1000),
         },
+      });
+
+      return { success: true };
+    }),
+
+  completeIntervalsIcuAuth: rateLimitedProcedure
+    .input(completeIntervalsIcuAuthSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Verify the API key works by making a test request
+      const testUrl = `https://intervals.icu/api/v1/athlete/${input.athleteId}`;
+      const testResponse = await fetch(testUrl, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`API_KEY:${input.apiKey}`).toString("base64")}`,
+        },
+      });
+
+      if (!testResponse.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid API key or athlete ID",
+        });
+      }
+
+      const connection = await ctx.db.deviceConnection.upsert({
+        where: {
+          userId_provider: {
+            userId: ctx.user.id,
+            provider: "intervals_icu",
+          },
+        },
+        create: {
+          userId: ctx.user.id,
+          provider: "intervals_icu",
+          providerAccountId: input.athleteId,
+          accessToken: encryptToken(input.apiKey),
+          refreshToken: null,
+          tokenExpiresAt: new Date("2099-01-01"),
+        },
+        update: {
+          providerAccountId: input.athleteId,
+          accessToken: encryptToken(input.apiKey),
+          tokenExpiresAt: new Date("2099-01-01"),
+        },
+      });
+
+      // Fire-and-forget backfill
+      import("../lib/intervals-icu").then(({ runIntervalsBackfill }) => {
+        runIntervalsBackfill(connection.id, ctx.db).catch((err) => {
+          console.error("Intervals.icu backfill failed:", err);
+        });
       });
 
       return { success: true };
