@@ -28,3 +28,6 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible: "Strava"
     timeout: 10000
+- assertVisible: "Polar"
+- assertVisible: "Withings"
+- assertVisible: "Oura"
