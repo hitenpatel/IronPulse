@@ -42,6 +42,10 @@ export default function ProfileScreen() {
   const [bioLabel, setBioLabel] = useState("Biometric");
   const [bioLoading, setBioLoading] = useState(false);
 
+  const [deletionRequested, setDeletionRequested] = useState(false);
+  const [deletionRequestedAt, setDeletionRequestedAt] = useState<string | null>(null);
+  const [deletionLoading, setDeletionLoading] = useState(false);
+
   useEffect(() => {
     async function checkBiometric() {
       const available = await isBiometricAvailable();
@@ -54,6 +58,20 @@ export default function ProfileScreen() {
       }
     }
     checkBiometric();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await trpc.user.me.query();
+        if (result.user.deletionRequestedAt) {
+          setDeletionRequested(true);
+          setDeletionRequestedAt(String(result.user.deletionRequestedAt));
+        }
+      } catch {
+        // network error — show stale state
+      }
+    })();
   }, []);
 
   async function handleBiometricToggle(value: boolean) {
@@ -384,6 +402,137 @@ export default function ProfileScreen() {
           <Text style={{ color: colors.textMuted, fontSize: 13 }}>
             Export your data on the web app at ironpulse.com/profile
           </Text>
+        </View>
+
+        {/* Delete Account */}
+        <View
+          style={{
+            marginBottom: 8,
+            borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.error,
+            padding: 16,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 10,
+              color: colors.error,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              marginBottom: 6,
+              fontWeight: "600",
+            }}
+          >
+            Danger Zone
+          </Text>
+          {deletionRequested ? (
+            <>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 12 }}>
+                Your account is scheduled for deletion on{" "}
+                {deletionRequestedAt
+                  ? new Date(
+                      new Date(deletionRequestedAt).getTime() + 7 * 24 * 60 * 60 * 1000,
+                    ).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "soon"}
+                . All your data will be permanently removed.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Alert.alert(
+                    "Cancel Deletion",
+                    "Keep your account and all your data?",
+                    [
+                      { text: "No", style: "cancel" },
+                      {
+                        text: "Yes, keep my account",
+                        onPress: async () => {
+                          setDeletionLoading(true);
+                          try {
+                            await trpc.user.cancelDeletion.mutate();
+                            setDeletionRequested(false);
+                            setDeletionRequestedAt(null);
+                          } catch {
+                            Alert.alert("Error", "Failed to cancel deletion. Please try again.");
+                          } finally {
+                            setDeletionLoading(false);
+                          }
+                        },
+                      },
+                    ],
+                  );
+                }}
+                disabled={deletionLoading}
+                style={{
+                  height: 40,
+                  borderRadius: 8,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  opacity: deletionLoading ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600" }}>
+                  {deletionLoading ? "Cancelling..." : "Cancel Deletion"}
+                </Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 12 }}>
+                Permanently delete your account and all associated data. You will have 7 days to cancel.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Alert.alert(
+                    "Delete Account",
+                    "Are you sure? This will delete all your data after 7 days. You can cancel the deletion within that period.",
+                    [
+                      { text: "Keep my account", style: "cancel" },
+                      {
+                        text: "Yes, delete my account",
+                        style: "destructive",
+                        onPress: async () => {
+                          setDeletionLoading(true);
+                          try {
+                            const result = await trpc.user.requestDeletion.mutate();
+                            if (result.success) {
+                              setDeletionRequested(true);
+                              setDeletionRequestedAt(new Date().toISOString());
+                            }
+                          } catch {
+                            Alert.alert("Error", "Failed to request deletion. Please try again.");
+                          } finally {
+                            setDeletionLoading(false);
+                          }
+                        },
+                      },
+                    ],
+                  );
+                }}
+                disabled={deletionLoading}
+                style={{
+                  height: 40,
+                  borderRadius: 8,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: colors.error,
+                  opacity: deletionLoading ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+                  {deletionLoading ? "Requesting..." : "Delete My Account"}
+                </Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         {/* Sign Out */}

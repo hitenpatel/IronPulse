@@ -241,18 +241,57 @@ export const userRouter = createTRPCRouter({
     }),
 
   requestDeletion: protectedProcedure.mutation(async ({ ctx }) => {
+    const now = new Date();
     await ctx.db.user.update({
       where: { id: ctx.user.id },
-      data: { deletionRequestedAt: new Date() },
+      data: { deletionRequestedAt: now },
     });
-    return { message: "Account deletion requested. You have 7 days to cancel." };
+    const deletionDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return { success: true as const, deletionDate };
   }),
 
   cancelDeletion: protectedProcedure.mutation(async ({ ctx }) => {
+    const user = await ctx.db.user.findUniqueOrThrow({
+      where: { id: ctx.user.id },
+      select: { deletionRequestedAt: true },
+    });
+
+    if (!user.deletionRequestedAt) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "No pending deletion request to cancel",
+      });
+    }
+
     await ctx.db.user.update({
       where: { id: ctx.user.id },
       data: { deletionRequestedAt: null },
     });
-    return { message: "Account deletion cancelled." };
+    return { success: true as const };
+  }),
+
+  processPendingDeletions: protectedProcedure.mutation(async ({ ctx }) => {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const usersToDelete = await ctx.db.user.findMany({
+      where: {
+        deletionRequestedAt: { not: null, lte: cutoff },
+      },
+      select: { id: true },
+    });
+
+    if (usersToDelete.length === 0) {
+      return { success: true as const, deletedCount: 0 };
+    }
+
+    // Prisma schema uses onDelete: Cascade on all user relations,
+    // so deleting the user record cascades to all related data.
+    const result = await ctx.db.user.deleteMany({
+      where: {
+        id: { in: usersToDelete.map((u) => u.id) },
+      },
+    });
+
+    return { success: true as const, deletedCount: result.count };
   }),
 });

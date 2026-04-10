@@ -57,6 +57,101 @@ describe("user.updateProfile", () => {
   });
 });
 
+describe("user.requestDeletion", () => {
+  it("sets deletionRequestedAt and returns deletion date 7 days out", async () => {
+    const dbUser = await db.user.create({
+      data: { email: "delete@example.com", name: "Delete Me" },
+    });
+
+    const session = createTestUser({ id: dbUser.id, email: dbUser.email });
+    const caller = userCaller({ user: session });
+
+    const before = Date.now();
+    const result = await caller.requestDeletion();
+    const after = Date.now();
+
+    expect(result.success).toBe(true);
+
+    // deletionDate should be ~7 days from now
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const deletionTime = new Date(result.deletionDate).getTime();
+    expect(deletionTime).toBeGreaterThanOrEqual(before + sevenDaysMs - 1000);
+    expect(deletionTime).toBeLessThanOrEqual(after + sevenDaysMs + 1000);
+
+    // Verify the DB was updated
+    const updated = await db.user.findUniqueOrThrow({ where: { id: dbUser.id } });
+    expect(updated.deletionRequestedAt).not.toBeNull();
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const caller = userCaller();
+    await expect(caller.requestDeletion()).rejects.toThrow("UNAUTHORIZED");
+  });
+});
+
+describe("user.cancelDeletion", () => {
+  it("clears deletionRequestedAt", async () => {
+    const dbUser = await db.user.create({
+      data: {
+        email: "cancel@example.com",
+        name: "Cancel User",
+        deletionRequestedAt: new Date(),
+      },
+    });
+
+    const session = createTestUser({ id: dbUser.id, email: dbUser.email });
+    const caller = userCaller({ user: session });
+
+    const result = await caller.cancelDeletion();
+    expect(result.success).toBe(true);
+
+    const updated = await db.user.findUniqueOrThrow({ where: { id: dbUser.id } });
+    expect(updated.deletionRequestedAt).toBeNull();
+  });
+
+  it("throws when no pending deletion exists", async () => {
+    const dbUser = await db.user.create({
+      data: { email: "nodeletion@example.com", name: "No Deletion" },
+    });
+
+    const session = createTestUser({ id: dbUser.id, email: dbUser.email });
+    const caller = userCaller({ user: session });
+
+    await expect(caller.cancelDeletion()).rejects.toThrow(
+      "No pending deletion request to cancel"
+    );
+  });
+
+  it("allows re-requesting deletion after cancellation", async () => {
+    const dbUser = await db.user.create({
+      data: {
+        email: "rerequest@example.com",
+        name: "Re-Request User",
+        deletionRequestedAt: new Date(),
+      },
+    });
+
+    const session = createTestUser({ id: dbUser.id, email: dbUser.email });
+    const caller = userCaller({ user: session });
+
+    // Cancel
+    await caller.cancelDeletion();
+    const afterCancel = await db.user.findUniqueOrThrow({ where: { id: dbUser.id } });
+    expect(afterCancel.deletionRequestedAt).toBeNull();
+
+    // Re-request
+    const result = await caller.requestDeletion();
+    expect(result.success).toBe(true);
+    const afterRerequest = await db.user.findUniqueOrThrow({ where: { id: dbUser.id } });
+    expect(afterRerequest.deletionRequestedAt).not.toBeNull();
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const caller = userCaller();
+    await expect(caller.cancelDeletion()).rejects.toThrow("UNAUTHORIZED");
+  });
+});
+
 describe("user.me", () => {
   it("returns current user profile", async () => {
     const dbUser = await db.user.create({
