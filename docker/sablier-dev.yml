@@ -1,0 +1,16 @@
+provider:
+  name: docker
+
+sessions:
+  defaultDuration: 10m
+  expirationInterval: 30s
+
+strategy:
+  dynamic:
+    customThemesPath: ""
+    defaultTheme: ghost
+    defaultRefreshFrequency: 5s
+    showDetailsByDefault: true
+
+blocking:
+  defaultTimeout: 3m

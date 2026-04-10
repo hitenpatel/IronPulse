@@ -1,0 +1,28 @@
+http:
+  middlewares:
+    sablier-ironpulse:
+      plugin:
+        sablier:
+          sablierUrl: http://ironpulse-sablier:10000
+          group: ironpulse-dev
+          sessionDuration: 10m
+          dynamic:
+            displayName: IronPulse Dev
+            theme: ghost
+            refreshFrequency: 5s
+            showDetails: true
+
+  routers:
+    ironpulse:
+      rule: "PathPrefix(`/`)"
+      entryPoints:
+        - web
+      middlewares:
+        - sablier-ironpulse
+      service: ironpulse-app
+
+  services:
+    ironpulse-app:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3000"

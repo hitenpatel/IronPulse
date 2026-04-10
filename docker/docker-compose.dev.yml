@@ -1,31 +1,52 @@
-## Dev overlay — run with: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
-## Adds Caddy reverse proxy for local domain access, exposes ports, and sets memory limits
+## Dev overlay with Sablier — all services sleep after 10min idle, wake on request
+## Start: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
+## Only Traefik + Sablier stay running (~80MB). Everything else starts on-demand.
 
 services:
-  caddy:
-    image: caddy:2-alpine
+  traefik:
+    image: traefik:v2.11
+    container_name: ironpulse-traefik
+    restart: unless-stopped
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --experimental.plugins.sablier.modulename=github.com/sablierapp/sablier-traefik-plugin
+      - --experimental.plugins.sablier.version=v1.1.0
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
     ports:
       - "80:80"
-      - "443:443"
+      - "8080:8080"
     volumes:
-      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - ironpulse
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik-dev-dynamic.yml:/etc/traefik/dynamic.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     deploy:
       resources:
         limits:
           memory: 128m
-    restart: unless-stopped
+    labels:
+      - sablier.enable=false
 
-  ironpulse:
-    environment:
-      NEXTAUTH_URL: "https://ironpulse.local"
+  sablier:
+    image: sablierapp/sablier:1.11.1
+    container_name: ironpulse-sablier
+    restart: unless-stopped
+    command:
+      - start
+      - --provider.name=docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     deploy:
       resources:
         limits:
-          memory: 1g
+          memory: 64m
+    labels:
+      - sablier.enable=false
+
 
   postgres:
     ports:
@@ -34,6 +55,9 @@ services:
       resources:
         limits:
           memory: 1g
+    labels:
+      - sablier.enable=true
+      - sablier.group=ironpulse-dev
 
   redis:
     ports:
@@ -42,6 +66,9 @@ services:
       resources:
         limits:
           memory: 256m
+    labels:
+      - sablier.enable=true
+      - sablier.group=ironpulse-dev
 
   minio:
     ports:
@@ -50,19 +77,24 @@ services:
       resources:
         limits:
           memory: 512m
+    labels:
+      - sablier.enable=true
+      - sablier.group=ironpulse-dev
 
   mongo:
     deploy:
       resources:
         limits:
           memory: 512m
+    labels:
+      - sablier.enable=true
+      - sablier.group=ironpulse-dev
 
   powersync:
     deploy:
       resources:
         limits:
           memory: 512m
-
-volumes:
-  caddy_data:
-  caddy_config:
+    labels:
+      - sablier.enable=true
+      - sablier.group=ironpulse-dev
