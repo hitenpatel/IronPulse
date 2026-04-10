@@ -112,6 +112,79 @@ function E2ELoginScreen({ navigation }: any) {
           <Text style={{ color: "#0077FF", fontWeight: "600", fontSize: 14 }}>Sign Up</Text>
         </Pressable>
       </View>
+      <Pressable
+        testID="forgot-password-link"
+        onPress={() => navigation.navigate("ForgotPassword")}
+        style={{ marginTop: 12, alignSelf: "center" }}
+      >
+        <Text style={{ color: "#0077FF", fontSize: 13, fontWeight: "500" }}>Forgot password?</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function E2EForgotPasswordScreen({ navigation }: any) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
+      await fetch(apiUrl + "/api/trpc/auth.requestPasswordReset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: { email: email.trim() } }),
+      });
+    } catch {
+      // Ignore errors — always show success
+    } finally {
+      setSent(true);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.authContainer}>
+      <Text style={styles.logo}>Reset Password</Text>
+      <Text style={styles.subtext} testID="forgot-status-text">
+        {sent
+          ? "If an account exists with that email, you'll receive a reset link."
+          : "Enter your email and we'll send you a reset link."}
+      </Text>
+      {!sent && (
+        <>
+          <TextInput
+            testID="forgot-email-input"
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#4E6180"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <Pressable
+            testID="forgot-submit-button"
+            style={[styles.primaryBtn, loading && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.primaryBtnText}>
+              {loading ? "Sending..." : "Send Reset Link"}
+            </Text>
+          </Pressable>
+        </>
+      )}
+      <Pressable
+        testID="forgot-back-button"
+        onPress={() => navigation.goBack()}
+        style={{ marginTop: 16, alignSelf: "center" }}
+      >
+        <Text style={{ color: "#0077FF", fontSize: 14 }}>Back to login</Text>
+      </Pressable>
     </View>
   );
 }
@@ -937,6 +1010,7 @@ function AuthNavigator() {
     >
       <AuthStackNav.Screen name="Login" component={E2ELoginScreen} />
       <AuthStackNav.Screen name="Signup" component={E2ESignupScreen} />
+      <AuthStackNav.Screen name="ForgotPassword" component={E2EForgotPasswordScreen} />
     </AuthStackNav.Navigator>
   );
 }

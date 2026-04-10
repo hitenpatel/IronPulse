@@ -3,14 +3,26 @@ import { View, Text, Pressable, TextInput, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Mail } from "lucide-react-native";
 
+import { trpc } from "../../lib/trpc";
+
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    // TODO: integrate with auth API
-    setSent(true);
+  const handleSubmit = async () => {
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      await trpc.auth.requestPasswordReset.mutate({ email: email.trim() });
+      setSent(true);
+    } catch {
+      // Always show success to avoid leaking email existence
+      setSent(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -18,9 +30,9 @@ export default function ForgotPasswordScreen() {
       <View style={styles.card}>
         <Mail size={32} color="#0077FF" style={{ alignSelf: "center" }} />
         <Text style={styles.heading}>Reset your password</Text>
-        <Text style={styles.subtext}>
+        <Text style={styles.subtext} testID="forgot-status-text">
           {sent
-            ? "Check your email for a reset link."
+            ? "If an account exists with that email, you'll receive a reset link."
             : "Enter your email and we'll send you a reset link."}
         </Text>
 
@@ -36,13 +48,20 @@ export default function ForgotPasswordScreen() {
               autoCapitalize="none"
               testID="forgot-email-input"
             />
-            <Pressable style={styles.button} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>Send Reset Link</Text>
+            <Pressable
+              testID="forgot-submit-button"
+              style={[styles.button, loading && { opacity: 0.6 }]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </Text>
             </Pressable>
           </>
         )}
 
-        <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
+        <Pressable testID="forgot-back-button" onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
           <Text style={styles.link}>Back to login</Text>
         </Pressable>
       </View>
