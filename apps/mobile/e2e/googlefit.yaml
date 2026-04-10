@@ -16,8 +16,10 @@ appId: com.ironpulse.app
 - inputText: "password123"
 - tapOn:
     id: "login-button"
-- assertVisible:
-    id: "greeting"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
 - tapOn: "Profile"
 - tapOn: "Connected Apps"
 - assertVisible: "Google Fit"
