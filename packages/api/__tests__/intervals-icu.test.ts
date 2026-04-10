@@ -663,7 +663,7 @@ describe("runIntervalsBackfill", () => {
 
   it("fetches 30 days of data using correct date range", async () => {
     const db = mockDb();
-    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
       new Response(JSON.stringify([]), { status: 200 }),
     );
 
