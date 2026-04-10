@@ -1,5 +1,5 @@
 ## Dev overlay — run with: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
-## Adds Caddy reverse proxy for local domain access and exposes database ports
+## Adds Caddy reverse proxy for local domain access, exposes ports, and sets memory limits
 
 services:
   caddy:
@@ -13,23 +13,55 @@ services:
       - caddy_config:/config
     depends_on:
       - ironpulse
+    deploy:
+      resources:
+        limits:
+          memory: 128m
     restart: unless-stopped
 
   ironpulse:
     environment:
       NEXTAUTH_URL: "https://ironpulse.local"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   postgres:
     ports:
       - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   redis:
     ports:
       - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   minio:
     ports:
       - "9000:9000"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  mongo:
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  powersync:
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
 volumes:
   caddy_data:
