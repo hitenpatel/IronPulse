@@ -1,0 +1,5 @@
+ironpulse.local {
+	tls internal
+
+	reverse_proxy ironpulse:3000
+}

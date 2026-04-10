@@ -1,0 +1,36 @@
+## Dev overlay — run with: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
+## Adds Caddy reverse proxy for local domain access and exposes database ports
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - ironpulse
+    restart: unless-stopped
+
+  ironpulse:
+    environment:
+      NEXTAUTH_URL: "https://ironpulse.local"
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  minio:
+    ports:
+      - "9000:9000"
+
+volumes:
+  caddy_data:
+  caddy_config:
