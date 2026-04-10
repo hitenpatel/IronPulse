@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@ironpulse/db";
 import { importStravaActivity } from "@ironpulse/api/src/lib/strava";
+import { captureError } from "@ironpulse/api/src/lib/capture-error";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
         `Webhook: failed to import Strava activity ${body.object_id}:`,
         err,
       );
+      await captureError(err, { provider: "strava", webhook: "activity", activityId: String(body.object_id) });
     }
   })();
 

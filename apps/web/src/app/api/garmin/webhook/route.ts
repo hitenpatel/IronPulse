@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@ironpulse/db";
 import { importGarminActivity } from "@ironpulse/api/src/lib/garmin";
+import { captureError } from "@ironpulse/api/src/lib/capture-error";
 
 interface GarminWebhookPayload {
   activityDetails?: Array<{
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
           `Webhook: failed to import Garmin activity ${activity.activityId}:`,
           err,
         );
+        await captureError(err, { provider: "garmin", webhook: "activity", activityId: String(activity.activityId) });
       }
     })();
   }

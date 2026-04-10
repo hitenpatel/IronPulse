@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { decryptToken } from "./encryption";
+import { captureError } from "./capture-error";
 
 const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
 
@@ -365,10 +366,12 @@ export async function runIntervalsBackfill(connectionId: string, db: any) {
   const [activities, wellness] = await Promise.all([
     getActivities(apiKey, athleteId, oldest, newest).catch((err) => {
       console.error("Failed to fetch Intervals.icu activities:", err);
+      captureError(err, { provider: "intervals_icu", operation: "fetch-activities" });
       return [] as IntervalsActivity[];
     }),
     getWellness(apiKey, athleteId, oldest, newest).catch((err) => {
       console.error("Failed to fetch Intervals.icu wellness:", err);
+      captureError(err, { provider: "intervals_icu", operation: "fetch-wellness" });
       return [] as IntervalsWellness[];
     }),
   ]);
@@ -382,6 +385,7 @@ export async function runIntervalsBackfill(connectionId: string, db: any) {
         `Failed to import Intervals.icu activity ${activity.id}:`,
         err,
       );
+      await captureError(err, { provider: "intervals_icu", activityId: String(activity.id) });
     }
   }
 
@@ -394,6 +398,7 @@ export async function runIntervalsBackfill(connectionId: string, db: any) {
         `Failed to import Intervals.icu wellness ${entry.day}:`,
         err,
       );
+      await captureError(err, { provider: "intervals_icu", day: entry.day });
     }
   }
 

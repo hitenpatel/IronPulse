@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@ironpulse/db";
 import { importOuraSleep, importOuraReadiness } from "@ironpulse/api/src/lib/oura";
+import { captureError } from "@ironpulse/api/src/lib/capture-error";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
         `Webhook: failed to import Oura ${body.data_type} for ${body.event_date}:`,
         err,
       );
+      await captureError(err, { provider: "oura", webhook: body.data_type, eventDate: body.event_date });
     }
   })();
 

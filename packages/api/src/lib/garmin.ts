@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { encryptToken, decryptToken } from "./encryption";
 import { parseGpx } from "./gpx";
+import { captureError } from "./capture-error";
 
 const GARMIN_API_BASE = "https://apis.garmin.com/wellness-api/rest";
 const GARMIN_TOKEN_URL = "https://connectapi.garmin.com/oauth-service/oauth/token";
@@ -276,6 +277,7 @@ export async function runGarminBackfill(connectionId: string, db: any) {
         `Failed to import Garmin activity ${activity.activityId}:`,
         err,
       );
+      await captureError(err, { provider: "garmin", activityId: String(activity.activityId) });
     }
   }
 

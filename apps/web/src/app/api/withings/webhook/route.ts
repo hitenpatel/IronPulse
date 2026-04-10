@@ -5,6 +5,7 @@ import {
   fetchWithingsApi,
   importWithingsMeasures,
 } from "@ironpulse/api/src/lib/withings";
+import { captureError } from "@ironpulse/api/src/lib/capture-error";
 
 /**
  * Withings webhook notification payload.
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
         `Webhook: failed to import Withings measures for user ${notification.userid}:`,
         err,
       );
+      await captureError(err, { provider: "withings", webhook: "measures", userId: notification.userid });
     }
   })();
 

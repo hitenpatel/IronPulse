@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@ironpulse/db";
 import { importPolarActivity } from "@ironpulse/api/src/lib/polar";
+import { captureError } from "@ironpulse/api/src/lib/capture-error";
 
 interface PolarWebhookEvent {
   event: string;
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
         `Webhook: failed to import Polar exercise ${body.entity_id}:`,
         err,
       );
+      await captureError(err, { provider: "polar", webhook: "exercise", exerciseId: body.entity_id });
     }
   })();
 
