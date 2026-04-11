@@ -47,7 +47,15 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [status, session]);
 
-  if (!db) return <>{children}</>;
+  if (!db) {
+    // Show a minimal loading state while PowerSync initializes.
+    // Don't render children without the context - they'd crash if they call usePowerSync().
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#060B14" }}>
+        <p style={{ color: "#8899B4", fontSize: 14 }}>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <Suspense fallback={children}>
