@@ -1,5 +1,3 @@
-
-import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useMemo } from "react";
@@ -13,6 +11,7 @@ import {
 import { usePowerSync } from "@powersync/react";
 import { trpc } from "@/lib/trpc/client";
 import { SetRow } from "./set-row";
+import { uuid } from "@/lib/uuid";
 import { calculateOverloadSuggestion } from "@ironpulse/api/src/lib/overload-suggestions";
 
 interface ExerciseSet {

@@ -1,5 +1,3 @@
-
-import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -7,6 +5,7 @@ import Link from "next/link";
 import { usePowerSync } from "@powersync/react";
 import { ActiveWorkout } from "@/components/workout/active-workout";
 import { getWorkoutName } from "@/lib/workout-utils";
+import { uuid } from "@/lib/uuid";
 
 export default function NewWorkoutPage() {
   const db = usePowerSync();

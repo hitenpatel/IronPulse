@@ -1,5 +1,3 @@
-
-import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -34,6 +32,7 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { uuid } from "@/lib/uuid";
 import { Input } from "@/components/ui/input";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

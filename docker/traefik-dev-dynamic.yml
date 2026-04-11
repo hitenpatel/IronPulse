@@ -26,3 +26,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:3000"
+        passHostHeader: true
+
+  serversTransports:
+    default:
+      forwardingTimeouts:
+        dialTimeout: "30s"
+        responseHeaderTimeout: "0s"
+        idleConnTimeout: "90s"

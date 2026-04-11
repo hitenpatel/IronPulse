@@ -1,5 +1,3 @@
-
-import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { usePowerSync, useQuery } from "@powersync/react";
+import { uuid } from "@/lib/uuid";
 import { useDebouncedCallback } from "@/hooks/use-debounced-mutation";
 
 interface AddExerciseSheetProps {

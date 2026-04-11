@@ -1,5 +1,3 @@
-
-import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState } from "react";
@@ -13,6 +11,7 @@ import { TrendingUp, BarChart3, Scale, Activity, Ruler } from "lucide-react";
 import { FitnessChart } from "@/components/analytics/fitness-chart";
 import { TrainingLoadChart } from "@/components/analytics/training-load-chart";
 import { MuscleHeatmap } from "@/components/analytics/muscle-heatmap";
+import { uuid } from "@/lib/uuid";
 import { ProgressPhotos } from "@/components/analytics/progress-photos";
 
 const MUSCLE_GROUP_COLORS: Record<string, string> = {
