@@ -37,11 +37,24 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [status, session]);
 
-  if (!db) return <>{children}</>;
+  // Always provide the PowerSync context — even if db is null during init,
+  // pages that use usePowerSync() need a non-null value to avoid crashes.
+  // When db is null, provide a stub that returns empty results.
+  const value = db ?? ({
+    execute: async () => ({ rows: { _array: [], length: 0, item: () => null } }),
+    getAll: async () => [],
+    get: async () => null,
+    getOptional: async () => null,
+    watch: () => ({ [Symbol.asyncIterator]: async function* () {} }),
+    connect: async () => {},
+    disconnect: async () => {},
+    connected: false,
+    currentStatus: { connected: false, dataFlowStatus: { downloading: false, uploading: false } },
+  } as unknown as AbstractPowerSyncDatabase);
 
   return (
     <Suspense fallback={children}>
-      <PowerSyncContext.Provider value={db}>
+      <PowerSyncContext.Provider value={value}>
         {children}
       </PowerSyncContext.Provider>
     </Suspense>
