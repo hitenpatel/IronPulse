@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const [db, setDb] = useState<AbstractPowerSyncDatabase | null>(null);
+  const [skipped, setSkipped] = useState(false);
   const initRef = useRef(false);
 
   useEffect(() => {
@@ -16,6 +17,15 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     initRef.current = true;
 
     async function init() {
+      // PowerSync WASM requires a secure context (HTTPS or localhost)
+      // navigator.locks, crypto.subtle, etc. are unavailable over plain HTTP
+      const isSecure = window.isSecureContext;
+      if (!isSecure) {
+        console.warn("[PowerSync] Skipping — insecure context (use HTTPS or localhost)");
+        setSkipped(true);
+        return;
+      }
+
       try {
         const { getPowerSyncDatabase } = await import("./system");
         const database = getPowerSyncDatabase();
@@ -40,6 +50,10 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
       db.disconnect().catch(() => {});
     }
   }, [db, status]);
+
+  // If PowerSync was skipped (insecure context), render without it
+  // Pages using usePowerSync() will get errors caught by error boundaries
+  if (skipped) return <>{children}</>;
 
   if (!db) {
     return (
