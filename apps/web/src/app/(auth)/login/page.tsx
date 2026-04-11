@@ -133,6 +133,7 @@ export default function LoginPage() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            name="email"
             data-testid="email-input"
             type="email"
             value={email}
@@ -155,6 +156,7 @@ export default function LoginPage() {
           </div>
           <Input
             id="password"
+            name="password"
             data-testid="password-input"
             type="password"
             value={password}

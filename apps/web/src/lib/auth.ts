@@ -22,13 +22,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: parsed.data.email },
         });
 
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash) {
+          console.error("[auth] user not found or no password:", parsed.data.email);
+          return null;
+        }
 
         const valid = await bcrypt.compare(
           parsed.data.password,
           user.passwordHash
         );
-        if (!valid) return null;
+        if (!valid) {
+          console.error("[auth] bcrypt compare failed for:", parsed.data.email);
+          return null;
+        }
 
         return {
           id: user.id,
@@ -178,4 +184,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
+  trustHost: true,
 });
