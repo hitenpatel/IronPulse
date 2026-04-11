@@ -65,7 +65,7 @@ export function AddExerciseSheet({
     { enabled: !db && open }
   );
 
-  const exercises = db ? psExercises : (trpcQuery.data ?? []);
+  const exercises = db ? psExercises : (trpcQuery.data?.data ?? []);
   const isLoading = db ? psLoading : trpcQuery.isLoading;
 
   const addExerciseMutation = trpc.workout.addExercise.useMutation();
