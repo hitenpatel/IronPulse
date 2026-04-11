@@ -15,18 +15,28 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     async function init() {
-      const { getPowerSyncDatabase } = await import("./system");
-      const { BackendConnector } = await import("@ironpulse/sync");
-      const database = getPowerSyncDatabase();
+      try {
+        const { getPowerSyncDatabase } = await import("./system");
+        const database = getPowerSyncDatabase();
 
-      if (!mounted) return;
-      setDb(database);
+        if (!mounted) return;
+        setDb(database);
 
-      if (status === "authenticated" && session?.user) {
-        const connector = new BackendConnector();
-        await database.connect(connector);
-      } else if (status === "unauthenticated") {
-        await database.disconnect();
+        // Only attempt sync connection if authenticated
+        if (status === "authenticated" && session?.user) {
+          try {
+            const { BackendConnector } = await import("@ironpulse/sync");
+            const connector = new BackendConnector();
+            await database.connect(connector);
+          } catch {
+            // Sync server unavailable — local-only mode (queries still work)
+            console.warn("[PowerSync] Sync server unavailable, running in local-only mode");
+          }
+        } else if (status === "unauthenticated") {
+          await database.disconnect().catch(() => {});
+        }
+      } catch (err) {
+        console.warn("[PowerSync] Failed to initialize:", err);
       }
     }
 
@@ -37,24 +47,11 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [status, session]);
 
-  // Always provide the PowerSync context — even if db is null during init,
-  // pages that use usePowerSync() need a non-null value to avoid crashes.
-  // When db is null, provide a stub that returns empty results.
-  const value = db ?? ({
-    execute: async () => ({ rows: { _array: [], length: 0, item: () => null } }),
-    getAll: async () => [],
-    get: async () => null,
-    getOptional: async () => null,
-    watch: () => ({ [Symbol.asyncIterator]: async function* () {} }),
-    connect: async () => {},
-    disconnect: async () => {},
-    connected: false,
-    currentStatus: { connected: false, dataFlowStatus: { downloading: false, uploading: false } },
-  } as unknown as AbstractPowerSyncDatabase);
+  if (!db) return <>{children}</>;
 
   return (
     <Suspense fallback={children}>
-      <PowerSyncContext.Provider value={value}>
+      <PowerSyncContext.Provider value={db}>
         {children}
       </PowerSyncContext.Provider>
     </Suspense>
