@@ -1,3 +1,5 @@
+
+import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState } from "react";
@@ -88,7 +90,7 @@ export function ManualCardioForm({
       (parseInt(minutes || "0", 10) || 0) * 60 +
       (parseInt(seconds || "0", 10) || 0);
 
-    const id = crypto.randomUUID();
+    const id = uuid();
     const now = new Date();
     const distanceMeters = distanceKm ? parseFloat(distanceKm) * 1000 : null;
     const elevGain = elevationM ? parseFloat(elevationM) : null;
@@ -315,4 +317,3 @@ export function ManualCardioForm({
       </div>
     </div>
   );
-}

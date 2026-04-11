@@ -1,3 +1,5 @@
+
+import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useEffect } from "react";
@@ -70,14 +72,14 @@ export function AddExerciseSheet({
       );
       const maxOrder = (result.rows?._array?.[0]?.max_order as number) ?? 0;
 
-      const id = crypto.randomUUID();
+      const id = uuid();
       await db.execute(
         `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order") VALUES (?, ?, ?, ?)`,
         [id, workoutId, exerciseId, maxOrder + 1]
       );
 
       // Add first set automatically
-      const setId = crypto.randomUUID();
+      const setId = uuid();
       await db.execute(
         `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, 1, 'working', 0)`,
         [setId, id]
@@ -175,4 +177,3 @@ export function AddExerciseSheet({
       </SheetContent>
     </Sheet>
   );
-}

@@ -1,3 +1,5 @@
+
+import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -20,7 +22,7 @@ export default function NewWorkoutPage() {
     if (createdRef.current) return;
     createdRef.current = true;
 
-    const id = crypto.randomUUID();
+    const id = uuid();
     const name = getWorkoutName();
     const now = new Date();
 
@@ -71,4 +73,3 @@ export default function NewWorkoutPage() {
       initialName={workoutData.name}
     />
   );
-}

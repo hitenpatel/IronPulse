@@ -1,3 +1,5 @@
+
+import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState } from "react";
@@ -362,7 +364,7 @@ function BodyWeightLogForm() {
     setSuccess(false);
 
     try {
-      const id = crypto.randomUUID();
+      const id = uuid();
       const now = new Date();
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
@@ -751,7 +753,7 @@ function BodyMeasurementsLogForm() {
           [JSON.stringify(merged), existing.id]
         );
       } else {
-        const id = crypto.randomUUID();
+        const id = uuid();
         await db.execute(
           `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, measurements, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
           [id, dateStr, null, null, measurementsJson, now.toISOString()]
@@ -871,4 +873,3 @@ export default function StatsPage() {
       </section>
     </div>
   );
-}

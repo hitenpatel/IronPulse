@@ -22,14 +22,14 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         setDb(database);
 
-        // Only attempt sync connection if authenticated
-        if (status === "authenticated" && session?.user) {
+        // Only attempt sync if the sync server URL is configured and user is authenticated
+        const psUrl = process.env.NEXT_PUBLIC_POWERSYNC_URL;
+        if (psUrl && status === "authenticated" && session?.user) {
           try {
             const { BackendConnector } = await import("@ironpulse/sync");
             const connector = new BackendConnector();
             await database.connect(connector);
           } catch {
-            // Sync server unavailable — local-only mode (queries still work)
             console.warn("[PowerSync] Sync server unavailable, running in local-only mode");
           }
         } else if (status === "unauthenticated") {

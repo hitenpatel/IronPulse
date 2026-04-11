@@ -1,3 +1,5 @@
+
+import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -58,7 +60,7 @@ interface TemplateExercise {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function newKey() {
-  return crypto.randomUUID();
+  return uuid();
 }
 
 function defaultSet(setNumber: number): TemplateSet {
@@ -584,4 +586,3 @@ export default function TemplateEditPage() {
       )}
     </div>
   );
-}

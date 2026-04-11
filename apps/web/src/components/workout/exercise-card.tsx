@@ -1,3 +1,5 @@
+
+import { uuid } from "@/lib/uuid";
 "use client";
 
 import { useState, useMemo } from "react";
@@ -127,7 +129,7 @@ export function ExerciseCard({
 
   function handleAddSet() {
     setAdding(true);
-    const id = crypto.randomUUID();
+    const id = uuid();
     const nextSetNumber = workoutExercise.sets.length + 1;
     db.execute(
       `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, ?, ?, 0)`,
@@ -262,4 +264,3 @@ export function ExerciseCard({
       </button>
     </div>
   );
-}
