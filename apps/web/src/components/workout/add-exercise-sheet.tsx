@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Search, Plus, Dumbbell } from "lucide-react";
 import {
   Sheet,
@@ -8,9 +8,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { usePowerSync, useQuery } from "@powersync/react";
+import { PowerSyncContext, useQuery } from "@powersync/react";
 import { uuid } from "@/lib/uuid";
 import { useDebouncedCallback } from "@/hooks/use-debounced-mutation";
+import { trpc } from "@/lib/trpc/client";
 
 interface AddExerciseSheetProps {
   workoutId: string;
@@ -25,7 +26,7 @@ export function AddExerciseSheet({
   onOpenChange,
   onExerciseAdded,
 }: AddExerciseSheetProps) {
-  const db = usePowerSync();
+  const db = useContext(PowerSyncContext);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [adding, setAdding] = useState(false);
@@ -42,19 +43,32 @@ export function AddExerciseSheet({
     }
   }, [open]);
 
-  // Read exercises from PowerSync local SQLite
-  const { data: exercises, isLoading } = useQuery<{
-    id: string;
-    name: string;
-    category: string | null;
-    equipment: string | null;
-    primary_muscles: string | null;
-  }>(
-    debouncedSearch
-      ? `SELECT id, name, category, equipment, primary_muscles FROM exercises WHERE name LIKE ? ORDER BY name LIMIT 30`
-      : `SELECT id, name, category, equipment, primary_muscles FROM exercises ORDER BY name LIMIT 30`,
-    debouncedSearch ? [`%${debouncedSearch}%`] : []
+  // PowerSync local query (only when db is available)
+  const psQuery = db
+    ? useQuery<{
+        id: string;
+        name: string;
+        category: string | null;
+        equipment: string | null;
+        primary_muscles: string | null;
+      }>(
+        debouncedSearch
+          ? `SELECT id, name, category, equipment, primary_muscles FROM exercises WHERE name LIKE ? ORDER BY name LIMIT 30`
+          : `SELECT id, name, category, equipment, primary_muscles FROM exercises ORDER BY name LIMIT 30`,
+        debouncedSearch ? [`%${debouncedSearch}%`] : []
+      )
+    : null;
+
+  // tRPC fallback query (when PowerSync unavailable)
+  const trpcQuery = trpc.exercise.list.useQuery(
+    { search: debouncedSearch || undefined, limit: 30 },
+    { enabled: !db && open }
   );
+
+  const exercises = psQuery?.data ?? trpcQuery.data ?? [];
+  const isLoading = psQuery?.isLoading ?? trpcQuery.isLoading;
+
+  const addExerciseMutation = trpc.workout.addExercise.useMutation();
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -64,25 +78,32 @@ export function AddExerciseSheet({
   async function handleAdd(exerciseId: string) {
     setAdding(true);
     try {
-      // Get current max order for this workout
-      const result = await db.execute(
-        `SELECT COALESCE(MAX("order"), 0) as max_order FROM workout_exercises WHERE workout_id = ?`,
-        [workoutId]
-      );
-      const maxOrder = (result.rows?._array?.[0]?.max_order as number) ?? 0;
+      if (db) {
+        // PowerSync path
+        const result = await db.execute(
+          `SELECT COALESCE(MAX("order"), 0) as max_order FROM workout_exercises WHERE workout_id = ?`,
+          [workoutId]
+        );
+        const maxOrder = (result.rows?._array?.[0]?.max_order as number) ?? 0;
 
-      const id = uuid();
-      await db.execute(
-        `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order") VALUES (?, ?, ?, ?)`,
-        [id, workoutId, exerciseId, maxOrder + 1]
-      );
+        const id = uuid();
+        await db.execute(
+          `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order") VALUES (?, ?, ?, ?)`,
+          [id, workoutId, exerciseId, maxOrder + 1]
+        );
 
-      // Add first set automatically
-      const setId = uuid();
-      await db.execute(
-        `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, 1, 'working', 0)`,
-        [setId, id]
-      );
+        const setId = uuid();
+        await db.execute(
+          `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, 1, 'working', 0)`,
+          [setId, id]
+        );
+      } else {
+        // tRPC fallback
+        await addExerciseMutation.mutateAsync({
+          workoutId,
+          exerciseId,
+        });
+      }
 
       onExerciseAdded();
       onOpenChange(false);
@@ -125,54 +146,45 @@ export function AddExerciseSheet({
                 <div key={i} className="flex items-center gap-3">
                   <div className="h-10 w-10 animate-pulse rounded-lg bg-muted" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                    <div className="h-3.5 w-32 animate-pulse rounded bg-muted" />
                     <div className="h-3 w-20 animate-pulse rounded bg-muted" />
                   </div>
                 </div>
               ))}
             </div>
           ) : exercises.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              No exercises found
-            </div>
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              {debouncedSearch
+                ? "No exercises found"
+                : "No exercises available"}
+            </p>
           ) : (
             <div className="space-y-1">
-              {exercises.map((exercise) => {
-                // primary_muscles is stored as JSON string or comma-separated
-                let firstMuscle = "";
-                try {
-                  const parsed = JSON.parse(exercise.primary_muscles ?? "[]");
-                  firstMuscle = Array.isArray(parsed) ? parsed[0] ?? "" : "";
-                } catch {
-                  firstMuscle = exercise.primary_muscles?.split(",")[0] ?? "";
-                }
-
-                return (
-                  <button
-                    key={exercise.id}
-                    onClick={() => handleAdd(exercise.id)}
-                    disabled={adding}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <Dumbbell className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {exercise.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {firstMuscle}
-                        {exercise.equipment ? ` · ${exercise.equipment}` : ""}
-                      </p>
-                    </div>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                );
-              })}
+              {exercises.map((ex: any) => (
+                <button
+                  key={ex.id}
+                  onClick={() => handleAdd(ex.id)}
+                  disabled={adding}
+                  className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-muted/50 disabled:opacity-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <Dumbbell className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {ex.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {ex.category ?? ex.equipment ?? ""}
+                    </p>
+                  </div>
+                  <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              ))}
             </div>
           )}
         </div>
       </SheetContent>
     </Sheet>
   );
+}
