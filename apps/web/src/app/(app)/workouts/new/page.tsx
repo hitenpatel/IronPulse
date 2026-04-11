@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import Link from "next/link";
-import { usePowerSync } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
 import { ActiveWorkout } from "@/components/workout/active-workout";
 import { getWorkoutName } from "@/lib/workout-utils";
 import { uuid } from "@/lib/uuid";
+import { trpc } from "@/lib/trpc/client";
 
 export default function NewWorkoutPage() {
-  const db = usePowerSync();
+  const db = useContext(PowerSyncContext);
   const [workoutData, setWorkoutData] = useState<{
     id: string;
     startedAt: Date;
@@ -16,6 +17,8 @@ export default function NewWorkoutPage() {
   } | null>(null);
   const [error, setError] = useState(false);
   const createdRef = useRef(false);
+
+  const createWorkout = trpc.workout.create.useMutation();
 
   useEffect(() => {
     if (createdRef.current) return;
@@ -25,16 +28,36 @@ export default function NewWorkoutPage() {
     const name = getWorkoutName();
     const now = new Date();
 
-    db.execute(
-      `INSERT INTO workouts (id, name, started_at, created_at) VALUES (?, ?, ?, ?)`,
-      [id, name, now.toISOString(), now.toISOString()]
-    )
-      .then(() => {
-        setWorkoutData({ id, startedAt: now, name });
-      })
-      .catch(() => {
+    async function create() {
+      // Try PowerSync first (offline-capable)
+      if (db) {
+        try {
+          await db.execute(
+            `INSERT INTO workouts (id, name, started_at, created_at) VALUES (?, ?, ?, ?)`,
+            [id, name, now.toISOString(), now.toISOString()]
+          );
+          setWorkoutData({ id, startedAt: now, name });
+          return;
+        } catch {
+          // PowerSync failed, fall through to tRPC
+        }
+      }
+
+      // Fallback: create via tRPC (server-side)
+      try {
+        const result = await createWorkout.mutateAsync({ name });
+        const w = result.workout;
+        setWorkoutData({
+          id: w.id,
+          startedAt: new Date(w.startedAt),
+          name: w.name,
+        });
+      } catch {
         setError(true);
-      });
+      }
+    }
+
+    create();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -72,3 +95,4 @@ export default function NewWorkoutPage() {
       initialName={workoutData.name}
     />
   );
+}
