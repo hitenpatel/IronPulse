@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Dumbbell } from "lucide-react";
 import {
   Sheet,
@@ -8,8 +8,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { PowerSyncContext } from "@powersync/react";
-import { uuid } from "@/lib/uuid";
 import { useDebouncedCallback } from "@/hooks/use-debounced-mutation";
 import { trpc } from "@/lib/trpc/client";
 
@@ -26,12 +24,9 @@ export function AddExerciseSheet({
   onOpenChange,
   onExerciseAdded,
 }: AddExerciseSheetProps) {
-  const db = useContext(PowerSyncContext);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [adding, setAdding] = useState(false);
-  const [psExercises, setPsExercises] = useState<any[]>([]);
-  const [psLoading, setPsLoading] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback(
     (value: string) => setDebouncedSearch(value),
@@ -45,30 +40,15 @@ export function AddExerciseSheet({
     }
   }, [open]);
 
-  // PowerSync local query — run manually instead of as a hook
-  useEffect(() => {
-    if (!db || !open) return;
-    setPsLoading(true);
-    const sql = debouncedSearch
-      ? `SELECT id, name, category, equipment, primary_muscles FROM exercises WHERE name LIKE ? ORDER BY name LIMIT 30`
-      : `SELECT id, name, category, equipment, primary_muscles FROM exercises ORDER BY name LIMIT 30`;
-    const params = debouncedSearch ? [`%${debouncedSearch}%`] : [];
-    db.getAll(sql, params)
-      .then((rows: any[]) => setPsExercises(rows))
-      .catch(() => setPsExercises([]))
-      .finally(() => setPsLoading(false));
-  }, [db, debouncedSearch, open]);
-
-  // tRPC fallback (when PowerSync unavailable)
-  const trpcQuery = trpc.exercise.list.useQuery(
+  const exerciseQuery = trpc.exercise.list.useQuery(
     { search: debouncedSearch || undefined, limit: 30 },
-    { enabled: !db && open }
+    { enabled: open }
   );
 
-  const exercises = db ? psExercises : (trpcQuery.data?.data ?? []);
-  const isLoading = db ? psLoading : trpcQuery.isLoading;
-
   const addExerciseMutation = trpc.workout.addExercise.useMutation();
+
+  const exercises = exerciseQuery.data?.data ?? [];
+  const isLoading = exerciseQuery.isLoading;
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -78,31 +58,7 @@ export function AddExerciseSheet({
   async function handleAdd(exerciseId: string) {
     setAdding(true);
     try {
-      if (db) {
-        const result = await db.execute(
-          `SELECT COALESCE(MAX("order"), 0) as max_order FROM workout_exercises WHERE workout_id = ?`,
-          [workoutId]
-        );
-        const maxOrder = (result.rows?._array?.[0]?.max_order as number) ?? 0;
-
-        const id = uuid();
-        await db.execute(
-          `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order") VALUES (?, ?, ?, ?)`,
-          [id, workoutId, exerciseId, maxOrder + 1]
-        );
-
-        const setId = uuid();
-        await db.execute(
-          `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, 1, 'working', 0)`,
-          [setId, id]
-        );
-      } else {
-        await addExerciseMutation.mutateAsync({
-          workoutId,
-          exerciseId,
-        });
-      }
-
+      await addExerciseMutation.mutateAsync({ workoutId, exerciseId });
       onExerciseAdded();
       onOpenChange(false);
     } finally {
