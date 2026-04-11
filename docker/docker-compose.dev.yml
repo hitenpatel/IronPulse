@@ -98,3 +98,6 @@ services:
     labels:
       - sablier.enable=true
       - sablier.group=ironpulse-dev
+    volumes:
+      - ./powersync.yaml:/app/powersync.yaml
+      - ./sync-rules.yaml:/app/sync_rules.yaml

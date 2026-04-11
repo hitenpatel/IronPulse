@@ -114,8 +114,13 @@ interface NavLinkProps {
 function NavLink({ item, isActive, collapsed }: NavLinkProps) {
   const testId = `nav-${item.label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`;
   return (
-    <Link
+    <a
       href={item.href}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        document.location = item.href;
+      }}
       data-testid={testId}
       aria-label={item.label}
       aria-current={isActive ? "page" : undefined}
@@ -145,7 +150,7 @@ function NavLink({ item, isActive, collapsed }: NavLinkProps) {
           {item.badge > 99 ? "99+" : item.badge}
         </span>
       )}
-    </Link>
+    </a>
   );
 }
 
