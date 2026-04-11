@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Dumbbell, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { trpc } from "@/lib/trpc/client";
 import {
   formatDuration,
   formatDistance,
@@ -50,8 +50,8 @@ function EmptyState() {
 }
 
 export function ActivityFeed() {
-  const workouts = useWorkouts();
-  const cardio = useCardioSessions();
+  const workouts = trpc.workout.list.useQuery({});
+  const cardio = trpc.cardio.list.useQuery({});
 
   const isLoading = workouts.isLoading || cardio.isLoading;
 
@@ -62,10 +62,10 @@ export function ActivityFeed() {
       items.push({
         kind: "workout",
         id: w.id,
-        startedAt: new Date(w.started_at),
+        startedAt: new Date(w.startedAt),
         name: w.name,
-        exerciseCount: w.exercise_count ?? 0,
-        durationSeconds: w.duration_seconds,
+        exerciseCount: (w as any).exerciseCount ?? (w as any)._count?.workoutExercises ?? 0,
+        durationSeconds: w.durationSeconds,
       });
     }
   }
@@ -75,10 +75,10 @@ export function ActivityFeed() {
       items.push({
         kind: "cardio",
         id: c.id,
-        startedAt: new Date(c.started_at),
+        startedAt: new Date(c.startedAt),
         type: c.type,
-        durationSeconds: c.duration_seconds,
-        distanceMeters: c.distance_meters ? Number(c.distance_meters) : null,
+        durationSeconds: c.durationSeconds,
+        distanceMeters: c.distanceMeters ? Number(c.distanceMeters) : null,
       });
     }
   }
