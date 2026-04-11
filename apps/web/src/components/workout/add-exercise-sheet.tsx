@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { PowerSyncContext, useQuery } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
 import { uuid } from "@/lib/uuid";
 import { useDebouncedCallback } from "@/hooks/use-debounced-mutation";
 import { trpc } from "@/lib/trpc/client";
@@ -30,6 +30,8 @@ export function AddExerciseSheet({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [adding, setAdding] = useState(false);
+  const [psExercises, setPsExercises] = useState<any[]>([]);
+  const [psLoading, setPsLoading] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback(
     (value: string) => setDebouncedSearch(value),
@@ -43,30 +45,28 @@ export function AddExerciseSheet({
     }
   }, [open]);
 
-  // PowerSync local query (only when db is available)
-  const psQuery = db
-    ? useQuery<{
-        id: string;
-        name: string;
-        category: string | null;
-        equipment: string | null;
-        primary_muscles: string | null;
-      }>(
-        debouncedSearch
-          ? `SELECT id, name, category, equipment, primary_muscles FROM exercises WHERE name LIKE ? ORDER BY name LIMIT 30`
-          : `SELECT id, name, category, equipment, primary_muscles FROM exercises ORDER BY name LIMIT 30`,
-        debouncedSearch ? [`%${debouncedSearch}%`] : []
-      )
-    : null;
+  // PowerSync local query — run manually instead of as a hook
+  useEffect(() => {
+    if (!db || !open) return;
+    setPsLoading(true);
+    const sql = debouncedSearch
+      ? `SELECT id, name, category, equipment, primary_muscles FROM exercises WHERE name LIKE ? ORDER BY name LIMIT 30`
+      : `SELECT id, name, category, equipment, primary_muscles FROM exercises ORDER BY name LIMIT 30`;
+    const params = debouncedSearch ? [`%${debouncedSearch}%`] : [];
+    db.getAll(sql, params)
+      .then((rows: any[]) => setPsExercises(rows))
+      .catch(() => setPsExercises([]))
+      .finally(() => setPsLoading(false));
+  }, [db, debouncedSearch, open]);
 
-  // tRPC fallback query (when PowerSync unavailable)
+  // tRPC fallback (when PowerSync unavailable)
   const trpcQuery = trpc.exercise.list.useQuery(
     { search: debouncedSearch || undefined, limit: 30 },
     { enabled: !db && open }
   );
 
-  const exercises = psQuery?.data ?? trpcQuery.data ?? [];
-  const isLoading = psQuery?.isLoading ?? trpcQuery.isLoading;
+  const exercises = db ? psExercises : (trpcQuery.data ?? []);
+  const isLoading = db ? psLoading : trpcQuery.isLoading;
 
   const addExerciseMutation = trpc.workout.addExercise.useMutation();
 
@@ -79,7 +79,6 @@ export function AddExerciseSheet({
     setAdding(true);
     try {
       if (db) {
-        // PowerSync path
         const result = await db.execute(
           `SELECT COALESCE(MAX("order"), 0) as max_order FROM workout_exercises WHERE workout_id = ?`,
           [workoutId]
@@ -98,7 +97,6 @@ export function AddExerciseSheet({
           [setId, id]
         );
       } else {
-        // tRPC fallback
         await addExerciseMutation.mutateAsync({
           workoutId,
           exerciseId,
@@ -119,7 +117,6 @@ export function AddExerciseSheet({
           <SheetTitle>Add Exercise</SheetTitle>
         </SheetHeader>
 
-        {/* Search */}
         <div className="mt-4">
           <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5">
             <Search className="h-4 w-4 text-muted-foreground" />
@@ -134,7 +131,6 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        {/* Exercise list */}
         <div className="mt-4 flex-1 overflow-y-auto">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
             {debouncedSearch ? "Results" : "All Exercises"}
@@ -154,9 +150,7 @@ export function AddExerciseSheet({
             </div>
           ) : exercises.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              {debouncedSearch
-                ? "No exercises found"
-                : "No exercises available"}
+              {debouncedSearch ? "No exercises found" : "No exercises available"}
             </p>
           ) : (
             <div className="space-y-1">
@@ -171,9 +165,7 @@ export function AddExerciseSheet({
                     <Dumbbell className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {ex.name}
-                    </p>
+                    <p className="text-sm font-medium truncate">{ex.name}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {ex.category ?? ex.equipment ?? ""}
                     </p>
