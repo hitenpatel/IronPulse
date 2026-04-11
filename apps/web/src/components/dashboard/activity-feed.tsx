@@ -57,8 +57,11 @@ export function ActivityFeed() {
 
   const items: FeedItem[] = [];
 
-  if (workouts.data) {
-    for (const w of workouts.data) {
+  const workoutList = workouts.data?.data ?? workouts.data ?? [];
+  const cardioList = cardio.data?.data ?? cardio.data ?? [];
+
+  if (workoutList) {
+    for (const w of workoutList) {
       items.push({
         kind: "workout",
         id: w.id,
@@ -70,8 +73,8 @@ export function ActivityFeed() {
     }
   }
 
-  if (cardio.data) {
-    for (const c of cardio.data) {
+  if (cardioList) {
+    for (const c of cardioList) {
       items.push({
         kind: "cardio",
         id: c.id,
