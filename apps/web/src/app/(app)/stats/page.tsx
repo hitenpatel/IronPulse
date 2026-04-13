@@ -193,7 +193,7 @@ function BodyWeightTrend() {
           id: d.date.toISOString(),
           user_id: "",
           date: d.date instanceof Date ? d.date.toISOString().slice(0, 10) : String(d.date),
-          weight_kg: d.weightKg,
+          weight_kg: d.weightKg != null ? Number(d.weightKg) : null,
           body_fat_pct: null,
           measurements: null,
           created_at: "",
@@ -646,8 +646,8 @@ function BodyMeasurementsTrend() {
           id: d.id,
           user_id: d.userId,
           date: d.date instanceof Date ? d.date.toISOString().slice(0, 10) : String(d.date),
-          weight_kg: d.weightKg,
-          body_fat_pct: d.bodyFatPct,
+          weight_kg: d.weightKg != null ? Number(d.weightKg) : null,
+          body_fat_pct: d.bodyFatPct != null ? Number(d.bodyFatPct) : null,
           measurements: d.measurements != null ? (typeof d.measurements === "string" ? d.measurements : JSON.stringify(d.measurements)) : null,
           created_at: d.createdAt instanceof Date ? d.createdAt.toISOString() : String(d.createdAt),
         })).reverse(); // tRPC returns ASC, PowerSync hook returns DESC
@@ -938,3 +938,4 @@ export default function StatsPage() {
       </section>
     </div>
   );
+}

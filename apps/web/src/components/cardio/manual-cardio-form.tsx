@@ -137,7 +137,7 @@ export function ManualCardioForm({
         });
       } else {
         const result = await createCardio.mutateAsync({
-          type,
+          type: type as "run" | "cycle" | "swim" | "hike" | "walk" | "row" | "elliptical" | "other",
           startedAt: now,
           durationSeconds,
           ...(distanceMeters != null && { distanceMeters }),
@@ -348,3 +348,4 @@ export function ManualCardioForm({
       </div>
     </div>
   );
+}

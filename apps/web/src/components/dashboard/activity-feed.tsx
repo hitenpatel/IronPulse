@@ -57,8 +57,8 @@ export function ActivityFeed() {
 
   const items: FeedItem[] = [];
 
-  const workoutList = workouts.data?.data ?? workouts.data ?? [];
-  const cardioList = cardio.data?.data ?? cardio.data ?? [];
+  const workoutList = Array.isArray(workouts.data) ? workouts.data : (workouts.data?.data ?? []);
+  const cardioList = Array.isArray(cardio.data) ? cardio.data : (cardio.data?.data ?? []);
 
   if (workoutList) {
     for (const w of workoutList) {
