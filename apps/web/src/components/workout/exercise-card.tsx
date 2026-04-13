@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useContext } from "react";
 import { MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -8,7 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { usePowerSync } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { trpc } from "@/lib/trpc/client";
 import { SetRow } from "./set-row";
 import { uuid } from "@/lib/uuid";
@@ -59,7 +60,8 @@ export function ExerciseCard({
   onSetCompleted,
   onMutationSuccess,
 }: ExerciseCardProps) {
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
   const [adding, setAdding] = useState(false);
   const [showNotes, setShowNotes] = useState(
     workoutExercise.notes != null && workoutExercise.notes !== ""
@@ -67,6 +69,14 @@ export function ExerciseCard({
   const [notes, setNotes] = useState(workoutExercise.notes || "");
 
   const updateExerciseNotes = trpc.workout.updateExerciseNotes.useMutation({
+    onSuccess: () => onMutationSuccess(),
+  });
+
+  const addSetMutation = trpc.workout.addSet.useMutation({
+    onSuccess: () => onMutationSuccess(),
+  });
+
+  const updateSetMutation = trpc.workout.updateSet.useMutation({
     onSuccess: () => onMutationSuccess(),
   });
 
@@ -87,10 +97,18 @@ export function ExerciseCard({
     // Find the first incomplete set
     const firstEmptySet = workoutExercise.sets.find((s) => !s.completed);
     if (!firstEmptySet) return;
-    db.execute(
-      `UPDATE exercise_sets SET weight_kg = ?, reps = ? WHERE id = ?`,
-      [suggestion.suggestedWeightKg, suggestion.suggestedReps, firstEmptySet.id]
-    ).then(() => onMutationSuccess());
+    if (mode === "powersync" && db) {
+      db.execute(
+        `UPDATE exercise_sets SET weight_kg = ?, reps = ? WHERE id = ?`,
+        [suggestion.suggestedWeightKg, suggestion.suggestedReps, firstEmptySet.id]
+      ).then(() => onMutationSuccess());
+    } else {
+      updateSetMutation.mutate({
+        setId: firstEmptySet.id,
+        weight: suggestion.suggestedWeightKg,
+        reps: suggestion.suggestedReps,
+      });
+    }
   }
 
   const currentIndex = allExercises.findIndex((e) => e.id === workoutExercise.id);
@@ -100,6 +118,8 @@ export function ExerciseCard({
 
   function handleLinkSuperset() {
     if (!nextExercise) return;
+    // Superset linking is only available in PowerSync mode (non-critical feature)
+    if (mode === "trpc" || !db) return;
     // Find the lowest unused group number across all exercises
     const usedGroups = new Set(
       allExercises
@@ -120,6 +140,8 @@ export function ExerciseCard({
   }
 
   function handleUnlinkSuperset() {
+    // Superset unlinking is only available in PowerSync mode (non-critical feature)
+    if (mode === "trpc" || !db) return;
     db.execute(
       `UPDATE workout_exercises SET superset_group = NULL WHERE id = ?`,
       [workoutExercise.id]
@@ -128,15 +150,28 @@ export function ExerciseCard({
 
   function handleAddSet() {
     setAdding(true);
-    const id = uuid();
-    const nextSetNumber = workoutExercise.sets.length + 1;
-    db.execute(
-      `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, ?, ?, 0)`,
-      [id, workoutExercise.id, nextSetNumber, "working"]
-    )
-      .then(() => onMutationSuccess())
-      .finally(() => setAdding(false));
+    if (mode === "powersync" && db) {
+      const id = uuid();
+      const nextSetNumber = workoutExercise.sets.length + 1;
+      db.execute(
+        `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, completed) VALUES (?, ?, ?, ?, 0)`,
+        [id, workoutExercise.id, nextSetNumber, "working"]
+      )
+        .then(() => onMutationSuccess())
+        .finally(() => setAdding(false));
+    } else {
+      addSetMutation.mutate(
+        { workoutExerciseId: workoutExercise.id },
+        {
+          onSettled: () => setAdding(false),
+        }
+      );
+    }
   }
+
+  // In tRPC mode, hide superset options since the feature is not available
+  const showSupersetLink = mode === "powersync" && canLinkSuperset;
+  const showSupersetUnlink = mode === "powersync" && isInSuperset;
 
   return (
     <div className="py-4">
@@ -157,12 +192,12 @@ export function ExerciseCard({
             <DropdownMenuItem onSelect={() => setShowNotes(true)}>
               Add Note
             </DropdownMenuItem>
-            {canLinkSuperset && (
+            {showSupersetLink && (
               <DropdownMenuItem onSelect={handleLinkSuperset}>
                 Link as Superset
               </DropdownMenuItem>
             )}
-            {isInSuperset && (
+            {showSupersetUnlink && (
               <DropdownMenuItem onSelect={handleUnlinkSuperset}>
                 Unlink Superset
               </DropdownMenuItem>
@@ -263,3 +298,4 @@ export function ExerciseCard({
       </button>
     </div>
   );
+}

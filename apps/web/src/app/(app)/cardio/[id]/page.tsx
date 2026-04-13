@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ChevronLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { useCardioSession, useCardioLaps, type LapRow } from "@ironpulse/sync";
 import { Card } from "@/components/ui/card";
 import {
@@ -150,10 +151,11 @@ function DetailSkeleton() {
 
 export default function CardioDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const mode = useDataMode();
 
   // Read session from PowerSync local SQLite
-  const { data: sessionRows, isLoading } = useCardioSession(id);
-  const session = sessionRows?.[0] as {
+  const { data: sessionRows, isLoading: psLoading } = useCardioSession(id);
+  const psSession = sessionRows?.[0] as {
     id: string;
     type: string;
     source: string;
@@ -169,7 +171,50 @@ export default function CardioDetailPage() {
 
   // Laps from PowerSync local SQLite
   const { data: lapRows } = useCardioLaps(id);
-  const laps = (lapRows ?? []) as LapRow[];
+  const psLaps = (lapRows ?? []) as LapRow[];
+
+  // tRPC fallback
+  const trpcQuery = trpc.cardio.getById.useQuery(
+    { sessionId: id },
+    { enabled: mode === "trpc" },
+  );
+
+  const session = mode === "trpc"
+    ? trpcQuery.data?.session
+      ? {
+          id: trpcQuery.data.session.id,
+          type: trpcQuery.data.session.type,
+          source: trpcQuery.data.session.source,
+          started_at:
+            trpcQuery.data.session.startedAt.toISOString?.() ??
+            String(trpcQuery.data.session.startedAt),
+          duration_seconds: trpcQuery.data.session.durationSeconds,
+          distance_meters: trpcQuery.data.session.distanceMeters != null
+            ? Number(trpcQuery.data.session.distanceMeters)
+            : null,
+          elevation_gain_m: trpcQuery.data.session.elevationGainM != null
+            ? Number(trpcQuery.data.session.elevationGainM)
+            : null,
+          avg_heart_rate: trpcQuery.data.session.avgHeartRate,
+          max_heart_rate: trpcQuery.data.session.maxHeartRate,
+          calories: trpcQuery.data.session.calories,
+          notes: trpcQuery.data.session.notes ?? null,
+        }
+      : undefined
+    : psSession;
+
+  const laps: LapRow[] = mode === "trpc"
+    ? (trpcQuery.data?.session?.laps ?? []).map((l) => ({
+        id: l.id,
+        session_id: id,
+        lap_number: l.lapNumber,
+        distance_meters: Number(l.distanceMeters),
+        duration_seconds: l.durationSeconds,
+        avg_heart_rate: l.avgHeartRate,
+      }))
+    : psLaps;
+
+  const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
   // Keep tRPC for route points (not synced via PowerSync)
   const { data: routeData } = trpc.cardio.getRoutePoints.useQuery(

@@ -1,21 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ClipboardList, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { usePowerSync } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
 import { useTemplates } from "@ironpulse/sync";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useDataMode } from "@/hooks/use-data-mode";
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
 
-  const { data: templatesData, isLoading } = useTemplates();
+  // PowerSync local data
+  const { data: psTemplatesData, isLoading: psLoading } = useTemplates();
+  // tRPC fallback
+  const { data: trpcTemplatesData, isLoading: trpcLoading } = trpc.template.list.useQuery(
+    {},
+    { enabled: mode === "trpc" }
+  );
+
+  const trpcUtils = trpc.useUtils();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const startWorkout = trpc.workout.create.useMutation({
@@ -24,11 +34,31 @@ export default function TemplatesPage() {
     },
   });
 
-  const templates = templatesData ?? [];
+  const deleteTemplate = trpc.template.delete.useMutation({
+    onSuccess: () => {
+      trpcUtils.template.list.invalidate();
+    },
+  });
+
+  const isLoading = mode === "powersync" ? psLoading : trpcLoading;
+
+  const templates =
+    mode === "powersync"
+      ? (psTemplatesData ?? [])
+      : (trpcTemplatesData?.data ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+          created_at: t.createdAt instanceof Date ? t.createdAt.toISOString() : String(t.createdAt),
+          exercise_count: t._count?.templateExercises ?? 0,
+        }));
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await db.execute("DELETE FROM workout_templates WHERE id = ?", [deleteTarget.id]);
+    if (mode === "powersync" && db) {
+      await db.execute("DELETE FROM workout_templates WHERE id = ?", [deleteTarget.id]);
+    } else {
+      await deleteTemplate.mutateAsync({ templateId: deleteTarget.id });
+    }
     setDeleteTarget(null);
   };
 

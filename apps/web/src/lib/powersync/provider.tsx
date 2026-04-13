@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { PowerSyncContext } from "@powersync/react";
 import type { AbstractPowerSyncDatabase } from "@powersync/web";
 import { useSession } from "next-auth/react";
+import { DataModeContext } from "@/hooks/use-data-mode";
 
 export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
@@ -17,8 +18,6 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     initRef.current = true;
 
     async function init() {
-      // PowerSync WASM requires a secure context (HTTPS or localhost)
-      // navigator.locks, crypto.subtle, etc. are unavailable over plain HTTP
       const isSecure = window.isSecureContext;
       if (!isSecure) {
         console.warn("[PowerSync] Skipping — insecure context (use HTTPS or localhost)");
@@ -32,13 +31,13 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
         setDb(database);
       } catch (err) {
         console.warn("[PowerSync] Failed to initialize:", err);
+        setSkipped(true);
       }
     }
 
     init();
   }, []);
 
-  // Handle sync connection separately, only when auth status changes
   useEffect(() => {
     if (!db) return;
     const psUrl = process.env.NEXT_PUBLIC_POWERSYNC_URL;
@@ -51,10 +50,16 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     }
   }, [db, status]);
 
-  // If PowerSync was skipped (insecure context), render without it
-  // Pages using usePowerSync() will get errors caught by error boundaries
-  if (skipped) return <>{children}</>;
+  // PowerSync unavailable — render in tRPC mode
+  if (skipped) {
+    return (
+      <DataModeContext.Provider value="trpc">
+        {children}
+      </DataModeContext.Provider>
+    );
+  }
 
+  // Still initializing
   if (!db) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#060B14" }}>
@@ -63,11 +68,14 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // PowerSync available
   return (
-    <Suspense fallback={children}>
-      <PowerSyncContext.Provider value={db}>
-        {children}
-      </PowerSyncContext.Provider>
-    </Suspense>
+    <DataModeContext.Provider value="powersync">
+      <Suspense fallback={children}>
+        <PowerSyncContext.Provider value={db}>
+          {children}
+        </PowerSyncContext.Provider>
+      </Suspense>
+    </DataModeContext.Provider>
   );
 }

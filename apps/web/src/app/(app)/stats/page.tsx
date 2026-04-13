@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { trpc } from "@/lib/trpc/client";
-import { usePowerSync } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
 import { useBodyMetrics } from "@ironpulse/sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { TrainingLoadChart } from "@/components/analytics/training-load-chart";
 import { MuscleHeatmap } from "@/components/analytics/muscle-heatmap";
 import { uuid } from "@/lib/uuid";
 import { ProgressPhotos } from "@/components/analytics/progress-photos";
+import { useDataMode } from "@/hooks/use-data-mode";
+import type { BodyMetricRow } from "@ironpulse/sync";
 
 const MUSCLE_GROUP_COLORS: Record<string, string> = {
   chest: "bg-primary",
@@ -176,7 +178,27 @@ function formatWeekLabel(weekStr: string): string {
 // --- Body Weight Trend (uses local PowerSync data) ---
 
 function BodyWeightTrend() {
-  const { data: metrics, isLoading } = useBodyMetrics();
+  const mode = useDataMode();
+  const { data: psMetrics, isLoading: psLoading } = useBodyMetrics();
+  const { data: trpcData, isLoading: trpcLoading } = trpc.analytics.bodyWeightTrend.useQuery(
+    { days: 90 },
+    { enabled: mode === "trpc" }
+  );
+
+  // Map tRPC response to match the PowerSync shape
+  const metrics: BodyMetricRow[] | undefined =
+    mode === "powersync"
+      ? psMetrics
+      : trpcData?.data?.map((d) => ({
+          id: d.date.toISOString(),
+          user_id: "",
+          date: d.date instanceof Date ? d.date.toISOString().slice(0, 10) : String(d.date),
+          weight_kg: d.weightKg,
+          body_fat_pct: null,
+          measurements: null,
+          created_at: "",
+        })).reverse(); // tRPC returns ASC; match PowerSync DESC so downstream .reverse() works
+  const isLoading = mode === "powersync" ? psLoading : trpcLoading;
 
   if (isLoading) {
     return (
@@ -348,7 +370,10 @@ function BodyWeightLogForm() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
+  const createBodyMetric = trpc.bodyMetric.create.useMutation();
+  const trpcUtils = trpc.useUtils();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -363,14 +388,23 @@ function BodyWeightLogForm() {
     setSuccess(false);
 
     try {
-      const id = uuid();
       const now = new Date();
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-      await db.execute(
-        `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, created_at) VALUES (?, ?, ?, ?, ?)`,
-        [id, dateStr, weightVal, bodyFatVal, now.toISOString()]
-      );
+      if (mode === "powersync" && db) {
+        const id = uuid();
+        await db.execute(
+          `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, created_at) VALUES (?, ?, ?, ?, ?)`,
+          [id, dateStr, weightVal, bodyFatVal, now.toISOString()]
+        );
+      } else {
+        await createBodyMetric.mutateAsync({
+          date: now,
+          weightKg: weightVal,
+          ...(bodyFatVal != null && { bodyFatPct: bodyFatVal }),
+        });
+        await trpcUtils.analytics.bodyWeightTrend.invalidate();
+      }
 
       setWeight("");
       setBodyFat("");
@@ -598,7 +632,26 @@ function parseMeasurements(raw: string | null): StoredMeasurements | null {
 }
 
 function BodyMeasurementsTrend() {
-  const { data: metrics, isLoading } = useBodyMetrics();
+  const mode = useDataMode();
+  const { data: psMetrics, isLoading: psLoading } = useBodyMetrics();
+  const { data: trpcListData, isLoading: trpcLoading } = trpc.bodyMetric.list.useQuery(
+    { from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), to: new Date() },
+    { enabled: mode === "trpc" }
+  );
+
+  const metrics: BodyMetricRow[] | undefined =
+    mode === "powersync"
+      ? psMetrics
+      : trpcListData?.data?.map((d) => ({
+          id: d.id,
+          user_id: d.userId,
+          date: d.date instanceof Date ? d.date.toISOString().slice(0, 10) : String(d.date),
+          weight_kg: d.weightKg,
+          body_fat_pct: d.bodyFatPct,
+          measurements: d.measurements != null ? (typeof d.measurements === "string" ? d.measurements : JSON.stringify(d.measurements)) : null,
+          created_at: d.createdAt instanceof Date ? d.createdAt.toISOString() : String(d.createdAt),
+        })).reverse(); // tRPC returns ASC, PowerSync hook returns DESC
+  const isLoading = mode === "powersync" ? psLoading : trpcLoading;
 
   if (isLoading) {
     return (
@@ -706,8 +759,11 @@ function BodyMeasurementsLogForm() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
   const { data: metrics } = useBodyMetrics();
+  const createBodyMetric = trpc.bodyMetric.create.useMutation();
+  const trpcUtils = trpc.useUtils();
 
   const hasAnyValue = Object.values(values).some((v) => v.trim() !== "");
 
@@ -740,23 +796,33 @@ function BodyMeasurementsLogForm() {
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const measurementsJson = JSON.stringify(parsed);
 
-      // Check if there's already an entry for today
-      const existing = (metrics ?? []).find((m) => m.date === dateStr);
+      if (mode === "powersync" && db) {
+        // Check if there's already an entry for today
+        const existing = (metrics ?? []).find((m) => m.date === dateStr);
 
-      if (existing) {
-        // Merge with existing measurements for today
-        const existingMeasurements = parseMeasurements(existing.measurements) ?? {};
-        const merged = { ...existingMeasurements, ...parsed };
-        await db.execute(
-          `UPDATE body_metrics SET measurements = ? WHERE id = ?`,
-          [JSON.stringify(merged), existing.id]
-        );
+        if (existing) {
+          // Merge with existing measurements for today
+          const existingMeasurements = parseMeasurements(existing.measurements) ?? {};
+          const merged = { ...existingMeasurements, ...parsed };
+          await db.execute(
+            `UPDATE body_metrics SET measurements = ? WHERE id = ?`,
+            [JSON.stringify(merged), existing.id]
+          );
+        } else {
+          const id = uuid();
+          await db.execute(
+            `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, measurements, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, dateStr, null, null, measurementsJson, now.toISOString()]
+          );
+        }
       } else {
-        const id = uuid();
-        await db.execute(
-          `INSERT INTO body_metrics (id, date, weight_kg, body_fat_pct, measurements, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-          [id, dateStr, null, null, measurementsJson, now.toISOString()]
-        );
+        // tRPC create uses upsert, so it handles merging automatically
+        await createBodyMetric.mutateAsync({
+          date: now,
+          measurements: parsed as Record<string, number>,
+        });
+        await trpcUtils.bodyMetric.list.invalidate();
+        await trpcUtils.analytics.bodyWeightTrend.invalidate();
       }
 
       setValues(EMPTY_MEASUREMENTS);

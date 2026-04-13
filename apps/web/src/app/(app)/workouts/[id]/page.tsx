@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Dumbbell, BarChart3, Target, ClipboardList, Check, Share2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets, type WorkoutExerciseRow, type SetRow } from "@ironpulse/sync";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { formatDuration, formatVolume } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,13 +23,14 @@ function formatFullDate(date: Date): string {
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const mode = useDataMode();
 
   // Read workout header from PowerSync
-  const { data: workoutRows, isLoading } = useQuery(
+  const { data: workoutRows, isLoading: psLoading } = useQuery(
     `SELECT * FROM workouts WHERE id = ?`,
     [id]
   );
-  const workout = workoutRows?.[0] as {
+  const psWorkout = workoutRows?.[0] as {
     id: string;
     name: string | null;
     started_at: string;
@@ -38,8 +40,61 @@ export default function WorkoutDetailPage() {
   } | undefined;
 
   // Read exercises and sets from PowerSync
-  const { data: exercises } = useWorkoutExercises(id);
-  const { data: sets } = useWorkoutSets(id);
+  const { data: psExercises } = useWorkoutExercises(id);
+  const { data: psSets } = useWorkoutSets(id);
+
+  // tRPC fallback
+  const trpcQuery = trpc.workout.getById.useQuery(
+    { workoutId: id },
+    { enabled: mode === "trpc" },
+  );
+
+  const workout = mode === "trpc"
+    ? trpcQuery.data?.workout
+      ? {
+          id: trpcQuery.data.workout.id,
+          name: trpcQuery.data.workout.name,
+          started_at:
+            trpcQuery.data.workout.startedAt.toISOString?.() ??
+            String(trpcQuery.data.workout.startedAt),
+          duration_seconds: trpcQuery.data.workout.durationSeconds ?? null,
+          notes: trpcQuery.data.workout.notes ?? null,
+          is_public: trpcQuery.data.workout.isPublic ? 1 : null,
+        }
+      : undefined
+    : psWorkout;
+
+  const exercises: WorkoutExerciseRow[] =
+    mode === "trpc"
+      ? (trpcQuery.data?.workout?.workoutExercises ?? []).map((we) => ({
+          id: we.id,
+          workout_id: id,
+          exercise_id: we.exercise.id,
+          order: we.order,
+          notes: we.notes ?? null,
+          superset_group: null,
+          exercise_name: we.exercise.name,
+        }))
+      : psExercises ?? [];
+
+  const sets: SetRow[] =
+    mode === "trpc"
+      ? (trpcQuery.data?.workout?.workoutExercises ?? []).flatMap((we) =>
+          (we.sets ?? []).map((s) => ({
+            id: s.id,
+            workout_exercise_id: we.id,
+            set_number: s.setNumber,
+            type: s.type ?? "working",
+            weight_kg: s.weightKg != null ? Number(s.weightKg) : null,
+            reps: s.reps,
+            rpe: s.rpe != null ? Number(s.rpe) : null,
+            rest_seconds: null,
+            completed: s.completed ? 1 : 0,
+          })),
+        )
+      : psSets ?? [];
+
+  const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);

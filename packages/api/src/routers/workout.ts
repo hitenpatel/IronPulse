@@ -307,6 +307,33 @@ export const workoutRouter = createTRPCRouter({
       });
     }),
 
+  getPreviousPerformance: rateLimitedProcedure
+    .input(z.object({ exerciseIds: z.array(z.string()), excludeWorkoutId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // For each exerciseId, find the most recent completed sets from a different workout
+      const results = await ctx.db.exerciseSet.findMany({
+        where: {
+          workoutExercise: {
+            exerciseId: { in: input.exerciseIds },
+            workout: {
+              userId: ctx.user.id,
+              id: { not: input.excludeWorkoutId },
+              completedAt: { not: null },
+            },
+          },
+          completed: true,
+        },
+        orderBy: { workoutExercise: { workout: { startedAt: "desc" } } },
+        select: {
+          weightKg: true,
+          reps: true,
+          rpe: true,
+          workoutExercise: { select: { exerciseId: true } },
+        },
+      });
+      return results;
+    }),
+
   complete: rateLimitedProcedure
     .input(completeWorkoutSchema)
     .mutation(async ({ ctx, input }) => {

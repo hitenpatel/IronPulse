@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Dumbbell, X } from "lucide-react";
-import { useExercises } from "@ironpulse/sync";
+import { useExercises, type ExerciseRow } from "@ironpulse/sync";
+import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +115,8 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function ExercisesPage() {
+  const mode = useDataMode();
+
   const [search, setSearch] = useState("");
   const [muscleGroup, setMuscleGroup] = useState<string | undefined>();
   const [equipment, setEquipment] = useState<string | undefined>();
@@ -120,14 +124,47 @@ export default function ExercisesPage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: exercisesData, isLoading } = useExercises({
+  const { data: psExercises, isLoading: psLoading } = useExercises({
     search: debouncedSearch || undefined,
     muscle: muscleGroup,
     equipment,
     category,
   });
 
-  const exercises = exercisesData ?? [];
+  const trpcQuery = trpc.exercise.list.useQuery(
+    {
+      search: debouncedSearch || undefined,
+      muscleGroup,
+      equipment,
+      category,
+      limit: 100,
+    },
+    { enabled: mode === "trpc" },
+  );
+
+  const exercises: ExerciseRow[] =
+    mode === "trpc"
+      ? (trpcQuery.data?.data ?? []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          category: e.category,
+          primary_muscles: Array.isArray(e.primaryMuscles)
+            ? e.primaryMuscles.join(",")
+            : e.primaryMuscles ?? null,
+          secondary_muscles: Array.isArray(e.secondaryMuscles)
+            ? e.secondaryMuscles.join(",")
+            : e.secondaryMuscles ?? null,
+          equipment: e.equipment,
+          instructions: null,
+          image_urls: Array.isArray(e.imageUrls)
+            ? e.imageUrls.join(",")
+            : e.imageUrls ?? null,
+          video_urls: null,
+          is_custom: e.isCustom ? 1 : 0,
+          created_by_id: null,
+        }))
+      : psExercises ?? [];
+  const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
   const hasActiveFilters = muscleGroup || equipment || category;
 

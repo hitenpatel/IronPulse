@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { usePowerSync } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
+import { useDataMode } from "@/hooks/use-data-mode";
+import { trpc } from "@/lib/trpc/client";
 import { formatElapsed } from "@/lib/workout-utils";
 import {
   Dialog,
@@ -28,7 +30,9 @@ export function WorkoutHeader({
   onFinish,
 }: WorkoutHeaderProps) {
   const router = useRouter();
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
+  const updateWorkout = trpc.workout.update.useMutation();
   const [elapsed, setElapsed] = useState(0);
   const [showCancel, setShowCancel] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -57,10 +61,14 @@ export function WorkoutHeader({
   function handleNameSubmit() {
     setIsEditing(false);
     if (editName.trim() && editName !== workoutName) {
-      db.execute(
-        `UPDATE workouts SET name = ? WHERE id = ?`,
-        [editName.trim(), workoutId]
-      );
+      if (mode === "powersync" && db) {
+        db.execute(
+          `UPDATE workouts SET name = ? WHERE id = ?`,
+          [editName.trim(), workoutId]
+        );
+      } else {
+        updateWorkout.mutate({ workoutId, name: editName.trim() });
+      }
     }
   }
 

@@ -3,7 +3,9 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Activity } from "lucide-react";
-import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { useWorkouts, useCardioSessions, type WorkoutRow, type CardioSessionRow } from "@ironpulse/sync";
+import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDuration } from "@/lib/format";
@@ -44,15 +46,65 @@ interface DayActivity {
 }
 
 export default function CalendarPage() {
+  const mode = useDataMode();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const { data: workoutsData, isLoading: workoutsLoading } = useWorkouts();
-  const { data: cardioData, isLoading: cardioLoading } = useCardioSessions();
+  const { data: psWorkouts, isLoading: psWorkoutsLoading } = useWorkouts();
+  const { data: psCardio, isLoading: psCardioLoading } = useCardioSessions();
 
-  const isLoading = workoutsLoading || cardioLoading;
+  const trpcWorkouts = trpc.workout.list.useQuery(
+    { limit: 100 },
+    { enabled: mode === "trpc" },
+  );
+  const trpcCardio = trpc.cardio.list.useQuery(
+    { limit: 100 },
+    { enabled: mode === "trpc" },
+  );
+
+  const workoutsData: WorkoutRow[] =
+    mode === "trpc"
+      ? (trpcWorkouts.data?.data ?? []).map((w) => ({
+          id: w.id,
+          user_id: "",
+          name: w.name,
+          started_at: w.startedAt.toISOString?.() ?? String(w.startedAt),
+          completed_at: w.completedAt
+            ? w.completedAt.toISOString?.() ?? String(w.completedAt)
+            : null,
+          duration_seconds: w.durationSeconds,
+          notes: null,
+          template_id: null,
+          created_at: "",
+          exercise_count: w._count.workoutExercises,
+        }))
+      : psWorkouts ?? [];
+
+  const cardioData: CardioSessionRow[] =
+    mode === "trpc"
+      ? (trpcCardio.data?.data ?? []).map((s) => ({
+          id: s.id,
+          user_id: "",
+          type: s.type,
+          source: s.source,
+          started_at: s.startedAt.toISOString?.() ?? String(s.startedAt),
+          duration_seconds: s.durationSeconds,
+          distance_meters: s.distanceMeters != null ? Number(s.distanceMeters) : null,
+          elevation_gain_m: null,
+          avg_heart_rate: null,
+          max_heart_rate: null,
+          calories: s.calories,
+          notes: null,
+          created_at: "",
+        }))
+      : psCardio ?? [];
+
+  const isLoading =
+    mode === "trpc"
+      ? trpcWorkouts.isLoading || trpcCardio.isLoading
+      : psWorkoutsLoading || psCardioLoading;
 
   // Group workouts and cardio by date key (YYYY-MM-DD)
   const days = useMemo(() => {

@@ -2,12 +2,39 @@
 
 import Link from "next/link";
 import { Dumbbell, Clock, Star, Plus } from "lucide-react";
-import { useWorkouts } from "@ironpulse/sync";
+import { useWorkouts, type WorkoutRow } from "@ironpulse/sync";
+import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { formatRelativeDate, formatDuration } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
 export default function WorkoutsPage() {
-  const { data: workouts, isLoading } = useWorkouts();
+  const mode = useDataMode();
+
+  const { data: psWorkouts, isLoading: psLoading } = useWorkouts();
+  const trpcQuery = trpc.workout.list.useQuery(
+    { limit: 100 },
+    { enabled: mode === "trpc" },
+  );
+
+  const workouts: WorkoutRow[] =
+    mode === "trpc"
+      ? (trpcQuery.data?.data ?? []).map((w) => ({
+          id: w.id,
+          user_id: "",
+          name: w.name,
+          started_at: w.startedAt.toISOString?.() ?? String(w.startedAt),
+          completed_at: w.completedAt
+            ? w.completedAt.toISOString?.() ?? String(w.completedAt)
+            : null,
+          duration_seconds: w.durationSeconds,
+          notes: null,
+          template_id: null,
+          created_at: "",
+          exercise_count: w._count.workoutExercises,
+        }))
+      : psWorkouts ?? [];
+  const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
   if (isLoading) {
     return (

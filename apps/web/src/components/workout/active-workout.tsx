@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
+import { PowerSyncContext } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
-import { useQuery, usePowerSync } from "@powersync/react";
+import { useQuery } from "@powersync/react";
 import {
   DndContext,
   closestCenter,
@@ -39,7 +41,9 @@ export function ActiveWorkout({
   initialName,
 }: ActiveWorkoutProps) {
   const router = useRouter();
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
+  const trpcUtils = trpc.useUtils();
   const { data: userData } = trpc.user.me.useQuery();
   const restDuration = userData?.user?.defaultRestSeconds ?? DEFAULT_REST_DURATION;
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -52,11 +56,22 @@ export function ActiveWorkout({
   const [notesOpen, setNotesOpen] = useState(false);
   const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const updateWorkout = trpc.workout.update.useMutation({
+    onSuccess: () => trpcUtils.workout.getById.invalidate({ workoutId }),
+  });
+
+  const updateWorkoutRef = useRef(updateWorkout);
+  updateWorkoutRef.current = updateWorkout;
+
   const saveNotes = useCallback(
     (value: string) => {
-      db.execute(`UPDATE workouts SET notes = ? WHERE id = ?`, [value || null, workoutId]);
+      if (mode === "powersync" && db) {
+        db.execute(`UPDATE workouts SET notes = ? WHERE id = ?`, [value || null, workoutId]);
+      } else {
+        updateWorkoutRef.current.mutate({ workoutId, notes: value || undefined });
+      }
     },
-    [db, workoutId]
+    [db, workoutId, mode]
   );
 
   function handleNotesChange(value: string) {
@@ -73,11 +88,69 @@ export function ActiveWorkout({
     saveNotes(notes);
   }
 
-  // Read exercises and sets from PowerSync (reactive local reads)
-  const { data: exercises } = useWorkoutExercises(workoutId);
-  const { data: allSets } = useWorkoutSets(workoutId);
+  // --- tRPC data source (used when mode === "trpc") ---
+  const trpcWorkout = trpc.workout.getById.useQuery(
+    { workoutId },
+    { enabled: mode === "trpc", refetchInterval: 2000 }
+  );
 
-  // dnd-kit sensors — pointer for mouse/trackpad, touch for mobile
+  // --- PowerSync data source (used when mode === "powersync") ---
+  const { data: psExercises } = useWorkoutExercises(workoutId);
+  const { data: psAllSets } = useWorkoutSets(workoutId);
+
+  // Read exercise details from the exercises table for category/equipment (PowerSync)
+  const psExerciseIds = psExercises.map((e) => e.exercise_id);
+  const { data: psExerciseDetails } = useQuery<{
+    id: string;
+    name: string;
+    category: string | null;
+    equipment: string | null;
+  }>(
+    psExerciseIds.length > 0
+      ? `SELECT id, name, category, equipment FROM exercises WHERE id IN (${psExerciseIds.map(() => "?").join(",")})`
+      : `SELECT id, name, category, equipment FROM exercises WHERE 0`,
+    psExerciseIds
+  );
+
+  // --- Derived data: normalize both sources into a common shape ---
+
+  // PowerSync: exercise details map
+  const psExerciseDetailsMap = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; category: string | null; equipment: string | null }>();
+    for (const e of psExerciseDetails) {
+      map.set(e.id, e);
+    }
+    return map;
+  }, [psExerciseDetails]);
+
+  // PowerSync: group sets by workout_exercise_id
+  const psSetsByExercise = useMemo(() => {
+    const map = new Map<string, typeof psAllSets>();
+    for (const set of psAllSets) {
+      const existing = map.get(set.workout_exercise_id) ?? [];
+      existing.push(set);
+      map.set(set.workout_exercise_id, existing);
+    }
+    return map;
+  }, [psAllSets]);
+
+  // Determine which exercises/sets/exerciseIds to use based on mode
+  const exercises = useMemo(() => {
+    if (mode === "trpc" && trpcWorkout.data) {
+      return trpcWorkout.data.workout.workoutExercises;
+    }
+    return null; // signals to use PowerSync path
+  }, [mode, trpcWorkout.data]);
+
+  // Compute exerciseIds for previous performance query
+  const exerciseIds = useMemo(() => {
+    if (mode === "trpc" && exercises) {
+      return exercises.map((we) => we.exercise.id);
+    }
+    return psExerciseIds;
+  }, [mode, exercises, psExerciseIds]);
+
+  // dnd-kit sensors -- pointer for mouse/trackpad, touch for mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -87,45 +160,79 @@ export function ActiveWorkout({
     })
   );
 
-  // Read exercise details from the exercises table for category/equipment
-  const exerciseIds = exercises.map((e) => e.exercise_id);
-  const { data: exerciseDetails } = useQuery<{
-    id: string;
-    name: string;
-    category: string | null;
-    equipment: string | null;
-  }>(
-    exerciseIds.length > 0
-      ? `SELECT id, name, category, equipment FROM exercises WHERE id IN (${exerciseIds.map(() => "?").join(",")})`
-      : `SELECT id, name, category, equipment FROM exercises WHERE 0`,
-    exerciseIds
-  );
-
-  const exerciseDetailsMap = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; category: string | null; equipment: string | null }>();
-    for (const e of exerciseDetails) {
-      map.set(e.id, e);
-    }
-    return map;
-  }, [exerciseDetails]);
-
-  // Group sets by workout_exercise_id
-  const setsByExercise = useMemo(() => {
-    const map = new Map<string, typeof allSets>();
-    for (const set of allSets) {
-      const existing = map.get(set.workout_exercise_id) ?? [];
-      existing.push(set);
-      map.set(set.workout_exercise_id, existing);
-    }
-    return map;
-  }, [allSets]);
-
   // Keep tRPC for workout.complete (runs PR detection server-side)
   const completeWorkout = trpc.workout.complete.useMutation({
     onSuccess: (data) => {
       setCompletionPRs(data.newPRs);
     },
   });
+
+  // Previous performance query (tRPC)
+  const trpcPreviousPerformance = trpc.workout.getPreviousPerformance.useQuery(
+    { exerciseIds, excludeWorkoutId: workoutId },
+    { enabled: mode === "trpc" && exerciseIds.length > 0 }
+  );
+
+  // Previous performance query (PowerSync)
+  const previousSetsQuery =
+    psExerciseIds.length > 0
+      ? `SELECT es.weight_kg, es.reps, es.rpe, es.completed, es.set_number, we.exercise_id
+         FROM exercise_sets es
+         JOIN workout_exercises we ON we.id = es.workout_exercise_id
+         JOIN workouts w ON w.id = we.workout_id
+         WHERE we.exercise_id IN (${psExerciseIds.map(() => "?").join(",")})
+           AND w.completed_at IS NOT NULL
+           AND w.id != ?
+         ORDER BY w.completed_at DESC, es.set_number ASC`
+      : `SELECT es.weight_kg, es.reps, es.rpe, es.completed, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
+
+  const previousSetsParams = psExerciseIds.length > 0 ? [...psExerciseIds, workoutId] : [];
+
+  const { data: psAllPreviousSets } = useQuery<{
+    weight_kg: number | null;
+    reps: number | null;
+    rpe: number | null;
+    completed: number;
+    set_number: number;
+    exercise_id: string;
+  }>(previousSetsQuery, previousSetsParams);
+
+  // Group previous sets by exercise_id
+  const previousSetsByExercise = useMemo(() => {
+    if (mode === "trpc" && trpcPreviousPerformance.data) {
+      // Group tRPC previous performance data by exerciseId
+      const map = new Map<string, { weight_kg: number | null; reps: number | null; rpe: number | null; completed: boolean; set_number: number }[]>();
+      for (const row of trpcPreviousPerformance.data) {
+        const exerciseId = row.workoutExercise.exerciseId;
+        if (!map.has(exerciseId)) {
+          map.set(exerciseId, []);
+        }
+        const existing = map.get(exerciseId)!;
+        if (existing.length < 10) {
+          existing.push({
+            weight_kg: row.weightKg != null ? Number(row.weightKg) : null,
+            reps: row.reps,
+            rpe: row.rpe != null ? Number(row.rpe) : null,
+            completed: true,
+            set_number: existing.length + 1,
+          });
+        }
+      }
+      return map;
+    }
+    // PowerSync path
+    const map = new Map<string, { weight_kg: number | null; reps: number | null; rpe: number | null; completed: boolean; set_number: number }[]>();
+    for (const row of psAllPreviousSets) {
+      if (!map.has(row.exercise_id)) {
+        map.set(row.exercise_id, []);
+      }
+      const existing = map.get(row.exercise_id)!;
+      if (existing.length < 10) {
+        existing.push({ weight_kg: row.weight_kg, reps: row.reps, rpe: row.rpe, completed: !!row.completed, set_number: row.set_number });
+      }
+    }
+    return map;
+  }, [mode, trpcPreviousPerformance.data, psAllPreviousSets]);
 
   function handleSetCompleted() {
     setRestRemaining(restDuration);
@@ -136,73 +243,91 @@ export function ActiveWorkout({
     completeWorkout.mutate({ workoutId });
   }
 
+  function handleMutationSuccess() {
+    if (mode === "trpc") {
+      trpcUtils.workout.getById.invalidate({ workoutId });
+    }
+    // PowerSync reactive queries auto-update
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = exercises.findIndex((e) => e.id === active.id);
-    const newIndex = exercises.findIndex((e) => e.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
+    if (mode === "powersync" && db) {
+      const oldIndex = psExercises.findIndex((e) => e.id === active.id);
+      const newIndex = psExercises.findIndex((e) => e.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
 
-    // Compute the new order using arrayMove logic
-    const reordered = arrayMove(exercises, oldIndex, newIndex);
-
-    // Update all exercises' order in a batch
-    await Promise.all(
-      reordered.map((ex, idx) =>
-        db.execute(`UPDATE workout_exercises SET "order" = ? WHERE id = ?`, [idx + 1, ex.id])
-      )
-    );
+      const reordered = arrayMove(psExercises, oldIndex, newIndex);
+      await Promise.all(
+        reordered.map((ex, idx) =>
+          db.execute(`UPDATE workout_exercises SET "order" = ? WHERE id = ?`, [idx + 1, ex.id])
+        )
+      );
+    }
+    // In tRPC mode, drag-to-reorder is skipped (no reorder endpoint yet)
   }
 
-  // Show completion screen
-
-  // Query previous performance for all exercises in this workout
-  const previousSetsQuery =
-    exerciseIds.length > 0
-      ? `SELECT es.weight_kg, es.reps, es.rpe, es.completed, es.set_number, we.exercise_id
-         FROM exercise_sets es
-         JOIN workout_exercises we ON we.id = es.workout_exercise_id
-         JOIN workouts w ON w.id = we.workout_id
-         WHERE we.exercise_id IN (${exerciseIds.map(() => "?").join(",")})
-           AND w.completed_at IS NOT NULL
-           AND w.id != ?
-         ORDER BY w.completed_at DESC, es.set_number ASC`
-      : `SELECT es.weight_kg, es.reps, es.rpe, es.completed, es.set_number, we.exercise_id FROM exercise_sets es JOIN workout_exercises we ON we.id = es.workout_exercise_id WHERE 0`;
-
-  const previousSetsParams = exerciseIds.length > 0 ? [...exerciseIds, workoutId] : [];
-
-  const { data: allPreviousSets } = useQuery<{
-    weight_kg: number | null;
-    reps: number | null;
-    rpe: number | null;
-    completed: number;
-    set_number: number;
-    exercise_id: string;
-  }>(previousSetsQuery, previousSetsParams);
-
-  // Group previous sets by exercise_id (rows ordered by completed_at DESC, first rows per exercise = most recent workout)
-  const previousSetsByExercise = useMemo(() => {
-    const map = new Map<string, { weight_kg: number | null; reps: number | null; rpe: number | null; completed: boolean; set_number: number }[]>();
-    for (const row of allPreviousSets) {
-      if (!map.has(row.exercise_id)) {
-        map.set(row.exercise_id, []);
-      }
-      const existing = map.get(row.exercise_id)!;
-      if (existing.length < 10) {
-        existing.push({ weight_kg: row.weight_kg, reps: row.reps, rpe: row.rpe, completed: !!row.completed, set_number: row.set_number });
-      }
+  // Build workout exercise cards from the appropriate data source
+  const workoutExerciseCards = useMemo(() => {
+    if (mode === "trpc" && exercises) {
+      return exercises.map((we) => ({
+        id: we.id,
+        exercise: {
+          id: we.exercise.id,
+          name: we.exercise.name,
+          category: we.exercise.category ?? null,
+          equipment: we.exercise.equipment ?? null,
+        },
+        sets: we.sets.map((s) => ({
+          id: s.id,
+          setNumber: s.setNumber,
+          weightKg: s.weightKg != null ? Number(s.weightKg) : null,
+          reps: s.reps,
+          rpe: s.rpe != null ? Number(s.rpe) : null,
+          completed: !!s.completed,
+        })),
+        notes: (we as unknown as { notes: string | null }).notes ?? null,
+        supersetGroup: (we as unknown as { supersetGroup: number | null }).supersetGroup ?? null,
+        previousSets: previousSetsByExercise.get(we.exercise.id) ?? [],
+      }));
     }
-    return map;
-  }, [allPreviousSets]);
 
+    // PowerSync path
+    return psExercises.map((we) => {
+      const detail = psExerciseDetailsMap.get(we.exercise_id);
+      const weSets = (psSetsByExercise.get(we.id) ?? []).map((s) => ({
+        id: s.id,
+        setNumber: s.set_number,
+        weightKg: s.weight_kg,
+        reps: s.reps,
+        rpe: s.rpe,
+        completed: !!s.completed,
+      }));
+
+      return {
+        id: we.id,
+        exercise: {
+          id: we.exercise_id,
+          name: detail?.name ?? we.exercise_name,
+          category: detail?.category ?? null,
+          equipment: detail?.equipment ?? null,
+        },
+        sets: weSets,
+        notes: we.notes,
+        supersetGroup: we.superset_group ?? null,
+        previousSets: previousSetsByExercise.get(we.exercise_id) ?? [],
+      };
+    });
+  }, [mode, exercises, psExercises, psExerciseDetailsMap, psSetsByExercise, previousSetsByExercise]);
+
+  // Show completion screen
   if (completionPRs !== null) {
+    // Build exercise names map from whichever data source is active
     const exerciseNames: Record<string, string> = {};
-    for (const we of exercises) {
-      const detail = exerciseDetailsMap.get(we.exercise_id);
-      if (detail) {
-        exerciseNames[we.exercise_id] = detail.name;
-      }
+    for (const we of workoutExerciseCards) {
+      exerciseNames[we.exercise.id] = we.exercise.name;
     }
 
     const completedWorkout = {
@@ -210,17 +335,14 @@ export function ActiveWorkout({
       name: initialName,
       startedAt: startedAt.toISOString(),
       durationSeconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
-      workoutExercises: exercises.map((we) => {
-        const weSets = setsByExercise.get(we.id) ?? [];
-        return {
-          exercise: { name: exerciseDetailsMap.get(we.exercise_id)?.name ?? we.exercise_name },
-          sets: weSets.map((s) => ({
-            weightKg: s.weight_kg != null ? Number(s.weight_kg) : null,
-            reps: s.reps,
-            completed: !!s.completed,
-          })),
-        };
-      }),
+      workoutExercises: workoutExerciseCards.map((we) => ({
+        exercise: { name: we.exercise.name },
+        sets: we.sets.map((s) => ({
+          weightKg: s.weightKg != null ? Number(s.weightKg) : null,
+          reps: s.reps,
+          completed: !!s.completed,
+        })),
+      })),
     };
 
     return (
@@ -232,33 +354,6 @@ export function ActiveWorkout({
       />
     );
   }
-
-  // Build workout exercise data in the shape ExerciseCard expects
-  const workoutExerciseCards = exercises.map((we) => {
-    const detail = exerciseDetailsMap.get(we.exercise_id);
-    const weSets = (setsByExercise.get(we.id) ?? []).map((s) => ({
-      id: s.id,
-      setNumber: s.set_number,
-      weightKg: s.weight_kg,
-      reps: s.reps,
-      rpe: s.rpe,
-      completed: !!s.completed,
-    }));
-
-    return {
-      id: we.id,
-      exercise: {
-        id: we.exercise_id,
-        name: detail?.name ?? we.exercise_name,
-        category: detail?.category ?? null,
-        equipment: detail?.equipment ?? null,
-      },
-      sets: weSets,
-      notes: we.notes,
-      supersetGroup: we.superset_group ?? null,
-      previousSets: previousSetsByExercise.get(we.exercise_id) ?? [],
-    };
-  });
 
   return (
     <div className="pb-24">
@@ -310,9 +405,7 @@ export function ActiveWorkout({
                   isSupersetStart={isSupersetStart}
                   isSupersetEnd={isSupersetEnd}
                   onSetCompleted={handleSetCompleted}
-                  onMutationSuccess={() => {
-                    // PowerSync reactive queries auto-update, no invalidation needed
-                  }}
+                  onMutationSuccess={handleMutationSuccess}
                 />
               </div>
             );
@@ -321,7 +414,7 @@ export function ActiveWorkout({
       </DndContext>
 
       {/* Empty state */}
-      {exercises.length === 0 && (
+      {workoutExerciseCards.length === 0 && (
         <div className="py-16 text-center">
           <p className="text-muted-foreground">No exercises yet.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -364,9 +457,7 @@ export function ActiveWorkout({
         workoutId={workoutId}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        onExerciseAdded={() => {
-          // PowerSync reactive queries auto-update
-        }}
+        onExerciseAdded={() => handleMutationSuccess()}
       />
 
       {/* Rest timer */}

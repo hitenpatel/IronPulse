@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { PowerSyncContext } from "@powersync/react";
 import { Button } from "@/components/ui/button";
 import { uuid } from "@/lib/uuid";
-import { usePowerSync } from "@powersync/react";
+import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 
 interface ManualCardioFormProps {
   type: string;
@@ -18,7 +20,9 @@ export function ManualCardioForm({
   onBack,
   onComplete,
 }: ManualCardioFormProps) {
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
+  const createCardio = trpc.cardio.create.useMutation();
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
@@ -99,37 +103,65 @@ export function ManualCardioForm({
     const notesTrimmed = notes.trim() || null;
 
     try {
-      await db.execute(
-        `INSERT INTO cardio_sessions (id, type, source, started_at, duration_seconds, distance_meters, elevation_gain_m, avg_heart_rate, max_heart_rate, calories, notes, created_at)
-         VALUES (?, ?, 'manual', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+      if (mode === "powersync" && db) {
+        await db.execute(
+          `INSERT INTO cardio_sessions (id, type, source, started_at, duration_seconds, distance_meters, elevation_gain_m, avg_heart_rate, max_heart_rate, calories, notes, created_at)
+           VALUES (?, ?, 'manual', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            type,
+            now.toISOString(),
+            durationSeconds,
+            distanceMeters,
+            elevGain,
+            avgHeartRate,
+            maxHeartRate,
+            cals,
+            notesTrimmed,
+            now.toISOString(),
+          ]
+        );
+
+        onComplete({
           id,
           type,
-          now.toISOString(),
+          source: "manual",
+          startedAt: now.toISOString(),
           durationSeconds,
           distanceMeters,
-          elevGain,
-          avgHeartRate,
-          maxHeartRate,
-          cals,
-          notesTrimmed,
-          now.toISOString(),
-        ]
-      );
+          elevationGainM: elevGain,
+          avgHeartRate: avgHeartRate,
+          maxHeartRate: maxHeartRate,
+          calories: cals,
+          notes: notesTrimmed,
+        });
+      } else {
+        const result = await createCardio.mutateAsync({
+          type,
+          startedAt: now,
+          durationSeconds,
+          ...(distanceMeters != null && { distanceMeters }),
+          ...(elevGain != null && { elevationGainM: elevGain }),
+          ...(avgHeartRate != null && { avgHeartRate }),
+          ...(maxHeartRate != null && { maxHeartRate }),
+          ...(cals != null && { calories: cals }),
+          ...(notesTrimmed != null && { notes: notesTrimmed }),
+        });
 
-      onComplete({
-        id,
-        type,
-        source: "manual",
-        startedAt: now.toISOString(),
-        durationSeconds,
-        distanceMeters,
-        elevationGainM: elevGain,
-        avgHeartRate: avgHeartRate,
-        maxHeartRate: maxHeartRate,
-        calories: cals,
-        notes: notesTrimmed,
-      });
+        onComplete({
+          id: result.session.id,
+          type: result.session.type,
+          source: result.session.source,
+          startedAt: result.session.startedAt,
+          durationSeconds: result.session.durationSeconds,
+          distanceMeters: result.session.distanceMeters,
+          elevationGainM: result.session.elevationGainM,
+          avgHeartRate: result.session.avgHeartRate,
+          maxHeartRate: result.session.maxHeartRate,
+          calories: result.session.calories,
+          notes: result.session.notes,
+        });
+      }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save session");
     } finally {

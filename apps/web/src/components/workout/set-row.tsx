@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
 import { Check, Circle } from "lucide-react";
-import { usePowerSync } from "@powersync/react";
+import { PowerSyncContext } from "@powersync/react";
+import { useDataMode } from "@/hooks/use-data-mode";
+import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 
 interface SetRowProps {
@@ -26,7 +28,11 @@ export function SetRow({
   onCompleted,
   onMutationSuccess,
 }: SetRowProps) {
-  const db = usePowerSync();
+  const mode = useDataMode();
+  const db = useContext(PowerSyncContext);
+  const updateSet = trpc.workout.updateSet.useMutation({
+    onSuccess: () => onMutationSuccess(),
+  });
   const [localWeight, setLocalWeight] = useState(
     weightKg != null ? String(weightKg) : ""
   );
@@ -37,11 +43,20 @@ export function SetRow({
 
   function debouncedUpdate(field: string, value: number) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      db.execute(
-        `UPDATE exercise_sets SET ${field} = ? WHERE id = ?`,
-        [value, setId]
-      ).then(() => onMutationSuccess());
+    debounceRef.current = setTimeout(async () => {
+      if (mode === "powersync" && db) {
+        await db.execute(
+          `UPDATE exercise_sets SET ${field} = ? WHERE id = ?`,
+          [value, setId]
+        );
+        onMutationSuccess();
+      } else {
+        const payload: { setId: string; weight?: number; reps?: number; rpe?: number } = { setId };
+        if (field === "weight_kg") payload.weight = value;
+        else if (field === "reps") payload.reps = value;
+        else if (field === "rpe") payload.rpe = value;
+        updateSet.mutate(payload);
+      }
     }, 500);
   }
 
@@ -61,27 +76,42 @@ export function SetRow({
     }
   }
 
-  function handleComplete() {
+  async function handleComplete() {
     if (completed) return;
-    db.execute(
-      `UPDATE exercise_sets SET completed = 1 WHERE id = ?`,
-      [setId]
-    ).then(() => {
+    if (mode === "powersync" && db) {
+      await db.execute(
+        `UPDATE exercise_sets SET completed = 1 WHERE id = ?`,
+        [setId]
+      );
       onMutationSuccess();
       onCompleted();
-    });
+    } else {
+      updateSet.mutate(
+        { setId, completed: true },
+        {
+          onSuccess: () => {
+            onCompleted();
+          },
+        }
+      );
+    }
   }
 
-  function handleRpeClick() {
+  async function handleRpeClick() {
     // Cycle through: null -> 6 -> 7 -> 8 -> 9 -> 10 -> null
     const cycle = [null, 6, 7, 8, 9, 10];
     const currentIndex = cycle.indexOf(rpe);
     const nextIndex = (currentIndex + 1) % cycle.length;
     const nextRpe = cycle[nextIndex];
-    db.execute(
-      `UPDATE exercise_sets SET rpe = ? WHERE id = ?`,
-      [nextRpe, setId]
-    ).then(() => onMutationSuccess());
+    if (mode === "powersync" && db) {
+      await db.execute(
+        `UPDATE exercise_sets SET rpe = ? WHERE id = ?`,
+        [nextRpe, setId]
+      );
+      onMutationSuccess();
+    } else {
+      updateSet.mutate({ setId, rpe: nextRpe ?? undefined });
+    }
   }
 
   return (

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { Activity, Bike, Mountain, Footprints } from "lucide-react";
-import { useCardioSessions } from "@ironpulse/sync";
+import { useCardioSessions, type CardioSessionRow } from "@ironpulse/sync";
+import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 import { Button } from "@/components/ui/button";
 import {
   formatDuration,
@@ -58,7 +60,33 @@ function TableSkeleton() {
 }
 
 export default function CardioHistoryPage() {
-  const { data: sessions, isLoading } = useCardioSessions();
+  const mode = useDataMode();
+
+  const { data: psSessions, isLoading: psLoading } = useCardioSessions();
+  const trpcQuery = trpc.cardio.list.useQuery(
+    { limit: 100 },
+    { enabled: mode === "trpc" },
+  );
+
+  const sessions: CardioSessionRow[] =
+    mode === "trpc"
+      ? (trpcQuery.data?.data ?? []).map((s) => ({
+          id: s.id,
+          user_id: "",
+          type: s.type,
+          source: s.source,
+          started_at: s.startedAt.toISOString?.() ?? String(s.startedAt),
+          duration_seconds: s.durationSeconds,
+          distance_meters: s.distanceMeters != null ? Number(s.distanceMeters) : null,
+          elevation_gain_m: null,
+          avg_heart_rate: null,
+          max_heart_rate: null,
+          calories: s.calories,
+          notes: null,
+          created_at: "",
+        }))
+      : psSessions ?? [];
+  const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
   return (
     <div className="space-y-6">
