@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useContext } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
 import { Check, Circle } from "lucide-react";
 import { PowerSyncContext } from "@powersync/react";
 import { useDataMode } from "@/hooks/use-data-mode";
@@ -39,7 +39,14 @@ export function SetRow({
   const [localReps, setLocalReps] = useState(
     reps != null ? String(reps) : ""
   );
+  // Optimistic local state for completed and RPE (instant UI in tRPC mode)
+  const [localCompleted, setLocalCompleted] = useState(completed);
+  const [localRpe, setLocalRpe] = useState(rpe);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync local state when server data arrives (props change)
+  useEffect(() => { setLocalCompleted(completed); }, [completed]);
+  useEffect(() => { setLocalRpe(rpe); }, [rpe]);
 
   function debouncedUpdate(field: string, value: number) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -77,7 +84,7 @@ export function SetRow({
   }
 
   async function handleComplete() {
-    if (completed) return;
+    if (localCompleted) return;
     if (mode === "powersync" && db) {
       await db.execute(
         `UPDATE exercise_sets SET completed = 1 WHERE id = ?`,
@@ -86,11 +93,15 @@ export function SetRow({
       onMutationSuccess();
       onCompleted();
     } else {
+      // Optimistic: update UI immediately, then fire mutation
+      setLocalCompleted(true);
+      onCompleted();
       updateSet.mutate(
         { setId, completed: true },
         {
-          onSuccess: () => {
-            onCompleted();
+          onError: () => {
+            // Revert on failure
+            setLocalCompleted(false);
           },
         }
       );
@@ -100,7 +111,7 @@ export function SetRow({
   async function handleRpeClick() {
     // Cycle through: null -> 6 -> 7 -> 8 -> 9 -> 10 -> null
     const cycle = [null, 6, 7, 8, 9, 10];
-    const currentIndex = cycle.indexOf(rpe);
+    const currentIndex = cycle.indexOf(localRpe);
     const nextIndex = (currentIndex + 1) % cycle.length;
     const nextRpe = cycle[nextIndex];
     if (mode === "powersync" && db) {
@@ -110,7 +121,17 @@ export function SetRow({
       );
       onMutationSuccess();
     } else {
-      updateSet.mutate({ setId, rpe: nextRpe ?? undefined });
+      // Optimistic: update UI immediately
+      const previousRpe = localRpe;
+      setLocalRpe(nextRpe);
+      updateSet.mutate(
+        { setId, rpe: nextRpe ?? undefined },
+        {
+          onError: () => {
+            setLocalRpe(previousRpe);
+          },
+        }
+      );
     }
   }
 
@@ -118,7 +139,7 @@ export function SetRow({
     <div
       className={cn(
         "flex items-center gap-1 py-2 border-b border-border",
-        completed && "opacity-60"
+        localCompleted && "opacity-60"
       )}
     >
       <div className="w-8 text-center text-sm text-muted-foreground">
@@ -149,18 +170,18 @@ export function SetRow({
 
       <button
         onClick={handleRpeClick}
-        aria-label={`RPE for set ${setNumber}: ${rpe ?? "not set"}. Click to cycle.`}
+        aria-label={`RPE for set ${setNumber}: ${localRpe ?? "not set"}. Click to cycle.`}
         className="w-12 text-center text-sm text-muted-foreground hover:text-foreground"
       >
-        {rpe ?? "-"}
+        {localRpe ?? "-"}
       </button>
 
       <button
         onClick={handleComplete}
-        aria-label={completed ? `Set ${setNumber} completed` : `Mark set ${setNumber} as complete`}
+        aria-label={localCompleted ? `Set ${setNumber} completed` : `Mark set ${setNumber} as complete`}
         className="w-9 flex items-center justify-center"
       >
-        {completed ? (
+        {localCompleted ? (
           <Check className="h-5 w-5 text-accent" />
         ) : (
           <Circle className="h-5 w-5 text-muted-foreground" />

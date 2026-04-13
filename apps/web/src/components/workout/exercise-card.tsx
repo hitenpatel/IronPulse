@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useContext } from "react";
+import { useState, useMemo, useEffect, useContext } from "react";
 import { MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -68,6 +68,20 @@ export function ExerciseCard({
   );
   const [notes, setNotes] = useState(workoutExercise.notes || "");
 
+  // Optimistic sets: local state that includes pending (not-yet-confirmed) sets
+  const [optimisticSets, setOptimisticSets] = useState<ExerciseSet[]>([]);
+
+  // Sync optimistic sets when server data arrives (props change)
+  // Clear any optimistic entries once real data catches up
+  useEffect(() => {
+    setOptimisticSets([]);
+  }, [workoutExercise.sets.length]);
+
+  // Merged sets: server sets + any pending optimistic sets
+  const displaySets = useMemo(() => {
+    return [...workoutExercise.sets, ...optimisticSets];
+  }, [workoutExercise.sets, optimisticSets]);
+
   const updateExerciseNotes = trpc.workout.updateExerciseNotes.useMutation({
     onSuccess: () => onMutationSuccess(),
   });
@@ -95,7 +109,7 @@ export function ExerciseCard({
   function handleSmartFill() {
     if (!suggestion) return;
     // Find the first incomplete set
-    const firstEmptySet = workoutExercise.sets.find((s) => !s.completed);
+    const firstEmptySet = displaySets.find((s) => !s.completed);
     if (!firstEmptySet) return;
     if (mode === "powersync" && db) {
       db.execute(
@@ -160,10 +174,30 @@ export function ExerciseCard({
         .then(() => onMutationSuccess())
         .finally(() => setAdding(false));
     } else {
+      // Optimistic: show a new empty row immediately
+      const tempId = uuid();
+      const nextSetNumber = workoutExercise.sets.length + optimisticSets.length + 1;
+      const newSet: ExerciseSet = {
+        id: tempId,
+        setNumber: nextSetNumber,
+        weightKg: null,
+        reps: null,
+        rpe: null,
+        completed: false,
+      };
+      setOptimisticSets((prev) => [...prev, newSet]);
+      setAdding(false);
+
       addSetMutation.mutate(
         { workoutExerciseId: workoutExercise.id },
         {
-          onSettled: () => setAdding(false),
+          onSuccess: () => {
+            // Server confirmed -- invalidation will bring real data and clear optimistic sets
+          },
+          onError: () => {
+            // Remove the optimistic set on failure
+            setOptimisticSets((prev) => prev.filter((s) => s.id !== tempId));
+          },
         }
       );
     }
@@ -274,7 +308,7 @@ export function ExerciseCard({
       </div>
 
       {/* Set rows */}
-      {workoutExercise.sets.map((set) => (
+      {displaySets.map((set) => (
         <SetRow
           key={set.id}
           setId={set.id}
