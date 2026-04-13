@@ -25,10 +25,38 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // If no PowerSync URL is configured, skip entirely
+      const psUrl = process.env.NEXT_PUBLIC_POWERSYNC_URL;
+      if (!psUrl) {
+        console.warn("[PowerSync] Skipping — no NEXT_PUBLIC_POWERSYNC_URL configured");
+        setSkipped(true);
+        return;
+      }
+
+      // Verify the sync server is reachable before loading WASM
       try {
-        const { getPowerSyncDatabase } = await import("./system");
-        const database = getPowerSyncDatabase();
-        setDb(database);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3000);
+        await fetch(psUrl, { signal: controller.signal });
+        clearTimeout(timer);
+      } catch {
+        console.warn("[PowerSync] Skipping — sync server unreachable at", psUrl);
+        setSkipped(true);
+        return;
+      }
+
+      try {
+        // Race against a timeout — if WASM init takes too long, fall back to tRPC
+        const result = await Promise.race([
+          import("./system").then(({ getPowerSyncDatabase }) => getPowerSyncDatabase()),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+        ]);
+        if (result) {
+          setDb(result);
+        } else {
+          console.warn("[PowerSync] Init timed out — falling back to tRPC");
+          setSkipped(true);
+        }
       } catch (err) {
         console.warn("[PowerSync] Failed to initialize:", err);
         setSkipped(true);

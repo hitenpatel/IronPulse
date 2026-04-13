@@ -7,8 +7,10 @@ import { ActiveWorkout } from "@/components/workout/active-workout";
 import { getWorkoutName } from "@/lib/workout-utils";
 import { uuid } from "@/lib/uuid";
 import { trpc } from "@/lib/trpc/client";
+import { useDataMode } from "@/hooks/use-data-mode";
 
 export default function NewWorkoutPage() {
+  const mode = useDataMode();
   const db = useContext(PowerSyncContext);
   const [workoutData, setWorkoutData] = useState<{
     id: string;
@@ -30,7 +32,7 @@ export default function NewWorkoutPage() {
 
     async function create() {
       // Try PowerSync first (offline-capable)
-      if (db) {
+      if (mode === "powersync" && db) {
         try {
           await db.execute(
             `INSERT INTO workouts (id, name, started_at, created_at) VALUES (?, ?, ?, ?)`,
