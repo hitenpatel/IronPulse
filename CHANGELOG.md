@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.0.0-rc.2 (2026-04-16)
+
+### Features
+- Replace message polling with Redis Pub/Sub SSE push — eliminates N×30 DB queries per minute (#203)
+- Optimize message conversations with SQL window function (ROW_NUMBER over partition) (#204)
+- Add offline/sync status indicator to web sidebar and mobile dashboard (#205)
+
+### Improvements
+- Add composite database index on `activity_feed_items(visibility, created_at)` for social feed reads (#206)
+- Add `@next/bundle-analyzer` + advisory size budgets (#182)
+
+### Infrastructure
+- Add Uptime Kuma monitoring container (port 3001) + enhanced `/api/health` endpoint checking DB, Redis, and S3 with per-service latency (#155)
+
+### Documentation
+- Add project `README.md` with quick start, test accounts, project structure, and infrastructure overview (#207)
+
+---
+
 ## v1.0.0-rc.1 (2026-04-16)
 
 ### Features
