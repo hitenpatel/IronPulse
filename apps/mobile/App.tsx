@@ -12,6 +12,7 @@ try { require("./global.css"); } catch {}
 import { AuthProvider, useAuth } from "./lib/auth";
 import { trpc } from "./lib/trpc";
 import { useNotificationDeepLink } from "./lib/useNotificationDeepLink";
+import { registerForPushNotifications, addPushTokenListener } from "./lib/notifications";
 import { NewSessionSheet } from "./components/layout/new-session-sheet";
 import { TemplatePicker } from "./components/workout/template-picker";
 
@@ -203,12 +204,12 @@ function RootNavigator() {
       // Push notifications (best-effort)
       (async () => {
         try {
-          // Push notification registration stubbed out — expo-device and
-          // expo-notifications replaced. Re-enable with @notifee/react-native
-          // and react-native-device-info when native modules are linked.
-          const isDevice = !__DEV__; // rough approximation — real devices only
-          if (isDevice) {
-            // TODO: register push token via @notifee/react-native
+          const token = await registerForPushNotifications();
+          if (token) {
+            await trpc.user.registerPushToken.mutate({
+              token,
+              platform: Platform.OS as "ios" | "android",
+            });
           }
         } catch {}
       })();

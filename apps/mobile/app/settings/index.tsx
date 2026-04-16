@@ -11,6 +11,7 @@ import {
 // Navigation header set via App.tsx screen options
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
+import { registerForPushNotifications } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -138,23 +139,29 @@ export default function SettingsScreen() {
   async function handleNotificationToggle(value: boolean) {
     setNotifLoading(true);
     try {
-      // Notification permissions stubbed — replace with @notifee/react-native
       if (value) {
-        // TODO: request permissions via @notifee/react-native
-        setNotificationsEnabled(false);
-        Alert.alert(
-          "Not Available",
-          "Push notifications will be available in a future update.",
-        );
+        const token = await registerForPushNotifications();
+        if (token) {
+          await trpc.user.registerPushToken.mutate({
+            token,
+            platform: Platform.OS as "ios" | "android",
+          });
+          setNotificationsEnabled(true);
+        } else {
+          setNotificationsEnabled(false);
+          Alert.alert(
+            "Permission Denied",
+            "Enable notifications in your device Settings for IronPulse.",
+          );
+        }
       } else {
-        // Can only direct user to settings — OS controls revoking permissions
         Alert.alert(
           "Disable Notifications",
           "To disable notifications, go to your device Settings and turn off notifications for IronPulse.",
         );
       }
     } catch {
-      // expo-notifications unavailable
+      Alert.alert("Error", "Failed to enable notifications. Please try again.");
     } finally {
       setNotifLoading(false);
     }
