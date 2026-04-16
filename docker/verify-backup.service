@@ -1,0 +1,11 @@
+[Unit]
+Description=IronPulse backup restore verification
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/ironpulse/docker/verify-backup.sh
+Environment=BACKUP_DIR=/opt/ironpulse/backups
+StandardOutput=journal
+StandardError=journal
