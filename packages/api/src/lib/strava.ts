@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { encryptToken, decryptToken } from "./encryption";
 import { captureError } from "./capture-error";
+import { logger } from "./logger";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
@@ -297,10 +298,7 @@ export async function runStravaBackfill(connectionId: string, db: any) {
           /* skip on second failure */
         }
       } else {
-        console.error(
-          `Failed to import Strava activity ${activity.id}:`,
-          err,
-        );
+        logger.error({ err, provider: "strava", activityId: activity.id }, "Failed to import Strava activity");
         await captureError(err, { provider: "strava", activityId: String(activity.id) });
       }
     }

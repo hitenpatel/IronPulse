@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { encryptToken, decryptToken } from "./encryption";
 import { captureError } from "./capture-error";
+import { logger } from "./logger";
 
 const POLAR_API_BASE = "https://www.polaraccesslink.com/v3";
 const POLAR_TOKEN_URL = "https://polarremote.com/v2/oauth2/token";
@@ -291,10 +292,7 @@ export async function runPolarBackfill(connectionId: string, db: any) {
           /* skip on second failure */
         }
       } else {
-        console.error(
-          `Failed to import Polar exercise ${exerciseId}:`,
-          err,
-        );
+        logger.error({ err, provider: "polar", exerciseId }, "Failed to import Polar exercise");
         await captureError(err, { provider: "polar", exerciseId });
       }
     }

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { decryptToken } from "./encryption";
 import { captureError } from "./capture-error";
+import { logger } from "./logger";
 
 const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
 
@@ -365,12 +366,12 @@ export async function runIntervalsBackfill(connectionId: string, db: any) {
   // Fetch activities and wellness in parallel
   const [activities, wellness] = await Promise.all([
     getActivities(apiKey, athleteId, oldest, newest).catch((err) => {
-      console.error("Failed to fetch Intervals.icu activities:", err);
+      logger.error({ err, provider: "intervals-icu", operation: "fetch-activities" }, "Failed to fetch Intervals.icu activities");
       captureError(err, { provider: "intervals_icu", operation: "fetch-activities" });
       return [] as IntervalsActivity[];
     }),
     getWellness(apiKey, athleteId, oldest, newest).catch((err) => {
-      console.error("Failed to fetch Intervals.icu wellness:", err);
+      logger.error({ err, provider: "intervals-icu", operation: "fetch-wellness" }, "Failed to fetch Intervals.icu wellness");
       captureError(err, { provider: "intervals_icu", operation: "fetch-wellness" });
       return [] as IntervalsWellness[];
     }),
@@ -381,10 +382,7 @@ export async function runIntervalsBackfill(connectionId: string, db: any) {
     try {
       await importIntervalsActivity(activity, connection.userId, db);
     } catch (err) {
-      console.error(
-        `Failed to import Intervals.icu activity ${activity.id}:`,
-        err,
-      );
+      logger.error({ err, provider: "intervals-icu", operation: "import-activity", activityId: activity.id }, "Failed to import Intervals.icu activity");
       await captureError(err, { provider: "intervals_icu", activityId: String(activity.id) });
     }
   }
@@ -394,10 +392,7 @@ export async function runIntervalsBackfill(connectionId: string, db: any) {
     try {
       await importIntervalsWellness(entry, connection.userId, db);
     } catch (err) {
-      console.error(
-        `Failed to import Intervals.icu wellness ${entry.day}:`,
-        err,
-      );
+      logger.error({ err, provider: "intervals-icu", operation: "import-wellness", day: entry.day }, "Failed to import Intervals.icu wellness");
       await captureError(err, { provider: "intervals_icu", day: entry.day });
     }
   }

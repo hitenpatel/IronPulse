@@ -9,6 +9,7 @@ import {
 import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
 import { requireIntegrationCredentials } from "../lib/env";
+import { logger } from "../lib/logger";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const GARMIN_TOKEN_URL =
@@ -237,7 +238,7 @@ export const integrationRouter = createTRPCRouter({
       // Fire-and-forget backfill
       import("../lib/intervals-icu").then(({ runIntervalsBackfill }) => {
         runIntervalsBackfill(connection.id, ctx.db).catch((err) => {
-          console.error("Intervals.icu backfill failed:", err);
+          logger.error({ err, provider: "intervals-icu" }, "Intervals.icu backfill failed");
         });
       });
 

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { encryptToken, decryptToken } from "./encryption";
 import { captureError } from "./capture-error";
+import { logger } from "./logger";
 
 const OURA_API_BASE = "https://api.ouraring.com/v2";
 const OURA_TOKEN_URL = "https://api.ouraring.com/oauth/token";
@@ -341,7 +342,7 @@ export async function runOuraBackfill(connectionId: string, db: any) {
         /* skip on second failure */
       }
     } else {
-      console.error("Failed to backfill Oura sleep:", err);
+      logger.error({ err, provider: "oura", operation: "sleep-backfill" }, "Failed to backfill Oura sleep");
       await captureError(err, { provider: "oura", operation: "sleep-backfill" });
     }
   }
@@ -360,7 +361,7 @@ export async function runOuraBackfill(connectionId: string, db: any) {
         /* skip on second failure */
       }
     } else {
-      console.error("Failed to backfill Oura readiness:", err);
+      logger.error({ err, provider: "oura", operation: "readiness-backfill" }, "Failed to backfill Oura readiness");
       await captureError(err, { provider: "oura", operation: "readiness-backfill" });
     }
   }
