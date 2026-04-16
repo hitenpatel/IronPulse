@@ -1,0 +1,7 @@
+{
+  "repo": {
+    "provider": "gitea",
+    "domain": "git.hiten-patel.co.uk",
+    "repo": "hiten/IronPulse"
+  }
+}

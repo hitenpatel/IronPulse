@@ -23,6 +23,8 @@
     }
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.4.0",
     "changelogen": "^0.6.2",
