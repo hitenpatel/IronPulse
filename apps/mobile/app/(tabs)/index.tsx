@@ -11,6 +11,7 @@ import { usePowerSync } from "@powersync/react";
 import { randomUUID } from "@/lib/uuid";
 import { Dumbbell, Activity, Calendar, ChevronRight, Timer, Rss, Trophy, Users, MessageCircle, Flame } from "lucide-react-native";
 import { formatElapsed } from "@/lib/workout-utils";
+import { SyncIndicator } from "@/components/layout/sync-indicator";
 
 const colors = {
   background: "hsl(224, 71%, 4%)",
@@ -130,7 +131,11 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {/* Greeting */}
+        {/* Sync status + Greeting */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <View />
+          <SyncIndicator />
+        </View>
         <Text
           testID="greeting"
           accessibilityRole="header"
