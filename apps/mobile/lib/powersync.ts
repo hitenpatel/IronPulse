@@ -1,7 +1,9 @@
 import { AppSchema, BackendConnector } from "@ironpulse/sync";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/secure-store";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+import { Config } from "./config";
+
+const API_URL = Config.API_URL;
 
 let dbInstance: any = null;
 

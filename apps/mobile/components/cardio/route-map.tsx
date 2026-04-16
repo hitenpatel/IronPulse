@@ -1,6 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import { Platform, type ViewStyle } from "react-native";
-import MapView, { Polyline, PROVIDER_GOOGLE } from "react-native-maps";
+import { Platform, View, Text, type ViewStyle } from "react-native";
+
+let MapView: any = null;
+let Polyline: any = null;
+try {
+  const maps = require("react-native-maps");
+  MapView = maps.default;
+  Polyline = maps.Polyline;
+} catch {}
 
 const PRIMARY_COLOR = "hsl(210, 40%, 98%)";
 
@@ -50,10 +57,17 @@ export function RouteMap({
     });
   }, [interactive, routePoints]);
 
+  if (!MapView) {
+    return (
+      <View style={[{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0F1629" }, style]}>
+        <Text style={{ color: "#4E6180", fontSize: 14 }}>Map not available</Text>
+      </View>
+    );
+  }
+
   return (
     <MapView
       ref={mapRef}
-      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
       userInterfaceStyle="dark"
       showsUserLocation={interactive}
       scrollEnabled={interactive}
@@ -62,7 +76,7 @@ export function RouteMap({
       pitchEnabled={interactive}
       style={[{ flex: 1 }, style]}
     >
-      {routePoints.length >= 2 && (
+      {routePoints.length >= 2 && Polyline && (
         <Polyline
           coordinates={routePoints}
           strokeColor={PRIMARY_COLOR}

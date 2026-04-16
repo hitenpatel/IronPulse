@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import React, { useCallback, useState } from "react";
 import {
   FlatList,
@@ -44,7 +45,7 @@ export default function AddExerciseScreen() {
 
       // Insert workout_exercise
       const weId =
-        crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+        randomUUID() ?? `${Date.now()}-${Math.random()}`;
       await db.execute(
         `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes)
          VALUES (?, ?, ?, ?, NULL)`,
@@ -53,7 +54,7 @@ export default function AddExerciseScreen() {
 
       // Insert first empty set
       const setId =
-        crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+        randomUUID() ?? `${Date.now()}-${Math.random()}`;
       await db.execute(
         `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, weight_kg, reps, rpe, completed)
          VALUES (?, ?, 1, NULL, NULL, NULL, 0)`,
@@ -78,7 +79,7 @@ export default function AddExerciseScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => navigation.goBack()}
           hitSlop={8}
           style={{
             width: 36,

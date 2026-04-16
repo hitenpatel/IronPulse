@@ -1,4 +1,13 @@
 module.exports = {
+  project: {
+    android: {
+      sourceDir: './android',
+      packageName: 'com.ironpulse.app',
+    },
+    ios: {
+      sourceDir: './ios',
+    },
+  },
   dependencies: {
     // @powersync/react-native: uses SharedArrayBuffer which crashes on Hermes Android debug
     // In E2E builds, PowerSync is stubbed via Metro config

@@ -1,5 +1,5 @@
-import * as LocalAuthentication from "expo-local-authentication";
-import * as SecureStore from "expo-secure-store";
+import * as LocalAuthentication from "@/lib/biometric-native";
+import * as SecureStore from "@/lib/secure-store";
 
 const BIOMETRIC_ENABLED_KEY = "biometric-enabled";
 

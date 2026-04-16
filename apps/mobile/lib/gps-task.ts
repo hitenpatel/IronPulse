@@ -1,6 +1,6 @@
-import * as TaskManager from "expo-task-manager";
-import * as Location from "expo-location";
-import * as SQLite from "expo-sqlite";
+import * as TaskManager from "@/lib/task-manager";
+import * as Location from "@/lib/location";
+import * as SQLite from "@/lib/sqlite";
 import { insertBufferPoint, initGpsBuffer } from "./gps-buffer";
 
 export const GPS_TASK_NAME = "ironpulse-gps-tracking";

@@ -1,7 +1,5 @@
-// IAP module - lazy loaded since expo-in-app-purchases requires
-// App Store/Play Store configuration before it can be installed.
-// When ready to enable IAP:
-// 1. pnpm --filter @ironpulse/mobile add expo-in-app-purchases
+// IAP module - lazy loaded. When ready to enable IAP:
+// 1. pnpm --filter @ironpulse/mobile add react-native-iap
 // 2. Replace lazy require with direct import
 
 const PRODUCTS = {
@@ -13,9 +11,9 @@ const PRODUCTS = {
 
 function getIAP(): any {
   try {
-    return require("expo-in-app-purchases");
+    return require("react-native-iap");
   } catch {
-    console.warn("expo-in-app-purchases not installed — IAP disabled");
+    console.warn("react-native-iap not installed — IAP disabled");
     return null;
   }
 }

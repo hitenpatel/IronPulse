@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { usePowerSync } from "@powersync/react";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { Check, Minus } from "lucide-react-native";
 
 const colors = {

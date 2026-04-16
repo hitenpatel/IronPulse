@@ -13,7 +13,7 @@ import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { usePowerSync, useQuery } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
-import * as Haptics from "expo-haptics";
+import * as Haptics from "@/lib/haptics";
 import { Plus } from "lucide-react-native";
 
 import { WorkoutHeader } from "../../components/workout/workout-header";

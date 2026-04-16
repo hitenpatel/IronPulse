@@ -5,7 +5,7 @@ import {
   useState,
   useCallback,
 } from "react";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/secure-store";
 import type { SessionUser } from "@ironpulse/shared";
 
 import { trpc } from "./trpc";

@@ -1,5 +1,5 @@
-import * as StoreReview from "expo-store-review";
-import * as SecureStore from "expo-secure-store";
+import * as StoreReview from "@/lib/store-review";
+import * as SecureStore from "@/lib/secure-store";
 import { trpc } from "./trpc";
 
 const REVIEW_LAST_SHOWN_KEY = "review_prompt_last_shown";

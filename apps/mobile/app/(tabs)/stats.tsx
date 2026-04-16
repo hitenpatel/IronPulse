@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import { useState, useEffect } from "react";
 import {
   View,
@@ -119,7 +120,7 @@ export default function StatsScreen() {
       return;
     }
 
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const today = new Date().toISOString().slice(0, 10);
     const now = new Date().toISOString();
 

@@ -3,7 +3,16 @@ import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { getProducts, purchaseSubscription, restorePurchases, initializeIAP } from "@/lib/iap";
-import type { IAPItemDetails } from "expo-in-app-purchases";
+// Inline type — replaces expo-in-app-purchases import
+interface IAPItemDetails {
+  productId: string;
+  title: string;
+  description: string;
+  price: string;
+  currency: string;
+  priceAmountMicros: number;
+  subscriptionPeriod?: string;
+}
 
 const colors = {
   background: "#060B14",

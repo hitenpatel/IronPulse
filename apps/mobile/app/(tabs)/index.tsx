@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth";
 import type { RootStackParamList } from "../../App";
 import { trpc } from "@/lib/trpc";
 import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { usePowerSync } from "@powersync/react";
+import { randomUUID } from "@/lib/uuid";
 import { Dumbbell, Activity, Calendar, ChevronRight, Timer, Rss, Trophy, Users, MessageCircle, Flame } from "lucide-react-native";
 import { formatElapsed } from "@/lib/workout-utils";
 
@@ -40,16 +42,42 @@ function getCurrentWeekRange(): [Date, Date] {
   return [monday, sunday];
 }
 
+function getWorkoutName(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Morning Workout";
+  if (hour < 17) return "Afternoon Workout";
+  return "Evening Workout";
+}
+
 export default function DashboardScreen() {
   const { user } = useAuth();
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const db = usePowerSync();
   const [streak, setStreak] = React.useState<{ current: number; longest: number } | null>(null);
 
   React.useEffect(() => {
     trpc.analytics.streak.query().then(setStreak).catch(() => {});
   }, []);
+
+  const handleStartWorkout = useCallback(async () => {
+    try {
+      const workoutId = randomUUID();
+      const now = new Date().toISOString();
+      await db.execute(
+        `INSERT INTO workouts (id, user_id, name, started_at, created_at) VALUES (?, ?, ?, ?, ?)`,
+        [workoutId, user!.id, getWorkoutName(), now, now]
+      );
+      navigation.navigate("WorkoutActive", { workoutId });
+    } catch (err) {
+      // Fallback: create via tRPC
+      try {
+        const result = await trpc.workout.create.mutate({ name: getWorkoutName() });
+        navigation.navigate("WorkoutActive", { workoutId: result.id });
+      } catch {}
+    }
+  }, [db, user, navigation]);
 
   // Weekly summary
   const weeklySummary = useMemo(() => {
@@ -104,6 +132,7 @@ export default function DashboardScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {/* Greeting */}
         <Text
+          testID="greeting"
           accessibilityRole="header"
           style={{
             fontSize: 24,
@@ -113,7 +142,7 @@ export default function DashboardScreen() {
         >
           {getGreeting()}, {user?.name?.split(" ")[0]}
         </Text>
-        <Text style={{ color: colors.mutedFg, marginTop: 4, marginBottom: 20 }}>
+        <Text testID="sub-greeting" style={{ color: colors.mutedFg, marginTop: 4, marginBottom: 20 }}>
           Ready to train?
         </Text>
 
@@ -147,7 +176,7 @@ export default function DashboardScreen() {
         {/* Quick-start cards */}
         <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
           <Pressable
-            onPress={() => navigation.navigate("WorkoutActive", { workoutId: "" })}
+            onPress={handleStartWorkout}
             style={{ flex: 1 }}
           >
             <View

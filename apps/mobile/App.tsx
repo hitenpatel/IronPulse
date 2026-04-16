@@ -4,7 +4,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator, type NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StatusBar } from "expo-status-bar";
+import { StatusBar } from "react-native";
 
 // NativeWind CSS — import conditionally to avoid breaking without expo-router's Metro setup
 try { require("./global.css"); } catch {}
@@ -174,41 +174,21 @@ function NotificationHandler() {
   return null;
 }
 
+// Initialize PowerSync synchronously so context is always available for hooks
+let PSContext: any = null;
+let psDb: any = null;
+try {
+  PSContext = require("@powersync/react").PowerSyncContext;
+  const { getPowerSyncDatabase } = require("./lib/powersync");
+  psDb = getPowerSyncDatabase();
+} catch (err) {
+  console.warn("PowerSync init:", err);
+}
+
 function RootNavigator() {
   const { user, isLoading } = useAuth();
-  const [powersyncReady, setPowersyncReady] = useState(false);
-  const [PowerSyncProvider, setPowerSyncProvider] = useState<any>(null);
-  const [db, setDb] = useState<any>(null);
-
-  // Initialize PowerSync lazily after first render
-  // Skip in E2E mode or if SharedArrayBuffer is not available (Android debug)
-  useEffect(() => {
-    const isE2E = process.env.EXPO_PUBLIC_E2E === "1";
-    if (isE2E) {
-      setPowersyncReady(true);
-      return;
-    }
-
-    (async () => {
-      try {
-        // Check SharedArrayBuffer support before importing PowerSync
-        if (typeof SharedArrayBuffer === "undefined") {
-          console.warn("SharedArrayBuffer not available — skipping PowerSync");
-          setPowersyncReady(true);
-          return;
-        }
-        const { getPowerSyncDatabase } = await import("./lib/powersync");
-        const { PowerSyncContext } = await import("@powersync/react");
-        const database = getPowerSyncDatabase();
-        setDb(database);
-        setPowerSyncProvider(() => PowerSyncContext?.Provider);
-        setPowersyncReady(true);
-      } catch (err) {
-        console.warn("PowerSync init failed:", err);
-        setPowersyncReady(true); // Continue without PowerSync
-      }
-    })();
-  }, []);
+  const [db] = useState(psDb);
+  const [powersyncReady] = useState(true);
 
   // Connect/disconnect PowerSync based on auth state
   useEffect(() => {
@@ -223,14 +203,12 @@ function RootNavigator() {
       // Push notifications (best-effort)
       (async () => {
         try {
-          const Device = require("expo-device");
-          const Notifications = require("expo-notifications");
-          if (Device.isDevice) {
-            const { status } = await Notifications.requestPermissionsAsync();
-            if (status === "granted") {
-              const { data: token } = await Notifications.getExpoPushTokenAsync();
-              trpc.user.registerPushToken.mutate({ token, platform: Platform.OS }).catch(() => {});
-            }
+          // Push notification registration stubbed out — expo-device and
+          // expo-notifications replaced. Re-enable with @notifee/react-native
+          // and react-native-device-info when native modules are linked.
+          const isDevice = !__DEV__; // rough approximation — real devices only
+          if (isDevice) {
+            // TODO: register push token via @notifee/react-native
           }
         } catch {}
       })();
@@ -268,13 +246,11 @@ function RootNavigator() {
   const navigator = (
     <NavigationContainer>
       <NotificationHandler />
-      <RootStack.Navigator
-        screenOptions={{ headerShown: false }}
-        initialRouteName={needsAuth ? "Auth" : needsOnboarding ? "Auth" : "MainTabs"}
-      >
-        {/* Auth stack */}
-        <RootStack.Screen name="Auth" component={AuthNavigator} />
-
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        {needsAuth || needsOnboarding ? (
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
+        ) : (
+          <>
         {/* Main tabs */}
         <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
 
@@ -396,13 +372,15 @@ function RootNavigator() {
           component={ChallengesScreen}
           options={{ headerShown: true, title: "Challenges", ...HEADER_STYLE }}
         />
+          </>
+        )}
       </RootStack.Navigator>
     </NavigationContainer>
   );
 
-  // Wrap in PowerSync provider if available
-  if (PowerSyncProvider && db) {
-    return <PowerSyncProvider value={db}>{navigator}</PowerSyncProvider>;
+  // Always wrap in PowerSync provider so hooks don't crash
+  if (PSContext?.Provider && db) {
+    return <PSContext.Provider value={db}>{navigator}</PSContext.Provider>;
   }
 
   return navigator;
@@ -435,7 +413,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <AuthProvider>
-          <StatusBar style="light" />
+          <StatusBar barStyle="light-content" backgroundColor="#060B14" />
           <RootNavigator />
         </AuthProvider>
       </ErrorBoundary>

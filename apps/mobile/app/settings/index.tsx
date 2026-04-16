@@ -70,11 +70,10 @@ export default function SettingsScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const Notifications = require("expo-notifications");
-        const { status } = await Notifications.getPermissionsAsync();
-        setNotificationsEnabled(status === "granted");
+        // Notification permissions stubbed — replace with @notifee/react-native
+        setNotificationsEnabled(false);
       } catch {
-        // expo-notifications unavailable in this environment
+        // notifications module unavailable
       }
     })();
   }, []);
@@ -139,16 +138,14 @@ export default function SettingsScreen() {
   async function handleNotificationToggle(value: boolean) {
     setNotifLoading(true);
     try {
-      const Notifications = require("expo-notifications");
+      // Notification permissions stubbed — replace with @notifee/react-native
       if (value) {
-        const { status } = await Notifications.requestPermissionsAsync();
-        setNotificationsEnabled(status === "granted");
-        if (status !== "granted") {
-          Alert.alert(
-            "Notifications Blocked",
-            "Enable notifications for IronPulse in your device Settings to receive workout reminders.",
-          );
-        }
+        // TODO: request permissions via @notifee/react-native
+        setNotificationsEnabled(false);
+        Alert.alert(
+          "Not Available",
+          "Push notifications will be available in a future update.",
+        );
       } else {
         // Can only direct user to settings — OS controls revoking permissions
         Alert.alert(

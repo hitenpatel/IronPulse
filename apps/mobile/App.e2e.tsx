@@ -38,7 +38,7 @@ setTimeout(() => {
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StatusBar } from "expo-status-bar";
+import { StatusBar } from "react-native";
 import { AuthProvider, useAuth } from "./lib/auth";
 
 import React from "react";
@@ -1093,7 +1093,7 @@ export default function App() {
   return (
     <View style={{ flex: 1 }}>
       <AuthProvider>
-        <StatusBar style="light" />
+        <StatusBar barStyle="light-content" backgroundColor="#060B14" />
         <RootNavigator />
       </AuthProvider>
     </View>

@@ -1,52 +1,59 @@
-const { getDefaultConfig } = require("expo/metro-config");
+const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
 const path = require("path");
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
 
-const config = getDefaultConfig(projectRoot);
+const defaultConfig = getDefaultConfig(projectRoot);
 
-config.watchFolders = [monorepoRoot];
-
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, "node_modules"),
-  path.resolve(monorepoRoot, "node_modules"),
-];
-
-config.resolver.disableHierarchicalLookup = true;
-
-// Inject SharedArrayBuffer polyfill at the very start of the bundle
-// This runs before ANY module evaluation, including native module init
-config.serializer = {
-  ...config.serializer,
-  getPolyfills: () => {
-    const defaultPolyfills = require("react-native/rn-get-polyfills")();
-    return [
-      ...defaultPolyfills,
-      path.resolve(projectRoot, "lib/shared-array-buffer-polyfill.js"),
-    ];
+const config = {
+  watchFolders: [monorepoRoot],
+  resolver: {
+    nodeModulesPaths: [
+      path.resolve(projectRoot, "node_modules"),
+      path.resolve(monorepoRoot, "node_modules"),
+    ],
+    disableHierarchicalLookup: true,
+    // Resolve @/ path alias to the project root
+    extraNodeModules: {
+      "@": projectRoot,
+    },
+  },
+  serializer: {
+    // Inject SharedArrayBuffer polyfill at the very start of the bundle
+    // This runs before ANY module evaluation, including native module init
+    getPolyfills: () => {
+      const defaultPolyfills = require("react-native/rn-get-polyfills")();
+      return [
+        ...defaultPolyfills,
+        path.resolve(projectRoot, "lib/shared-array-buffer-polyfill.js"),
+      ];
+    },
   },
 };
 
-// In E2E mode, stub out PowerSync modules that crash on Hermes (SharedArrayBuffer)
-const isE2E = process.env.EXPO_PUBLIC_E2E === "1";
-console.log("[Metro Config] EXPO_PUBLIC_E2E =", process.env.EXPO_PUBLIC_E2E, "isE2E =", isE2E);
+const merged = mergeConfig(defaultConfig, config);
 
-if (isE2E) {
-  console.log("[Metro Config] E2E mode: redirecting App to App.e2e, stubbing PowerSync");
-  const stubPath = path.resolve(projectRoot, "lib/powersync-stub.js");
-  const e2eAppPath = path.resolve(projectRoot, "App.e2e.tsx");
+// Custom resolver: handles @/ path alias and E2E stubs
+const isE2E = process.env.E2E === "1";
+console.log("[Metro Config] E2E =", process.env.E2E, "isE2E =", isE2E);
 
-  // Use resolveRequest to intercept ALL module resolutions
-  config.resolver.resolveRequest = (context, moduleName, platform) => {
-    // Redirect App.tsx to App.e2e.tsx (no PowerSync dependency chain)
+const stubPath = isE2E ? path.resolve(projectRoot, "lib/powersync-stub.js") : null;
+const e2eAppPath = isE2E ? path.resolve(projectRoot, "App.e2e.tsx") : null;
+
+merged.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Resolve @/ path alias to project root
+  if (moduleName.startsWith("@/")) {
+    const relativePath = moduleName.slice(2); // strip "@/"
+    const resolved = path.resolve(projectRoot, relativePath);
+    return context.resolveRequest(context, resolved, platform);
+  }
+
+  // E2E mode stubs
+  if (isE2E) {
     if (moduleName === "./App" && context.originModulePath?.endsWith("index.js")) {
-      console.log("[Metro E2E] Redirecting ./App to ./App.e2e");
       return { filePath: e2eAppPath, type: "sourceFile" };
     }
-    // Match any powersync or ironpulse/sync import from ANY location.
-    // Also catch @journeyapps/react-native-quick-sqlite (peer dep of
-    // @powersync/react-native) which may be hoisted in CI builds.
     if (
       moduleName === "@powersync/react" ||
       moduleName === "@powersync/react-native" ||
@@ -55,12 +62,11 @@ if (isE2E) {
       moduleName === "@ironpulse/sync" ||
       moduleName.startsWith("@journeyapps/react-native-quick-sqlite")
     ) {
-      console.log(`[Metro Stub] Stubbing: ${moduleName}`);
       return { filePath: stubPath, type: "sourceFile" };
     }
-    // Default resolution
-    return context.resolveRequest(context, moduleName, platform);
-  };
-}
+  }
 
-module.exports = config;
+  return context.resolveRequest(context, moduleName, platform);
+};
+
+module.exports = merged;

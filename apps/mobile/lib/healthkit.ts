@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 // Lazy-loaded to avoid parse failures in vitest / Android
 function getPlatformOS(): string {
   try {
@@ -8,8 +9,8 @@ function getPlatformOS(): string {
   }
 }
 
-function getSecureStore(): typeof import("expo-secure-store") {
-  return require("expo-secure-store");
+function getSecureStore() {
+  return require("./secure-store");
 }
 
 // ---------------------------------------------------------------------------
@@ -275,7 +276,7 @@ export async function syncFromHealthKit(
     );
     if (existing.rows?.length > 0) continue;
 
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const ipType = mapHealthKitTypeToIronPulse(w.activityName);
     const durationSeconds = Math.round(w.duration * 60);
 
@@ -309,7 +310,7 @@ export async function syncFromHealthKit(
     );
     if (existing.rows?.length > 0) continue;
 
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     await db.execute(
       `INSERT INTO body_metrics (id, user_id, date, weight_kg, created_at)
        VALUES (?, ?, ?, ?, ?)`,

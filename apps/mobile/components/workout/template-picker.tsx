@@ -9,7 +9,7 @@ import { Play, FileText } from "lucide-react-native";
 import { useTemplates, type TemplateRow } from "@ironpulse/sync";
 import { useAuth } from "@/lib/auth";
 import { getWorkoutName } from "@/lib/workout-utils";
-import * as crypto from "expo-crypto";
+import { randomUUID } from "@/lib/uuid";
 
 interface Props {
   open: boolean;
@@ -32,7 +32,7 @@ export function TemplatePicker({ open, onClose }: Props) {
   }, [open]);
 
   async function createEmptyWorkout() {
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const now = new Date().toISOString();
     await db.execute(
       `INSERT INTO workouts (id, user_id, name, started_at, created_at) VALUES (?, ?, ?, ?, ?)`,
@@ -43,7 +43,7 @@ export function TemplatePicker({ open, onClose }: Props) {
   }
 
   async function createFromTemplate(template: TemplateRow) {
-    const workoutId = crypto.randomUUID();
+    const workoutId = randomUUID();
     const now = new Date().toISOString();
 
     await db.execute(
@@ -57,7 +57,7 @@ export function TemplatePicker({ open, onClose }: Props) {
     );
 
     for (const te of templateExercises.rows._array) {
-      const weId = crypto.randomUUID();
+      const weId = randomUUID();
       await db.execute(
         `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes) VALUES (?, ?, ?, ?, ?)`,
         [weId, workoutId, te.exercise_id, te.order, te.notes]
@@ -72,7 +72,7 @@ export function TemplatePicker({ open, onClose }: Props) {
         await db.execute(
           `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, weight_kg, reps, completed) VALUES (?, ?, ?, ?, ?, ?, 0)`,
           [
-            crypto.randomUUID(),
+            randomUUID(),
             weId,
             ts.set_number,
             ts.type,

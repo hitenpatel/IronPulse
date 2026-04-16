@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 // Lazy-loaded to avoid parse failures in vitest / iOS
 function getPlatformOS(): string {
   try {
@@ -8,8 +9,8 @@ function getPlatformOS(): string {
   }
 }
 
-function getSecureStore(): typeof import("expo-secure-store") {
-  return require("expo-secure-store");
+function getSecureStore() {
+  return require("./secure-store");
 }
 
 // ---------------------------------------------------------------------------
@@ -274,7 +275,7 @@ export async function syncFromGoogleFit(
     );
     if (existing.rows?.length > 0) continue;
 
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const ipType = mapGoogleFitTypeToIronPulse(w.activityType);
     const startMs = new Date(w.startDate).getTime();
     const endMs = new Date(w.endDate).getTime();
@@ -310,7 +311,7 @@ export async function syncFromGoogleFit(
     );
     if (existing.rows?.length > 0) continue;
 
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     await db.execute(
       `INSERT INTO body_metrics (id, user_id, date, weight_kg, created_at)
        VALUES (?, ?, ?, ?, ?)`,

@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { getWorkoutName } from "@/lib/workout-utils";
 import { Trash2, FileText, Search, Heart } from "lucide-react-native";
-import * as crypto from "expo-crypto";
+import { randomUUID } from "@/lib/uuid";
 
 const colors = {
   background: "#060B14",
@@ -38,7 +38,7 @@ export default function ExercisesScreen() {
   const { user } = useAuth();
 
   async function startFromTemplate(template: TemplateRow) {
-    const workoutId = crypto.randomUUID();
+    const workoutId = randomUUID();
     const now = new Date().toISOString();
 
     await db.execute(
@@ -52,7 +52,7 @@ export default function ExercisesScreen() {
     );
 
     for (const te of templateExercises.rows._array) {
-      const weId = crypto.randomUUID();
+      const weId = randomUUID();
       await db.execute(
         `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes) VALUES (?, ?, ?, ?, ?)`,
         [weId, workoutId, te.exercise_id, te.order, te.notes],
@@ -67,7 +67,7 @@ export default function ExercisesScreen() {
         await db.execute(
           `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, weight_kg, reps, completed) VALUES (?, ?, ?, ?, ?, ?, 0)`,
           [
-            crypto.randomUUID(),
+            randomUUID(),
             weId,
             ts.set_number,
             ts.type,

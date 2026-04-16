@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import React, { useCallback, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
@@ -77,7 +78,7 @@ export function ExerciseCard({
       ? Math.max(...sets.map((s) => s.set_number)) + 1
       : 1;
 
-    const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+    const id = randomUUID() ?? `${Date.now()}-${Math.random()}`;
     await db.execute(
       `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, weight_kg, reps, rpe, completed)
        VALUES (?, ?, ?, NULL, NULL, NULL, 0)`,

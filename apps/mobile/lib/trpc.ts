@@ -1,9 +1,11 @@
 import { createTRPCClient, httpBatchLink, TRPCClientError } from "@trpc/client";
 import superjson from "superjson";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/secure-store";
 import type { AppRouter } from "@ironpulse/api";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+import { Config } from "./config";
+
+const API_URL = Config.API_URL;
 
 export const trpc = createTRPCClient<AppRouter>({
   links: [
