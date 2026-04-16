@@ -6,6 +6,7 @@ import {
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { notifyNewMessage } from "../lib/notifications";
+import { captureError } from "../lib/capture-error";
 
 async function hasCoachAthleteRelationship(
   db: any,
@@ -64,7 +65,9 @@ export const messageRouter = createTRPCRouter({
         ctx.db,
         input.receiverId,
         sender?.name ?? "Someone"
-      ).catch(() => {});
+      ).catch((err) =>
+        captureError(err, { context: "notifyNewMessage", receiverId: input.receiverId, senderId: ctx.user.id })
+      );
 
       return message;
     }),

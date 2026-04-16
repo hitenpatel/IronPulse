@@ -1,4 +1,5 @@
 import { sendPushNotification } from "./push";
+import { captureError } from "./capture-error";
 
 export async function notifyNewPR(
   db: any,
@@ -15,7 +16,9 @@ export async function notifyNewPR(
       t.token,
       "New PR!",
       `${exerciseName} — ${value}`
-    ).catch(() => {});
+    ).catch((err) =>
+      captureError(err, { context: "notifyNewPR", userId, exerciseName })
+    );
   }
 }
 
@@ -33,6 +36,8 @@ export async function notifyNewMessage(
       t.token,
       "New Message",
       `From ${senderName}`
-    ).catch(() => {});
+    ).catch((err) =>
+      captureError(err, { context: "notifyNewMessage", receiverId, senderName })
+    );
   }
 }

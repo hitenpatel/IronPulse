@@ -8,6 +8,7 @@ import {
 } from "@ironpulse/shared/src/schemas/integration";
 import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
+import { requireIntegrationCredentials } from "../lib/env";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const GARMIN_TOKEN_URL =
@@ -139,6 +140,7 @@ export const integrationRouter = createTRPCRouter({
   completeGarminAuth: rateLimitedProcedure
     .input(completeGarminAuthSchema)
     .mutation(async ({ ctx, input }) => {
+      const garmin = requireIntegrationCredentials("GARMIN");
       const response = await fetch(GARMIN_TOKEN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -146,8 +148,8 @@ export const integrationRouter = createTRPCRouter({
           grant_type: "authorization_code",
           code: input.code,
           redirect_uri: `${process.env.NEXTAUTH_URL}/api/garmin/callback`,
-          client_id: process.env.GARMIN_CLIENT_ID!,
-          client_secret: process.env.GARMIN_CLIENT_SECRET!,
+          client_id: garmin.clientId,
+          client_secret: garmin.clientSecret,
           code_verifier: input.codeVerifier,
         }),
       });

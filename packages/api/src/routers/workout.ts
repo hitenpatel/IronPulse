@@ -15,6 +15,7 @@ import { detectPRs } from "../lib/pr-detection";
 import { createFeedItem } from "../lib/feed";
 import { notifyNewPR } from "../lib/notifications";
 import { checkAndUnlock } from "./achievement";
+import { captureError } from "../lib/capture-error";
 
 export const workoutRouter = createTRPCRouter({
   create: rateLimitedProcedure
@@ -386,12 +387,16 @@ export const workoutRouter = createTRPCRouter({
             ctx.user.id,
             exerciseName,
             `${label}: ${pr.value}`
-          ).catch(() => {});
+          ).catch((err) =>
+            captureError(err, { context: "notifyNewPR", userId: ctx.user.id, exerciseId: pr.exerciseId })
+          );
         }
       }
 
       // Achievement checks (fire-and-forget — never block the response)
-      checkAndUnlock(ctx.db, ctx.user.id).catch(() => {});
+      checkAndUnlock(ctx.db, ctx.user.id).catch((err) =>
+        captureError(err, { context: "checkAndUnlock", userId: ctx.user.id })
+      );
 
       return { workout, newPRs };
     }),

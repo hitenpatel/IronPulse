@@ -12,7 +12,7 @@
     "db:seed": "prisma db seed",
     "db:seed:dev": "tsx seeds/seed-dev.ts",
     "db:studio": "prisma studio",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && eslint src/",
     "postinstall": "prisma generate"
   },
   "dependencies": {

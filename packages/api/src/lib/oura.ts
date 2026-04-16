@@ -231,7 +231,7 @@ export async function importOuraSleep(
   );
 
   // Optionally fetch readiness to attach scores to sleep
-  let readinessMap = new Map<string, number>();
+  const readinessMap = new Map<string, number>();
   try {
     const readinessResponse = await fetchOuraApi<
       OuraListResponse<OuraReadiness>

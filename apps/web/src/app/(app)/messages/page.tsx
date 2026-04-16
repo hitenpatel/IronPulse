@@ -172,7 +172,6 @@ function MessageThread({
   // Mark read when opening conversation
   useEffect(() => {
     markRead.mutate({ partnerId });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partnerId]);
 
   // Scroll to bottom on new messages

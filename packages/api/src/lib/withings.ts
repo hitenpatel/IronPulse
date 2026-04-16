@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { encryptToken, decryptToken } from "./encryption";
+import { requireIntegrationCredentials } from "./env";
 
 const WITHINGS_API_BASE = "https://wbsapi.withings.net";
 const WITHINGS_TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2";
@@ -188,11 +189,12 @@ export async function refreshWithingsToken(refreshToken: string): Promise<{
   expires_in: number;
   userid: number;
 }> {
+  const withings = requireIntegrationCredentials("WITHINGS");
   const body = new URLSearchParams({
     action: "requesttoken",
     grant_type: "refresh_token",
-    client_id: process.env.WITHINGS_CLIENT_ID!,
-    client_secret: process.env.WITHINGS_CLIENT_SECRET!,
+    client_id: withings.clientId,
+    client_secret: withings.clientSecret,
     refresh_token: refreshToken,
   });
 

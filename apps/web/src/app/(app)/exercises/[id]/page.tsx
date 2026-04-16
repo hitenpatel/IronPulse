@@ -286,7 +286,6 @@ export default function ExerciseDetailPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {exercise.imageUrls.map((url, i) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={url}
                       alt={`${exercise.name} image ${i + 1}`}

@@ -13,7 +13,7 @@ export function calculateStreak(activityDates: string[]): {
   })();
 
   let longest = 1;
-  let current = 1;
+  let current: number;
   let streak = 1;
 
   for (let i = 1; i < unique.length; i++) {

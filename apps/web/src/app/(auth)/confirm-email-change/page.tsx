@@ -30,7 +30,6 @@ function ConfirmEmailChangeForm() {
     if (token && !confirmed && !confirmEmailChange.isPending && !confirmEmailChange.isError) {
       confirmEmailChange.mutate({ token });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (!token) {
