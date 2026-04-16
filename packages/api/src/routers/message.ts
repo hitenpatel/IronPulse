@@ -90,58 +90,54 @@ export const messageRouter = createTRPCRouter({
   conversations: rateLimitedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
 
-    // Get all messages where the user is sender or receiver
-    const messages = await ctx.db.message.findMany({
-      where: {
-        OR: [{ senderId: userId }, { receiverId: userId }],
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        sender: { select: { id: true, name: true, avatarUrl: true } },
-        receiver: { select: { id: true, name: true, avatarUrl: true } },
-      },
-    });
-
-    // Group by conversation partner
-    const conversationMap = new Map<
-      string,
+    // Use raw SQL to efficiently get the latest message per conversation partner
+    // instead of loading ALL messages into memory
+    const conversations = await ctx.db.$queryRaw<
       {
         partnerId: string;
         partnerName: string;
         partnerAvatarUrl: string | null;
         lastMessage: string;
         lastMessageAt: Date;
-        unreadCount: number;
-      }
-    >();
+        unreadCount: bigint;
+      }[]
+    >`
+      WITH ranked AS (
+        SELECT
+          CASE WHEN m.sender_id = ${userId}::uuid THEN m.receiver_id ELSE m.sender_id END AS partner_id,
+          m.content,
+          m.created_at,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE WHEN m.sender_id = ${userId}::uuid THEN m.receiver_id ELSE m.sender_id END
+            ORDER BY m.created_at DESC
+          ) AS rn
+        FROM messages m
+        WHERE m.sender_id = ${userId}::uuid OR m.receiver_id = ${userId}::uuid
+      ),
+      unread_counts AS (
+        SELECT sender_id AS partner_id, COUNT(*) AS unread_count
+        FROM messages
+        WHERE receiver_id = ${userId}::uuid AND read_at IS NULL
+        GROUP BY sender_id
+      )
+      SELECT
+        r.partner_id AS "partnerId",
+        u.name AS "partnerName",
+        u.avatar_url AS "partnerAvatarUrl",
+        r.content AS "lastMessage",
+        r.created_at AS "lastMessageAt",
+        COALESCE(uc.unread_count, 0) AS "unreadCount"
+      FROM ranked r
+      JOIN users u ON u.id = r.partner_id
+      LEFT JOIN unread_counts uc ON uc.partner_id = r.partner_id
+      WHERE r.rn = 1
+      ORDER BY r.created_at DESC
+    `;
 
-    for (const msg of messages) {
-      const partnerId =
-        msg.senderId === userId ? msg.receiverId : msg.senderId;
-      const partner =
-        msg.senderId === userId ? msg.receiver : msg.sender;
-
-      if (!conversationMap.has(partnerId)) {
-        conversationMap.set(partnerId, {
-          partnerId,
-          partnerName: partner.name,
-          partnerAvatarUrl: partner.avatarUrl,
-          lastMessage: msg.content,
-          lastMessageAt: msg.createdAt,
-          unreadCount: 0,
-        });
-      }
-
-      // Count unread messages from this partner
-      if (msg.senderId === partnerId && !msg.readAt) {
-        const conv = conversationMap.get(partnerId)!;
-        conv.unreadCount++;
-      }
-    }
-
-    return [...conversationMap.values()].sort(
-      (a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime()
-    );
+    return conversations.map((c) => ({
+      ...c,
+      unreadCount: Number(c.unreadCount),
+    }));
   }),
 
   history: rateLimitedProcedure
