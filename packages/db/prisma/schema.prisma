@@ -427,6 +427,7 @@ model ActivityFeedItem {
   reactions FeedReaction[]
 
   @@index([userId, createdAt])
+  @@index([visibility, createdAt])
   @@map("activity_feed_items")
 }
 
