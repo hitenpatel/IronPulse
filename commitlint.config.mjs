@@ -3,7 +3,7 @@ export default {
   rules: {
     // Allow longer subjects for descriptive commit messages
     "header-max-length": [2, "always", 100],
-    // Standard types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+    // Standard types + release for version tagging commits
     "type-enum": [
       2,
       "always",
@@ -19,6 +19,7 @@ export default {
         "ci",
         "chore",
         "revert",
+        "release",
       ],
     ],
   },
