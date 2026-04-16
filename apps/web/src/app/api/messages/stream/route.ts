@@ -1,4 +1,5 @@
 import { db } from "@ironpulse/db";
+import { subscribeToMessages } from "@ironpulse/api/src/lib/message-pubsub";
 import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -11,39 +12,57 @@ export async function GET(req: Request) {
 
   const userId = session.user.id!;
   const encoder = new TextEncoder();
-  let lastCheck = new Date();
 
   const stream = new ReadableStream({
-    async start(controller) {
+    start(controller) {
       const send = (data: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Stream may have closed
+        }
       };
 
-      // Poll DB every 2 seconds for new messages (much cheaper than client polling)
-      const interval = setInterval(async () => {
-        try {
-          const newMessages = await db.message.findMany({
-            where: {
-              receiverId: userId,
-              createdAt: { gt: lastCheck },
-            },
-            include: {
-              sender: { select: { id: true, name: true, avatarUrl: true } },
-            },
-            orderBy: { createdAt: "asc" },
-          });
+      // Subscribe to Redis Pub/Sub for real-time messages
+      const unsubscribe = subscribeToMessages(userId, (payload) => {
+        send(payload);
+      });
 
-          if (newMessages.length > 0) {
-            lastCheck = new Date();
-            send({ type: "new_messages", messages: newMessages });
-          }
-        } catch {
-          // Connection may have closed
+      // Send a heartbeat every 30s to keep the connection alive
+      const heartbeat = setInterval(() => {
+        send({ type: "heartbeat" });
+      }, 30_000);
+
+      // Load any messages missed since the client's last connection
+      // (client sends ?since=ISO timestamp as query param)
+      const url = new URL(req.url);
+      const since = url.searchParams.get("since");
+      if (since) {
+        const sinceDate = new Date(since);
+        if (!isNaN(sinceDate.getTime())) {
+          db.message
+            .findMany({
+              where: {
+                receiverId: userId,
+                createdAt: { gt: sinceDate },
+              },
+              include: {
+                sender: { select: { id: true, name: true, avatarUrl: true } },
+              },
+              orderBy: { createdAt: "asc" },
+            })
+            .then((missed) => {
+              if (missed.length > 0) {
+                send({ type: "missed_messages", messages: missed });
+              }
+            })
+            .catch(() => {});
         }
-      }, 2000);
+      }
 
       req.signal.addEventListener("abort", () => {
-        clearInterval(interval);
+        unsubscribe();
+        clearInterval(heartbeat);
         controller.close();
       });
 

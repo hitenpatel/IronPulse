@@ -7,6 +7,7 @@ import {
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { notifyNewMessage } from "../lib/notifications";
 import { captureError } from "../lib/capture-error";
+import { publishNewMessage } from "../lib/message-pubsub";
 
 async function hasCoachAthleteRelationship(
   db: any,
@@ -55,6 +56,20 @@ export const messageRouter = createTRPCRouter({
           content: input.content,
         },
       });
+
+      // Real-time SSE push via Redis Pub/Sub (fire-and-forget)
+      publishNewMessage(input.receiverId, {
+        type: "new_message",
+        message: {
+          id: message.id,
+          senderId: ctx.user.id,
+          receiverId: input.receiverId,
+          content: input.content,
+          createdAt: message.createdAt,
+        },
+      }).catch((err) =>
+        captureError(err, { context: "publishNewMessage", receiverId: input.receiverId })
+      );
 
       // Push notification (fire-and-forget)
       const sender = await ctx.db.user.findUnique({
