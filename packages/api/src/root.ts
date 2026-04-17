@@ -24,6 +24,7 @@ import { achievementRouter } from "./routers/achievement";
 import { nutritionRouter } from "./routers/nutrition";
 import { sleepRouter } from "./routers/sleep";
 import { goalRouter } from "./routers/goal";
+import { notificationRouter } from "./routers/notification";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -51,6 +52,7 @@ export const appRouter = createTRPCRouter({
   nutrition: nutritionRouter,
   sleep: sleepRouter,
   goal: goalRouter,
+  notification: notificationRouter,
 });
 
 export type AppRouter = typeof appRouter;

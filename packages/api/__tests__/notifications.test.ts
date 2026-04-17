@@ -48,11 +48,14 @@ describe("notifyNewPR", () => {
 
     await notifyNewPR(db, "user-1", "Squat", "Volume: 5000kg");
 
-    expect(mockCapture).toHaveBeenCalledWith(pushError, {
-      context: "notifyNewPR",
-      userId: "user-1",
-      exerciseName: "Squat",
-    });
+    expect(mockCapture).toHaveBeenCalledWith(
+      pushError,
+      expect.objectContaining({
+        context: "createNotification.push",
+        userId: "user-1",
+        type: "pr",
+      }),
+    );
   });
 
   it("does not throw when push fails", async () => {
@@ -83,11 +86,14 @@ describe("notifyNewMessage", () => {
 
     await notifyNewMessage(db, "receiver-1", "Bob");
 
-    expect(mockCapture).toHaveBeenCalledWith(pushError, {
-      context: "notifyNewMessage",
-      receiverId: "receiver-1",
-      senderName: "Bob",
-    });
+    expect(mockCapture).toHaveBeenCalledWith(
+      pushError,
+      expect.objectContaining({
+        context: "createNotification.push",
+        userId: "receiver-1",
+        type: "message",
+      }),
+    );
   });
 
   it("does not throw when push fails", async () => {

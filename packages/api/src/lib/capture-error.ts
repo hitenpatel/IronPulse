@@ -5,7 +5,7 @@
  */
 export async function captureError(
   err: unknown,
-  context?: Record<string, string>,
+  context?: Record<string, unknown>,
 ): Promise<void> {
   try {
     const Sentry = await import("@sentry/nextjs");

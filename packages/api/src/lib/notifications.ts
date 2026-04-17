@@ -1,43 +1,162 @@
 import { sendPushNotification } from "./push";
 import { captureError } from "./capture-error";
 
-export async function notifyNewPR(
-  db: any,
-  userId: string,
-  exerciseName: string,
-  value: string
+// Intentionally loose: callers pass the PrismaClient but tests pass a partial mock.
+// We use `any` here because Prisma's generated types are nominal and don't structurally
+// match lightweight mocks from test files.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Db = any;
+
+type NotificationKind =
+  | "follow"
+  | "reaction"
+  | "message"
+  | "pr"
+  | "workout_complete"
+  | "goal_complete"
+  | "achievement"
+  | "coach_activity";
+
+/**
+ * Persist an in-app notification AND fire a push notification to all of
+ * the user's registered devices. Safe to call in fire-and-forget style —
+ * any failure is captured via Sentry, never thrown.
+ */
+export async function createNotification(
+  db: Db,
+  params: {
+    userId: string;
+    type: NotificationKind;
+    title: string;
+    body?: string;
+    linkPath?: string;
+    data?: Record<string, unknown>;
+  },
 ) {
-  const tokens = await db.pushToken.findMany({
-    where: { userId },
-    select: { token: true },
-  });
-  for (const t of tokens) {
-    await sendPushNotification(
-      t.token,
-      "New PR!",
-      `${exerciseName} — ${value}`
-    ).catch((err) =>
-      captureError(err, { context: "notifyNewPR", userId, exerciseName })
-    );
+  // Persist in-app notification (skipped if caller's db mock doesn't expose it)
+  if (db.notification) {
+    try {
+      await db.notification.create({
+        data: {
+          userId: params.userId,
+          type: params.type,
+          title: params.title,
+          body: params.body ?? null,
+          linkPath: params.linkPath ?? null,
+          data: params.data ?? undefined,
+        } as never,
+      });
+    } catch (err) {
+      captureError(err, { context: "createNotification.insert", ...params });
+    }
+  }
+
+  // Fire push to registered devices
+  try {
+    const tokens = await db.pushToken.findMany({
+      where: { userId: params.userId },
+      select: { token: true },
+    });
+    for (const t of tokens) {
+      await sendPushNotification(
+        t.token,
+        params.title,
+        params.body ?? "",
+      ).catch((err) =>
+        captureError(err, { context: "createNotification.push", ...params }),
+      );
+    }
+  } catch (err) {
+    captureError(err, { context: "createNotification.tokens", ...params });
   }
 }
 
-export async function notifyNewMessage(
-  db: any,
-  receiverId: string,
-  senderName: string
+export async function notifyNewPR(
+  db: Db,
+  userId: string,
+  exerciseName: string,
+  value: string,
 ) {
-  const tokens = await db.pushToken.findMany({
-    where: { userId: receiverId },
-    select: { token: true },
+  await createNotification(db, {
+    userId,
+    type: "pr",
+    title: "New PR!",
+    body: `${exerciseName} — ${value}`,
+    linkPath: `/stats`,
   });
-  for (const t of tokens) {
-    await sendPushNotification(
-      t.token,
-      "New Message",
-      `From ${senderName}`
-    ).catch((err) =>
-      captureError(err, { context: "notifyNewMessage", receiverId, senderName })
-    );
-  }
+}
+
+export async function notifyNewMessage(
+  db: Db,
+  receiverId: string,
+  senderName: string,
+  senderId?: string,
+) {
+  await createNotification(db, {
+    userId: receiverId,
+    type: "message",
+    title: "New Message",
+    body: `From ${senderName}`,
+    ...(senderId && { linkPath: `/messages/${senderId}` }),
+  });
+}
+
+export async function notifyNewFollower(
+  db: Db,
+  userId: string,
+  followerName: string,
+  followerId: string,
+) {
+  await createNotification(db, {
+    userId,
+    type: "follow",
+    title: "New follower",
+    body: `${followerName} started following you`,
+    linkPath: `/users/${followerId}`,
+  });
+}
+
+export async function notifyReaction(
+  db: Db,
+  userId: string,
+  reactorName: string,
+  reactionType: string,
+  postId: string,
+) {
+  await createNotification(db, {
+    userId,
+    type: "reaction",
+    title: `${reactorName} reacted to your workout`,
+    body: reactionType,
+    linkPath: `/feed?post=${postId}`,
+  });
+}
+
+export async function notifyGoalComplete(
+  db: Db,
+  userId: string,
+  goalTitle: string,
+) {
+  await createNotification(db, {
+    userId,
+    type: "goal_complete",
+    title: "Goal achieved! 🎉",
+    body: goalTitle,
+    linkPath: `/goals`,
+  });
+}
+
+export async function notifyCoachActivity(
+  db: Db,
+  coachId: string,
+  athleteName: string,
+  activity: string,
+  athleteId: string,
+) {
+  await createNotification(db, {
+    userId: coachId,
+    type: "coach_activity",
+    title: `${athleteName}: ${activity}`,
+    linkPath: `/coach/clients/${athleteId}`,
+  });
 }

@@ -30,6 +30,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "./notification-bell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -249,6 +250,9 @@ export function Sidebar({
         aria-label="Main navigation"
         className="flex flex-1 flex-col gap-6 overflow-y-auto py-4 px-2"
       >
+        {/* Notification bell — always visible at top */}
+        <NotificationBell collapsed={collapsed} />
+
         {groups.map((group) => (
           <div key={group.title}>
             {!collapsed && (

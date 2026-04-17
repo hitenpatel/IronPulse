@@ -349,6 +349,17 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
+        {/* Communication */}
+        <NavSection
+          title="Communication"
+          items={[
+            { label: "Notifications", screen: "Notifications" },
+            { label: "Messages", screen: "Messages" },
+          ]}
+          navigation={navigation}
+          colors={colors}
+        />
+
         {/* Tracking nav rows */}
         <NavSection
           title="Tracking"

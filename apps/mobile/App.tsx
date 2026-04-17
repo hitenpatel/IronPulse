@@ -88,6 +88,9 @@ import WorkoutTemplatesScreen from "./app/templates/index";
 // Goals
 import GoalsScreen from "./app/goals/index";
 
+// Notifications
+import NotificationsScreen from "./app/notifications/index";
+
 // Custom Tab Bar
 import { PulseTabBar } from "./components/layout/pulse-tab-bar";
 
@@ -140,6 +143,8 @@ export type RootStackParamList = {
   WorkoutTemplates: undefined;
   // Goals
   Goals: undefined;
+  // Notifications
+  Notifications: undefined;
 };
 
 export type AuthStackParamList = {
@@ -480,6 +485,13 @@ function RootNavigator() {
           name="Goals"
           component={GoalsScreen}
           options={{ headerShown: true, title: "Goals", ...HEADER_STYLE }}
+        />
+
+        {/* Notifications */}
+        <RootStack.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+          options={{ headerShown: true, title: "Notifications", ...HEADER_STYLE }}
         />
           </>
         )}

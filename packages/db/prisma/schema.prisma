@@ -59,6 +59,7 @@ model User {
   mealLogs                MealLog[]
   sleepLogs               SleepLog[]
   goals                   Goal[]
+  notifications           Notification[]
 
   @@map("users")
 }
@@ -615,6 +616,26 @@ model SleepLog {
   @@index([userId, date])
   @@index([externalId])
   @@map("sleep_logs")
+}
+
+// ─── Notifications ──────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String    // follow, reaction, message, pr, workout_complete, goal_complete, achievement
+  title     String
+  body      String?
+  linkPath  String?   @map("link_path") // e.g. "/feed?post=abc", "/messages/user-xyz"
+  data      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
 }
 
 // ─── Goals ──────────────────────────────────────────────
