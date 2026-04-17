@@ -58,6 +58,7 @@ model User {
   achievements            Achievement[]
   mealLogs                MealLog[]
   sleepLogs               SleepLog[]
+  goals                   Goal[]
 
   @@map("users")
 }
@@ -614,4 +615,28 @@ model SleepLog {
   @@index([userId, date])
   @@index([externalId])
   @@map("sleep_logs")
+}
+
+// ─── Goals ──────────────────────────────────────────────
+
+model Goal {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  type         String    // body_weight, exercise_pr, weekly_workouts, cardio_distance
+  title        String
+  description  String?
+  targetValue  Decimal   @map("target_value") @db.Decimal(12, 2)
+  startValue   Decimal?  @map("start_value") @db.Decimal(12, 2)
+  unit         String    // kg, lb, count, km, mi
+  exerciseId   String?   @map("exercise_id") @db.Uuid
+  targetDate   DateTime? @map("target_date") @db.Date
+  status       String    @default("active") // active, completed, abandoned
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("goals")
 }

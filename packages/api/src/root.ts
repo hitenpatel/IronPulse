@@ -23,6 +23,7 @@ import { searchRouter } from "./routers/search";
 import { achievementRouter } from "./routers/achievement";
 import { nutritionRouter } from "./routers/nutrition";
 import { sleepRouter } from "./routers/sleep";
+import { goalRouter } from "./routers/goal";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -49,6 +50,7 @@ export const appRouter = createTRPCRouter({
   achievement: achievementRouter,
   nutrition: nutritionRouter,
   sleep: sleepRouter,
+  goal: goalRouter,
 });
 
 export type AppRouter = typeof appRouter;

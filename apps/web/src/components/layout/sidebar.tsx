@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Calculator,
   CircleDot,
+  Target,
   Sun,
   Moon,
   Settings,
@@ -72,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { icon: BarChart3, label: "Stats", href: "/stats" },
       { icon: Ruler, label: "Body Metrics", href: "/stats/body" },
+      { icon: Target, label: "Goals", href: "/goals" },
     ],
   },
   {

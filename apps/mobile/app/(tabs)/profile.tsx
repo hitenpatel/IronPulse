@@ -353,6 +353,7 @@ export default function ProfileScreen() {
         <NavSection
           title="Tracking"
           items={[
+            { label: "Goals", screen: "Goals" },
             { label: "Nutrition", screen: "Nutrition" },
             { label: "Sleep", screen: "Sleep" },
             { label: "Progress Photos", screen: "ProgressPhotos" },

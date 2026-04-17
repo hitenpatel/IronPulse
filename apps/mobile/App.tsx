@@ -85,6 +85,9 @@ import ImportScreen from "./app/settings/import";
 // Templates
 import WorkoutTemplatesScreen from "./app/templates/index";
 
+// Goals
+import GoalsScreen from "./app/goals/index";
+
 // Custom Tab Bar
 import { PulseTabBar } from "./components/layout/pulse-tab-bar";
 
@@ -135,6 +138,8 @@ export type RootStackParamList = {
   ImportData: undefined;
   // Templates
   WorkoutTemplates: undefined;
+  // Goals
+  Goals: undefined;
 };
 
 export type AuthStackParamList = {
@@ -468,6 +473,13 @@ function RootNavigator() {
           name="WorkoutTemplates"
           component={WorkoutTemplatesScreen}
           options={{ headerShown: true, title: "Templates", ...HEADER_STYLE }}
+        />
+
+        {/* Goals */}
+        <RootStack.Screen
+          name="Goals"
+          component={GoalsScreen}
+          options={{ headerShown: true, title: "Goals", ...HEADER_STYLE }}
         />
           </>
         )}

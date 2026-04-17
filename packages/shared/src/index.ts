@@ -21,5 +21,6 @@ export * from "./schemas/message";
 export * from "./schemas/export";
 export * from "./schemas/nutrition";
 export * from "./schemas/sleep";
+export * from "./schemas/goal";
 export * from "./hr-zones";
 export * from "./streaks";

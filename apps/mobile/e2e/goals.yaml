@@ -1,0 +1,34 @@
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn: "Profile"
+- tapOn: "Goals"
+- extendedWaitUntil:
+    visible:
+      text: "New Goal"
+    timeout: 10000
+- tapOn: "New Goal"
+- assertVisible: "Body Weight"
+- assertVisible: "Exercise PR"
+- assertVisible: "Weekly Workouts"
+- assertVisible: "Cardio Distance"
+- tapOn: "Cancel"
