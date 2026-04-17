@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0-rc.4 (unreleased) — Engagement & Quality
+## v1.0.0-rc.4 (2026-04-17) — Engagement & Quality
 
 ### Features
 - Goal setting and tracking: body weight, exercise PR, weekly workouts, cardio distance with progress bars (#154)
@@ -13,6 +13,10 @@
 - axe-core Playwright tests covering login, signup, dashboard, workouts, exercises, profile, goals (#162)
 - New Notification model with linkPath for deep-links
 - New Goal model with decreasing-goal progress math
+
+### Bug Fixes (post-rc.3)
+- Mobile: workout exercises going off screen on Android — SafeAreaProvider now wraps the app
+- Mobile: expo-notifications native module missing crashed app — gracefully degrades to no-op
 
 ### Tests
 - 34 new API unit tests (goal progress, weekly summary, notifications)
