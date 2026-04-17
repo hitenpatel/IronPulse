@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.0.0-rc.3 (unreleased) — Mobile Parity
+
+### Features
+- Mobile exercise detail screen with PR history, recent sets, muscles, media (#139)
+- Mobile nutrition tracking: log meals by type, daily macro summary, delete (#140)
+- Mobile sleep tracking: log sleep with quality/times/duration, 14-day history (#142)
+- Mobile progress photos gallery with delete (#145)
+- Mobile superset UI in active workout: link/unlink exercises with visual connector (#147)
+- Mobile security settings: passkey list/rename/delete + password change (#148)
+- Mobile workout templates: dedicated full-screen management view (#150)
+- Mobile program view: weekly schedule with day status and start workout (#152)
+- Mobile coaches browsing: search + specialty filter for public coach profiles (#174)
+- Mobile data export: CSV/JSON via native share sheet for all data types (#175)
+- Mobile CSV import: paste Strong/Hevy/FitNotes CSV with import summary (#176)
+- Profile screen nav refactored into grouped sections linking all new screens
+
+### Tests
+- 6 new Maestro E2E tests covering exercise detail, nutrition, sleep, progress photos, export, security
+
+---
+
 ## v1.0.0-rc.2 (2026-04-16)
 
 ### Features
