@@ -3,10 +3,10 @@ import {
   Alert,
   Platform,
   Pressable,
-  SafeAreaView,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { formatElapsed } from "../../lib/workout-utils";
 
 // Pulse design system tokens
@@ -69,7 +69,7 @@ export function WorkoutHeader({
   return (
     <SafeAreaView
       style={{ backgroundColor: colors.background }}
-      edges={["top"] as any}
+      edges={["top"]}
     >
       <View
         style={{

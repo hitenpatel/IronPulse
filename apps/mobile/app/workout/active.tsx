@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -104,6 +104,17 @@ export default function ActiveWorkoutScreen() {
     }
     return map;
   }, [allPreviousSets]);
+
+  const flatListRef = useRef<FlatList>(null);
+  const prevExerciseCount = useRef(0);
+
+  useEffect(() => {
+    const count = exercises?.length ?? 0;
+    if (count > prevExerciseCount.current && count > 0) {
+      setTimeout(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true }), 100);
+    }
+    prevExerciseCount.current = count;
+  }, [exercises?.length]);
 
   // Keyboard height tracking
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -224,6 +235,7 @@ export default function ActiveWorkoutScreen() {
       />
 
       <FlatList
+        ref={flatListRef}
         data={exercises ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
