@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0-rc.3 (unreleased) — Mobile Parity
+## v1.0.0-rc.3 (2026-04-17) — Mobile Parity
 
 ### Features
 - Mobile exercise detail screen with PR history, recent sets, muscles, media (#139)
@@ -11,6 +11,7 @@
 - Mobile security settings: passkey list/rename/delete + password change (#148)
 - Mobile workout templates: dedicated full-screen management view (#150)
 - Mobile program view: weekly schedule with day status and start workout (#152)
+- Mobile coach dashboard: stat cards, client list with status, messaging shortcut (#164)
 - Mobile coaches browsing: search + specialty filter for public coach profiles (#174)
 - Mobile data export: CSV/JSON via native share sheet for all data types (#175)
 - Mobile CSV import: paste Strong/Hevy/FitNotes CSV with import summary (#176)

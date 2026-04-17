@@ -1,6 +1,6 @@
 {
   "name": "@ironpulse/mobile",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "main": "index.js",
   "scripts": {
     "start": "npx react-native start",
