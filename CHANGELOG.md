@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.0.0-rc.4 (unreleased) — Engagement & Quality
+
+### Features
+- Goal setting and tracking: body weight, exercise PR, weekly workouts, cardio distance with progress bars (#154)
+- Notification center (web + mobile): bell with unread badge, mark read/all read, list with deep links (#143)
+- Weekly summary email + push notification: opt-out in settings, cron-scheduled at /api/cron/weekly-summary (#149)
+- Coach push notifications: fire on client workout completion; daily cron notifies coach on 2+ missed sessions (#163)
+
+### Infrastructure
+- Lighthouse CI job with performance/a11y budgets (LCP, CLS, score thresholds) (#159)
+- axe-core Playwright tests covering login, signup, dashboard, workouts, exercises, profile, goals (#162)
+- New Notification model with linkPath for deep-links
+- New Goal model with decreasing-goal progress math
+
+### Tests
+- 34 new API unit tests (goal progress, weekly summary, notifications)
+- New Playwright specs: goals, a11y, notifications, weekly-summary-settings
+- New Maestro tests: goals, notifications
+
+---
+
 ## v1.0.0-rc.3 (2026-04-17) — Mobile Parity
 
 ### Features
