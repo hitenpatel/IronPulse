@@ -1,0 +1,34 @@
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn: "Profile"
+- tapOn: "Export Data"
+- extendedWaitUntil:
+    visible:
+      text: "Export Data"
+    timeout: 10000
+- assertVisible: "CSV"
+- assertVisible: "JSON"
+- assertVisible: "Workout History"
+- assertVisible: "Cardio Sessions"
+- assertVisible: "Body Metrics"
+- assertVisible: "All Data"

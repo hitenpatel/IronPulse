@@ -1,0 +1,28 @@
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn: "Profile"
+- tapOn: "Progress Photos"
+- extendedWaitUntil:
+    visible:
+      text: "Upload Progress Photos"
+    timeout: 10000

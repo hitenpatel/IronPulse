@@ -327,7 +327,8 @@ export default function ExercisesScreen() {
           </Text>
         }
         renderItem={({ item }) => (
-          <View
+          <Pressable
+            onPress={() => navigation.navigate("ExerciseDetail", { id: item.id })}
             style={{
               height: 56,
               flexDirection: "row",
@@ -391,7 +392,7 @@ export default function ExercisesScreen() {
               </View>
             )}
             <Heart size={18} color={colors.dimFg} />
-          </View>
+          </Pressable>
         )}
       />
     </SafeAreaView>

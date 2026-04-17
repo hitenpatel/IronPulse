@@ -1,9 +1,9 @@
 import { randomUUID } from "@/lib/uuid";
 import React, { useCallback, useRef } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { usePowerSync } from "@powersync/react";
-import { Plus, Trash2 } from "lucide-react-native";
+import { Link2, Link2Off, Plus, Trash2 } from "lucide-react-native";
 import { SetRow } from "./set-row";
 import { Badge } from "../ui/badge";
 
@@ -19,6 +19,7 @@ const colors = {
   primary: "#0077FF",
   error: "#EF4444",
   border: "#1E2B47",
+  superset: "#A855F7",
 };
 
 interface SetData {
@@ -44,6 +45,9 @@ interface ExerciseCardProps {
   previousSets?: PreviousSet[];
   exerciseIndex: number;
   workoutId: string;
+  supersetGroup?: number | null;
+  canLinkSuperset?: boolean;
+  nextWorkoutExerciseId?: string;
   onSetComplete: () => void;
   onRpePick: (setId: string, rpe: number | null) => void;
 }
@@ -56,11 +60,15 @@ export function ExerciseCard({
   previousSets,
   exerciseIndex,
   workoutId,
+  supersetGroup,
+  canLinkSuperset,
+  nextWorkoutExerciseId,
   onSetComplete,
   onRpePick,
 }: ExerciseCardProps) {
   const db = usePowerSync();
   const swipeableRef = useRef<Swipeable>(null);
+  const isInSuperset = supersetGroup != null;
 
   const handleDeleteExercise = useCallback(async () => {
     // Two-step delete: sets first (no CASCADE in PowerSync SQLite)
@@ -85,6 +93,33 @@ export function ExerciseCard({
       [id, workoutExerciseId, nextNumber]
     );
   }, [db, workoutExerciseId, sets]);
+
+  const handleLinkSuperset = useCallback(async () => {
+    if (!nextWorkoutExerciseId) return;
+    const allGroups = await db.execute(
+      "SELECT DISTINCT superset_group FROM workout_exercises WHERE workout_id = ? AND superset_group IS NOT NULL",
+      [workoutId]
+    );
+    const existing = allGroups.rows._array.map((r: any) => r.superset_group as number);
+    const newGroup = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+    await db.execute("UPDATE workout_exercises SET superset_group = ? WHERE id = ?", [newGroup, workoutExerciseId]);
+    await db.execute("UPDATE workout_exercises SET superset_group = ? WHERE id = ?", [newGroup, nextWorkoutExerciseId]);
+  }, [db, workoutId, workoutExerciseId, nextWorkoutExerciseId]);
+
+  const handleUnlinkSuperset = useCallback(async () => {
+    await db.execute("UPDATE workout_exercises SET superset_group = NULL WHERE id = ?", [workoutExerciseId]);
+  }, [db, workoutExerciseId]);
+
+  const handleSupersetPress = useCallback(() => {
+    if (isInSuperset) {
+      Alert.alert("Superset", "Remove this exercise from the superset?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Unlink", style: "destructive", onPress: handleUnlinkSuperset },
+      ]);
+    } else if (canLinkSuperset) {
+      handleLinkSuperset();
+    }
+  }, [isInSuperset, canLinkSuperset, handleLinkSuperset, handleUnlinkSuperset]);
 
   const renderRightActions = () => (
     <Pressable
@@ -113,13 +148,15 @@ export function ExerciseCard({
           backgroundColor: colors.card,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: isInSuperset ? colors.superset : colors.border,
+          borderLeftWidth: isInSuperset ? 3 : 1,
+          borderLeftColor: isInSuperset ? colors.superset : colors.border,
           paddingVertical: 12,
           marginHorizontal: 16,
           marginBottom: 12,
         }}
       >
-        {/* Exercise name header + muscle badge */}
+        {/* Exercise name header + superset button */}
         <View
           style={{
             flexDirection: "row",
@@ -129,17 +166,35 @@ export function ExerciseCard({
             marginBottom: 6,
           }}
         >
-          <Text
-            style={{
-              color: colors.foreground,
-              fontSize: 18,
-              fontWeight: "500",
-              fontFamily: "ClashDisplay",
-              flex: 1,
-            }}
-          >
-            {exerciseName}
-          </Text>
+          <View style={{ flex: 1 }}>
+            {isInSuperset && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.superset }} />
+                <Text style={{ color: colors.superset, fontSize: 10, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" }}>
+                  Superset
+                </Text>
+              </View>
+            )}
+            <Text
+              style={{
+                color: colors.foreground,
+                fontSize: 18,
+                fontWeight: "500",
+                fontFamily: "ClashDisplay",
+              }}
+            >
+              {exerciseName}
+            </Text>
+          </View>
+          {(isInSuperset || canLinkSuperset) && (
+            <Pressable onPress={handleSupersetPress} hitSlop={8} style={{ padding: 4 }}>
+              {isInSuperset ? (
+                <Link2Off size={16} color={colors.superset} />
+              ) : (
+                <Link2 size={16} color={colors.dimFg} />
+              )}
+            </Pressable>
+          )}
         </View>
 
         {/* Previous performance */}

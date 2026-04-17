@@ -1,0 +1,35 @@
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn: "Exercises"
+- waitForAnimationToEnd
+- assertVisible: "Exercises"
+# Tap first exercise in the list to open detail
+- tapOn:
+    index: 0
+    text: ".*"
+    isRegex: true
+- extendedWaitUntil:
+    visible:
+      text: "Personal Records"
+    timeout: 10000
+- assertVisible: "Recent Sets"

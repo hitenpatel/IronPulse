@@ -231,19 +231,42 @@ export default function ActiveWorkoutScreen() {
           paddingBottom: keyboardHeight + 120,
         }}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item, index }) => (
-          <ExerciseCard
-            exerciseId={item.exercise_id}
-            workoutExerciseId={item.id}
-            exerciseName={item.exercise_name}
-            sets={(setsByExercise.get(item.id) ?? []) as any}
-            previousSets={previousSetsByExercise.get(item.exercise_id) ?? []}
-            exerciseIndex={index}
-            workoutId={workoutId!}
-            onSetComplete={handleSetComplete}
-            onRpePick={handleRpePick}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const allEx = exercises ?? [];
+          const next = allEx[index + 1];
+          const canLink = item.superset_group == null && next != null && next.superset_group == null;
+          const isSupersetStart = item.superset_group != null &&
+            (index === 0 || allEx[index - 1]?.superset_group !== item.superset_group);
+          const isSupersetEnd = item.superset_group != null &&
+            (index === allEx.length - 1 || allEx[index + 1]?.superset_group !== item.superset_group);
+
+          return (
+            <>
+              <ExerciseCard
+                exerciseId={item.exercise_id}
+                workoutExerciseId={item.id}
+                exerciseName={item.exercise_name}
+                sets={(setsByExercise.get(item.id) ?? []) as any}
+                previousSets={previousSetsByExercise.get(item.exercise_id) ?? []}
+                exerciseIndex={index}
+                workoutId={workoutId!}
+                supersetGroup={item.superset_group}
+                canLinkSuperset={canLink}
+                nextWorkoutExerciseId={next?.id}
+                onSetComplete={handleSetComplete}
+                onRpePick={handleRpePick}
+              />
+              {/* Superset connector — show between consecutive grouped exercises */}
+              {item.superset_group != null && !isSupersetEnd && next?.superset_group === item.superset_group && (
+                <View style={{ alignItems: "center", marginTop: -8, marginBottom: 4 }}>
+                  <View style={{ width: 2, height: 12, backgroundColor: "#A855F7" }} />
+                  <Text style={{ color: "#A855F7", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 }}>SS</Text>
+                  <View style={{ width: 2, height: 12, backgroundColor: "#A855F7" }} />
+                </View>
+              )}
+            </>
+          );
+        }}
         ListFooterComponent={
           <Pressable
             testID="add-exercise-button"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, Alert, Platform, Switch, ScrollView } from "react-native";
+import { View, Text, Pressable, Alert, Platform, Switch, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
@@ -32,6 +32,64 @@ const colors = {
   textMuted: "#8899B4",
   textFaint: "#4E6180",
 };
+
+function NavSection({
+  title,
+  items,
+  navigation,
+  colors: c,
+}: {
+  title: string;
+  items: { label: string; screen: string }[];
+  navigation: any;
+  colors: typeof colors;
+}) {
+  return (
+    <View
+      style={{
+        marginBottom: 8,
+        borderRadius: 12,
+        overflow: "hidden",
+        backgroundColor: c.card,
+        borderWidth: 1,
+        borderColor: c.border,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 10,
+          color: c.textFaint,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          paddingHorizontal: 16,
+          paddingTop: 10,
+          paddingBottom: 2,
+          fontWeight: "600",
+        }}
+      >
+        {title}
+      </Text>
+      {items.map((item, idx) => (
+        <Pressable
+          key={item.screen}
+          onPress={() => navigation.navigate(item.screen as any)}
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            height: 46,
+            borderTopWidth: idx === 0 ? 0 : 1,
+            borderTopColor: c.borderSubtle,
+          }}
+        >
+          <Text style={{ color: c.text, fontSize: 15 }}>{item.label}</Text>
+          <ChevronRight size={17} color={c.textFaint} />
+        </Pressable>
+      ))}
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const { user, signOut, updateUser } = useAuth();
@@ -291,43 +349,44 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {/* Settings nav rows */}
-        <View
-          style={{
-            marginBottom: 8,
-            borderRadius: 12,
-            overflow: "hidden",
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          {[
-            { label: "Settings", screen: "Settings" as const },
-            { label: "Connected Apps", screen: "SettingsIntegrations" as const },
-            { label: "Subscription", screen: "SettingsSubscription" as const },
-            { label: "Coaching", screen: "Coach" as const },
-          ].map((item, idx, arr) => (
-            <Pressable
-              key={item.screen}
-              onPress={() => navigation.navigate(item.screen as any)}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingHorizontal: 16,
-                height: 48,
-                borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                borderBottomColor: colors.borderSubtle,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: 16 }}>
-                {item.label}
-              </Text>
-              <ChevronRight size={18} color={colors.textFaint} />
-            </Pressable>
-          ))}
-        </View>
+        {/* Tracking nav rows */}
+        <NavSection
+          title="Tracking"
+          items={[
+            { label: "Nutrition", screen: "Nutrition" },
+            { label: "Sleep", screen: "Sleep" },
+            { label: "Progress Photos", screen: "ProgressPhotos" },
+            { label: "My Program", screen: "Program" },
+          ]}
+          navigation={navigation}
+          colors={colors}
+        />
+
+        {/* App nav rows */}
+        <NavSection
+          title="App"
+          items={[
+            { label: "Settings", screen: "Settings" },
+            { label: "Workout Templates", screen: "WorkoutTemplates" },
+            { label: "Connected Apps", screen: "SettingsIntegrations" },
+            { label: "Subscription", screen: "SettingsSubscription" },
+            { label: "Coaching", screen: "Coach" },
+            { label: "Find a Coach", screen: "Coaches" },
+          ]}
+          navigation={navigation}
+          colors={colors}
+        />
+
+        {/* Data nav rows */}
+        <NavSection
+          title="Data"
+          items={[
+            { label: "Export Data", screen: "ExportData" },
+            { label: "Import Workouts", screen: "ImportData" },
+          ]}
+          navigation={navigation}
+          colors={colors}
+        />
 
         {/* Biometric security */}
         {bioAvailable && (
@@ -376,33 +435,13 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Export data */}
-        <View
-          style={{
-            marginBottom: 24,
-            borderRadius: 12,
-            overflow: "hidden",
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: 16,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 10,
-              color: colors.textFaint,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              marginBottom: 6,
-            }}
-          >
-            Export Data
-          </Text>
-          <Text style={{ color: colors.textMuted, fontSize: 13 }}>
-            Export your data on the web app at ironpulse.com/profile
-          </Text>
-        </View>
+        {/* Security nav row */}
+        <NavSection
+          title="Security"
+          items={[{ label: "Password & Passkeys", screen: "SecuritySettings" }]}
+          navigation={navigation}
+          colors={colors}
+        />
 
         {/* Delete Account */}
         <View

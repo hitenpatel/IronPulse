@@ -64,6 +64,26 @@ import CalendarScreen from "./app/calendar/index";
 import FeedScreen from "./app/feed/index";
 import ChallengesScreen from "./app/challenges/index";
 
+// Exercises
+import ExerciseDetailScreen from "./app/exercises/[id]";
+
+// Nutrition, Sleep, Progress Photos
+import NutritionScreen from "./app/nutrition/index";
+import SleepScreen from "./app/sleep/index";
+import ProgressPhotosScreen from "./app/progress-photos/index";
+
+// Program, Coaches
+import ProgramScreen from "./app/program/index";
+import CoachesBrowseScreen from "./app/coaches/index";
+
+// Extended Settings
+import SecuritySettingsScreen from "./app/settings/security";
+import ExportScreen from "./app/settings/export";
+import ImportScreen from "./app/settings/import";
+
+// Templates
+import WorkoutTemplatesScreen from "./app/templates/index";
+
 // Custom Tab Bar
 import { PulseTabBar } from "./components/layout/pulse-tab-bar";
 
@@ -99,6 +119,21 @@ export type RootStackParamList = {
   Calendar: undefined;
   Feed: undefined;
   Challenges: undefined;
+  // Exercises
+  ExerciseDetail: { id: string };
+  // Nutrition, Sleep, Progress Photos
+  Nutrition: undefined;
+  Sleep: undefined;
+  ProgressPhotos: undefined;
+  // Program, Coaches
+  Program: undefined;
+  Coaches: undefined;
+  // Extended Settings
+  SecuritySettings: undefined;
+  ExportData: undefined;
+  ImportData: undefined;
+  // Templates
+  WorkoutTemplates: undefined;
 };
 
 export type AuthStackParamList = {
@@ -372,6 +407,66 @@ function RootNavigator() {
           name="Challenges"
           component={ChallengesScreen}
           options={{ headerShown: true, title: "Challenges", ...HEADER_STYLE }}
+        />
+
+        {/* Exercises */}
+        <RootStack.Screen
+          name="ExerciseDetail"
+          component={ExerciseDetailScreen}
+          options={{ headerShown: true, title: "Exercise", ...HEADER_STYLE }}
+        />
+
+        {/* Nutrition, Sleep, Progress Photos */}
+        <RootStack.Screen
+          name="Nutrition"
+          component={NutritionScreen}
+          options={{ headerShown: true, title: "Nutrition", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="Sleep"
+          component={SleepScreen}
+          options={{ headerShown: true, title: "Sleep", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="ProgressPhotos"
+          component={ProgressPhotosScreen}
+          options={{ headerShown: true, title: "Progress Photos", ...HEADER_STYLE }}
+        />
+
+        {/* Program, Coaches */}
+        <RootStack.Screen
+          name="Program"
+          component={ProgramScreen}
+          options={{ headerShown: true, title: "My Program", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="Coaches"
+          component={CoachesBrowseScreen}
+          options={{ headerShown: true, title: "Find a Coach", ...HEADER_STYLE }}
+        />
+
+        {/* Extended Settings */}
+        <RootStack.Screen
+          name="SecuritySettings"
+          component={SecuritySettingsScreen}
+          options={{ headerShown: true, title: "Security", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="ExportData"
+          component={ExportScreen}
+          options={{ headerShown: true, title: "Export Data", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="ImportData"
+          component={ImportScreen}
+          options={{ headerShown: true, title: "Import Workouts", ...HEADER_STYLE }}
+        />
+
+        {/* Templates */}
+        <RootStack.Screen
+          name="WorkoutTemplates"
+          component={WorkoutTemplatesScreen}
+          options={{ headerShown: true, title: "Templates", ...HEADER_STYLE }}
         />
           </>
         )}
