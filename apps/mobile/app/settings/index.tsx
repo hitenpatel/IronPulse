@@ -58,6 +58,10 @@ export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
 
+  // Weekly summary
+  const [weeklySummaryEnabled, setWeeklySummaryEnabled] = useState(true);
+  const [weeklySummarySaving, setWeeklySummarySaving] = useState(false);
+
   // Account deletion
   const [deletionRequested, setDeletionRequested] = useState(false);
   const [deletionLoading, setDeletionLoading] = useState(false);
@@ -79,17 +83,32 @@ export default function SettingsScreen() {
     })();
   }, []);
 
-  // Check deletion status from server on mount
+  // Check deletion status + weekly summary preference from server on mount
   useEffect(() => {
     (async () => {
       try {
         const result = await trpc.user.me.query();
         setDeletionRequested(!!result.user.deletionRequestedAt);
+        if (result.user.weeklySummaryEnabled !== undefined) {
+          setWeeklySummaryEnabled(result.user.weeklySummaryEnabled);
+        }
       } catch {
         // network error — show stale state
       }
     })();
   }, []);
+
+  async function handleWeeklySummaryToggle(value: boolean) {
+    setWeeklySummarySaving(true);
+    try {
+      await trpc.user.updateProfile.mutate({ weeklySummaryEnabled: value });
+      setWeeklySummaryEnabled(value);
+    } catch {
+      Alert.alert("Error", "Failed to update preference. Please try again.");
+    } finally {
+      setWeeklySummarySaving(false);
+    }
+  }
 
   async function handleSaveName() {
     const trimmed = name.trim();
@@ -333,6 +352,32 @@ export default function SettingsScreen() {
                 false: colors.accent,
                 true: colors.primary,
               }}
+            />
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              borderTopWidth: 1,
+              borderTopColor: colors.borderSubtle,
+              paddingTop: 12,
+            }}
+          >
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={{ color: colors.text, fontSize: 16 }}>
+                Weekly Summary
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                Get a weekly training summary via email and push
+              </Text>
+            </View>
+            <Switch
+              value={weeklySummaryEnabled}
+              onValueChange={handleWeeklySummaryToggle}
+              disabled={weeklySummarySaving}
+              trackColor={{ false: colors.accent, true: colors.primary }}
             />
           </View>
         </Card>

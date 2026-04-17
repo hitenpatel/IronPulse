@@ -27,6 +27,7 @@ export const userRouter = createTRPCRouter({
         tier: true,
         subscriptionStatus: true,
         defaultRestSeconds: true,
+        weeklySummaryEnabled: true,
         deletionRequestedAt: true,
         createdAt: true,
       },
@@ -44,6 +45,7 @@ export const userRouter = createTRPCRouter({
           ...(input.name !== undefined && { name: input.name }),
           ...(input.unitSystem !== undefined && { unitSystem: input.unitSystem }),
           ...(input.defaultRestSeconds !== undefined && { defaultRestSeconds: input.defaultRestSeconds }),
+          ...(input.weeklySummaryEnabled !== undefined && { weeklySummaryEnabled: input.weeklySummaryEnabled }),
         },
         select: {
           id: true,
@@ -54,6 +56,7 @@ export const userRouter = createTRPCRouter({
           tier: true,
           subscriptionStatus: true,
           defaultRestSeconds: true,
+          weeklySummaryEnabled: true,
         },
       });
 

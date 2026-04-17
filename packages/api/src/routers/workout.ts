@@ -13,7 +13,7 @@ import {
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
 import { createFeedItem } from "../lib/feed";
-import { notifyNewPR } from "../lib/notifications";
+import { notifyNewPR, notifyCoachActivity } from "../lib/notifications";
 import { checkAndUnlock } from "./achievement";
 import { captureError } from "../lib/capture-error";
 
@@ -397,6 +397,33 @@ export const workoutRouter = createTRPCRouter({
       checkAndUnlock(ctx.db, ctx.user.id).catch((err) =>
         captureError(err, { context: "checkAndUnlock", userId: ctx.user.id })
       );
+
+      // Notify coach of client activity if athlete has an active program assignment
+      (async () => {
+        try {
+          const assignment = await ctx.db.programAssignment.findFirst({
+            where: { athleteId: ctx.user.id, status: "active" },
+            select: { coachId: true },
+          });
+          if (!assignment) return;
+          const athlete = await ctx.db.user.findUnique({
+            where: { id: ctx.user.id },
+            select: { name: true },
+          });
+          const summary = newPRs.length > 0
+            ? `completed a workout with ${newPRs.length} new PR${newPRs.length === 1 ? "" : "s"}`
+            : "completed a workout";
+          await notifyCoachActivity(
+            ctx.db,
+            assignment.coachId,
+            athlete?.name ?? "Athlete",
+            summary,
+            ctx.user.id,
+          );
+        } catch (err) {
+          captureError(err, { context: "notifyCoachActivity", userId: ctx.user.id });
+        }
+      })();
 
       return { workout, newPRs };
     }),

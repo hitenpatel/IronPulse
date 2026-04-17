@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Upload } from "lucide-react";
+import { AlertTriangle, Bell, Upload } from "lucide-react";
 
 export default function SettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -34,6 +34,10 @@ export default function SettingsPage() {
     },
   });
 
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => utils.user.me.invalidate(),
+  });
+
   const deletionRequestedAt = user?.deletionRequestedAt
     ? new Date(user.deletionRequestedAt)
     : null;
@@ -45,6 +49,35 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-bold text-foreground">Settings</h1>
+
+      {/* Notifications Card */}
+      <div className="bg-card rounded-lg border border-border p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold text-foreground">Notifications</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Manage what notifications and emails you receive.
+        </p>
+        <label className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Weekly summary email</p>
+            <p className="text-xs text-muted-foreground">
+              Send me a weekly training summary via email and push notification
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={user?.weeklySummaryEnabled ?? true}
+            disabled={isLoading || updateProfile.isPending}
+            onChange={(e) =>
+              updateProfile.mutate({ weeklySummaryEnabled: e.target.checked })
+            }
+            className="h-5 w-9 appearance-none rounded-full bg-muted checked:bg-primary transition-colors relative cursor-pointer before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:h-4 before:w-4 before:rounded-full before:bg-white before:transition-transform checked:before:translate-x-4"
+            aria-label="Weekly summary email toggle"
+          />
+        </label>
+      </div>
 
       {/* Import Card */}
       <div className="bg-card rounded-lg border border-border p-5">

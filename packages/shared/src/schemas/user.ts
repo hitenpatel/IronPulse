@@ -5,6 +5,7 @@ export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   unitSystem: z.enum([UnitSystem.METRIC, UnitSystem.IMPERIAL]).optional(),
   defaultRestSeconds: z.number().int().min(15).max(600).optional(),
+  weeklySummaryEnabled: z.boolean().optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
