@@ -273,28 +273,9 @@ export const userRouter = createTRPCRouter({
     return { success: true as const };
   }),
 
-  processPendingDeletions: protectedProcedure.mutation(async ({ ctx }) => {
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-    const usersToDelete = await ctx.db.user.findMany({
-      where: {
-        deletionRequestedAt: { not: null, lte: cutoff },
-      },
-      select: { id: true },
-    });
-
-    if (usersToDelete.length === 0) {
-      return { success: true as const, deletedCount: 0 };
-    }
-
-    // Prisma schema uses onDelete: Cascade on all user relations,
-    // so deleting the user record cascades to all related data.
-    const result = await ctx.db.user.deleteMany({
-      where: {
-        id: { in: usersToDelete.map((u) => u.id) },
-      },
-    });
-
-    return { success: true as const, deletedCount: result.count };
-  }),
+  // Removed: processPendingDeletions was a tRPC mutation on protectedProcedure.
+  // That meant any authenticated user could trigger a mass deletion of all
+  // users who had requested account deletion 7+ days earlier — a critical
+  // privilege escalation. The actual cron runs at POST /api/cron/process-deletions
+  // which requires CRON_SECRET. Do NOT reintroduce this as a tRPC procedure.
 });

@@ -13,10 +13,31 @@ export const RATE_LIMITS = {
   passkeyReg: { windowMs: 3_600_000, maxRequests: 5 },
 } as const;
 
+/**
+ * Thrown when a rate limit is exceeded. Carries the limit config so the
+ * response adapter can emit Retry-After and X-RateLimit-* headers.
+ */
+export class RateLimitError extends TRPCError {
+  public readonly retryAfterSeconds: number;
+  public readonly limit: number;
+  public readonly remaining: number;
+
+  constructor(opts: { windowMs: number; maxRequests: number; current: number }) {
+    super({
+      code: "TOO_MANY_REQUESTS",
+      message: "Rate limit exceeded. Please try again later.",
+    });
+    this.name = "RateLimitError";
+    this.retryAfterSeconds = Math.ceil(opts.windowMs / 1000);
+    this.limit = opts.maxRequests;
+    this.remaining = Math.max(0, opts.maxRequests - opts.current);
+  }
+}
+
 export async function checkRateLimit(
   key: string,
-  config: RateLimitConfig
-): Promise<void> {
+  config: RateLimitConfig,
+): Promise<{ limit: number; remaining: number; windowMs: number }> {
   const redis = getRedis();
   const now = Date.now();
   const windowStart = now - config.windowMs;
@@ -32,9 +53,16 @@ export async function checkRateLimit(
   const count = results?.[2]?.[1] as number;
 
   if (count > config.maxRequests) {
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: "Rate limit exceeded. Please try again later.",
+    throw new RateLimitError({
+      windowMs: config.windowMs,
+      maxRequests: config.maxRequests,
+      current: count,
     });
   }
+
+  return {
+    limit: config.maxRequests,
+    remaining: Math.max(0, config.maxRequests - count),
+    windowMs: config.windowMs,
+  };
 }

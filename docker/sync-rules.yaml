@@ -1,10 +1,45 @@
+# PowerSync sync rules — must stay in sync with packages/sync/src/schema.ts.
+# Any table in the PowerSync client schema MUST appear here, otherwise the
+# client tries to query a table that never receives data.
+#
+# sleep_logs, meal_logs, goals, notifications are intentionally tRPC-only.
+
 bucket_definitions:
   user_data:
     parameters: SELECT token_parameters.user_id as user_id
     data:
+      # Workouts and their children (workout_exercises, exercise_sets)
       - SELECT * FROM workouts WHERE workouts.user_id = bucket.user_id
+      - >
+        SELECT workout_exercises.* FROM workout_exercises
+        JOIN workouts ON workout_exercises.workout_id = workouts.id
+        WHERE workouts.user_id = bucket.user_id
+      - >
+        SELECT exercise_sets.* FROM exercise_sets
+        JOIN workout_exercises ON exercise_sets.workout_exercise_id = workout_exercises.id
+        JOIN workouts ON workout_exercises.workout_id = workouts.id
+        WHERE workouts.user_id = bucket.user_id
+
+      # Cardio sessions and their laps
       - SELECT * FROM cardio_sessions WHERE cardio_sessions.user_id = bucket.user_id
+      - >
+        SELECT laps.* FROM laps
+        JOIN cardio_sessions ON laps.session_id = cardio_sessions.id
+        WHERE cardio_sessions.user_id = bucket.user_id
+
+      # Workout templates and their children
       - SELECT * FROM workout_templates WHERE workout_templates.user_id = bucket.user_id
+      - >
+        SELECT template_exercises.* FROM template_exercises
+        JOIN workout_templates ON template_exercises.template_id = workout_templates.id
+        WHERE workout_templates.user_id = bucket.user_id
+      - >
+        SELECT template_sets.* FROM template_sets
+        JOIN template_exercises ON template_sets.template_exercise_id = template_exercises.id
+        JOIN workout_templates ON template_exercises.template_id = workout_templates.id
+        WHERE workout_templates.user_id = bucket.user_id
+
+      # Body metrics and PRs
       - SELECT * FROM body_metrics WHERE body_metrics.user_id = bucket.user_id
       - SELECT * FROM personal_records WHERE personal_records.user_id = bucket.user_id
 

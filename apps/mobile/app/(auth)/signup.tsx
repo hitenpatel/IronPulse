@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Alert, Pressable, Platform } from "react-native";
+import { View, Text, Alert, Linking, Pressable, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,6 +7,7 @@ import type { AuthStackParamList } from "../../App";
 import * as AuthSession from "@/lib/auth-session";
 import * as AppleAuthentication from "@/lib/apple-authentication";
 import { useAuth } from "@/lib/auth";
+import { Config } from "@/lib/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -178,6 +179,35 @@ export default function SignupScreen() {
           <Button onPress={handleSignUp} disabled={loading}>
             {loading ? "Creating account..." : "Create Account"}
           </Button>
+
+          {/* GDPR consent notice — links to hosted privacy + terms pages */}
+          <Text
+            style={{
+              color: C.textSecondary,
+              fontSize: 12,
+              textAlign: "center",
+              lineHeight: 18,
+              marginTop: 2,
+            }}
+          >
+            By creating an account you agree to our{" "}
+            <Text
+              style={{ color: C.primary, textDecorationLine: "underline" }}
+              onPress={() => Linking.openURL(`${Config.API_URL}/terms`)}
+              testID="signup-terms-link"
+            >
+              Terms
+            </Text>
+            {" and "}
+            <Text
+              style={{ color: C.primary, textDecorationLine: "underline" }}
+              onPress={() => Linking.openURL(`${Config.API_URL}/privacy`)}
+              testID="signup-privacy-link"
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
 
           {/* Divider */}
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
