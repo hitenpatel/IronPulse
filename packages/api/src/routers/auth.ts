@@ -95,20 +95,32 @@ export const authRouter = createTRPCRouter({
   mobileSignIn: publicProcedure
     .input(signInSchema)
     .mutation(async ({ ctx, input }) => {
-      const user = await ctx.db.user.findUnique({
-        where: { email: input.email },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          passwordHash: true,
-          tier: true,
-          subscriptionStatus: true,
-          unitSystem: true,
-          onboardingComplete: true,
-          defaultRestSeconds: true,
-        },
-      });
+      let user;
+      try {
+        user = await ctx.db.user.findUnique({
+          where: { email: input.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            passwordHash: true,
+            tier: true,
+            subscriptionStatus: true,
+            unitSystem: true,
+            onboardingComplete: true,
+            defaultRestSeconds: true,
+          },
+        });
+      } catch (err) {
+        // Don't leak database connection details (host:port, file paths) to
+        // the mobile client when the DB is unreachable — show a generic
+        // service-unavailable message instead.
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Service temporarily unavailable. Please try again shortly.",
+          cause: err,
+        });
+      }
 
       if (!user || !user.passwordHash) {
         throw new TRPCError({
