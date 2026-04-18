@@ -23,6 +23,26 @@ if [ ! -x "$ANDROID_DIR/gradlew" ]; then
   exit 1
 fi
 
+# Signing: if apps/mobile/keystore/.env exists, materialise keystore.properties
+# so gradle's signingConfigs.release block in build.gradle can sign release builds.
+# If the .env is absent, gradle falls back to the debug keystore (set by the
+# android-release-signing plugin) — fine for dev, not for store distribution.
+KEYSTORE_ENV="$SCRIPT_DIR/../keystore/.env"
+if [ -f "$KEYSTORE_ENV" ]; then
+  set -a; . "$KEYSTORE_ENV"; set +a
+  if [ -n "${IRONPULSE_KEYSTORE_FILE:-}" ]; then
+    cat > "$ANDROID_DIR/keystore.properties" <<EOF
+storeFile=${IRONPULSE_KEYSTORE_FILE}
+storePassword=${IRONPULSE_KEYSTORE_PASSWORD}
+keyAlias=${IRONPULSE_KEY_ALIAS}
+keyPassword=${IRONPULSE_KEY_PASSWORD}
+EOF
+    echo "[build-android] signing: release keystore = $IRONPULSE_KEYSTORE_FILE"
+  fi
+else
+  echo "[build-android] signing: no keystore/.env found — release will use debug key"
+fi
+
 # Virtual memory ceiling. The JVM reserves a lot of VIRT up-front — set
 # generously (8 GB) so we don't false-trigger on reservation, but low
 # enough that a runaway build hits ENOMEM instead of triggering global OOM.

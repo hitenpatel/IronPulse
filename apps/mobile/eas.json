@@ -11,7 +11,22 @@
       "android": { "buildType": "apk" }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" },
+      "ios": { "resourceClass": "m-medium" }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "SET_ME_APPLE_ID@example.com",
+        "ascAppId": "SET_ME_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "SET_ME_APPLE_TEAM_ID"
+      }
     }
   }
 }

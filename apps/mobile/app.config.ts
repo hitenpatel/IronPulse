@@ -41,6 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "./plugins/swift-concurrency-fix",
     "./plugins/android-cleartext",
     "./plugins/android-gradle-memory",
+    "./plugins/android-release-signing",
     "expo-secure-store",
     [
       "expo-location",
