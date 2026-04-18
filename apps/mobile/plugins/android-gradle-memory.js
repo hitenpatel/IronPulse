@@ -28,7 +28,7 @@ module.exports = function androidGradleMemory(config) {
     // pushes total RSS to ~4-5 GB which the OOM killer tolerates on 16GB.
     setProp(
       "org.gradle.jvmargs",
-      "-Xmx2048m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError",
+      "-Xmx2048m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError",
     );
     setProp("org.gradle.workers.max", "2");
     // No resident daemon — each build starts/stops its own JVM so memory is
