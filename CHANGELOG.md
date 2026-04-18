@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.0.0-rc.5 (unreleased) — Production Readiness
+
+### Security
+- **Critical privilege escalation fix** — `user.processPendingDeletions` tRPC mutation was on `protectedProcedure`, letting any authenticated user trigger mass deletion of users who requested deletion 7+ days earlier. Removed entirely; moved to cron-only endpoint `/api/cron/process-deletions` with `CRON_SECRET` auth.
+- Tightened CSP: drop `unsafe-eval` in production, add `strict-dynamic` so modern browsers ignore `unsafe-inline` for scripts. Added `base-uri`, `form-action`, `object-src`, `upgrade-insecure-requests` (#151)
+- Rate-limit responses now include `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers so clients can back off cleanly (#194)
+- Sanitized mobile sign-in error responses so raw Prisma `Can't reach database` errors no longer leak host/port details to the client
+
+### GDPR / Compliance
+- Full data portability export (`export.allData`) now includes sleep logs, meal logs, goals, notifications, messages, challenges, achievements, custom exercises, templates, follows, device connections, and coach profile — meets Article 20 requirements (#195)
+- Mobile signup screen links to Terms and Privacy Policy pages during account creation (#191)
+
+### Infrastructure
+- PowerSync sync rules now cover all 11 client tables (previously missing workout_exercises, exercise_sets, laps, template_exercises, template_sets). Fixes silent sync gaps for offline-first mobile data (#196)
+- Daily cron endpoints: `/api/cron/cleanup-tokens` (expired magic/reset/passkey tokens), `/api/cron/process-deletions` (GDPR 7-day deletion grace period) (#192)
+- Android build memory capped to prevent OOM-killing other processes: `build-safe.sh` wrapper with `ulimit -v 8G`, `nice 10`, `ionice 2/7`; expo plugin pins `-Xmx2048m` in `gradle.properties` so `expo prebuild` regeneration keeps the safety
+
+### Bug Fixes
+- Mobile Android workout exercises no longer render off-screen — `SafeAreaProvider` now wraps the app (was missing, causing `react-native-safe-area-context` to return zero insets)
+- Mobile app no longer crashes at startup when `expo-notifications` native module is missing — all calls gracefully degrade to no-ops
+
+---
+
 ## v1.0.0-rc.4 (2026-04-17) — Engagement & Quality
 
 ### Features
