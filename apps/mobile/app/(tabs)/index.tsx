@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -131,9 +131,24 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {/* Sync status + Greeting */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <View />
+        {/* Top bar: logo + wordmark + sync status */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Image
+              source={require("../../assets/icon.png")}
+              style={{ width: 32, height: 32, borderRadius: 8 }}
+            />
+            <Text
+              style={{
+                color: colors.foreground,
+                fontSize: 18,
+                fontWeight: "700",
+                fontFamily: "ClashDisplay",
+              }}
+            >
+              IronPulse
+            </Text>
+          </View>
           <SyncIndicator />
         </View>
         <Text
