@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0-rc.5 (unreleased) — Production Readiness
+## v1.0.0-rc.5 (2026-04-18) — Production Readiness
 
 ### Security
 - **Critical privilege escalation fix** — `user.processPendingDeletions` tRPC mutation was on `protectedProcedure`, letting any authenticated user trigger mass deletion of users who requested deletion 7+ days earlier. Removed entirely; moved to cron-only endpoint `/api/cron/process-deletions` with `CRON_SECRET` auth.
