@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import {
+  Alert,
   View,
   Text,
   Pressable,
   ActivityIndicator,
   Linking,
   Platform,
+  ScrollView,
+  TextInput,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 // Navigation header set via App.tsx screen options
-import { Activity, Heart, Watch } from "lucide-react-native";
+import { Activity, BarChart3, Heart, Watch } from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
@@ -177,6 +181,40 @@ export default function IntegrationsScreen() {
 
   const stravaConnection = connections.find((c) => c.provider === "strava");
   const garminConnection = connections.find((c) => c.provider === "garmin");
+  const intervalsConnection = connections.find((c) => c.provider === "intervals_icu");
+
+  // Intervals.icu: API key + athlete ID (no OAuth — direct credentials)
+  const [icuAthleteId, setIcuAthleteId] = useState("");
+  const [icuApiKey, setIcuApiKey] = useState("");
+  const [icuConnecting, setIcuConnecting] = useState(false);
+
+  const handleIntervalsConnect = async () => {
+    if (!icuAthleteId.trim() || !icuApiKey.trim()) return;
+    setIcuConnecting(true);
+    try {
+      await trpc.integration.completeIntervalsIcuAuth.mutate({
+        athleteId: icuAthleteId.trim(),
+        apiKey: icuApiKey.trim(),
+      });
+      setIcuAthleteId("");
+      setIcuApiKey("");
+      await fetchConnections();
+    } catch (err: any) {
+      Alert.alert("Connection Failed", err?.message ?? "Please check your credentials.");
+    } finally {
+      setIcuConnecting(false);
+    }
+  };
+
+  const handleIntervalsDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await trpc.integration.disconnectProvider.mutate({ provider: "intervals_icu" });
+      await fetchConnections();
+    } finally {
+      setDisconnecting(false);
+    }
+  };
 
   const handleConnect = () => {
     // Open the web OAuth flow in the browser. The web callback handles token
@@ -210,8 +248,8 @@ export default function IntegrationsScreen() {
   };
 
   return (
-    <>
-      <View style={{ padding: 16 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }} edges={["bottom"]}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {loading ? (
           <ActivityIndicator color="hsl(213, 31%, 91%)" />
         ) : (
@@ -430,6 +468,117 @@ export default function IntegrationsScreen() {
                 >
                   <Text style={{ color: "#fff", fontWeight: "600" }}>
                     Connect
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </Card>
+
+          <Card style={{ gap: 12, marginTop: 16 }}>
+            {/* Intervals.icu header */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <BarChart3 size={20} color="#FF6B35" />
+              <Text style={{ fontSize: 18, fontWeight: "600", color: "hsl(213, 31%, 91%)" }}>
+                Intervals.icu
+              </Text>
+            </View>
+            <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12 }}>
+              Sync activities from Garmin, Strava, and other sources via Intervals.icu
+            </Text>
+
+            {intervalsConnection ? (
+              <View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" }} />
+                  <Text style={{ color: "#22c55e", fontWeight: "600" }}>
+                    Connected (athlete {intervalsConnection.providerAccountId})
+                  </Text>
+                </View>
+
+                {intervalsConnection.lastSyncedAt && (
+                  <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12, marginBottom: 12 }}>
+                    Last synced{" "}
+                    {new Date(intervalsConnection.lastSyncedAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                )}
+
+                <Pressable
+                  onPress={handleIntervalsDisconnect}
+                  disabled={disconnecting}
+                  style={{
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    backgroundColor: "hsl(0, 63%, 31%)",
+                    opacity: disconnecting ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
+                    {disconnecting ? "Disconnecting..." : "Disconnect"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={{ gap: 10 }}>
+                <TextInput
+                  value={icuAthleteId}
+                  onChangeText={setIcuAthleteId}
+                  placeholder="Athlete ID (e.g. i12345)"
+                  placeholderTextColor="hsl(215, 20%, 45%)"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={{
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: "hsl(217, 33%, 12%)",
+                    borderWidth: 1,
+                    borderColor: "hsl(217, 33%, 20%)",
+                    color: "hsl(210, 40%, 98%)",
+                    fontSize: 14,
+                  }}
+                />
+                <TextInput
+                  value={icuApiKey}
+                  onChangeText={setIcuApiKey}
+                  placeholder="API Key"
+                  placeholderTextColor="hsl(215, 20%, 45%)"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={{
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: "hsl(217, 33%, 12%)",
+                    borderWidth: 1,
+                    borderColor: "hsl(217, 33%, 20%)",
+                    color: "hsl(210, 40%, 98%)",
+                    fontSize: 14,
+                  }}
+                />
+                <Text style={{ color: "hsl(215, 20%, 55%)", fontSize: 11 }}>
+                  Get your athlete ID and API key from intervals.icu → Settings → Developer
+                </Text>
+
+                <Pressable
+                  onPress={handleIntervalsConnect}
+                  disabled={icuConnecting || !icuAthleteId.trim() || !icuApiKey.trim()}
+                  style={{
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    backgroundColor: "#FF6B35",
+                    opacity: icuConnecting || !icuAthleteId.trim() || !icuApiKey.trim() ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    {icuConnecting ? "Connecting..." : "Connect"}
                   </Text>
                 </Pressable>
               </View>
@@ -713,7 +862,7 @@ export default function IntegrationsScreen() {
           )}
           </>
         )}
-      </View>
-    </>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
