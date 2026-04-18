@@ -20,7 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "com.ironpulse.app",
     adaptiveIcon: {
-      backgroundColor: "#0a0e1a",
+      foregroundImage: "./assets/icon.png",
+      backgroundColor: "#060E1A",
     },
     config: {
       googleMaps: {

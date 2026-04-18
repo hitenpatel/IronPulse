@@ -104,9 +104,16 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto max-w-6xl flex items-center justify-between px-6 py-4">
-          <span className="text-xl font-bold tracking-tight">
-            <span className="text-primary">Iron</span>Pulse
-          </span>
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/icons/icon-192.png"
+              alt="IronPulse"
+              className="h-8 w-8 rounded-lg"
+            />
+            <span className="text-xl font-bold tracking-tight">
+              <span className="text-primary">Iron</span>Pulse
+            </span>
+          </div>
           <div className="flex items-center gap-4">
             <Link
               href="/login"

@@ -234,9 +234,11 @@ export function Sidebar({
         )}
       >
         {/* Logo mark */}
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-          IP
-        </div>
+        <img
+          src="/icons/icon-192.png"
+          alt="IronPulse"
+          className="h-9 w-9 shrink-0 rounded-lg"
+        />
 
         {!collapsed && (
           <span className="font-display text-base font-bold tracking-tight text-foreground">

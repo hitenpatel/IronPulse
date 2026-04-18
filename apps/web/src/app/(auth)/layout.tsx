@@ -8,9 +8,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="relative z-10 w-full max-w-[420px]">
         {/* Logo */}
         <div className="mb-8 flex items-center justify-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary text-sm font-extrabold text-primary-foreground">
-            IP
-          </div>
+          <img
+            src="/icons/icon-192.png"
+            alt="IronPulse"
+            className="h-11 w-11 rounded-[10px]"
+          />
           <span className="font-display font-bold text-xl tracking-tight">
             IronPulse
           </span>
