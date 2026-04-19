@@ -48,6 +48,8 @@ interface ExerciseCardProps {
   supersetGroup?: number | null;
   canLinkSuperset?: boolean;
   nextWorkoutExerciseId?: string;
+  /** Global active set id — only the row matching this id is highlighted. */
+  activeSetId?: string | null;
   onSetComplete: () => void;
   onRpePick: (setId: string, rpe: number | null) => void;
 }
@@ -63,6 +65,7 @@ export function ExerciseCard({
   supersetGroup,
   canLinkSuperset,
   nextWorkoutExerciseId,
+  activeSetId,
   onSetComplete,
   onRpePick,
 }: ExerciseCardProps) {
@@ -263,27 +266,26 @@ export function ExerciseCard({
           <View style={{ width: 32 }} />
         </View>
 
-        {/* Set rows — first incomplete set is the "active" row. */}
-        {(() => {
-          const firstIncomplete = sets.findIndex((s) => !s.completed);
-          return sets.map((set, idx) => (
-            <SetRow
-              key={set.id}
-              setId={set.id}
-              setNumber={set.set_number}
-              weightKg={set.weight_kg}
-              reps={set.reps}
-              rpe={set.rpe}
-              completed={set.completed}
-              exerciseIndex={exerciseIndex}
-              setIndex={idx}
-              previousSet={previousSets?.[idx]}
-              isActive={idx === firstIncomplete}
-              onComplete={onSetComplete}
-              onRpePick={onRpePick}
-            />
-          ));
-        })()}
+        {/* Set rows — only the row whose id matches activeSetId is highlighted.
+            activeSetId is computed once at the workout level so at most one
+            row anywhere in the screen reads as "next up". */}
+        {sets.map((set, idx) => (
+          <SetRow
+            key={set.id}
+            setId={set.id}
+            setNumber={set.set_number}
+            weightKg={set.weight_kg}
+            reps={set.reps}
+            rpe={set.rpe}
+            completed={set.completed}
+            exerciseIndex={exerciseIndex}
+            setIndex={idx}
+            previousSet={previousSets?.[idx]}
+            isActive={set.id === activeSetId}
+            onComplete={onSetComplete}
+            onRpePick={onRpePick}
+          />
+        ))}
 
         {/* + Add Set button */}
         <Pressable

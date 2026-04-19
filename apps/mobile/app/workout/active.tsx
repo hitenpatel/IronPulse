@@ -219,6 +219,20 @@ export default function ActiveWorkoutScreen() {
   const totalSets = sets?.length ?? 0;
   const doneSets = (sets ?? []).filter((s) => s.completed).length;
 
+  // The single "active" set across the whole workout: the first incomplete
+  // set in exercise order. We walk exercises in their list order, then
+  // their sets in set_number order, and pick the first not-yet-done.
+  const activeSetId = useMemo(() => {
+    for (const ex of exercises ?? []) {
+      const exSets = [...(setsByExercise.get(ex.id) ?? [])].sort(
+        (a, b) => a.set_number - b.set_number,
+      );
+      const next = exSets.find((s) => !s.completed);
+      if (next) return next.id;
+    }
+    return null;
+  }, [exercises, setsByExercise]);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <WorkoutHeader
@@ -263,6 +277,7 @@ export default function ActiveWorkoutScreen() {
                 supersetGroup={item.superset_group}
                 canLinkSuperset={canLink}
                 nextWorkoutExerciseId={next?.id}
+                activeSetId={activeSetId}
                 onSetComplete={handleSetComplete}
                 onRpePick={handleRpePick}
               />

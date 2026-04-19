@@ -132,12 +132,11 @@ export function SetRow({
         ? `${previousSet.reps}r`
         : EMPTY_PLACEHOLDER;
 
-  const valueColor = isCompleted ? colors.text3 : colors.text;
-  const inputBg = isActive ? "rgba(0,119,255,0.10)" : "transparent";
+  const valueColor = isCompleted ? colors.text3 : isActive ? colors.text : colors.text2;
 
   const textInputStyle = {
     color: valueColor,
-    backgroundColor: inputBg,
+    backgroundColor: "transparent",
     borderRadius: radii.buttonSm,
     paddingHorizontal: 4,
     paddingVertical: 8,
@@ -154,26 +153,45 @@ export function SetRow({
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-        paddingVertical: 4,
-        paddingHorizontal: 12,
-        backgroundColor: isActive ? "rgba(0,119,255,0.06)" : "transparent",
+        paddingVertical: isActive ? 8 : 4,
+        paddingLeft: isActive ? 8 : 12,
+        paddingRight: 12,
+        backgroundColor: isActive ? "rgba(0,119,255,0.18)" : "transparent",
         marginHorizontal: isActive ? 4 : 0,
-        marginVertical: isActive ? 2 : 0,
-        borderRadius: isActive ? radii.buttonSm : 0,
+        marginVertical: isActive ? 3 : 0,
+        borderRadius: isActive ? radii.button : 0,
+        // Left-edge accent bar for the active row.
+        borderLeftWidth: isActive ? 3 : 0,
+        borderLeftColor: colors.blue,
       }}
     >
       {/* Set number / complete indicator */}
-      <Text
-        style={{
-          color: isCompleted ? colors.green : colors.text3,
-          fontSize: 13,
-          fontFamily: fonts.monoMedium,
-          width: 28,
-          textAlign: "center",
-        }}
-      >
-        {isCompleted ? "✓" : setNumber}
-      </Text>
+      {isActive ? (
+        <Text
+          style={{
+            color: colors.blue2,
+            fontSize: 8.5,
+            fontFamily: fonts.monoSemi,
+            width: 28,
+            textAlign: "center",
+            letterSpacing: 1.3,
+          }}
+        >
+          NEXT
+        </Text>
+      ) : (
+        <Text
+          style={{
+            color: isCompleted ? colors.green : colors.text3,
+            fontSize: 13,
+            fontFamily: fonts.monoMedium,
+            width: 28,
+            textAlign: "center",
+          }}
+        >
+          {isCompleted ? "✓" : setNumber}
+        </Text>
+      )}
 
       {/* PREV — read-only, mono small */}
       <Text
