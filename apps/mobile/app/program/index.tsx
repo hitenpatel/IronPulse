@@ -446,11 +446,11 @@ export default function ProgramScreen() {
                     }}
                   >
                     {startingWorkout === cell.templateId ? (
-                      <ActivityIndicator size="small" color={isToday ? colors.white : colors.text2} />
+                      <ActivityIndicator size="small" color={isToday ? colors.blueInk : colors.text2} />
                     ) : (
                       <Text
                         style={{
-                          color: isToday ? colors.white : colors.text2,
+                          color: isToday ? colors.blueInk : colors.text2,
                           fontSize: 11,
                           fontFamily: fonts.bodySemi,
                         }}

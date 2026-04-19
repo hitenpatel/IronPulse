@@ -352,12 +352,12 @@ export default function DashboardScreen() {
                 borderRadius: radii.button,
               }}
             >
-              <Play size={14} color={colors.white} />
+              <Play size={14} color={colors.blueInk} />
               <Text
                 style={{
                   fontFamily: fonts.bodySemi,
                   fontSize: 13,
-                  color: colors.white,
+                  color: colors.blueInk,
                 }}
               >
                 Start workout

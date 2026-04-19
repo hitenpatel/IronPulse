@@ -84,9 +84,9 @@ export function PulseTabBar({
             accessibilityLabel={sheetOpen ? "Close menu" : "New session"}
           >
             {sheetOpen ? (
-              <X size={FAB_ICON_SIZE} color={colors.white} strokeWidth={2.5} />
+              <X size={FAB_ICON_SIZE} color={colors.blueInk} strokeWidth={2.5} />
             ) : (
-              <Plus size={FAB_ICON_SIZE} color={colors.white} strokeWidth={2.5} />
+              <Plus size={FAB_ICON_SIZE} color={colors.blueInk} strokeWidth={2.5} />
             )}
           </Pressable>
         </View>

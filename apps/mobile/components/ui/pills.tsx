@@ -46,7 +46,7 @@ export function Pills<K extends string>({ items, activeKey, onChange }: PillsPro
               style={{
                 fontSize: 12,
                 fontWeight: "500",
-                color: active ? colors.white : colors.text2,
+                color: active ? colors.blueInk : colors.text2,
                 fontFamily: fonts.body,
               }}
             >
@@ -56,7 +56,7 @@ export function Pills<K extends string>({ items, activeKey, onChange }: PillsPro
               <Text
                 style={{
                   fontSize: 11,
-                  color: active ? "rgba(255,255,255,0.7)" : colors.text4,
+                  color: active ? "rgba(15,21,8,0.65)" : colors.text4,
                   fontFamily: fonts.mono,
                 }}
               >

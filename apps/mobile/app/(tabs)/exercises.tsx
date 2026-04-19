@@ -102,7 +102,7 @@ export default function ExercisesScreen() {
                 accessibilityLabel="Create exercise"
                 style={[iconBtn, { backgroundColor: colors.blue, borderColor: colors.blue }]}
               >
-                <Plus size={16} color={colors.white} />
+                <Plus size={16} color={colors.blueInk} />
               </Pressable>
             </View>
           }

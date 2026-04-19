@@ -91,7 +91,7 @@ export default function ProgressPhotosScreen() {
                 justifyContent: "center",
               }}
             >
-              <Camera size={14} color={colors.white} />
+              <Camera size={14} color={colors.blueInk} />
             </Pressable>
           }
         />

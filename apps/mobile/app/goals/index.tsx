@@ -207,7 +207,7 @@ export default function GoalsScreen() {
               >
                 <Plus
                   size={16}
-                  color={showForm ? colors.text2 : colors.white}
+                  color={showForm ? colors.text2 : colors.blueInk}
                   style={{
                     transform: [{ rotate: showForm ? "45deg" : "0deg" }],
                   }}

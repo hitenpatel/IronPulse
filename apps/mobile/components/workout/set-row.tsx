@@ -263,7 +263,10 @@ export function SetRow({
           borderRadius: radii.buttonSm,
         }}
       >
-        <Check size={16} color={isCompleted || isActive ? colors.white : colors.text3} />
+        <Check
+          size={16}
+          color={isActive ? colors.blueInk : isCompleted ? colors.white : colors.text3}
+        />
       </Pressable>
 
       {/* Delete */}

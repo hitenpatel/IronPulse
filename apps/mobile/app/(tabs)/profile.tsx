@@ -280,8 +280,10 @@ export default function ProfileScreen() {
                 width: 56,
                 height: 56,
                 borderRadius: 28,
-                backgroundColor: colors.blue,
-                // Gradient approximated with a solid blue; a radial gradient needs RN-specific lib.
+                // Handoff specifies a cobalt→purple gradient; approximated as
+                // solid cobalt (colors.green in v2). A real gradient needs
+                // react-native-linear-gradient — deferred to the audit ticket.
+                backgroundColor: colors.green,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2,
@@ -292,7 +294,7 @@ export default function ProfileScreen() {
                 style={{
                   fontFamily: fonts.displaySemi,
                   fontSize: 22,
-                  color: colors.white,
+                  color: colors.text,
                 }}
               >
                 {initial}

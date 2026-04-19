@@ -151,7 +151,7 @@ export default function NutritionScreen() {
               >
                 <Plus
                   size={16}
-                  color={formOpen ? colors.text2 : colors.white}
+                  color={formOpen ? colors.text2 : colors.blueInk}
                   style={{ transform: [{ rotate: formOpen ? "45deg" : "0deg" }] }}
                 />
               </Pressable>
@@ -220,7 +220,7 @@ export default function NutritionScreen() {
                       <Text
                         style={{
                           fontSize: 12,
-                          color: active ? colors.white : colors.text2,
+                          color: active ? colors.blueInk : colors.text2,
                           fontFamily: fonts.bodyMedium,
                         }}
                       >

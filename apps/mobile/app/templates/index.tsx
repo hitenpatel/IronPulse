@@ -109,7 +109,7 @@ export default function WorkoutTemplatesScreen() {
                 justifyContent: "center",
               }}
             >
-              <Plus size={16} color={colors.white} />
+              <Plus size={16} color={colors.blueInk} />
             </Pressable>
           }
         />
@@ -276,8 +276,8 @@ function RichCard({ template, onStart, onDelete }: RichCardProps) {
       </View>
       <View style={{ marginTop: 12 }}>
         <Button variant="primary" onPress={onStart}>
-          <Play size={14} color={colors.white} />
-          <Text style={{ color: colors.white, fontFamily: fonts.bodySemi, fontSize: 13 }}>Start workout</Text>
+          <Play size={14} color={colors.blueInk} />
+          <Text style={{ color: colors.blueInk, fontFamily: fonts.bodySemi, fontSize: 13 }}>Start workout</Text>
         </Button>
       </View>
     </View>

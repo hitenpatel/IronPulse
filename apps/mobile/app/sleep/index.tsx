@@ -146,7 +146,7 @@ export default function SleepScreen() {
               >
                 <Plus
                   size={16}
-                  color={formOpen ? colors.text2 : colors.white}
+                  color={formOpen ? colors.text2 : colors.blueInk}
                   style={{ transform: [{ rotate: formOpen ? "45deg" : "0deg" }] }}
                 />
               </Pressable>

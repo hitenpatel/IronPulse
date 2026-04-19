@@ -21,7 +21,8 @@ const variantStyles: Record<NonNullable<ButtonProps["variant"]>, object> = {
 
 const textColorMap: Record<NonNullable<ButtonProps["variant"]>, string> = {
   default: colors.text,
-  primary: colors.white,
+  // Primary = lime. On-lime text MUST be blueInk, not white.
+  primary: colors.blueInk,
   ghost: colors.text2,
   outline: colors.text2,
   destructive: colors.white,

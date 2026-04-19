@@ -1,38 +1,50 @@
-// IronPulse design tokens — mirrors designs/claude-design-handoff/mobile.css
+// IronPulse design tokens — mirrors designs/design_handoff_new/reference/mobile.css
+// v2 "acid sport" — electric lime primary, cobalt secondary, warm off-white text.
 // Consume via `import { tokens } from "@/lib/theme"`.
 
 import { Platform } from "react-native";
 
 export const colors = {
-  bg: "#060B14",
-  bg1: "#0B121D",
-  bg2: "#111A28",
-  bg3: "#172434",
-  bg4: "#1E2D41",
+  // Ink surfaces — cool near-black with subtle blue undertone
+  bg: "#0B0D12",
+  bg1: "#13161E",
+  bg2: "#1B1F29",
+  bg3: "#252A38",
+  bg4: "#323848",
 
-  line: "#1C2838",
-  line2: "#26344A",
-  lineSoft: "#14202E",
+  line: "#252A38",
+  line2: "#323848",
+  lineSoft: "#181B24",
 
-  text: "#E7ECF3",
-  text2: "#AEBAC9",
-  text3: "#7A8698",
-  text4: "#4F5A6D",
+  // Warm off-white type — NEVER pure white
+  text: "#F4F0E6",
+  text2: "#D4D1C6",
+  text3: "#A6A49C",
+  text4: "#8F8D86",
 
-  blue: "#0077FF",
-  blue2: "#3391FF",
-  blueSoft: "rgba(0,119,255,0.14)",
-  blueGlow: "rgba(0,119,255,0.35)",
+  // PRIMARY = electric lime. Mapped to the `blue` slot for code compat with v1.
+  blue: "#D4FF3A",
+  blue2: "#C4EF2A",
+  blueSoft: "rgba(212,255,58,0.16)",
+  blueGlow: "rgba(212,255,58,0.45)",
+  /** Text/icon colour that sits ON a lime surface. NEVER use white here — lime-on-white is illegible. */
+  blueInk: "#0F1508",
 
-  green: "#22C55E",
-  greenSoft: "rgba(34,197,94,0.14)",
-  purple: "#8B5CF6",
-  purpleSoft: "rgba(139,92,246,0.14)",
-  amber: "#F59E0B",
-  amberSoft: "rgba(245,158,11,0.14)",
-  red: "#EF4444",
-  orange: "#F97316",
-  pink: "#EC4899",
+  // SECONDARY = cobalt blue. Mapped to the `green` slot for code compat with v1.
+  green: "#3A6DFF",
+  greenSoft: "rgba(58,109,255,0.16)",
+
+  // TERTIARY = warm cream highlight
+  purple: "#F4F0E6",
+  purpleSoft: "rgba(244,240,230,0.10)",
+
+  amber: "#FFB800",
+  amberSoft: "rgba(255,184,0,0.14)",
+  red: "#FF3D5A",
+  orange: "#FF7A3C",
+  pink: "#FF3D5A",
+  cyan: "#4FD1E8",
+  cyanSoft: "rgba(79,209,232,0.14)",
 
   white: "#FFFFFF",
 } as const;
@@ -57,39 +69,37 @@ export const spacing = {
   rowPaddingX: 14,
 } as const;
 
-// Font families. TTFs live in apps/mobile/assets/fonts and are copied into
-// android/app/src/main/assets/fonts via `npx react-native-asset`. The
-// family names below match the file stems (Android resolves fontFamily
-// by file stem). For bold/regular variants use the weight-specific family
-// via the helpers below.
+// Font families. Instrument Sans replaces Inter as the body family in v2.
+// The file stems live in apps/mobile/assets/fonts and are copied into
+// android/app/src/main/assets/fonts by `npx react-native-asset`.
 export const fonts = {
-  // Primary family names — use with explicit weight via `fontFamily: fonts.displayMedium`.
+  // Display — Space Grotesk (unchanged from v1)
   displayRegular: "SpaceGrotesk-Regular",
   displayMedium: "SpaceGrotesk-Medium",
   displaySemi: "SpaceGrotesk-SemiBold",
   displayBold: "SpaceGrotesk-Bold",
 
-  bodyRegular: "Inter-Regular",
-  bodyMedium: "Inter-Medium",
-  bodySemi: "Inter-SemiBold",
+  // Body — Instrument Sans (was Inter in v1)
+  bodyRegular: "InstrumentSans-Regular",
+  bodyMedium: "InstrumentSans-Medium",
+  bodySemi: "InstrumentSans-SemiBold",
+  bodyBold: "InstrumentSans-Bold",
 
+  // Mono — JetBrains Mono (unchanged)
   monoRegular: "JetBrainsMono-Regular",
   monoMedium: "JetBrainsMono-Medium",
   monoSemi: "JetBrainsMono-SemiBold",
 
-  // Legacy aliases — components built before the font swap referenced these.
-  // They resolve to the default weight for each family.
+  // Legacy aliases kept for any callers that predate the weight-specific tokens.
   display: "SpaceGrotesk-Medium",
-  body: "Inter-Regular",
+  body: "InstrumentSans-Regular",
   mono: "JetBrainsMono-Regular",
 } as const;
 
-// Letter-spacing helpers (RN uses absolute values, not em). Designed at a
-// 13-14px baseline body.
 export const tracking = {
-  displayTight: -0.5, // ~-0.025em at 20-30px
+  displayTight: -0.5,
   bodyTight: -0.1,
-  caps: 1.6, // +0.12em at 13px ~= 1.56
+  caps: 1.6,
   capsWide: 2,
 } as const;
 
@@ -98,9 +108,9 @@ export const shadows = {
     android: { elevation: 4 },
     ios: {
       shadowColor: colors.blue,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.35,
-      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.45,
+      shadowRadius: 14,
     },
     default: {},
   })!,
@@ -108,9 +118,9 @@ export const shadows = {
     android: { elevation: 8 },
     ios: {
       shadowColor: colors.blue,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.45,
+      shadowRadius: 14,
     },
     default: {},
   })!,
