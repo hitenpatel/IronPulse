@@ -154,15 +154,11 @@ export function SetRow({
         alignItems: "center",
         gap: 4,
         paddingVertical: isActive ? 8 : 4,
-        paddingLeft: isActive ? 8 : 12,
-        paddingRight: 12,
-        backgroundColor: isActive ? "rgba(0,119,255,0.18)" : "transparent",
-        marginHorizontal: isActive ? 4 : 0,
+        paddingHorizontal: 12,
+        backgroundColor: isActive ? "rgba(0,119,255,0.14)" : "transparent",
+        marginHorizontal: isActive ? 8 : 0,
         marginVertical: isActive ? 3 : 0,
         borderRadius: isActive ? radii.button : 0,
-        // Left-edge accent bar for the active row.
-        borderLeftWidth: isActive ? 3 : 0,
-        borderLeftColor: colors.blue,
       }}
     >
       {/* Set number / complete indicator */}
