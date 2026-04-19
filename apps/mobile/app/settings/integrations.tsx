@@ -1,22 +1,32 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
-  View,
-  Text,
-  Pressable,
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
+  Pressable,
   ScrollView,
+  Switch,
+  Text,
   TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-// Navigation header set via App.tsx screen options
-import { Activity, BarChart3, Circle, Heart, Scale, Watch, Zap } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
+import {
+  Activity,
+  Check,
+  Cloud,
+  Heart,
+  RefreshCw,
+  Scale,
+  Watch,
+  Zap,
+} from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
+
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
 import {
   isHealthKitAvailable,
   isHealthKitConnected,
@@ -34,6 +44,8 @@ import {
   getGoogleFitLastSync,
 } from "@/lib/googlefit";
 import { Config } from "@/lib/config";
+import { colors, fonts, radii, spacing } from "@/lib/theme";
+import { BigNum, Button, Chip, TopBar, UppercaseLabel } from "@/components/ui";
 
 const API_BASE_URL = Config.API_URL;
 
@@ -46,35 +58,84 @@ interface Connection {
   createdAt: string;
 }
 
+type ProviderKey =
+  | "strava"
+  | "garmin"
+  | "polar"
+  | "oura"
+  | "withings"
+  | "intervals_icu"
+  | "apple_health"
+  | "google_fit";
+
+interface ProviderMeta {
+  key: ProviderKey;
+  name: string;
+  subtitle: string;
+  Icon: React.ComponentType<{ size?: number; color?: string }>;
+  color: string;
+  /** How the provider authenticates. */
+  auth: "oauth" | "apikey" | "native";
+  /** Platform gate — if set, only render on this platform. */
+  platform?: "ios" | "android";
+}
+
+// Provider catalog — colour is the brand-adjacent accent (cobalt for blue
+// fitness services, red for HR/Apple Health, etc.). All accents come from
+// tokens so the redesign palette drives everything.
+const PROVIDERS: ProviderMeta[] = [
+  { key: "strava", name: "Strava", subtitle: "Runs · rides · workouts", Icon: Activity, color: colors.orange, auth: "oauth" },
+  { key: "garmin", name: "Garmin Connect", subtitle: "Multi-sport tracking", Icon: Watch, color: colors.green, auth: "oauth" },
+  { key: "polar", name: "Polar", subtitle: "Heart rate · recovery", Icon: Heart, color: colors.red, auth: "oauth" },
+  { key: "oura", name: "Oura", subtitle: "Sleep · readiness · HRV", Icon: Zap, color: colors.purple, auth: "oauth" },
+  { key: "withings", name: "Withings", subtitle: "Weight · body fat · BMI", Icon: Scale, color: colors.green, auth: "oauth" },
+  { key: "intervals_icu", name: "Intervals.icu", subtitle: "Training analytics", Icon: Activity, color: colors.cyan, auth: "apikey" },
+  { key: "apple_health", name: "Apple Health", subtitle: "Sync all health data", Icon: Heart, color: colors.red, auth: "native", platform: "ios" },
+  { key: "google_fit", name: "Google Fit", subtitle: "Google fitness platform", Icon: Cloud, color: colors.green, auth: "native", platform: "android" },
+];
+
+function formatLastSync(iso: string | null | undefined): string {
+  if (!iso) return "Not yet synced";
+  const date = new Date(iso);
+  const now = Date.now();
+  const diffMin = Math.floor((now - date.getTime()) / 60000);
+  if (diffMin < 1) return "Synced just now";
+  if (diffMin < 60) return `Synced ${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `Synced ${diffHr}h ago`;
+  return `Synced ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}
+
 export default function IntegrationsScreen() {
+  const navigation = useNavigation();
   const db = usePowerSync();
   const { user } = useAuth();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [disconnecting, setDisconnecting] = useState(false);
+  const [busyProvider, setBusyProvider] = useState<ProviderKey | null>(null);
 
-  // HealthKit state (iOS only)
+  // Native integration state
   const [hkAvailable, setHkAvailable] = useState(false);
   const [hkConnected, setHkConnected] = useState(false);
   const [hkLastSync, setHkLastSync] = useState<string | null>(null);
-  const [hkLoading, setHkLoading] = useState(false);
-
-  // Google Fit state (Android only)
   const [gfAvailable, setGfAvailable] = useState(false);
   const [gfConnected, setGfConnected] = useState(false);
   const [gfLastSync, setGfLastSync] = useState<string | null>(null);
-  const [gfLoading, setGfLoading] = useState(false);
 
+  // Intervals.icu direct-credential form state
+  const [icuFormOpen, setIcuFormOpen] = useState(false);
+  const [icuAthleteId, setIcuAthleteId] = useState("");
+  const [icuApiKey, setIcuApiKey] = useState("");
+
+  // ─── effects ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (Platform.OS !== "ios") return;
     (async () => {
       const available = await isHealthKitAvailable();
       setHkAvailable(available);
       if (available) {
-        const connected = await isHealthKitConnected();
-        setHkConnected(connected);
-        const ts = await getLastSyncTimestamp();
-        setHkLastSync(ts);
+        setHkConnected(await isHealthKitConnected());
+        setHkLastSync(await getLastSyncTimestamp());
       }
     })();
   }, []);
@@ -85,102 +146,20 @@ export default function IntegrationsScreen() {
       const available = isGoogleFitAvailable();
       setGfAvailable(available);
       if (available) {
-        const connected = await isGoogleFitConnected();
-        setGfConnected(connected);
-        const ts = await getGoogleFitLastSync();
-        setGfLastSync(ts);
+        setGfConnected(await isGoogleFitConnected());
+        setGfLastSync(await getGoogleFitLastSync());
       }
     })();
   }, []);
 
-  const handleHkConnect = async () => {
-    setHkLoading(true);
-    try {
-      const granted = await requestPermissions();
-      if (granted) {
-        await setHealthKitEnabled(true);
-        await syncFromHealthKit(db, user!.id);
-        setHkConnected(true);
-        setHkLastSync(new Date().toISOString());
-      }
-    } finally {
-      setHkLoading(false);
-    }
-  };
-
-  const handleHkDisconnect = async () => {
-    setHkLoading(true);
-    try {
-      await setHealthKitEnabled(false);
-      setHkConnected(false);
-      setHkLastSync(null);
-    } finally {
-      setHkLoading(false);
-    }
-  };
-
-  const handleHkSync = async () => {
-    setHkLoading(true);
-    try {
-      await syncFromHealthKit(db, user!.id);
-      setHkLastSync(new Date().toISOString());
-    } finally {
-      setHkLoading(false);
-    }
-  };
-
-  const handleGfConnect = async () => {
-    setGfLoading(true);
-    try {
-      const authorized = await authorizeGoogleFit();
-      if (authorized) {
-        await setGoogleFitEnabled(true);
-        await syncFromGoogleFit(db, user!.id);
-        setGfConnected(true);
-        setGfLastSync(new Date().toISOString());
-      } else {
-        Alert.alert(
-          "Google Fit",
-          "Authorisation was denied or cancelled. Make sure Google Play Services is up to date and this app's SHA-1 cert is registered as an Android OAuth client in Google Cloud Console.",
-        );
-      }
-    } catch (err: any) {
-      Alert.alert(
-        "Google Fit",
-        err?.message ?? "Could not authorise Google Fit. The OAuth client may not be configured for this build's signing key.",
-      );
-    } finally {
-      setGfLoading(false);
-    }
-  };
-
-  const handleGfDisconnect = async () => {
-    setGfLoading(true);
-    try {
-      await setGoogleFitEnabled(false);
-      setGfConnected(false);
-      setGfLastSync(null);
-    } finally {
-      setGfLoading(false);
-    }
-  };
-
-  const handleGfSync = async () => {
-    setGfLoading(true);
-    try {
-      await syncFromGoogleFit(db, user!.id);
-      setGfLastSync(new Date().toISOString());
-    } finally {
-      setGfLoading(false);
-    }
-  };
-
   const fetchConnections = useCallback(async () => {
     try {
       const result = await trpc.integration.listConnections.query();
-      setConnections(result as Connection[]);
+      // tRPC returns Date on the timestamp columns; the row shape otherwise
+      // matches Connection. Cast via unknown to relax the nominal check.
+      setConnections(result as unknown as Connection[]);
     } catch {
-      // silently fail — user will see empty state
+      /* stale */
     } finally {
       setLoading(false);
     }
@@ -190,36 +169,86 @@ export default function IntegrationsScreen() {
     fetchConnections();
   }, [fetchConnections]);
 
-  const stravaConnection = connections.find((c) => c.provider === "strava");
-  const garminConnection = connections.find((c) => c.provider === "garmin");
-  const intervalsConnection = connections.find((c) => c.provider === "intervals_icu");
-  const polarConnection = connections.find((c) => c.provider === "polar");
-  const ouraConnection = connections.find((c) => c.provider === "oura");
-  const withingsConnection = connections.find((c) => c.provider === "withings");
-
-  // Generic OAuth redirect + disconnect handlers for Polar / Oura / Withings
-  const handleOAuthConnect = (provider: string) => {
-    Linking.openURL(`${API_BASE_URL}/api/${provider}/connect`);
-  };
-
-  const handleProviderDisconnect = async (provider: string) => {
-    setDisconnecting(true);
+  // ─── handlers ────────────────────────────────────────────────────────
+  const handleHealthKitToggle = async (next: boolean) => {
+    setBusyProvider("apple_health");
     try {
-      await trpc.integration.disconnectProvider.mutate({ provider });
-      await fetchConnections();
+      if (next) {
+        // requestPermissions returns void on success and throws when the user
+        // declines; we let the sync call surface any granularity loss.
+        await requestPermissions();
+        await setHealthKitEnabled(true);
+        await syncFromHealthKit(db, user!.id);
+        setHkConnected(true);
+        setHkLastSync(new Date().toISOString());
+      } else {
+        await setHealthKitEnabled(false);
+        setHkConnected(false);
+        setHkLastSync(null);
+      }
+    } catch (err: any) {
+      Alert.alert("Apple Health", err?.message ?? "Could not enable Apple Health.");
     } finally {
-      setDisconnecting(false);
+      setBusyProvider(null);
     }
   };
 
-  // Intervals.icu: API key + athlete ID (no OAuth — direct credentials)
-  const [icuAthleteId, setIcuAthleteId] = useState("");
-  const [icuApiKey, setIcuApiKey] = useState("");
-  const [icuConnecting, setIcuConnecting] = useState(false);
+  const handleGoogleFitToggle = async (next: boolean) => {
+    setBusyProvider("google_fit");
+    try {
+      if (next) {
+        const authorized = await authorizeGoogleFit();
+        if (authorized) {
+          await setGoogleFitEnabled(true);
+          await syncFromGoogleFit(db, user!.id);
+          setGfConnected(true);
+          setGfLastSync(new Date().toISOString());
+        } else {
+          Alert.alert(
+            "Google Fit",
+            "Authorisation was denied or cancelled. Ensure this build's SHA-1 cert is registered as an Android OAuth client in Google Cloud Console.",
+          );
+        }
+      } else {
+        await setGoogleFitEnabled(false);
+        setGfConnected(false);
+        setGfLastSync(null);
+      }
+    } catch (err: any) {
+      Alert.alert("Google Fit", err?.message ?? "Authorisation failed.");
+    } finally {
+      setBusyProvider(null);
+    }
+  };
+
+  const handleOAuthConnect = (provider: ProviderKey) => {
+    Linking.openURL(`${API_BASE_URL}/api/${provider.replace("_", "-")}/connect`);
+  };
+
+  const confirmDisconnect = (provider: ProviderKey, label: string) => {
+    Alert.alert("Disconnect", `Disconnect ${label}? History will be retained.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Disconnect",
+        style: "destructive",
+        onPress: async () => {
+          setBusyProvider(provider);
+          try {
+            await trpc.integration.disconnectProvider.mutate({
+              provider: provider as "strava" | "garmin" | "polar" | "oura" | "withings" | "intervals_icu" | "apple_health",
+            });
+            await fetchConnections();
+          } finally {
+            setBusyProvider(null);
+          }
+        },
+      },
+    ]);
+  };
 
   const handleIntervalsConnect = async () => {
     if (!icuAthleteId.trim() || !icuApiKey.trim()) return;
-    setIcuConnecting(true);
+    setBusyProvider("intervals_icu");
     try {
       await trpc.integration.completeIntervalsIcuAuth.mutate({
         athleteId: icuAthleteId.trim(),
@@ -227,763 +256,469 @@ export default function IntegrationsScreen() {
       });
       setIcuAthleteId("");
       setIcuApiKey("");
+      setIcuFormOpen(false);
       await fetchConnections();
     } catch (err: any) {
-      Alert.alert("Connection Failed", err?.message ?? "Please check your credentials.");
+      Alert.alert("Intervals.icu", err?.message ?? "Please check your credentials.");
     } finally {
-      setIcuConnecting(false);
+      setBusyProvider(null);
     }
   };
 
-  const handleIntervalsDisconnect = async () => {
-    setDisconnecting(true);
-    try {
-      await trpc.integration.disconnectProvider.mutate({ provider: "intervals_icu" });
-      await fetchConnections();
-    } finally {
-      setDisconnecting(false);
+  // ─── derived state ──────────────────────────────────────────────────
+  const connectedProviders: Array<{ meta: ProviderMeta; lastSync: string | null }> = [];
+  const availableProviders: ProviderMeta[] = [];
+
+  for (const p of PROVIDERS) {
+    if (p.platform && p.platform !== Platform.OS) continue;
+    if (p.key === "apple_health") {
+      if (hkConnected) connectedProviders.push({ meta: p, lastSync: hkLastSync });
+      else if (hkAvailable) availableProviders.push(p);
+      continue;
     }
-  };
-
-  const handleConnect = () => {
-    // Open the web OAuth flow in the browser. The web callback handles token
-    // exchange. User switches back to the app and the connection appears on
-    // next data refresh.
-    Linking.openURL(`${API_BASE_URL}/api/strava/connect`);
-  };
-
-  const handleGarminConnect = () => {
-    Linking.openURL(`${API_BASE_URL}/api/garmin/connect`);
-  };
-
-  const handleGarminDisconnect = async () => {
-    setDisconnecting(true);
-    try {
-      await trpc.integration.disconnectProvider.mutate({ provider: "garmin" });
-      await fetchConnections();
-    } finally {
-      setDisconnecting(false);
+    if (p.key === "google_fit") {
+      if (gfConnected) connectedProviders.push({ meta: p, lastSync: gfLastSync });
+      else if (gfAvailable) availableProviders.push(p);
+      continue;
     }
-  };
+    const conn = connections.find((c) => c.provider === p.key);
+    if (conn) connectedProviders.push({ meta: p, lastSync: conn.lastSyncedAt });
+    else availableProviders.push(p);
+  }
 
-  const handleDisconnect = async () => {
-    setDisconnecting(true);
-    try {
-      await trpc.integration.disconnectProvider.mutate({ provider: "strava" });
-      await fetchConnections();
-    } finally {
-      setDisconnecting(false);
-    }
-  };
+  // Pick a "featured" device for the hero card — prefer a native integration
+  // (HK/GF) since they carry live metrics, else the most recently synced
+  // OAuth connection.
+  const featured = connectedProviders.find((p) => p.meta.auth === "native") ?? connectedProviders[0];
 
-  // OAuth provider card: consistent connect/disconnect UI for Polar, Oura, Withings
-  const renderOAuthCard = (opts: {
-    provider: string;
-    name: string;
-    brandColor: string;
-    icon: React.ReactNode;
-    connection: Connection | undefined;
-  }) => (
-    <Card key={opts.provider} style={{ gap: 12, marginTop: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        {opts.icon}
-        <Text style={{ fontSize: 18, fontWeight: "600", color: "hsl(213, 31%, 91%)" }}>
-          {opts.name}
-        </Text>
-      </View>
-
-      {opts.connection ? (
-        <View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" }} />
-            <Text style={{ color: "#22c55e", fontWeight: "600" }}>Connected</Text>
-          </View>
-          {opts.connection.lastSyncedAt && (
-            <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12, marginBottom: 12 }}>
-              Last synced{" "}
-              {new Date(opts.connection.lastSyncedAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </Text>
-          )}
-          <Pressable
-            onPress={() => handleProviderDisconnect(opts.provider)}
-            disabled={disconnecting}
-            style={{
-              paddingVertical: 10,
-              borderRadius: 8,
-              alignItems: "center",
-              backgroundColor: "hsl(0, 63%, 31%)",
-              opacity: disconnecting ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
-              {disconnecting ? "Disconnecting..." : "Disconnect"}
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View>
-          <Text style={{ color: "hsl(215, 20%, 65%)", marginBottom: 12 }}>Not connected</Text>
-          <Pressable
-            onPress={() => handleOAuthConnect(opts.provider)}
-            style={{
-              paddingVertical: 10,
-              borderRadius: 8,
-              alignItems: "center",
-              backgroundColor: opts.brandColor,
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>Connect</Text>
-          </Pressable>
-        </View>
-      )}
-    </Card>
-  );
-
+  // ─── render ─────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
+      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 32 }}>
+        <TopBar title="Connected apps" onBack={() => navigation.goBack()} />
+
         {loading ? (
-          <ActivityIndicator color="hsl(213, 31%, 91%)" />
+          <ActivityIndicator color={colors.text3} style={{ marginVertical: 24 }} />
         ) : (
           <>
-          <Card style={{ gap: 12 }}>
-            {/* Strava header */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <Text style={{ fontSize: 20, color: "#FC4C02", fontWeight: "700" }}>
-                S
-              </Text>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "600",
-                  color: "hsl(213, 31%, 91%)",
-                }}
-              >
-                Strava
-              </Text>
-            </View>
+            {/* Active device hero */}
+            {featured ? <FeaturedDevice featured={featured} /> : null}
 
-            {stravaConnection ? (
-              <View>
+            {/* Connected list */}
+            {connectedProviders.length > 0 ? (
+              <View style={{ marginBottom: 14 }}>
                 <View
                   style={{
                     flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 4,
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
+                    marginBottom: 6,
                   }}
                 >
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: "#22c55e",
-                    }}
-                  />
-                  <Text style={{ color: "#22c55e", fontWeight: "600" }}>
-                    Connected
-                  </Text>
+                  <UppercaseLabel>Connected · {connectedProviders.length}</UppercaseLabel>
                 </View>
-
-                {stravaConnection.lastSyncedAt && (
-                  <Text
-                    style={{
-                      color: "hsl(215, 20%, 65%)",
-                      fontSize: 12,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Last synced{" "}
-                    {new Date(stravaConnection.lastSyncedAt).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      },
-                    )}
-                  </Text>
-                )}
-
-                <Pressable
-                  onPress={handleDisconnect}
-                  disabled={disconnecting}
-                  style={{
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    backgroundColor: "hsl(0, 63%, 31%)",
-                    opacity: disconnecting ? 0.6 : 1,
-                  }}
-                >
-                  <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
-                    {disconnecting ? "Disconnecting..." : "Disconnect"}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View>
-                <Text
-                  style={{
-                    color: "hsl(215, 20%, 65%)",
-                    marginBottom: 12,
-                  }}
-                >
-                  Not connected
-                </Text>
-
-                <Pressable
-                  onPress={handleConnect}
-                  style={{
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    backgroundColor: "#FC4C02",
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>
-                    Connect
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </Card>
-
-          <Card style={{ gap: 12, marginTop: 16 }}>
-            {/* Garmin Connect header */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <Watch size={20} color="#007CC3" />
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "600",
-                  color: "hsl(213, 31%, 91%)",
-                }}
-              >
-                Garmin Connect
-              </Text>
-            </View>
-
-            {garminConnection ? (
-              <View>
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 4,
+                    backgroundColor: colors.bg1,
+                    borderWidth: 1,
+                    borderColor: colors.lineSoft,
+                    borderRadius: radii.rowList,
+                    overflow: "hidden",
                   }}
                 >
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: "#22c55e",
-                    }}
-                  />
-                  <Text style={{ color: "#22c55e", fontWeight: "600" }}>
-                    Connected
-                  </Text>
+                  {connectedProviders.map(({ meta, lastSync }, i) => (
+                    <ConnectedRow
+                      key={meta.key}
+                      meta={meta}
+                      lastSync={lastSync}
+                      busy={busyProvider === meta.key}
+                      isFirst={i === 0}
+                      onToggle={(next) => {
+                        if (meta.key === "apple_health") void handleHealthKitToggle(next);
+                        else if (meta.key === "google_fit") void handleGoogleFitToggle(next);
+                        else if (!next) confirmDisconnect(meta.key, meta.name);
+                      }}
+                    />
+                  ))}
                 </View>
-
-                {garminConnection.lastSyncedAt && (
-                  <Text
-                    style={{
-                      color: "hsl(215, 20%, 65%)",
-                      fontSize: 12,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Last synced{" "}
-                    {new Date(garminConnection.lastSyncedAt).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      },
-                    )}
-                  </Text>
-                )}
-
-                <Pressable
-                  onPress={handleGarminDisconnect}
-                  disabled={disconnecting}
-                  style={{
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    backgroundColor: "hsl(0, 63%, 31%)",
-                    opacity: disconnecting ? 0.6 : 1,
-                  }}
-                >
-                  <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
-                    {disconnecting ? "Disconnecting..." : "Disconnect"}
-                  </Text>
-                </Pressable>
               </View>
-            ) : (
-              <View>
-                <Text
-                  style={{
-                    color: "hsl(215, 20%, 65%)",
-                    marginBottom: 12,
-                  }}
-                >
-                  Not connected
-                </Text>
+            ) : null}
 
-                <Pressable
-                  onPress={handleGarminConnect}
-                  style={{
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    backgroundColor: "#007CC3",
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>
-                    Connect
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </Card>
-
-          <Card style={{ gap: 12, marginTop: 16 }}>
-            {/* Intervals.icu header */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <BarChart3 size={20} color="#FF6B35" />
-              <Text style={{ fontSize: 18, fontWeight: "600", color: "hsl(213, 31%, 91%)" }}>
-                Intervals.icu
-              </Text>
-            </View>
-            <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12 }}>
-              Sync activities from Garmin, Strava, and other sources via Intervals.icu
-            </Text>
-
-            {intervalsConnection ? (
-              <View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" }} />
-                  <Text style={{ color: "#22c55e", fontWeight: "600" }}>
-                    Connected (athlete {intervalsConnection.providerAccountId})
-                  </Text>
-                </View>
-
-                {intervalsConnection.lastSyncedAt && (
-                  <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12, marginBottom: 12 }}>
-                    Last synced{" "}
-                    {new Date(intervalsConnection.lastSyncedAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                )}
-
-                <Pressable
-                  onPress={handleIntervalsDisconnect}
-                  disabled={disconnecting}
-                  style={{
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    backgroundColor: "hsl(0, 63%, 31%)",
-                    opacity: disconnecting ? 0.6 : 1,
-                  }}
-                >
-                  <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
-                    {disconnecting ? "Disconnecting..." : "Disconnect"}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={{ gap: 10 }}>
+            {/* Intervals.icu API-key form (shown when user taps Connect) */}
+            {icuFormOpen ? (
+              <View
+                style={{
+                  backgroundColor: colors.bg1,
+                  borderWidth: 1,
+                  borderColor: colors.lineSoft,
+                  borderRadius: radii.card,
+                  padding: 14,
+                  marginBottom: 14,
+                  gap: 10,
+                }}
+              >
+                <UppercaseLabel>Intervals.icu credentials</UppercaseLabel>
                 <TextInput
+                  placeholder="Athlete ID"
+                  placeholderTextColor={colors.text4}
                   value={icuAthleteId}
                   onChangeText={setIcuAthleteId}
-                  placeholder="Athlete ID (e.g. i12345)"
-                  placeholderTextColor="hsl(215, 20%, 45%)"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  style={{
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    backgroundColor: "hsl(217, 33%, 12%)",
-                    borderWidth: 1,
-                    borderColor: "hsl(217, 33%, 20%)",
-                    color: "hsl(210, 40%, 98%)",
-                    fontSize: 14,
-                  }}
+                  style={inputStyle}
                 />
                 <TextInput
+                  placeholder="API key"
+                  placeholderTextColor={colors.text4}
                   value={icuApiKey}
                   onChangeText={setIcuApiKey}
-                  placeholder="API Key"
-                  placeholderTextColor="hsl(215, 20%, 45%)"
-                  secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
-                  style={{
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    backgroundColor: "hsl(217, 33%, 12%)",
-                    borderWidth: 1,
-                    borderColor: "hsl(217, 33%, 20%)",
-                    color: "hsl(210, 40%, 98%)",
-                    fontSize: 14,
-                  }}
+                  secureTextEntry
+                  style={inputStyle}
                 />
-                <Text style={{ color: "hsl(215, 20%, 55%)", fontSize: 11 }}>
-                  Get your athlete ID and API key from intervals.icu → Settings → Developer
-                </Text>
-
-                <Pressable
-                  onPress={handleIntervalsConnect}
-                  disabled={icuConnecting || !icuAthleteId.trim() || !icuApiKey.trim()}
-                  style={{
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignItems: "center",
-                    backgroundColor: "#FF6B35",
-                    opacity: icuConnecting || !icuAthleteId.trim() || !icuApiKey.trim() ? 0.6 : 1,
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>
-                    {icuConnecting ? "Connecting..." : "Connect"}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </Card>
-
-          {renderOAuthCard({
-            provider: "polar",
-            name: "Polar",
-            brandColor: "#E31937",
-            icon: <Zap size={20} color="#E31937" />,
-            connection: polarConnection,
-          })}
-
-          {renderOAuthCard({
-            provider: "oura",
-            name: "Oura",
-            brandColor: "#1A1A1A",
-            icon: <Circle size={20} color="#E0E0E0" />,
-            connection: ouraConnection,
-          })}
-
-          {renderOAuthCard({
-            provider: "withings",
-            name: "Withings",
-            brandColor: "#00A7E1",
-            icon: <Scale size={20} color="#00A7E1" />,
-            connection: withingsConnection,
-          })}
-
-          {Platform.OS === "android" && gfAvailable && (
-            <Card style={{ gap: 12, marginTop: 16 }}>
-              {/* Google Fit header */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                <Activity size={20} color="#0F9D58" />
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "600",
-                    color: "hsl(213, 31%, 91%)",
-                  }}
-                >
-                  Google Fit
-                </Text>
-              </View>
-
-              {gfConnected ? (
-                <View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      marginBottom: 4,
-                    }}
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Button
+                      variant="primary"
+                      onPress={handleIntervalsConnect}
+                      disabled={
+                        busyProvider === "intervals_icu" ||
+                        !icuAthleteId.trim() ||
+                        !icuApiKey.trim()
+                      }
+                    >
+                      {busyProvider === "intervals_icu" ? "Connecting…" : "Connect"}
+                    </Button>
+                  </View>
+                  <Button
+                    variant="ghost"
+                    onPress={() => setIcuFormOpen(false)}
+                    style={{ paddingHorizontal: 18 }}
                   >
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: "#22c55e",
+                    Cancel
+                  </Button>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Available list */}
+            {availableProviders.length > 0 ? (
+              <View style={{ marginBottom: 14 }}>
+                <UppercaseLabel style={{ marginBottom: 6 }}>Available</UppercaseLabel>
+                <View
+                  style={{
+                    backgroundColor: colors.bg1,
+                    borderWidth: 1,
+                    borderColor: colors.lineSoft,
+                    borderRadius: radii.rowList,
+                    overflow: "hidden",
+                  }}
+                >
+                  {availableProviders.map((p, i) => (
+                    <AvailableRow
+                      key={p.key}
+                      meta={p}
+                      busy={busyProvider === p.key}
+                      isFirst={i === 0}
+                      onConnect={() => {
+                        if (p.key === "apple_health") void handleHealthKitToggle(true);
+                        else if (p.key === "google_fit") void handleGoogleFitToggle(true);
+                        else if (p.key === "intervals_icu") setIcuFormOpen(true);
+                        else handleOAuthConnect(p.key);
                       }}
                     />
-                    <Text style={{ color: "#22c55e", fontWeight: "600" }}>
-                      Connected
-                    </Text>
-                  </View>
-
-                  {gfLastSync && (
-                    <Text
-                      style={{
-                        color: "hsl(215, 20%, 65%)",
-                        fontSize: 12,
-                        marginBottom: 12,
-                      }}
-                    >
-                      Last synced{" "}
-                      {new Date(gfLastSync).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                  )}
-
-                  <View style={{ gap: 8 }}>
-                    <Pressable
-                      onPress={handleGfSync}
-                      disabled={gfLoading}
-                      style={{
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        alignItems: "center",
-                        backgroundColor: "hsl(217, 33%, 17%)",
-                        opacity: gfLoading ? 0.6 : 1,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "hsl(210, 40%, 98%)",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {gfLoading ? "Syncing..." : "Sync Now"}
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      onPress={handleGfDisconnect}
-                      disabled={gfLoading}
-                      style={{
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        alignItems: "center",
-                        backgroundColor: "hsl(0, 63%, 31%)",
-                        opacity: gfLoading ? 0.6 : 1,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "hsl(210, 40%, 98%)",
-                          fontWeight: "600",
-                        }}
-                      >
-                        Disconnect
-                      </Text>
-                    </Pressable>
-                  </View>
+                  ))}
                 </View>
-              ) : (
-                <View>
-                  <Text
-                    style={{
-                      color: "hsl(215, 20%, 65%)",
-                      marginBottom: 12,
-                    }}
-                  >
-                    Not connected
-                  </Text>
-
-                  <Pressable
-                    onPress={handleGfConnect}
-                    disabled={gfLoading}
-                    style={{
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      alignItems: "center",
-                      backgroundColor: "#0F9D58",
-                      opacity: gfLoading ? 0.6 : 1,
-                    }}
-                  >
-                    <Text style={{ color: "#fff", fontWeight: "600" }}>
-                      {gfLoading ? "Connecting..." : "Connect"}
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            </Card>
-          )}
-
-          {Platform.OS === "ios" && hkAvailable && (
-            <Card style={{ gap: 12, marginTop: 16 }}>
-              {/* Apple Health header */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                <Heart size={20} color="#FF2D55" fill="#FF2D55" />
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "600",
-                    color: "hsl(213, 31%, 91%)",
-                  }}
-                >
-                  Apple Health
-                </Text>
               </View>
+            ) : null}
 
-              {hkConnected ? (
-                <View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: "#22c55e",
-                      }}
-                    />
-                    <Text style={{ color: "#22c55e", fontWeight: "600" }}>
-                      Connected
-                    </Text>
-                  </View>
-
-                  {hkLastSync && (
-                    <Text
-                      style={{
-                        color: "hsl(215, 20%, 65%)",
-                        fontSize: 12,
-                        marginBottom: 12,
-                      }}
-                    >
-                      Last synced{" "}
-                      {new Date(hkLastSync).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                  )}
-
-                  <View style={{ gap: 8 }}>
-                    <Pressable
-                      onPress={handleHkSync}
-                      disabled={hkLoading}
-                      style={{
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        alignItems: "center",
-                        backgroundColor: "hsl(217, 33%, 17%)",
-                        opacity: hkLoading ? 0.6 : 1,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "hsl(210, 40%, 98%)",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {hkLoading ? "Syncing..." : "Sync Now"}
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      onPress={handleHkDisconnect}
-                      disabled={hkLoading}
-                      style={{
-                        paddingVertical: 10,
-                        borderRadius: 8,
-                        alignItems: "center",
-                        backgroundColor: "hsl(0, 63%, 31%)",
-                        opacity: hkLoading ? 0.6 : 1,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "hsl(210, 40%, 98%)",
-                          fontWeight: "600",
-                        }}
-                      >
-                        Disconnect
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : (
-                <View>
-                  <Text
-                    style={{
-                      color: "hsl(215, 20%, 65%)",
-                      marginBottom: 12,
-                    }}
-                  >
-                    Not connected
-                  </Text>
-
-                  <Pressable
-                    onPress={handleHkConnect}
-                    disabled={hkLoading}
-                    style={{
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      alignItems: "center",
-                      backgroundColor: "#FF2D55",
-                      opacity: hkLoading ? 0.6 : 1,
-                    }}
-                  >
-                    <Text style={{ color: "#fff", fontWeight: "600" }}>
-                      {hkLoading ? "Connecting..." : "Connect"}
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            </Card>
-          )}
+            <Text
+              style={{
+                color: colors.text4,
+                fontSize: 11,
+                fontFamily: fonts.bodyRegular,
+                textAlign: "center",
+                marginTop: 8,
+              }}
+            >
+              OAuth connections redirect you to {new URL(API_BASE_URL).host} to authorise.
+            </Text>
           </>
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// ─── subcomponents ────────────────────────────────────────────────────────
+
+const inputStyle = {
+  backgroundColor: colors.bg2,
+  borderWidth: 1,
+  borderColor: colors.line,
+  borderRadius: radii.button,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  color: colors.text,
+  fontSize: 13,
+  fontFamily: fonts.bodyRegular,
+};
+
+function FeaturedDevice({
+  featured,
+}: {
+  featured: { meta: ProviderMeta; lastSync: string | null };
+}) {
+  const { meta, lastSync } = featured;
+  const Icon = meta.Icon;
+  return (
+    <View
+      style={{
+        backgroundColor: colors.greenSoft,
+        borderWidth: 1,
+        borderColor: colors.greenSoft,
+        borderRadius: radii.card,
+        padding: 14,
+        marginBottom: 14,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: meta.color + "22",
+            borderWidth: 1,
+            borderColor: meta.color + "55",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon size={18} color={meta.color} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 13.5,
+              fontFamily: fonts.bodySemi,
+              color: colors.text,
+            }}
+          >
+            {meta.name}
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+              marginTop: 2,
+            }}
+          >
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: colors.green,
+              }}
+            />
+            <Text
+              style={{
+                fontSize: 10.5,
+                color: colors.text3,
+                fontFamily: fonts.bodyRegular,
+              }}
+            >
+              {formatLastSync(lastSync)}
+            </Text>
+          </View>
+        </View>
+        <Chip tone="green" dot>
+          Active
+        </Chip>
+      </View>
+
+      <Text
+        style={{
+          fontSize: 11.5,
+          color: colors.text3,
+          fontFamily: fonts.bodyRegular,
+          lineHeight: 16,
+        }}
+      >
+        {meta.subtitle}
+      </Text>
+    </View>
+  );
+}
+
+function ConnectedRow({
+  meta,
+  lastSync,
+  busy,
+  isFirst,
+  onToggle,
+}: {
+  meta: ProviderMeta;
+  lastSync: string | null;
+  busy: boolean;
+  isFirst: boolean;
+  onToggle: (next: boolean) => void;
+}) {
+  const Icon = meta.Icon;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingVertical: spacing.rowPaddingY,
+        paddingHorizontal: spacing.rowPaddingX,
+        borderTopWidth: isFirst ? 0 : 1,
+        borderTopColor: colors.lineSoft,
+      }}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          backgroundColor: meta.color + "22",
+          borderWidth: 1,
+          borderColor: meta.color + "55",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon size={16} color={meta.color} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 13,
+            color: colors.text,
+            fontFamily: fonts.bodyMedium,
+          }}
+        >
+          {meta.name}
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 10.5,
+            color: colors.text3,
+            marginTop: 1,
+            fontFamily: fonts.bodyRegular,
+          }}
+        >
+          {formatLastSync(lastSync)}
+        </Text>
+      </View>
+      {busy ? (
+        <ActivityIndicator size="small" color={colors.text3} />
+      ) : (
+        <Switch
+          value={true}
+          onValueChange={onToggle}
+          trackColor={{ false: colors.bg3, true: colors.blue }}
+          thumbColor={colors.text}
+        />
+      )}
+    </View>
+  );
+}
+
+function AvailableRow({
+  meta,
+  busy,
+  isFirst,
+  onConnect,
+}: {
+  meta: ProviderMeta;
+  busy: boolean;
+  isFirst: boolean;
+  onConnect: () => void;
+}) {
+  const Icon = meta.Icon;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingVertical: spacing.rowPaddingY,
+        paddingHorizontal: spacing.rowPaddingX,
+        borderTopWidth: isFirst ? 0 : 1,
+        borderTopColor: colors.lineSoft,
+      }}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          backgroundColor: meta.color + "22",
+          borderWidth: 1,
+          borderColor: meta.color + "55",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon size={16} color={meta.color} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 13,
+            color: colors.text,
+            fontFamily: fonts.bodyMedium,
+          }}
+        >
+          {meta.name}
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 10.5,
+            color: colors.text3,
+            marginTop: 1,
+            fontFamily: fonts.bodyRegular,
+          }}
+        >
+          {meta.subtitle}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onConnect}
+        disabled={busy}
+        hitSlop={4}
+        style={{
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderRadius: radii.buttonSm,
+          borderWidth: 1,
+          borderColor: colors.blueSoft,
+          backgroundColor: "transparent",
+          opacity: busy ? 0.5 : 1,
+          minHeight: 32,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color={colors.blue2} />
+        ) : (
+          <Text style={{ color: colors.blue2, fontSize: 11, fontFamily: fonts.bodySemi }}>
+            Connect
+          </Text>
+        )}
+      </Pressable>
+    </View>
   );
 }
