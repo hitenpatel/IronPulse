@@ -1,10 +1,11 @@
 import { useRef, useEffect } from "react";
-import { View, Text, Pressable } from "react-native";
+import { Pressable, Text } from "react-native";
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { Dumbbell, Activity, Scale, ChevronRight } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { colors, fonts, radii } from "@/lib/theme";
 import type { RootStackParamList } from "../../App";
 
 interface Props {
@@ -14,37 +15,27 @@ interface Props {
   onLogCardio?: () => void;
 }
 
-const ACTIONS = [
-  {
-    key: "workout",
-    icon: Dumbbell,
-    iconColor: "#0077FF",
-    label: "Start Workout",
-  },
-  {
-    key: "cardio",
-    icon: Activity,
-    iconColor: "#10B981",
-    label: "Start Cardio",
-  },
-  {
-    key: "metrics",
-    icon: Scale,
-    iconColor: "#8B5CF6",
-    label: "Log Body Metrics",
-  },
-] as const;
+type ActionKey = "workout" | "cardio" | "metrics";
+
+const ACTIONS: ReadonlyArray<{
+  key: ActionKey;
+  icon: typeof Dumbbell;
+  /** Tone colour pulled from tokens — keep adjacent to the acid-sport palette. */
+  iconColor: string;
+  label: string;
+}> = [
+  { key: "workout", icon: Dumbbell, iconColor: colors.blue2, label: "Start workout" },
+  { key: "cardio", icon: Activity, iconColor: colors.green, label: "Start cardio" },
+  { key: "metrics", icon: Scale, iconColor: colors.purple, label: "Log body metrics" },
+];
 
 export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
-    if (open) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
-    }
+    if (open) bottomSheetRef.current?.expand();
+    else bottomSheetRef.current?.close();
   }, [open]);
 
   const renderBackdrop = (props: BottomSheetBackdropProps) => (
@@ -53,19 +44,15 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
       disappearsOnIndex={-1}
       appearsOnIndex={0}
       opacity={0.6}
-      style={[props.style, { backgroundColor: "rgba(6, 11, 20, 0.6)" }]}
+      style={[props.style, { backgroundColor: "rgba(11,13,18,0.6)" }]}
     />
   );
 
-  const handleAction = (key: (typeof ACTIONS)[number]["key"]) => {
+  const handleAction = (key: ActionKey) => {
     onClose();
-    if (key === "workout") {
-      onStartWorkout?.();
-    } else if (key === "cardio") {
-      onLogCardio?.();
-    } else if (key === "metrics") {
-      navigation.navigate("Settings" as any);
-    }
+    if (key === "workout") onStartWorkout?.();
+    else if (key === "cardio") onLogCardio?.();
+    else if (key === "metrics") navigation.navigate("Settings" as never);
   };
 
   return (
@@ -77,15 +64,11 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
-        backgroundColor: "#0F1629",
+        backgroundColor: colors.bg1,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
       }}
-      handleIndicatorStyle={{
-        backgroundColor: "#243052",
-        width: 40,
-        height: 4,
-      }}
+      handleIndicatorStyle={{ backgroundColor: colors.line2, width: 40, height: 4 }}
     >
       <BottomSheetView
         style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 }}
@@ -97,8 +80,10 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
               flexDirection: "row",
               alignItems: "center",
               height: 56,
-              borderRadius: 12,
-              backgroundColor: "#1A2340",
+              borderRadius: radii.card,
+              backgroundColor: colors.bg2,
+              borderWidth: 1,
+              borderColor: colors.lineSoft,
               paddingHorizontal: 16,
               gap: 14,
               opacity: pressed ? 0.75 : 1,
@@ -111,14 +96,14 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
             <Text
               style={{
                 flex: 1,
-                color: "#F0F4F8",
+                color: colors.text,
                 fontSize: 15,
-                fontWeight: "500",
+                fontFamily: fonts.bodyMedium,
               }}
             >
               {label}
             </Text>
-            <ChevronRight size={18} color="#4E6180" />
+            <ChevronRight size={18} color={colors.text4} />
           </Pressable>
         ))}
       </BottomSheetView>

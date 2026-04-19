@@ -1,17 +1,20 @@
 import { View, Text, StyleSheet } from "react-native";
+import { colors, fonts, radii } from "@/lib/theme";
 
 interface BadgeProps {
   children: string;
   variant?: "default" | "success" | "warning" | "destructive" | "gold" | "orange";
 }
 
+// Token-driven variants. `default` maps to cobalt (the v2 "accent" slot);
+// `success` uses cobalt too since v2 replaces the v1 lime-as-green mapping.
 const variantStyles: Record<NonNullable<BadgeProps["variant"]>, { bg: string; text: string }> = {
-  default:     { bg: "rgba(59,130,246,0.15)",  text: "#3B82F6" },   // primary
-  success:     { bg: "rgba(34,197,94,0.15)",   text: "#22C55E" },   // success
-  warning:     { bg: "rgba(245,158,11,0.15)",  text: "#F59E0B" },   // warning
-  destructive: { bg: "rgba(239,68,68,0.15)",   text: "#EF4444" },   // destructive
-  gold:        { bg: "rgba(255,215,0,0.15)",   text: "#FFD700" },   // pr-gold
-  orange:      { bg: "rgba(251,146,60,0.15)",  text: "#FB923C" },   // streak-orange
+  default: { bg: colors.greenSoft, text: colors.green },
+  success: { bg: colors.greenSoft, text: colors.green },
+  warning: { bg: colors.amberSoft, text: colors.amber },
+  destructive: { bg: "rgba(255,61,90,0.14)", text: colors.red },
+  gold: { bg: colors.amberSoft, text: colors.amber },
+  orange: { bg: "rgba(255,122,60,0.14)", text: colors.orange },
 };
 
 export function Badge({ children, variant = "default" }: BadgeProps) {
@@ -26,12 +29,13 @@ export function Badge({ children, variant = "default" }: BadgeProps) {
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 9999,
+    borderRadius: radii.chip,
     paddingHorizontal: 10,
     paddingVertical: 2,
   },
   text: {
-    fontSize: 12,
-    fontWeight: "500",
+    // v2 chip floor: 10px minimum. Was 12 but tokens now drive everything.
+    fontSize: 10.5,
+    fontFamily: fonts.bodySemi,
   },
 });

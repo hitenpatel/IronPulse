@@ -227,14 +227,17 @@ export function ExerciseCard({
         {previousSets && previousSets.length > 0 && (
           <Text
             style={{
-              color: colors.dimFg,
+              // v2 a11y: text3 (~7:1) for data-bearing "previous performance"
+              // copy, reserving text4 for purely decorative labels.
+              color: t.text3,
               fontSize: 12,
               paddingHorizontal: 16,
               marginBottom: 10,
+              fontFamily: fonts.bodyRegular,
             }}
             numberOfLines={2}
           >
-            <Text style={{ fontWeight: "600", color: colors.mutedFg }}>Last: </Text>
+            <Text style={{ fontFamily: fonts.bodySemi, color: t.text2 }}>Last: </Text>
             {previousSets
               .map((s) => {
                 if (s.weight_kg != null && s.reps != null)

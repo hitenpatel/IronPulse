@@ -48,8 +48,10 @@ export function PulseTabBar({
   ) => {
     const routeIndex = routeNames.indexOf(name);
     const isActive = state.index === routeIndex;
-    const iconColor = isActive ? colors.blue : colors.text4;
-    const labelColor = isActive ? colors.blue2 : colors.text4;
+    // v2 a11y: inactive tab label uses text-3 (~7:1 on bg) per handoff README,
+    // not text-4 which is reserved for decorative labels.
+    const iconColor = isActive ? colors.blue : colors.text3;
+    const labelColor = isActive ? colors.blue2 : colors.text3;
     const tabTestId = `tab-${name.toLowerCase()}`;
 
     return (
@@ -129,7 +131,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   tabLabel: {
-    fontSize: 10,
+    // v2 a11y: tab bar labels enforced at 10.5px floor per handoff README.
+    fontSize: 10.5,
     fontWeight: "500",
     lineHeight: 13,
     fontFamily: fonts.body,
