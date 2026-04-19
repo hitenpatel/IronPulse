@@ -3,16 +3,13 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { usePowerSync } from "@powersync/react";
 import * as Haptics from "@/lib/haptics";
 import { Check, Minus } from "lucide-react-native";
+import { colors, fonts, radii } from "@/lib/theme";
 
-const colors = {
-  foreground: "hsl(213, 31%, 91%)",
-  muted: "hsl(223, 47%, 11%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  accent: "hsl(216, 34%, 17%)",
-  destructive: "hsl(0, 63%, 31%)",
-  green: "hsl(142, 71%, 45%)",
-};
+interface PreviousSet {
+  weight_kg: number | null;
+  reps: number | null;
+  set_number: number;
+}
 
 interface SetRowProps {
   setId: string;
@@ -23,10 +20,19 @@ interface SetRowProps {
   completed: 0 | 1;
   exerciseIndex: number;
   setIndex: number;
+  previousSet?: PreviousSet;
+  /** When true, this row renders with a blue-tinted bg — the "next up" row. */
+  isActive?: boolean;
   onComplete: () => void;
   onRpePick: (setId: string, currentRpe: number | null) => void;
 }
 
+const EMPTY_PLACEHOLDER = "—";
+
+/**
+ * A single set inside an exercise card. Matches the 5-column grid in the
+ * handoff: # · PREV · KG · REPS · RPE · ✓ · delete.
+ */
 export function SetRow({
   setId,
   setNumber,
@@ -36,23 +42,22 @@ export function SetRow({
   completed,
   exerciseIndex,
   setIndex,
+  previousSet,
+  isActive,
   onComplete,
   onRpePick,
 }: SetRowProps) {
   const db = usePowerSync();
 
   const [localWeight, setLocalWeight] = useState(
-    weightKg != null ? String(weightKg) : ""
+    weightKg != null ? String(weightKg) : "",
   );
-  const [localReps, setLocalReps] = useState(
-    reps != null ? String(reps) : ""
-  );
+  const [localReps, setLocalReps] = useState(reps != null ? String(reps) : "");
   const [isCompleted, setIsCompleted] = useState(completed === 1);
 
   const weightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync props to local state when they change externally
   useEffect(() => {
     setLocalWeight(weightKg != null ? String(weightKg) : "");
   }, [weightKg]);
@@ -71,13 +76,10 @@ export function SetRow({
       weightTimer.current = setTimeout(() => {
         const parsed = parseFloat(value);
         const val = isNaN(parsed) ? null : parsed;
-        db.execute("UPDATE exercise_sets SET weight_kg = ? WHERE id = ?", [
-          val,
-          setId,
-        ]);
+        db.execute("UPDATE exercise_sets SET weight_kg = ? WHERE id = ?", [val, setId]);
       }, 500);
     },
-    [db, setId]
+    [db, setId],
   );
 
   const debouncedWriteReps = useCallback(
@@ -86,13 +88,10 @@ export function SetRow({
       repsTimer.current = setTimeout(() => {
         const parsed = parseInt(value, 10);
         const val = isNaN(parsed) ? null : parsed;
-        db.execute("UPDATE exercise_sets SET reps = ? WHERE id = ?", [
-          val,
-          setId,
-        ]);
+        db.execute("UPDATE exercise_sets SET reps = ? WHERE id = ?", [val, setId]);
       }, 500);
     },
-    [db, setId]
+    [db, setId],
   );
 
   useEffect(() => {
@@ -115,10 +114,7 @@ export function SetRow({
   const handleToggleComplete = async () => {
     const next = isCompleted ? 0 : 1;
     setIsCompleted(!isCompleted);
-    await db.execute("UPDATE exercise_sets SET completed = ? WHERE id = ?", [
-      next,
-      setId,
-    ]);
+    await db.execute("UPDATE exercise_sets SET completed = ? WHERE id = ?", [next, setId]);
     if (next === 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onComplete();
@@ -129,16 +125,27 @@ export function SetRow({
     await db.execute("DELETE FROM exercise_sets WHERE id = ?", [setId]);
   };
 
-  const inputStyle = {
-    color: colors.foreground,
-    backgroundColor: colors.muted,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    fontSize: 15,
-    minHeight: 44,
+  const prevLabel =
+    previousSet?.weight_kg != null && previousSet?.reps != null
+      ? `${previousSet.weight_kg}×${previousSet.reps}`
+      : previousSet?.reps != null
+        ? `${previousSet.reps}r`
+        : EMPTY_PLACEHOLDER;
+
+  const valueColor = isCompleted ? colors.text3 : colors.text;
+  const inputBg = isActive ? "rgba(0,119,255,0.10)" : "transparent";
+
+  const textInputStyle = {
+    color: valueColor,
+    backgroundColor: inputBg,
+    borderRadius: radii.buttonSm,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    fontSize: 16,
+    fontFamily: fonts.displayMedium,
     textAlign: "center" as const,
     flex: 1,
+    minHeight: 36,
   };
 
   return (
@@ -146,93 +153,117 @@ export function SetRow({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 4,
         paddingVertical: 4,
         paddingHorizontal: 12,
+        backgroundColor: isActive ? "rgba(0,119,255,0.06)" : "transparent",
+        marginHorizontal: isActive ? 4 : 0,
+        marginVertical: isActive ? 2 : 0,
+        borderRadius: isActive ? radii.buttonSm : 0,
       }}
     >
-      {/* Set number */}
+      {/* Set number / complete indicator */}
       <Text
         style={{
-          color: colors.mutedFg,
-          fontSize: 14,
-          fontWeight: "600",
+          color: isCompleted ? colors.green : colors.text3,
+          fontSize: 13,
+          fontFamily: fonts.monoMedium,
           width: 28,
           textAlign: "center",
         }}
       >
-        {setNumber}
+        {isCompleted ? "✓" : setNumber}
       </Text>
 
-      {/* Weight */}
+      {/* PREV — read-only, mono small */}
+      <Text
+        numberOfLines={1}
+        style={{
+          flex: 1.2,
+          color: colors.text4,
+          fontSize: 11,
+          fontFamily: fonts.monoRegular,
+          textAlign: "center",
+        }}
+      >
+        {prevLabel}
+      </Text>
+
+      {/* KG */}
       <TextInput
         testID={`weight-input-${exerciseIndex}-${setIndex}`}
         value={localWeight}
         onChangeText={handleWeightChange}
         keyboardType="decimal-pad"
-        placeholder="0"
-        placeholderTextColor={colors.mutedFg}
-        style={inputStyle}
+        placeholder={EMPTY_PLACEHOLDER}
+        placeholderTextColor={colors.text4}
+        style={textInputStyle}
       />
 
-      {/* Reps */}
+      {/* REPS */}
       <TextInput
         testID={`reps-input-${exerciseIndex}-${setIndex}`}
         value={localReps}
         onChangeText={handleRepsChange}
         keyboardType="number-pad"
-        placeholder="0"
-        placeholderTextColor={colors.mutedFg}
-        style={inputStyle}
+        placeholder={EMPTY_PLACEHOLDER}
+        placeholderTextColor={colors.text4}
+        style={textInputStyle}
       />
 
       {/* RPE */}
       <Pressable
         onPress={() => onRpePick(setId, rpe)}
+        hitSlop={4}
         style={{
-          minHeight: 44,
-          minWidth: 44,
+          width: 44,
+          minHeight: 36,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: colors.muted,
-          borderRadius: 6,
+          backgroundColor: rpe != null ? colors.bg3 : "transparent",
+          borderRadius: radii.buttonSm,
         }}
       >
-        <Text style={{ color: rpe != null ? colors.foreground : colors.mutedFg, fontSize: 14 }}>
-          {rpe != null ? rpe : "RPE"}
+        <Text
+          style={{
+            color: rpe != null ? colors.text : colors.text4,
+            fontSize: 11,
+            fontFamily: fonts.monoMedium,
+          }}
+        >
+          {rpe != null ? rpe : EMPTY_PLACEHOLDER}
         </Text>
       </Pressable>
 
-      {/* Complete checkmark */}
+      {/* Complete toggle */}
       <Pressable
         testID={`complete-set-${exerciseIndex}-${setIndex}`}
         onPress={handleToggleComplete}
+        hitSlop={4}
         style={{
-          minHeight: 44,
-          minWidth: 44,
+          width: 44,
+          minHeight: 36,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: isCompleted ? colors.green : colors.muted,
-          borderRadius: 6,
+          backgroundColor: isCompleted ? colors.green : isActive ? colors.blue : colors.bg3,
+          borderRadius: radii.buttonSm,
         }}
       >
-        <Check
-          size={18}
-          color={isCompleted ? "hsl(224, 71%, 4%)" : colors.mutedFg}
-        />
+        <Check size={16} color={isCompleted || isActive ? colors.white : colors.text3} />
       </Pressable>
 
       {/* Delete */}
       <Pressable
         onPress={handleDelete}
+        hitSlop={4}
         style={{
-          minHeight: 44,
-          minWidth: 32,
+          width: 32,
+          minHeight: 36,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Minus size={16} color={colors.destructive} />
+        <Minus size={14} color={colors.text4} />
       </Pressable>
     </View>
   );

@@ -263,23 +263,27 @@ export function ExerciseCard({
           <View style={{ width: 32 }} />
         </View>
 
-        {/* Set rows */}
-        {sets.map((set, idx) => (
-          <SetRow
-            key={set.id}
-            setId={set.id}
-            setNumber={set.set_number}
-            weightKg={set.weight_kg}
-            reps={set.reps}
-            rpe={set.rpe}
-            completed={set.completed}
-            exerciseIndex={exerciseIndex}
-            setIndex={idx}
-            previousSet={previousSets?.[idx]}
-            onComplete={onSetComplete}
-            onRpePick={onRpePick}
-          />
-        ))}
+        {/* Set rows — first incomplete set is the "active" row. */}
+        {(() => {
+          const firstIncomplete = sets.findIndex((s) => !s.completed);
+          return sets.map((set, idx) => (
+            <SetRow
+              key={set.id}
+              setId={set.id}
+              setNumber={set.set_number}
+              weightKg={set.weight_kg}
+              reps={set.reps}
+              rpe={set.rpe}
+              completed={set.completed}
+              exerciseIndex={exerciseIndex}
+              setIndex={idx}
+              previousSet={previousSets?.[idx]}
+              isActive={idx === firstIncomplete}
+              onComplete={onSetComplete}
+              onRpePick={onRpePick}
+            />
+          ));
+        })()}
 
         {/* + Add Set button */}
         <Pressable
@@ -294,15 +298,15 @@ export function ExerciseCard({
             gap: 6,
           }}
         >
-          <Plus size={16} color={colors.primary} />
+          <Plus size={16} color={t.blue2} />
           <Text
             style={{
-              color: colors.primary,
-              fontSize: 14,
-              fontWeight: "600",
+              color: t.blue2,
+              fontSize: 13,
+              fontFamily: fonts.bodySemi,
             }}
           >
-            + Add Set
+            Add Set
           </Text>
         </Pressable>
       </View>

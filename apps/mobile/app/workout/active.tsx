@@ -299,7 +299,7 @@ export default function ActiveWorkoutScreen() {
               borderColor: colors.line,
             }}
           >
-            <Plus size={18} color={colors.blue2} />
+            <Plus size={16} color={colors.blue2} />
             <Text
               style={{
                 color: colors.blue2,
