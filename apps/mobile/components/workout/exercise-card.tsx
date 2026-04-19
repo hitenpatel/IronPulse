@@ -180,7 +180,9 @@ export function ExerciseCard({
             style={{
               fontFamily: fonts.monoSemi,
               fontSize: 8.5,
-              color: t.white,
+              // Lime badge bg → ink text so it's readable. Cobalt (superset)
+              // bg reads fine with warm white.
+              color: isInSuperset ? t.text : t.blueInk,
               letterSpacing: 1.3,
             }}
           >
