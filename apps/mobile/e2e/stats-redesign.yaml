@@ -1,0 +1,16 @@
+appId: com.ironpulse.app
+---
+# QA for #220 — Stats redesign.
+- launchApp
+- tapOn: "Stats"
+- assertVisible: "Stats"
+- assertVisible: "4w"
+- assertVisible: "12w"
+- assertVisible: "1y"
+- assertVisible: "Training status"
+- assertVisible: "Weekly volume"
+- assertVisible: "Records"
+
+# Range toggle
+- tapOn: "4w"
+- tapOn: "1y"
