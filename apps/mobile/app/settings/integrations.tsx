@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 // Navigation header set via App.tsx screen options
-import { Activity, BarChart3, Heart, Watch } from "lucide-react-native";
+import { Activity, BarChart3, Circle, Heart, Scale, Watch, Zap } from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
@@ -33,8 +33,9 @@ import {
   syncFromGoogleFit,
   getGoogleFitLastSync,
 } from "@/lib/googlefit";
+import { Config } from "@/lib/config";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = Config.API_URL;
 
 interface Connection {
   id: string;
@@ -137,7 +138,17 @@ export default function IntegrationsScreen() {
         await syncFromGoogleFit(db, user!.id);
         setGfConnected(true);
         setGfLastSync(new Date().toISOString());
+      } else {
+        Alert.alert(
+          "Google Fit",
+          "Authorisation was denied or cancelled. Make sure Google Play Services is up to date and this app's SHA-1 cert is registered as an Android OAuth client in Google Cloud Console.",
+        );
       }
+    } catch (err: any) {
+      Alert.alert(
+        "Google Fit",
+        err?.message ?? "Could not authorise Google Fit. The OAuth client may not be configured for this build's signing key.",
+      );
     } finally {
       setGfLoading(false);
     }
@@ -182,6 +193,24 @@ export default function IntegrationsScreen() {
   const stravaConnection = connections.find((c) => c.provider === "strava");
   const garminConnection = connections.find((c) => c.provider === "garmin");
   const intervalsConnection = connections.find((c) => c.provider === "intervals_icu");
+  const polarConnection = connections.find((c) => c.provider === "polar");
+  const ouraConnection = connections.find((c) => c.provider === "oura");
+  const withingsConnection = connections.find((c) => c.provider === "withings");
+
+  // Generic OAuth redirect + disconnect handlers for Polar / Oura / Withings
+  const handleOAuthConnect = (provider: string) => {
+    Linking.openURL(`${API_BASE_URL}/api/${provider}/connect`);
+  };
+
+  const handleProviderDisconnect = async (provider: string) => {
+    setDisconnecting(true);
+    try {
+      await trpc.integration.disconnectProvider.mutate({ provider });
+      await fetchConnections();
+    } finally {
+      setDisconnecting(false);
+    }
+  };
 
   // Intervals.icu: API key + athlete ID (no OAuth — direct credentials)
   const [icuAthleteId, setIcuAthleteId] = useState("");
@@ -246,6 +275,74 @@ export default function IntegrationsScreen() {
       setDisconnecting(false);
     }
   };
+
+  // OAuth provider card: consistent connect/disconnect UI for Polar, Oura, Withings
+  const renderOAuthCard = (opts: {
+    provider: string;
+    name: string;
+    brandColor: string;
+    icon: React.ReactNode;
+    connection: Connection | undefined;
+  }) => (
+    <Card key={opts.provider} style={{ gap: 12, marginTop: 16 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        {opts.icon}
+        <Text style={{ fontSize: 18, fontWeight: "600", color: "hsl(213, 31%, 91%)" }}>
+          {opts.name}
+        </Text>
+      </View>
+
+      {opts.connection ? (
+        <View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" }} />
+            <Text style={{ color: "#22c55e", fontWeight: "600" }}>Connected</Text>
+          </View>
+          {opts.connection.lastSyncedAt && (
+            <Text style={{ color: "hsl(215, 20%, 65%)", fontSize: 12, marginBottom: 12 }}>
+              Last synced{" "}
+              {new Date(opts.connection.lastSyncedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </Text>
+          )}
+          <Pressable
+            onPress={() => handleProviderDisconnect(opts.provider)}
+            disabled={disconnecting}
+            style={{
+              paddingVertical: 10,
+              borderRadius: 8,
+              alignItems: "center",
+              backgroundColor: "hsl(0, 63%, 31%)",
+              opacity: disconnecting ? 0.6 : 1,
+            }}
+          >
+            <Text style={{ color: "hsl(210, 40%, 98%)", fontWeight: "600" }}>
+              {disconnecting ? "Disconnecting..." : "Disconnect"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View>
+          <Text style={{ color: "hsl(215, 20%, 65%)", marginBottom: 12 }}>Not connected</Text>
+          <Pressable
+            onPress={() => handleOAuthConnect(opts.provider)}
+            style={{
+              paddingVertical: 10,
+              borderRadius: 8,
+              alignItems: "center",
+              backgroundColor: opts.brandColor,
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Connect</Text>
+          </Pressable>
+        </View>
+      )}
+    </Card>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(224, 71%, 4%)" }} edges={["bottom"]}>
@@ -584,6 +681,30 @@ export default function IntegrationsScreen() {
               </View>
             )}
           </Card>
+
+          {renderOAuthCard({
+            provider: "polar",
+            name: "Polar",
+            brandColor: "#E31937",
+            icon: <Zap size={20} color="#E31937" />,
+            connection: polarConnection,
+          })}
+
+          {renderOAuthCard({
+            provider: "oura",
+            name: "Oura",
+            brandColor: "#1A1A1A",
+            icon: <Circle size={20} color="#E0E0E0" />,
+            connection: ouraConnection,
+          })}
+
+          {renderOAuthCard({
+            provider: "withings",
+            name: "Withings",
+            brandColor: "#00A7E1",
+            icon: <Scale size={20} color="#00A7E1" />,
+            connection: withingsConnection,
+          })}
 
           {Platform.OS === "android" && gfAvailable && (
             <Card style={{ gap: 12, marginTop: 16 }}>
