@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
   Activity,
   Calendar as CalendarIcon,
@@ -23,23 +23,17 @@ import {
   Trash2,
   Trophy,
 } from "lucide-react-native";
-import { trpc } from "@/lib/trpc";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
-  success: "#22C55E",
-  gold: "#F59E0B",
-  error: "#EF4444",
-};
+import { trpc } from "@/lib/trpc";
+import { colors, fonts, radii, spacing } from "@/lib/theme";
+import {
+  BigNum,
+  Button,
+  Chip,
+  SegmentedControl,
+  TopBar,
+  UppercaseLabel,
+} from "@/components/ui";
 
 type GoalType = "body_weight" | "exercise_pr" | "weekly_workouts" | "cardio_distance";
 type GoalUnit = "kg" | "lb" | "count" | "km" | "mi";
@@ -48,11 +42,12 @@ const GOAL_TYPES: {
   value: GoalType;
   label: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
+  tone: "blue" | "green" | "amber" | "purple";
 }[] = [
-  { value: "body_weight", label: "Body Weight", icon: Scale },
-  { value: "exercise_pr", label: "Exercise PR", icon: Dumbbell },
-  { value: "weekly_workouts", label: "Weekly Workouts", icon: CalendarIcon },
-  { value: "cardio_distance", label: "Cardio Distance", icon: Activity },
+  { value: "body_weight", label: "Body weight", icon: Scale, tone: "blue" },
+  { value: "exercise_pr", label: "Exercise PR", icon: Dumbbell, tone: "amber" },
+  { value: "weekly_workouts", label: "Weekly workouts", icon: CalendarIcon, tone: "green" },
+  { value: "cardio_distance", label: "Cardio distance", icon: Activity, tone: "purple" },
 ];
 
 const UNITS_FOR_TYPE: Record<GoalType, GoalUnit[]> = {
@@ -65,17 +60,24 @@ const UNITS_FOR_TYPE: Record<GoalType, GoalUnit[]> = {
 type GoalListResult = Awaited<ReturnType<typeof trpc.goal.list.query>>;
 type Goal = GoalListResult["goals"][number];
 
+type Tab = "active" | "done" | "paused";
+
 function iconFor(type: string) {
   return GOAL_TYPES.find((t) => t.value === type)?.icon ?? Target;
 }
+function toneFor(type: string) {
+  return GOAL_TYPES.find((t) => t.value === type)?.tone ?? "blue";
+}
 
 export default function GoalsScreen() {
+  const navigation = useNavigation();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("active");
 
-  // Form
+  // Form state
   const [type, setType] = useState<GoalType>("body_weight");
   const [title, setTitle] = useState("");
   const [targetValue, setTargetValue] = useState("");
@@ -88,7 +90,7 @@ export default function GoalsScreen() {
       const result = await trpc.goal.list.query({});
       setGoals(result.goals);
     } catch {
-      // keep stale
+      /* keep stale */
     } finally {
       setLoading(false);
     }
@@ -96,9 +98,29 @@ export default function GoalsScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  const counts = useMemo(
+    () => ({
+      active: goals.filter((g) => g.status === "active").length,
+      done: goals.filter((g) => g.status === "completed").length,
+      paused: goals.filter((g) => g.status === "paused").length,
+    }),
+    [goals],
+  );
+
+  const visible = useMemo(() => {
+    switch (tab) {
+      case "active":
+        return goals.filter((g) => g.status === "active");
+      case "done":
+        return goals.filter((g) => g.status === "completed");
+      case "paused":
+        return goals.filter((g) => g.status === "paused");
+    }
+  }, [tab, goals]);
+
   function handleTypeChange(next: GoalType) {
     setType(next);
-    setUnit(UNITS_FOR_TYPE[next][0]);
+    setUnit(UNITS_FOR_TYPE[next][0]!);
   }
 
   async function handleCreate() {
@@ -157,54 +179,67 @@ export default function GoalsScreen() {
     ]);
   }
 
-  const active = goals.filter((g) => g.status === "active");
-  const completed = goals.filter((g) => g.status === "completed");
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-          {/* Create button */}
-          {!showForm && (
-            <Pressable
-              onPress={() => setShowForm(true)}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                backgroundColor: colors.primary,
-                borderRadius: 10,
-                height: 46,
-              }}
-            >
-              <Plus size={18} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>
-                New Goal
-              </Text>
-            </Pressable>
-          )}
+        <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 32 }}>
+          <TopBar
+            title="Goals"
+            onBack={() => navigation.goBack()}
+            right={
+              <Pressable
+                onPress={() => setShowForm((s) => !s)}
+                hitSlop={6}
+                accessibilityLabel="New goal"
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  backgroundColor: showForm ? colors.bg2 : colors.blue,
+                  borderWidth: 1,
+                  borderColor: showForm ? colors.line : colors.blue,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Plus
+                  size={16}
+                  color={showForm ? colors.text2 : colors.white}
+                  style={{
+                    transform: [{ rotate: showForm ? "45deg" : "0deg" }],
+                  }}
+                />
+              </Pressable>
+            }
+          />
 
-          {/* Form */}
+          <SegmentedControl<Tab>
+            items={[
+              { key: "active", label: `Active · ${counts.active}` },
+              { key: "done", label: `Done · ${counts.done}` },
+              { key: "paused", label: `Paused · ${counts.paused}` },
+            ]}
+            activeKey={tab}
+            onChange={setTab}
+          />
+
+          {/* Create form */}
           {showForm && (
             <View
               style={{
-                backgroundColor: colors.card,
-                borderRadius: 12,
+                backgroundColor: colors.bg1,
+                borderRadius: radii.card,
                 borderWidth: 1,
-                borderColor: colors.border,
-                padding: 16,
+                borderColor: colors.lineSoft,
+                padding: 14,
                 gap: 12,
+                marginTop: 14,
               }}
             >
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>
-                Create Goal
-              </Text>
-
-              {/* Type grid */}
+              <UppercaseLabel>New goal</UppercaseLabel>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {GOAL_TYPES.map((gt) => {
                   const Icon = gt.icon;
@@ -217,21 +252,21 @@ export default function GoalsScreen() {
                         flexDirection: "row",
                         alignItems: "center",
                         gap: 6,
-                        backgroundColor: active ? colors.primary + "22" : colors.accent,
+                        backgroundColor: active ? colors.blueSoft : colors.bg2,
                         borderWidth: 1,
-                        borderColor: active ? colors.primary : colors.border,
+                        borderColor: active ? colors.blue : colors.line,
                         borderRadius: 8,
                         paddingHorizontal: 10,
                         paddingVertical: 8,
                         minWidth: "47%",
                       }}
                     >
-                      <Icon size={14} color={active ? colors.primary : colors.mutedFg} />
+                      <Icon size={14} color={active ? colors.blue2 : colors.text3} />
                       <Text
                         style={{
-                          color: active ? colors.primary : colors.mutedFg,
-                          fontSize: 13,
-                          fontWeight: "500",
+                          color: active ? colors.blue2 : colors.text2,
+                          fontSize: 12,
+                          fontFamily: fonts.bodyMedium,
                         }}
                       >
                         {gt.label}
@@ -241,92 +276,26 @@ export default function GoalsScreen() {
                 })}
               </View>
 
-              <TextInput
-                style={{
-                  backgroundColor: colors.accent,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  height: 44,
-                  paddingHorizontal: 12,
-                  color: colors.foreground,
-                  fontSize: 15,
-                }}
-                placeholder="Goal title"
-                placeholderTextColor={colors.dimFg}
-                value={title}
-                onChangeText={setTitle}
-              />
-
+              <LabeledInput label="Title" value={title} onChangeText={setTitle} />
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: colors.dimFg,
-                      fontSize: 10,
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Target
-                  </Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: colors.accent,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: 8,
-                      height: 40,
-                      paddingHorizontal: 10,
-                      color: colors.foreground,
-                      fontSize: 14,
-                    }}
+                  <LabeledInput
+                    label="Target"
+                    keyboardType="decimal-pad"
                     value={targetValue}
                     onChangeText={setTargetValue}
-                    keyboardType="decimal-pad"
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: colors.dimFg,
-                      fontSize: 10,
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Start
-                  </Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: colors.accent,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: 8,
-                      height: 40,
-                      paddingHorizontal: 10,
-                      color: colors.foreground,
-                      fontSize: 14,
-                    }}
+                  <LabeledInput
+                    label="Start"
+                    keyboardType="decimal-pad"
                     value={startValue}
                     onChangeText={setStartValue}
-                    keyboardType="decimal-pad"
                   />
                 </View>
-                <View style={{ width: 80 }}>
-                  <Text
-                    style={{
-                      color: colors.dimFg,
-                      fontSize: 10,
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Unit
-                  </Text>
+                <View style={{ width: 84 }}>
+                  <UppercaseLabel style={{ marginBottom: 6 }}>Unit</UppercaseLabel>
                   <View style={{ flexDirection: "row", gap: 4 }}>
                     {UNITS_FOR_TYPE[type].map((u) => (
                       <Pressable
@@ -334,20 +303,19 @@ export default function GoalsScreen() {
                         onPress={() => setUnit(u)}
                         style={{
                           flex: 1,
-                          height: 40,
+                          paddingVertical: 9,
                           borderWidth: 1,
-                          borderColor: unit === u ? colors.primary : colors.border,
-                          backgroundColor: unit === u ? colors.primary + "22" : colors.accent,
-                          borderRadius: 8,
+                          borderColor: unit === u ? colors.blue : colors.line,
+                          backgroundColor: unit === u ? colors.blueSoft : colors.bg2,
+                          borderRadius: radii.buttonSm,
                           alignItems: "center",
-                          justifyContent: "center",
                         }}
                       >
                         <Text
                           style={{
-                            color: unit === u ? colors.primary : colors.mutedFg,
-                            fontSize: 12,
-                            fontWeight: "600",
+                            color: unit === u ? colors.blue2 : colors.text3,
+                            fontSize: 11,
+                            fontFamily: fonts.monoMedium,
                           }}
                         >
                           {u}
@@ -357,306 +325,229 @@ export default function GoalsScreen() {
                   </View>
                 </View>
               </View>
-
               <View style={{ flexDirection: "row", gap: 8 }}>
-                <Pressable
-                  onPress={handleCreate}
-                  disabled={saving || !title.trim() || !targetValue}
-                  style={{
-                    flex: 1,
-                    backgroundColor:
-                      saving || !title.trim() || !targetValue ? colors.muted : colors.primary,
-                    borderRadius: 8,
-                    height: 42,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    variant="primary"
+                    onPress={handleCreate}
+                    disabled={saving || !title.trim() || !targetValue}
+                  >
                     {saving ? "Creating…" : "Create"}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setShowForm(false)}
+                  </Button>
+                </View>
+                <Button variant="ghost" onPress={() => setShowForm(false)} style={{ paddingHorizontal: 18 }}>
+                  Cancel
+                </Button>
+              </View>
+            </View>
+          )}
+
+          {/* List */}
+          <View style={{ marginTop: 14, gap: 10 }}>
+            {loading ? (
+              <ActivityIndicator color={colors.text3} />
+            ) : visible.length === 0 ? (
+              <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
+                <Target size={32} color={colors.text4} />
+                <Text
                   style={{
-                    backgroundColor: colors.accent,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 8,
-                    height: 42,
-                    paddingHorizontal: 16,
-                    alignItems: "center",
-                    justifyContent: "center",
+                    color: colors.text3,
+                    fontSize: 13,
+                    fontFamily: fonts.bodyRegular,
                   }}
                 >
-                  <Text style={{ color: colors.mutedFg, fontWeight: "600", fontSize: 14 }}>
-                    Cancel
-                  </Text>
-                </Pressable>
-              </View>
-
-              {type === "exercise_pr" && (
-                <Text style={{ color: colors.dimFg, fontSize: 11 }}>
-                  Tip: exercise-specific goals can be edited on the web app to pick an exercise.
+                  {tab === "active"
+                    ? "No active goals. Set a target to stay motivated."
+                    : tab === "done"
+                      ? "No completed goals yet."
+                      : "No paused goals."}
                 </Text>
-              )}
-            </View>
-          )}
-
-          {loading ? (
-            <ActivityIndicator color={colors.foreground} style={{ marginTop: 24 }} />
-          ) : goals.length === 0 ? (
-            <View style={{ alignItems: "center", paddingVertical: 48, gap: 12 }}>
-              <Target size={40} color={colors.dimFg} />
-              <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "600" }}>
-                No goals yet
-              </Text>
-              <Text
-                style={{
-                  color: colors.mutedFg,
-                  fontSize: 14,
-                  textAlign: "center",
-                  lineHeight: 20,
-                }}
-              >
-                Set a target to stay motivated.
-              </Text>
-            </View>
-          ) : (
-            <>
-              {active.length > 0 && (
-                <>
-                  <Text
-                    style={{
-                      color: colors.mutedFg,
-                      fontSize: 11,
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      letterSpacing: 0.4,
-                    }}
-                  >
-                    Active ({active.length})
-                  </Text>
-                  {active.map((goal) => {
-                    const Icon = iconFor(goal.type);
-                    return (
-                      <View
-                        key={goal.id}
-                        style={{
-                          backgroundColor: colors.card,
-                          borderRadius: 12,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          padding: 14,
-                          gap: 10,
-                        }}
-                      >
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 10,
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 8,
-                              backgroundColor: colors.primary + "22",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <Icon size={16} color={colors.primary} />
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={{
-                                color: colors.foreground,
-                                fontWeight: "600",
-                                fontSize: 15,
-                              }}
-                              numberOfLines={1}
-                            >
-                              {goal.title}
-                            </Text>
-                            {goal.targetDate && (
-                              <Text style={{ color: colors.dimFg, fontSize: 11, marginTop: 2 }}>
-                                by {new Date(goal.targetDate).toLocaleDateString()}
-                              </Text>
-                            )}
-                          </View>
-                          <Pressable
-                            onPress={() => handleDelete(goal.id, goal.title)}
-                            hitSlop={8}
-                            disabled={savingId === goal.id}
-                          >
-                            {savingId === goal.id ? (
-                              <ActivityIndicator size="small" color={colors.mutedFg} />
-                            ) : (
-                              <Trash2 size={16} color={colors.dimFg} />
-                            )}
-                          </Pressable>
-                        </View>
-
-                        {/* Progress */}
-                        <View>
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              marginBottom: 6,
-                            }}
-                          >
-                            <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
-                              {Number(goal.currentValue).toLocaleString(undefined, {
-                                maximumFractionDigits: 1,
-                              })}{" "}
-                              {goal.unit}
-                            </Text>
-                            <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>
-                              {Number(goal.targetValue).toLocaleString(undefined, {
-                                maximumFractionDigits: 1,
-                              })}{" "}
-                              {goal.unit}
-                            </Text>
-                          </View>
-                          <View
-                            style={{
-                              height: 8,
-                              backgroundColor: colors.accent,
-                              borderRadius: 4,
-                              overflow: "hidden",
-                            }}
-                          >
-                            <View
-                              style={{
-                                height: "100%",
-                                width: `${goal.progressPct}%`,
-                                backgroundColor: goal.isComplete ? colors.success : colors.primary,
-                              }}
-                            />
-                          </View>
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              marginTop: 8,
-                              alignItems: "center",
-                            }}
-                          >
-                            <View
-                              style={{
-                                backgroundColor: goal.isComplete
-                                  ? colors.success + "22"
-                                  : colors.accent,
-                                borderRadius: 4,
-                                paddingHorizontal: 8,
-                                paddingVertical: 3,
-                                borderWidth: 1,
-                                borderColor: goal.isComplete ? colors.success : colors.border,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  color: goal.isComplete ? colors.success : colors.mutedFg,
-                                  fontSize: 11,
-                                  fontWeight: "700",
-                                }}
-                              >
-                                {goal.progressPct}%
-                              </Text>
-                            </View>
-                            {goal.isComplete && (
-                              <Pressable
-                                onPress={() => handleMarkComplete(goal.id)}
-                                disabled={savingId === goal.id}
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  gap: 4,
-                                }}
-                              >
-                                <Check size={14} color={colors.success} />
-                                <Text
-                                  style={{
-                                    color: colors.success,
-                                    fontSize: 12,
-                                    fontWeight: "600",
-                                  }}
-                                >
-                                  Mark complete
-                                </Text>
-                              </Pressable>
-                            )}
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </>
-              )}
-
-              {completed.length > 0 && (
-                <>
-                  <Text
-                    style={{
-                      color: colors.mutedFg,
-                      fontSize: 11,
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      letterSpacing: 0.4,
-                    }}
-                  >
-                    Completed ({completed.length})
-                  </Text>
-                  {completed.map((goal) => (
-                    <View
-                      key={goal.id}
-                      style={{
-                        backgroundColor: colors.card,
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        padding: 12,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <Trophy size={16} color={colors.gold} />
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            color: colors.foreground,
-                            fontSize: 14,
-                            fontWeight: "500",
-                          }}
-                          numberOfLines={1}
-                        >
-                          {goal.title}
-                        </Text>
-                        <Text style={{ color: colors.dimFg, fontSize: 11, marginTop: 2 }}>
-                          {Number(goal.targetValue)} {goal.unit}
-                          {goal.completedAt &&
-                            ` · completed ${new Date(goal.completedAt).toLocaleDateString()}`}
-                        </Text>
-                      </View>
-                      <Pressable
-                        onPress={() => handleDelete(goal.id, goal.title)}
-                        hitSlop={8}
-                      >
-                        <Trash2 size={15} color={colors.dimFg} />
-                      </Pressable>
-                    </View>
-                  ))}
-                </>
-              )}
-            </>
-          )}
+              </View>
+            ) : (
+              visible.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  saving={savingId === goal.id}
+                  onMarkComplete={() => handleMarkComplete(goal.id)}
+                  onDelete={() => handleDelete(goal.id, goal.title)}
+                />
+              ))
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function GoalCard({
+  goal,
+  saving,
+  onMarkComplete,
+  onDelete,
+}: {
+  goal: Goal;
+  saving: boolean;
+  onMarkComplete: () => void;
+  onDelete: () => void;
+}) {
+  const Icon = iconFor(goal.type);
+  const tone = toneFor(goal.type);
+  const isComplete = goal.status === "completed";
+
+  return (
+    <View
+      style={{
+        backgroundColor: colors.bg1,
+        borderRadius: radii.card,
+        borderWidth: 1,
+        borderColor: colors.lineSoft,
+        padding: 14,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor:
+              tone === "blue"
+                ? colors.blueSoft
+                : tone === "amber"
+                  ? colors.amberSoft
+                  : tone === "green"
+                    ? colors.greenSoft
+                    : colors.purpleSoft,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon
+            size={16}
+            color={
+              tone === "blue"
+                ? colors.blue2
+                : tone === "amber"
+                  ? colors.amber
+                  : tone === "green"
+                    ? colors.green
+                    : colors.purple
+            }
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              color: colors.text,
+              fontFamily: fonts.displaySemi,
+              fontSize: 14,
+              letterSpacing: -0.2,
+            }}
+          >
+            {goal.title}
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <Chip tone={tone}>{goal.type.replace(/_/g, " ")}</Chip>
+            {goal.targetDate ? (
+              <Text style={{ fontSize: 10, color: colors.text4, fontFamily: fonts.monoRegular }}>
+                by {new Date(goal.targetDate).toLocaleDateString()}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+        <BigNum size={20} color={isComplete ? colors.green : colors.text}>
+          {goal.progressPct}
+        </BigNum>
+        <Text style={{ fontSize: 10, color: colors.text3, marginLeft: -4 }}>%</Text>
+      </View>
+
+      {/* Progress rail */}
+      <View
+        style={{
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: colors.bg3,
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            height: "100%",
+            width: `${Math.max(0, Math.min(100, goal.progressPct))}%`,
+            backgroundColor: isComplete ? colors.green : colors.blue,
+            borderRadius: 3,
+          }}
+        />
+      </View>
+
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6 }}>
+        <Text style={{ fontSize: 10, color: colors.text4, fontFamily: fonts.monoRegular }}>
+          {Number(goal.currentValue).toLocaleString(undefined, { maximumFractionDigits: 1 })}{" "}
+          {goal.unit}
+        </Text>
+        <Text style={{ fontSize: 10, color: colors.text4, fontFamily: fonts.monoRegular }}>
+          {Number(goal.targetValue).toLocaleString(undefined, { maximumFractionDigits: 1 })}{" "}
+          {goal.unit}
+        </Text>
+      </View>
+
+      {goal.isComplete && goal.status === "active" ? (
+        <View style={{ marginTop: 10, flexDirection: "row", justifyContent: "space-between" }}>
+          <Pressable onPress={onMarkComplete} disabled={saving} style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+            <Check size={13} color={colors.green} />
+            <Text style={{ color: colors.green, fontSize: 12, fontFamily: fonts.bodySemi }}>
+              Mark complete
+            </Text>
+          </Pressable>
+          <Pressable onPress={onDelete} disabled={saving} hitSlop={6}>
+            <Trash2 size={14} color={colors.text4} />
+          </Pressable>
+        </View>
+      ) : (
+        <View style={{ marginTop: 10, alignItems: "flex-end" }}>
+          <Pressable onPress={onDelete} disabled={saving} hitSlop={6}>
+            {isComplete ? <Trophy size={14} color={colors.amber} /> : <Trash2 size={14} color={colors.text4} />}
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function LabeledInput({
+  label,
+  value,
+  onChangeText,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (s: string) => void;
+  keyboardType?: "decimal-pad";
+}) {
+  return (
+    <View>
+      <UppercaseLabel style={{ marginBottom: 6 }}>{label}</UppercaseLabel>
+      <TextInput
+        style={{
+          backgroundColor: colors.bg2,
+          borderWidth: 1,
+          borderColor: colors.line,
+          borderRadius: radii.button,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          color: colors.text,
+          fontSize: 14,
+          fontFamily: fonts.bodyRegular,
+        }}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        placeholderTextColor={colors.text4}
+      />
+    </View>
   );
 }

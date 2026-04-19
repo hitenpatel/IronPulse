@@ -1,400 +1,358 @@
-import { useState } from "react";
-import { View, Text, FlatList, Pressable, Alert, ScrollView, TextInput } from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { usePowerSync } from "@powersync/react";
+import Svg, { Circle } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useExercises, useTemplates, type TemplateRow } from "@ironpulse/sync";
+import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import { useQuery } from "@powersync/react";
+import { useExercises } from "@ironpulse/sync";
+
+import { colors, fonts, radii, spacing } from "@/lib/theme";
+import { Pills, TopBar, UppercaseLabel } from "@/components/ui";
 import type { RootStackParamList } from "../../App";
-import { useAuth } from "@/lib/auth";
-import { Card } from "@/components/ui/card";
-import { getWorkoutName } from "@/lib/workout-utils";
-import { Trash2, FileText, Search, Heart } from "lucide-react-native";
-import { randomUUID } from "@/lib/uuid";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  primary: "#0077FF",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  error: "#EF4444",
-};
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-const MUSCLE_FILTERS = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Glutes"];
+type Filter = "all" | "chest" | "back" | "legs" | "shoulders" | "arms" | "core";
+
+interface RecentRow {
+  exercise_id: string;
+  uses: number;
+}
+
+interface ExerciseBrief {
+  id: string;
+  name: string;
+  category: string | null;
+  primary_muscles: string | null;
+  one_rep_max_kg?: number | null;
+}
+
+function musclesText(ex: { primary_muscles: string | null }): string {
+  try {
+    return JSON.parse(ex.primary_muscles ?? "[]").join(", ");
+  } catch {
+    return ex.primary_muscles ?? "";
+  }
+}
+
+function matchesFilter(ex: ExerciseBrief, filter: Filter): boolean {
+  if (filter === "all") return true;
+  const category = (ex.category ?? "").toLowerCase();
+  const muscles = musclesText(ex).toLowerCase();
+  return category.includes(filter) || muscles.includes(filter);
+}
 
 export default function ExercisesScreen() {
+  const navigation = useNavigation<Nav>();
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [filter, setFilter] = useState<Filter>("all");
+
   const { data: exercises } = useExercises({ search: search || undefined });
-  const { data: templates } = useTemplates();
-  const db = usePowerSync();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user } = useAuth();
 
-  async function startFromTemplate(template: TemplateRow) {
-    const workoutId = randomUUID();
-    const now = new Date().toISOString();
+  // Most-used exercises from the user's workouts. Drives the Recent rail
+  // with its circular "frequency" ring.
+  const { data: recentRows } = useQuery<RecentRow>(
+    `SELECT we.exercise_id, COUNT(*) AS uses
+       FROM workout_exercises we
+       INNER JOIN workouts w ON w.id = we.workout_id
+       GROUP BY we.exercise_id
+       ORDER BY uses DESC
+       LIMIT 4`,
+    [],
+  );
+  const maxUses = Math.max(1, ...((recentRows ?? []).map((r) => r.uses)));
 
-    await db.execute(
-      `INSERT INTO workouts (id, user_id, name, started_at, template_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-      [workoutId, user!.id, template.name, now, template.id, now],
-    );
+  const filtered = useMemo(() => {
+    return ((exercises ?? []) as ExerciseBrief[]).filter((e) => matchesFilter(e, filter));
+  }, [exercises, filter]);
 
-    const templateExercises = await db.execute(
-      `SELECT id, exercise_id, "order", notes FROM template_exercises WHERE template_id = ? ORDER BY "order"`,
-      [template.id],
-    );
+  const recentExercises = useMemo(() => {
+    const byId = new Map((exercises ?? []).map((e) => [e.id, e as ExerciseBrief]));
+    return (recentRows ?? [])
+      .map((r) => ({ uses: r.uses, ex: byId.get(r.exercise_id) }))
+      .filter((x): x is { uses: number; ex: ExerciseBrief } => x.ex != null);
+  }, [exercises, recentRows]);
 
-    for (const te of templateExercises.rows._array) {
-      const weId = randomUUID();
-      await db.execute(
-        `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes) VALUES (?, ?, ?, ?, ?)`,
-        [weId, workoutId, te.exercise_id, te.order, te.notes],
-      );
-
-      const templateSets = await db.execute(
-        `SELECT set_number, target_reps, target_weight_kg, type FROM template_sets WHERE template_exercise_id = ? ORDER BY set_number`,
-        [te.id],
-      );
-
-      for (const ts of templateSets.rows._array) {
-        await db.execute(
-          `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, weight_kg, reps, completed) VALUES (?, ?, ?, ?, ?, ?, 0)`,
-          [
-            randomUUID(),
-            weId,
-            ts.set_number,
-            ts.type,
-            ts.target_weight_kg,
-            ts.target_reps,
-          ],
-        );
-      }
-    }
-
-    navigation.navigate("WorkoutActive", { workoutId });
-  }
-
-  function confirmDeleteTemplate(template: TemplateRow) {
-    Alert.alert(
-      "Delete Template",
-      `Are you sure you want to delete "${template.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => deleteTemplate(template.id),
-        },
-      ],
-    );
-  }
-
-  async function deleteTemplate(templateId: string) {
-    await db.execute(
-      `DELETE FROM template_sets WHERE template_exercise_id IN (SELECT id FROM template_exercises WHERE template_id = ?)`,
-      [templateId],
-    );
-    await db.execute(`DELETE FROM template_exercises WHERE template_id = ?`, [
-      templateId,
-    ]);
-    await db.execute(`DELETE FROM workout_templates WHERE id = ?`, [
-      templateId,
-    ]);
-  }
-
-  const filteredExercises = (exercises ?? []).filter((ex) => {
-    if (activeFilter === "All") return true;
-    const category = (ex.category ?? "").toLowerCase();
-    const muscles = (() => {
-      try { return JSON.parse(ex.primary_muscles ?? "[]").join(" ").toLowerCase(); }
-      catch { return (ex.primary_muscles ?? "").toLowerCase(); }
-    })();
-    return category.includes(activeFilter.toLowerCase()) || muscles.includes(activeFilter.toLowerCase());
-  });
+  const filterItems = [
+    { key: "all" as const, label: "All", count: exercises?.length },
+    { key: "chest" as const, label: "Chest" },
+    { key: "back" as const, label: "Back" },
+    { key: "legs" as const, label: "Legs" },
+    { key: "shoulders" as const, label: "Shoulders" },
+    { key: "arms" as const, label: "Arms" },
+    { key: "core" as const, label: "Core" },
+  ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "600",
-            fontFamily: "ClashDisplay",
-            color: colors.foreground,
-            marginBottom: 16,
-          }}
-        >
-          Exercises
-        </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={{ paddingHorizontal: spacing.gutter }}>
+        <TopBar
+          title="Exercises"
+          right={
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable hitSlop={6} accessibilityLabel="Filters" style={iconBtn}>
+                <SlidersHorizontal size={16} color={colors.text2} />
+              </Pressable>
+              <Pressable
+                testID="create-custom-exercise"
+                onPress={() => navigation.navigate("WorkoutAddExercise" as never)}
+                hitSlop={6}
+                accessibilityLabel="Create exercise"
+                style={[iconBtn, { backgroundColor: colors.blue, borderColor: colors.blue }]}
+              >
+                <Plus size={16} color={colors.white} />
+              </Pressable>
+            </View>
+          }
+        />
 
-        {/* Search bar */}
+        {/* Search */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 8,
-            height: 44,
-            paddingHorizontal: 12,
             gap: 8,
+            backgroundColor: colors.bg2,
+            borderWidth: 1,
+            borderColor: colors.line,
+            borderRadius: radii.button,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
             marginBottom: 12,
           }}
         >
-          <Search size={16} color={colors.dimFg} />
+          <Search size={14} color={colors.text4} />
           <TextInput
             style={{
               flex: 1,
-              color: colors.foreground,
-              fontSize: 15,
+              color: colors.text,
+              fontSize: 13,
+              fontFamily: fonts.bodyRegular,
+              padding: 0,
             }}
-            placeholder="Search exercises..."
-            placeholderTextColor={colors.dimFg}
+            placeholder="Search exercises"
+            placeholderTextColor={colors.text4}
             value={search}
             onChangeText={setSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
         </View>
 
-        {/* Filter pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-          style={{ marginBottom: 16 }}
-        >
-          {MUSCLE_FILTERS.map((filter) => {
-            const isActive = activeFilter === filter;
-            return (
-              <Pressable
-                key={filter}
-                onPress={() => setActiveFilter(filter)}
-                style={{
-                  backgroundColor: isActive ? colors.primary : colors.accent,
-                  borderWidth: 1,
-                  borderColor: isActive ? colors.primary : colors.border,
-                  borderRadius: 24,
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                }}
-              >
-                <Text
-                  style={{
-                    color: isActive ? "#FFFFFF" : colors.mutedFg,
-                    fontSize: 13,
-                    fontWeight: "500",
-                  }}
-                >
-                  {filter}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* Templates section */}
-        {templates.length > 0 && (
-          <View style={{ marginBottom: 16 }}>
-            <View
-              style={{
-                borderBottomWidth: 1,
-                borderBottomColor: colors.borderSubtle,
-                marginBottom: 10,
-                paddingBottom: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: colors.dimFg,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Templates
-              </Text>
-            </View>
-            <FlatList
-              horizontal
-              data={templates}
-              keyExtractor={(item) => item.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10 }}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => startFromTemplate(item)}
-                  style={{
-                    backgroundColor: colors.card,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 12,
-                    padding: 14,
-                    width: 150,
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 6,
-                    }}
-                  >
-                    <FileText size={16} color={colors.mutedFg} />
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: colors.foreground,
-                        fontWeight: "600",
-                        flex: 1,
-                        fontSize: 14,
-                      }}
-                    >
-                      {item.name}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
-                      {item.exercise_count ?? 0} exercise
-                      {item.exercise_count !== 1 ? "s" : ""}
-                    </Text>
-                    <Pressable
-                      onPress={() => confirmDeleteTemplate(item)}
-                      hitSlop={8}
-                    >
-                      <Trash2 size={14} color={colors.mutedFg} />
-                    </Pressable>
-                  </View>
-                </Pressable>
-              )}
-            />
-          </View>
-        )}
-
-        {/* Section header for exercise list */}
-        <View
-          style={{
-            borderBottomWidth: 1,
-            borderBottomColor: colors.borderSubtle,
-            paddingBottom: 6,
-            marginBottom: 4,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: "600",
-              color: colors.dimFg,
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-            }}
-          >
-            {activeFilter === "All" ? "All Exercises" : activeFilter}
-          </Text>
-        </View>
+        <Pills items={filterItems} activeKey={filter} onChange={setFilter} />
       </View>
 
-      {/* Exercise list */}
       <FlatList
-        data={filteredExercises}
+        data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 1 }}
-        ListEmptyComponent={
-          <Text
-            style={{
-              color: colors.mutedFg,
-              textAlign: "center",
-              paddingVertical: 32,
-              fontSize: 14,
-            }}
-          >
-            {search ? "No exercises found" : "Syncing exercises..."}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => navigation.navigate("ExerciseDetail", { id: item.id })}
-            style={{
-              height: 56,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderSubtle,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: colors.foreground,
-                  fontWeight: "600",
-                  fontSize: 16,
-                }}
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
-              {item.primary_muscles && (
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: colors.mutedFg,
-                    marginTop: 1,
-                  }}
-                  numberOfLines={1}
-                >
-                  {(() => {
-                    try {
-                      return JSON.parse(item.primary_muscles).join(", ");
-                    } catch {
-                      return item.primary_muscles;
-                    }
-                  })()}
-                </Text>
-              )}
-            </View>
-            {item.category && (
+        style={{ flex: 1, marginTop: 10 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.gutter, paddingBottom: 32 }}
+        ListHeaderComponent={
+          recentExercises.length > 0 ? (
+            <View style={{ marginBottom: 14 }}>
+              <UppercaseLabel style={{ marginBottom: 6 }}>Recent</UppercaseLabel>
               <View
                 style={{
-                  backgroundColor: colors.accent,
+                  backgroundColor: colors.bg1,
                   borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 6,
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
+                  borderColor: colors.lineSoft,
+                  borderRadius: radii.rowList,
+                  overflow: "hidden",
                 }}
               >
+                {recentExercises.map((r, i) => (
+                  <View
+                    key={r.ex.id}
+                    style={{
+                      borderTopWidth: i === 0 ? 0 : 1,
+                      borderTopColor: colors.lineSoft,
+                    }}
+                  >
+                    <Pressable
+                      onPress={() => navigation.navigate("ExerciseDetail", { id: r.ex.id })}
+                      android_ripple={{ color: colors.bg3 }}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        paddingVertical: spacing.rowPaddingY,
+                        paddingHorizontal: spacing.rowPaddingX,
+                      }}
+                    >
+                      <ProgressRing
+                        percent={r.uses / maxUses}
+                        count={r.uses}
+                      />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontSize: 13,
+                            color: colors.text,
+                            fontFamily: fonts.bodyMedium,
+                          }}
+                        >
+                          {r.ex.name}
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontSize: 10.5,
+                            color: colors.text3,
+                            marginTop: 1,
+                            fontFamily: fonts.bodyRegular,
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {r.ex.category ?? musclesText(r.ex)}
+                        </Text>
+                      </View>
+                      {r.ex.one_rep_max_kg != null ? (
+                        <View style={{ alignItems: "flex-end" }}>
+                          <Text
+                            style={{
+                              fontFamily: fonts.displayMedium,
+                              fontSize: 13,
+                              color: colors.text,
+                            }}
+                          >
+                            {Number(r.ex.one_rep_max_kg).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 9,
+                              color: colors.text4,
+                              fontFamily: fonts.monoRegular,
+                            }}
+                          >
+                            kg 1RM
+                          </Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <View style={{ paddingVertical: 40, alignItems: "center" }}>
+            <Text
+              style={{
+                color: colors.text3,
+                fontSize: 13,
+                fontFamily: fonts.bodyRegular,
+              }}
+            >
+              {search ? "No exercises found" : "Syncing exercises…"}
+            </Text>
+          </View>
+        }
+        renderItem={({ item, index }) => (
+          <View
+            style={{
+              borderTopWidth: index === 0 ? 1 : 0,
+              borderBottomWidth: 1,
+              borderColor: colors.lineSoft,
+              paddingHorizontal: 4,
+            }}
+          >
+            <Pressable
+              onPress={() => navigation.navigate("ExerciseDetail", { id: item.id })}
+              android_ripple={{ color: colors.bg3 }}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 4,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: 13.5, color: colors.text, fontFamily: fonts.bodyMedium }}
+                >
+                  {item.name}
+                </Text>
+                {musclesText(item) ? (
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: 10.5,
+                      color: colors.text3,
+                      marginTop: 1,
+                      fontFamily: fonts.bodyRegular,
+                    }}
+                  >
+                    {musclesText(item)}
+                  </Text>
+                ) : null}
+              </View>
+              {item.category ? (
                 <Text
                   style={{
-                    fontSize: 11,
-                    color: colors.mutedFg,
-                    fontWeight: "500",
-                    textTransform: "capitalize",
+                    fontSize: 10,
+                    color: colors.text4,
+                    fontFamily: fonts.monoRegular,
+                    textTransform: "lowercase",
                   }}
                 >
-                  {item.category}
+                  [{item.category}]
                 </Text>
-              </View>
-            )}
-            <Heart size={18} color={colors.dimFg} />
-          </Pressable>
+              ) : null}
+            </Pressable>
+          </View>
         )}
       />
     </SafeAreaView>
+  );
+}
+
+const iconBtn = {
+  width: 30,
+  height: 30,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: colors.line,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  backgroundColor: colors.bg1,
+};
+
+function ProgressRing({ percent, count }: { percent: number; count: number }) {
+  const r = 14;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - Math.max(0, Math.min(1, percent)));
+  return (
+    <View style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={32} height={32} viewBox="0 0 32 32" style={{ position: "absolute" }}>
+        <Circle cx={16} cy={16} r={r} stroke={colors.bg3} strokeWidth={2} fill={colors.bg2} />
+        <Circle
+          cx={16}
+          cy={16}
+          r={r}
+          stroke={colors.blue}
+          strokeWidth={2}
+          fill="none"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 16 16)"
+        />
+      </Svg>
+      <Text
+        style={{
+          fontSize: 10,
+          fontFamily: fonts.monoSemi,
+          color: colors.text2,
+        }}
+      >
+        {count}
+      </Text>
+    </View>
   );
 }
