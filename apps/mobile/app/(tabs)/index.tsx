@@ -236,7 +236,7 @@ export default function DashboardScreen() {
             </View>
             <Text
               style={{
-                fontFamily: fonts.display,
+                fontFamily: fonts.displaySemi,
                 fontSize: 16,
                 fontWeight: "600",
                 color: colors.text,
@@ -267,7 +267,7 @@ export default function DashboardScreen() {
             testID="greeting"
             accessibilityRole="header"
             style={{
-              fontFamily: fonts.display,
+              fontFamily: fonts.displaySemi,
               fontSize: 24,
               fontWeight: "600",
               color: colors.text,
@@ -283,7 +283,7 @@ export default function DashboardScreen() {
               color: colors.text3,
               fontSize: 12,
               marginTop: 2,
-              fontFamily: fonts.body,
+              fontFamily: fonts.bodyRegular,
             }}
           >
             Ready to train?
@@ -327,7 +327,7 @@ export default function DashboardScreen() {
             </View>
             <Text
               style={{
-                fontFamily: fonts.display,
+                fontFamily: fonts.displaySemi,
                 fontSize: 22,
                 fontWeight: "600",
                 letterSpacing: -0.5,
@@ -355,9 +355,8 @@ export default function DashboardScreen() {
               <Play size={14} color={colors.white} />
               <Text
                 style={{
-                  fontFamily: fonts.body,
+                  fontFamily: fonts.bodySemi,
                   fontSize: 13,
-                  fontWeight: "600",
                   color: colors.white,
                 }}
               >
@@ -433,8 +432,7 @@ export default function DashboardScreen() {
               style={{
                 fontSize: 10.5,
                 color: colors.blue2,
-                fontWeight: "600",
-                fontFamily: fonts.body,
+                fontFamily: fonts.bodySemi,
               }}
             >
               View all
@@ -450,7 +448,7 @@ export default function DashboardScreen() {
                 fontSize: 13,
                 textAlign: "center",
                 paddingVertical: 24,
-                fontFamily: fonts.body,
+                fontFamily: fonts.bodyRegular,
               }}
             >
               No activity yet. Start your first workout.
@@ -475,10 +473,9 @@ export default function DashboardScreen() {
                       numberOfLines={1}
                       style={{
                         fontSize: 12.5,
-                        fontWeight: "500",
                         color: colors.text,
                         textTransform: item.kind === "cardio" ? "capitalize" : "none",
-                        fontFamily: fonts.body,
+                        fontFamily: fonts.bodyMedium,
                       }}
                     >
                       {item.name}
@@ -538,7 +535,7 @@ function MetricTile({ label, value, unit, color }: MetricTileProps) {
               fontSize: 10,
               fontWeight: "400",
               marginLeft: 2,
-              fontFamily: fonts.body,
+              fontFamily: fonts.bodyRegular,
             }}
           >
             {unit}

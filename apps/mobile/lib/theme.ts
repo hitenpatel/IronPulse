@@ -57,31 +57,31 @@ export const spacing = {
   rowPaddingX: 14,
 } as const;
 
-// Font families. Custom fonts are not currently bundled in the APK; we use
-// system fallbacks so the tokens still resolve cleanly. When Space Grotesk /
-// Inter / JetBrains Mono are added to android/app/src/main/assets/fonts and
-// linked via `npx react-native-asset`, swap these strings for the real names
-// (e.g. "SpaceGrotesk-Medium") and the whole app picks them up.
-const sysDisplay = Platform.select({
-  android: "sans-serif-medium",
-  ios: "System",
-  default: "System",
-});
-const sysBody = Platform.select({
-  android: "sans-serif",
-  ios: "System",
-  default: "System",
-});
-const sysMono = Platform.select({
-  android: "monospace",
-  ios: "Menlo",
-  default: "monospace",
-});
-
+// Font families. TTFs live in apps/mobile/assets/fonts and are copied into
+// android/app/src/main/assets/fonts via `npx react-native-asset`. The
+// family names below match the file stems (Android resolves fontFamily
+// by file stem). For bold/regular variants use the weight-specific family
+// via the helpers below.
 export const fonts = {
-  display: sysDisplay!,
-  body: sysBody!,
-  mono: sysMono!,
+  // Primary family names — use with explicit weight via `fontFamily: fonts.displayMedium`.
+  displayRegular: "SpaceGrotesk-Regular",
+  displayMedium: "SpaceGrotesk-Medium",
+  displaySemi: "SpaceGrotesk-SemiBold",
+  displayBold: "SpaceGrotesk-Bold",
+
+  bodyRegular: "Inter-Regular",
+  bodyMedium: "Inter-Medium",
+  bodySemi: "Inter-SemiBold",
+
+  monoRegular: "JetBrainsMono-Regular",
+  monoMedium: "JetBrainsMono-Medium",
+  monoSemi: "JetBrainsMono-SemiBold",
+
+  // Legacy aliases — components built before the font swap referenced these.
+  // They resolve to the default weight for each family.
+  display: "SpaceGrotesk-Medium",
+  body: "Inter-Regular",
+  mono: "JetBrainsMono-Regular",
 } as const;
 
 // Letter-spacing helpers (RN uses absolute values, not em). Designed at a

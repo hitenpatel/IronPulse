@@ -51,9 +51,8 @@ export function Button({ variant = "default", size = "md", children, style, ...p
         <Text
           style={{
             fontSize: isSm ? 11.5 : 13.5,
-            fontWeight: "600",
             color: textColorMap[variant],
-            fontFamily: fonts.body,
+            fontFamily: fonts.bodySemi,
           }}
         >
           {children}

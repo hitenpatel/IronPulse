@@ -45,8 +45,7 @@ export function TopBar({ title, onBack, right, size = "sm" }: TopBarProps) {
         numberOfLines={1}
         style={{
           flex: 1,
-          fontFamily: fonts.display,
-          fontWeight: "500",
+          fontFamily: fonts.displayMedium,
           fontSize,
           letterSpacing: -0.5,
           color: colors.text,

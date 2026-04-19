@@ -49,10 +49,9 @@ export function Chip({ tone = "mono", dot, children, style }: ChipProps) {
       <Text
         style={{
           fontSize: 10,
-          fontWeight: "600",
           color: t.color,
           letterSpacing: 0.2,
-          fontFamily: fonts.body,
+          fontFamily: fonts.bodySemi,
         }}
       >
         {children}

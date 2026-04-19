@@ -18,9 +18,8 @@ export function BigNum({ children, size = 20, color = colors.text, style }: BigN
     <Text
       style={[
         {
-          fontFamily: fonts.display,
+          fontFamily: fonts.displayMedium,
           fontSize: size,
-          fontWeight: "500",
           letterSpacing: size >= 20 ? -0.5 : -0.2,
           color,
           // RN 0.76+: tabular-nums via `fontVariant`

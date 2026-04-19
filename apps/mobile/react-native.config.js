@@ -8,6 +8,7 @@ module.exports = {
       sourceDir: './ios',
     },
   },
+  assets: ['./assets/fonts/'],
   dependencies: {
     // @powersync/react-native: uses SharedArrayBuffer which crashes on Hermes Android debug
     // In E2E builds, PowerSync is stubbed via Metro config
