@@ -1,14 +1,33 @@
-import { useState, useEffect } from "react";
-import { View, Text, Pressable, Alert, Platform, Switch, ScrollView, StyleSheet } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "@/lib/auth";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ChevronRight, Flame } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../../App";
+import { useQuery } from "@powersync/react";
+import {
+  Bell,
+  Calendar,
+  Camera,
+  ChevronRight,
+  Download,
+  Dumbbell,
+  Heart,
+  LogOut,
+  MessageSquare,
+  Moon,
+  Settings as SettingsIcon,
+  Shield,
+  Target,
+  Trophy,
+  Upload,
+  Users,
+  Utensils,
+  Zap,
+} from "lucide-react-native";
+
+import { useAuth } from "@/lib/auth";
+import { trpc } from "@/lib/trpc";
+import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -16,107 +35,66 @@ import {
   disableBiometric,
   getBiometricLabel,
 } from "@/lib/biometric";
+import { colors, fonts, radii, spacing, tracking } from "@/lib/theme";
+import { BigNum, Chip, Row, RowList, UppercaseLabel } from "@/components/ui";
+import type { RootStackParamList } from "../../App";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  primary: "#0077FF",
-  success: "#10B981",
-  error: "#EF4444",
-  streakOrange: "#FF6B2C",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  text: "#F0F4F8",
-  textMuted: "#8899B4",
-  textFaint: "#4E6180",
-};
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-function NavSection({
-  title,
-  items,
-  navigation,
-  colors: c,
-}: {
+interface NavItem {
+  label: string;
+  subtitle?: string;
+  screen: keyof RootStackParamList;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  tone: "blue" | "green" | "amber" | "purple" | "mono";
+}
+
+interface Section {
   title: string;
-  items: { label: string; screen: string }[];
-  navigation: any;
-  colors: typeof colors;
-}) {
-  return (
-    <View
-      style={{
-        marginBottom: 8,
-        borderRadius: 12,
-        overflow: "hidden",
-        backgroundColor: c.card,
-        borderWidth: 1,
-        borderColor: c.border,
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 10,
-          color: c.textFaint,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          paddingHorizontal: 16,
-          paddingTop: 10,
-          paddingBottom: 2,
-          fontWeight: "600",
-        }}
-      >
-        {title}
-      </Text>
-      {items.map((item, idx) => (
-        <Pressable
-          key={item.screen}
-          onPress={() => navigation.navigate(item.screen as any)}
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingHorizontal: 16,
-            height: 46,
-            borderTopWidth: idx === 0 ? 0 : 1,
-            borderTopColor: c.borderSubtle,
-          }}
-        >
-          <Text style={{ color: c.text, fontSize: 15 }}>{item.label}</Text>
-          <ChevronRight size={17} color={c.textFaint} />
-        </Pressable>
-      ))}
-    </View>
-  );
+  items: NavItem[];
+}
+
+/** Approximate "level" from number of completed workouts — purely cosmetic. */
+function levelFromWorkouts(count: number): number {
+  return 1 + Math.floor(count / 10);
 }
 
 export default function ProfileScreen() {
-  const { user, signOut, updateUser } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user, signOut } = useAuth();
+  const navigation = useNavigation<Nav>();
+
+  const { data: workouts } = useWorkouts();
+  const { data: cardioSessions } = useCardioSessions();
+  const { data: prRows } = useQuery<{ total: number }>(
+    `SELECT COUNT(*) AS total FROM personal_records`,
+    [],
+  );
+  const prCount = prRows?.[0]?.total ?? 0;
+
+  const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
+  useEffect(() => {
+    trpc.analytics.streak.query().then(setStreak).catch(() => {});
+  }, []);
 
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioEnabled, setBioEnabled] = useState(false);
   const [bioLabel, setBioLabel] = useState("Biometric");
   const [bioLoading, setBioLoading] = useState(false);
 
-  const [deletionRequested, setDeletionRequested] = useState(false);
-  const [deletionRequestedAt, setDeletionRequestedAt] = useState<string | null>(null);
-  const [deletionLoading, setDeletionLoading] = useState(false);
-
   useEffect(() => {
-    async function checkBiometric() {
+    (async () => {
       const available = await isBiometricAvailable();
       setBioAvailable(available);
       if (available) {
-        const enabled = await isBiometricEnabled();
-        setBioEnabled(enabled);
-        const label = await getBiometricLabel();
-        setBioLabel(label);
+        setBioEnabled(await isBiometricEnabled());
+        setBioLabel(await getBiometricLabel());
       }
-    }
-    checkBiometric();
+    })();
   }, []);
+
+  const [deletionRequested, setDeletionRequested] = useState(false);
+  const [deletionRequestedAt, setDeletionRequestedAt] = useState<string | null>(null);
+  const [deletionLoading, setDeletionLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -127,12 +105,22 @@ export default function ProfileScreen() {
           setDeletionRequestedAt(String(result.user.deletionRequestedAt));
         }
       } catch {
-        // network error — show stale state
+        /* ignore network errors */
       }
     })();
   }, []);
 
-  async function handleBiometricToggle(value: boolean) {
+  const stats = useMemo(() => {
+    const workoutCount = workouts?.length ?? 0;
+    const cardioCount = cardioSessions?.length ?? 0;
+    const totalSeconds =
+      (workouts ?? []).reduce((acc, w) => acc + (w.duration_seconds ?? 0), 0) +
+      (cardioSessions ?? []).reduce((acc, c) => acc + (c.duration_seconds ?? 0), 0);
+    const hours = Math.round(totalSeconds / 3600);
+    return { workoutCount, cardioCount, hours };
+  }, [workouts, cardioSessions]);
+
+  const handleBiometricToggle = async (value: boolean) => {
     setBioLoading(true);
     if (value) {
       const success = await enableBiometric();
@@ -142,467 +130,431 @@ export default function ProfileScreen() {
       setBioEnabled(false);
     }
     setBioLoading(false);
-  }
+  };
 
-  const handleEditName = () => {
-    if (Platform.OS === "ios") {
-      Alert.prompt(
-        "Edit Name",
-        "Enter your name",
-        async (text) => {
-          if (text?.trim()) {
-            await trpc.user.updateProfile.mutate({ name: text.trim() });
-            await updateUser({ name: text.trim() });
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Account",
+      "This will delete all your data after 7 days. You can cancel within that period.",
+      [
+        { text: "Keep my account", style: "cancel" },
+        {
+          text: "Yes, delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeletionLoading(true);
+            try {
+              const result = await trpc.user.requestDeletion.mutate();
+              if (result.success) {
+                setDeletionRequested(true);
+                setDeletionRequestedAt(new Date().toISOString());
+              }
+            } catch {
+              Alert.alert("Error", "Failed to request deletion.");
+            } finally {
+              setDeletionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleCancelDeletion = () => {
+    Alert.alert("Cancel Deletion", "Keep your account and all your data?", [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes, keep my account",
+        onPress: async () => {
+          setDeletionLoading(true);
+          try {
+            await trpc.user.cancelDeletion.mutate();
+            setDeletionRequested(false);
+            setDeletionRequestedAt(null);
+          } catch {
+            Alert.alert("Error", "Failed to cancel deletion.");
+          } finally {
+            setDeletionLoading(false);
           }
         },
-        "plain-text",
-        user?.name,
-      );
-    } else {
-      // Android fallback — Alert.prompt is iOS only
-      Alert.alert("Edit Name", "Use the web app to update your name.");
-    }
+      },
+    ]);
   };
 
-  const handleUnitToggle = async (unit: "metric" | "imperial") => {
-    if (unit === user?.unitSystem) return;
-    await trpc.user.updateProfile.mutate({ unitSystem: unit });
-    await updateUser({ unitSystem: unit });
-  };
+  const sections: Section[] = [
+    {
+      title: "Communication",
+      items: [
+        { label: "Notifications", screen: "Notifications", icon: Bell, tone: "blue" },
+        { label: "Messages", screen: "Messages", icon: MessageSquare, tone: "blue" },
+      ],
+    },
+    {
+      title: "Training",
+      items: [
+        { label: "My program", subtitle: "Weekly schedule", screen: "Program", icon: Calendar, tone: "blue" },
+        { label: "Workout templates", screen: "WorkoutTemplates", icon: Dumbbell, tone: "blue" },
+        {
+          label: "Records",
+          subtitle: `${prCount} lifetime ${prCount === 1 ? "PR" : "PRs"}`,
+          screen: "HistoryWorkouts",
+          icon: Trophy,
+          tone: "amber",
+        },
+        { label: "Goals", screen: "Goals", icon: Target, tone: "purple" },
+        { label: "Progress photos", screen: "ProgressPhotos", icon: Camera, tone: "green" },
+      ],
+    },
+    {
+      title: "Recovery",
+      items: [
+        { label: "Nutrition", screen: "Nutrition", icon: Utensils, tone: "green" },
+        { label: "Sleep", screen: "Sleep", icon: Moon, tone: "purple" },
+      ],
+    },
+    {
+      title: "Social",
+      items: [
+        { label: "Feed", screen: "Feed", icon: Zap, tone: "blue" },
+        { label: "Coaching", screen: "Coach", icon: Users, tone: "blue" },
+        { label: "Find a coach", screen: "Coaches", icon: Heart, tone: "blue" },
+        { label: "Challenges", screen: "Challenges", icon: Trophy, tone: "amber" },
+      ],
+    },
+    {
+      title: "Data",
+      items: [
+        { label: "Export data", screen: "ExportData", icon: Download, tone: "mono" },
+        { label: "Import workouts", screen: "ImportData", icon: Upload, tone: "mono" },
+      ],
+    },
+    {
+      title: "App",
+      items: [
+        { label: "Settings", screen: "Settings", icon: SettingsIcon, tone: "mono" },
+        { label: "Connected apps", screen: "SettingsIntegrations", icon: Zap, tone: "blue" },
+        { label: "Subscription", screen: "SettingsSubscription", icon: Shield, tone: "purple" },
+        { label: "Password & Passkeys", screen: "SecuritySettings", icon: Shield, tone: "mono" },
+      ],
+    },
+  ];
+
+  const level = levelFromWorkouts(stats.workoutCount);
+  const initial = (user?.name ?? "?").charAt(0).toUpperCase();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}>
-        {/* Header */}
-        <Text
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* Hero band — gradient extends -16px into gutter both sides */}
+        <View
           style={{
-            fontFamily: "ClashDisplay",
-            fontWeight: "600",
-            fontSize: 28,
-            color: colors.text,
-            marginBottom: 24,
+            paddingTop: 36,
+            paddingBottom: 20,
+            paddingHorizontal: 16,
+            backgroundColor: "rgba(0,119,255,0.10)",
+            position: "relative",
           }}
         >
-          Profile
-        </Text>
-
-        {/* Avatar + name + tier badge + streak */}
-        <View style={{ alignItems: "center", marginBottom: 28 }}>
-          <View
+          <Pressable
+            testID="profile-settings"
+            onPress={() => navigation.navigate("Settings")}
+            hitSlop={8}
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: colors.accent,
-              justifyContent: "center",
+              position: "absolute",
+              top: 12,
+              right: 14,
+              width: 30,
+              height: 30,
               alignItems: "center",
-              marginBottom: 12,
-              borderWidth: 2,
-              borderColor: colors.border,
+              justifyContent: "center",
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
           >
-            <Text style={{ color: colors.text, fontWeight: "700", fontSize: 30 }}>
-              {user?.name?.charAt(0).toUpperCase() ?? "?"}
-            </Text>
-          </View>
+            <SettingsIcon size={18} color={colors.text2} />
+          </Pressable>
 
-          <Text
-            style={{
-              fontFamily: "ClashDisplay",
-              fontWeight: "600",
-              fontSize: 22,
-              color: colors.text,
-              marginBottom: 8,
-            }}
-          >
-            {user?.name ?? "Athlete"}
-          </Text>
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: colors.blue,
+                // Gradient approximated with a solid blue; a radial gradient needs RN-specific lib.
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2,
+                borderColor: colors.bg,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.displaySemi,
+                  fontSize: 22,
+                  color: colors.white,
+                }}
+              >
+                {initial}
+              </Text>
+            </View>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            {/* Tier badge */}
-            {user?.tier && (
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: fonts.displaySemi,
+                  fontSize: 18,
+                  color: colors.text,
+                  letterSpacing: -0.3,
+                }}
+              >
+                {user?.name ?? "Athlete"}
+              </Text>
               <View
                 style={{
-                  backgroundColor: "rgba(0, 119, 255, 0.15)",
-                  borderRadius: 24,
-                  paddingHorizontal: 12,
-                  paddingVertical: 4,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 2,
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: 10.5, color: colors.text3, fontFamily: fonts.bodyRegular }}
+                >
+                  @{user?.email?.split("@")[0] ?? "athlete"}
+                </Text>
+                <Text style={{ color: colors.text4, fontSize: 10.5 }}>·</Text>
+                <Text
+                  style={{
+                    fontSize: 10.5,
+                    color: colors.text3,
+                    textTransform: "capitalize",
+                    fontFamily: fonts.bodyRegular,
+                  }}
+                >
+                  {user?.tier ?? "athlete"}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 4, marginTop: 6 }}>
+                <Chip tone="blue">Level {level}</Chip>
+                {streak && streak.current > 0 ? (
+                  <Chip tone="amber">{streak.current}d streak</Chip>
+                ) : null}
+              </View>
+            </View>
+          </View>
+
+          {/* 3-col stat strip */}
+          <View
+            style={{
+              flexDirection: "row",
+              marginTop: 16,
+              borderTopWidth: 1,
+              borderTopColor: colors.lineSoft,
+              paddingTop: 12,
+            }}
+          >
+            {[
+              { l: "Workouts", v: String(stats.workoutCount) },
+              { l: "PRs", v: String(prCount) },
+              { l: "Hours", v: String(stats.hours) },
+            ].map((s, i) => (
+              <View
+                key={s.l}
+                style={{
+                  flex: 1,
+                  alignItems: "center",
+                  borderLeftWidth: i > 0 ? 1 : 0,
+                  borderLeftColor: colors.lineSoft,
+                }}
+              >
+                <BigNum size={18}>{s.v}</BigNum>
+                <UppercaseLabel style={{ fontSize: 9, marginTop: 2 }}>{s.l}</UppercaseLabel>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Sections */}
+        <View style={{ paddingHorizontal: spacing.gutter, paddingTop: 14 }}>
+          {sections.map((section) => (
+            <View key={section.title} style={{ marginBottom: 14 }}>
+              <UppercaseLabel style={{ marginBottom: 6 }}>{section.title}</UppercaseLabel>
+              <RowList>
+                {section.items.map((item) => {
+                  const IconCmp = item.icon;
+                  return (
+                    <Row
+                      key={`${section.title}-${item.label}`}
+                      leading={<IconCmp size={14} />}
+                      leadingTone={item.tone}
+                      title={item.label}
+                      subtitle={item.subtitle}
+                      chevron
+                      onPress={() => navigation.navigate(item.screen as never)}
+                    />
+                  );
+                })}
+              </RowList>
+            </View>
+          ))}
+
+          {/* Biometric toggle */}
+          {bioAvailable ? (
+            <View style={{ marginBottom: 14 }}>
+              <UppercaseLabel style={{ marginBottom: 6 }}>Security</UppercaseLabel>
+              <View
+                style={{
+                  backgroundColor: colors.bg1,
+                  borderRadius: radii.rowList,
+                  borderWidth: 1,
+                  borderColor: colors.lineSoft,
+                  paddingVertical: spacing.rowPaddingY,
+                  paddingHorizontal: spacing.rowPaddingX,
+                  flexDirection: "row",
+                  alignItems: "center",
                 }}
               >
                 <Text
                   style={{
-                    color: colors.primary,
-                    fontSize: 12,
-                    fontWeight: "600",
-                    textTransform: "capitalize",
+                    flex: 1,
+                    fontSize: 13,
+                    color: colors.text,
+                    fontFamily: fonts.bodyMedium,
                   }}
                 >
-                  {user.tier}
+                  {bioLabel} Unlock
                 </Text>
+                <Switch
+                  value={bioEnabled}
+                  onValueChange={handleBiometricToggle}
+                  disabled={bioLoading}
+                  trackColor={{ false: colors.bg3, true: colors.blue }}
+                  thumbColor={colors.white}
+                />
               </View>
-            )}
-
-            {/* Streak */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Flame size={16} color={colors.streakOrange} />
-              <Text style={{ color: colors.streakOrange, fontSize: 13, fontWeight: "600" }}>
-                0 day streak
-              </Text>
             </View>
-          </View>
-        </View>
+          ) : null}
 
-        {/* Profile info card */}
-        <Card style={{ gap: 0, marginBottom: 8, padding: 0, overflow: "hidden" }}>
-          <Pressable
-            onPress={handleEditName}
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              height: 48,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderSubtle,
-            }}
-          >
-            <View>
-              <Text
-                style={{
-                  fontSize: 10,
-                  color: colors.textFaint,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Name
-              </Text>
-              <Text style={{ color: colors.text, fontSize: 15 }}>
-                {user?.name}
-              </Text>
-            </View>
-            <ChevronRight size={18} color={colors.textFaint} />
-          </Pressable>
-
+          {/* Danger zone */}
           <View
             style={{
-              paddingHorizontal: 16,
-              height: 48,
-              justifyContent: "center",
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderSubtle,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 10,
-                color: colors.textFaint,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Email
-            </Text>
-            <Text style={{ color: colors.text, fontSize: 15 }}>{user?.email}</Text>
-          </View>
-
-          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-            <Text
-              style={{
-                fontSize: 10,
-                color: colors.textFaint,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 8,
-              }}
-            >
-              Units
-            </Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {(["metric", "imperial"] as const).map((unit) => {
-                const isActive = user?.unitSystem === unit;
-                return (
-                  <Pressable
-                    key={unit}
-                    onPress={() => handleUnitToggle(unit)}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      alignItems: "center",
-                      backgroundColor: isActive ? colors.primary : colors.accent,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontWeight: "600",
-                        textTransform: "capitalize",
-                        color: isActive ? "#fff" : colors.textMuted,
-                      }}
-                    >
-                      {unit}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </Card>
-
-        {/* Communication */}
-        <NavSection
-          title="Communication"
-          items={[
-            { label: "Notifications", screen: "Notifications" },
-            { label: "Messages", screen: "Messages" },
-          ]}
-          navigation={navigation}
-          colors={colors}
-        />
-
-        {/* Tracking nav rows */}
-        <NavSection
-          title="Tracking"
-          items={[
-            { label: "Goals", screen: "Goals" },
-            { label: "Nutrition", screen: "Nutrition" },
-            { label: "Sleep", screen: "Sleep" },
-            { label: "Progress Photos", screen: "ProgressPhotos" },
-            { label: "My Program", screen: "Program" },
-          ]}
-          navigation={navigation}
-          colors={colors}
-        />
-
-        {/* App nav rows */}
-        <NavSection
-          title="App"
-          items={[
-            { label: "Settings", screen: "Settings" },
-            { label: "Workout Templates", screen: "WorkoutTemplates" },
-            { label: "Connected Apps", screen: "SettingsIntegrations" },
-            { label: "Subscription", screen: "SettingsSubscription" },
-            { label: "Coaching", screen: "Coach" },
-            { label: "Find a Coach", screen: "Coaches" },
-          ]}
-          navigation={navigation}
-          colors={colors}
-        />
-
-        {/* Data nav rows */}
-        <NavSection
-          title="Data"
-          items={[
-            { label: "Export Data", screen: "ExportData" },
-            { label: "Import Workouts", screen: "ImportData" },
-          ]}
-          navigation={navigation}
-          colors={colors}
-        />
-
-        {/* Biometric security */}
-        {bioAvailable && (
-          <View
-            style={{
-              marginBottom: 8,
-              borderRadius: 12,
-              overflow: "hidden",
-              backgroundColor: colors.card,
+              backgroundColor: colors.bg1,
+              borderRadius: radii.card,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: colors.red,
+              padding: 14,
+              marginBottom: 12,
             }}
           >
             <Text
               style={{
+                color: colors.red,
                 fontSize: 10,
-                color: colors.textFaint,
                 textTransform: "uppercase",
-                letterSpacing: 1,
-                paddingHorizontal: 16,
-                paddingTop: 12,
-                paddingBottom: 4,
+                letterSpacing: tracking.caps,
+                fontFamily: fonts.bodySemi,
+                marginBottom: 6,
               }}
             >
-              Security
+              Danger zone
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingHorizontal: 16,
-                height: 48,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: 16 }}>
-                {bioLabel} Unlock
-              </Text>
-              <Switch
-                value={bioEnabled}
-                onValueChange={handleBiometricToggle}
-                disabled={bioLoading}
-                trackColor={{ false: colors.accent, true: colors.primary }}
-              />
-            </View>
+            {deletionRequested ? (
+              <>
+                <Text
+                  style={{
+                    color: colors.text3,
+                    fontSize: 12,
+                    marginBottom: 10,
+                    fontFamily: fonts.bodyRegular,
+                  }}
+                >
+                  Your account is scheduled for deletion on{" "}
+                  {deletionRequestedAt
+                    ? new Date(
+                        new Date(deletionRequestedAt).getTime() + 7 * 86400000,
+                      ).toLocaleDateString(undefined, {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : "soon"}
+                  .
+                </Text>
+                <Pressable
+                  onPress={handleCancelDeletion}
+                  disabled={deletionLoading}
+                  style={{
+                    height: 40,
+                    borderRadius: radii.button,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                    opacity: deletionLoading ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontSize: 13, fontFamily: fonts.bodySemi }}>
+                    {deletionLoading ? "Cancelling…" : "Cancel deletion"}
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text
+                  style={{
+                    color: colors.text3,
+                    fontSize: 12,
+                    marginBottom: 10,
+                    fontFamily: fonts.bodyRegular,
+                  }}
+                >
+                  Permanently delete your account and data. You have 7 days to cancel.
+                </Text>
+                <Pressable
+                  onPress={handleDelete}
+                  disabled={deletionLoading}
+                  style={{
+                    height: 40,
+                    borderRadius: radii.button,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: colors.red,
+                    opacity: deletionLoading ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: colors.white, fontSize: 13, fontFamily: fonts.bodySemi }}>
+                    {deletionLoading ? "Requesting…" : "Delete my account"}
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </View>
-        )}
 
-        {/* Security nav row */}
-        <NavSection
-          title="Security"
-          items={[{ label: "Password & Passkeys", screen: "SecuritySettings" }]}
-          navigation={navigation}
-          colors={colors}
-        />
-
-        {/* Delete Account */}
-        <View
-          style={{
-            marginBottom: 8,
-            borderRadius: 12,
-            overflow: "hidden",
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.error,
-            padding: 16,
-          }}
-        >
-          <Text
+          {/* Sign out */}
+          <Pressable
+            onPress={signOut}
+            testID="sign-out-button"
             style={{
-              fontSize: 10,
-              color: colors.error,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              marginBottom: 6,
-              fontWeight: "600",
+              height: 44,
+              borderRadius: radii.card,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.bg1,
+              borderWidth: 1,
+              borderColor: colors.lineSoft,
+              flexDirection: "row",
+              gap: 8,
             }}
           >
-            Danger Zone
-          </Text>
-          {deletionRequested ? (
-            <>
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 12 }}>
-                Your account is scheduled for deletion on{" "}
-                {deletionRequestedAt
-                  ? new Date(
-                      new Date(deletionRequestedAt).getTime() + 7 * 24 * 60 * 60 * 1000,
-                    ).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : "soon"}
-                . All your data will be permanently removed.
-              </Text>
-              <Pressable
-                onPress={() => {
-                  Alert.alert(
-                    "Cancel Deletion",
-                    "Keep your account and all your data?",
-                    [
-                      { text: "No", style: "cancel" },
-                      {
-                        text: "Yes, keep my account",
-                        onPress: async () => {
-                          setDeletionLoading(true);
-                          try {
-                            await trpc.user.cancelDeletion.mutate();
-                            setDeletionRequested(false);
-                            setDeletionRequestedAt(null);
-                          } catch {
-                            Alert.alert("Error", "Failed to cancel deletion. Please try again.");
-                          } finally {
-                            setDeletionLoading(false);
-                          }
-                        },
-                      },
-                    ],
-                  );
-                }}
-                disabled={deletionLoading}
-                style={{
-                  height: 40,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  opacity: deletionLoading ? 0.6 : 1,
-                }}
-              >
-                <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600" }}>
-                  {deletionLoading ? "Cancelling..." : "Cancel Deletion"}
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 12 }}>
-                Permanently delete your account and all associated data. You will have 7 days to cancel.
-              </Text>
-              <Pressable
-                onPress={() => {
-                  Alert.alert(
-                    "Delete Account",
-                    "Are you sure? This will delete all your data after 7 days. You can cancel the deletion within that period.",
-                    [
-                      { text: "Keep my account", style: "cancel" },
-                      {
-                        text: "Yes, delete my account",
-                        style: "destructive",
-                        onPress: async () => {
-                          setDeletionLoading(true);
-                          try {
-                            const result = await trpc.user.requestDeletion.mutate();
-                            if (result.success) {
-                              setDeletionRequested(true);
-                              setDeletionRequestedAt(new Date().toISOString());
-                            }
-                          } catch {
-                            Alert.alert("Error", "Failed to request deletion. Please try again.");
-                          } finally {
-                            setDeletionLoading(false);
-                          }
-                        },
-                      },
-                    ],
-                  );
-                }}
-                disabled={deletionLoading}
-                style={{
-                  height: 40,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: colors.error,
-                  opacity: deletionLoading ? 0.6 : 1,
-                }}
-              >
-                <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-                  {deletionLoading ? "Requesting..." : "Delete My Account"}
-                </Text>
-              </Pressable>
-            </>
-          )}
+            <LogOut size={14} color={colors.red} />
+            <Text style={{ color: colors.red, fontSize: 13, fontFamily: fonts.bodySemi }}>
+              Sign out
+            </Text>
+          </Pressable>
         </View>
-
-        {/* Sign Out */}
-        <Pressable
-          onPress={signOut}
-          style={{
-            height: 48,
-            borderRadius: 12,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Text style={{ color: colors.error, fontSize: 16, fontWeight: "600" }}>
-            Sign Out
-          </Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

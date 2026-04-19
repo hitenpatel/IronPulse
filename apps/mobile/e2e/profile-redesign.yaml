@@ -1,0 +1,30 @@
+appId: com.ironpulse.app
+---
+# QA for #221 — Profile redesign. Asserts the hero + grouped nav
+# sections + danger zone are all reachable.
+
+- launchApp
+- tapOn: "Profile"
+
+- assertVisible: "Level"
+- assertVisible: "Workouts"
+- assertVisible: "PRs"
+- assertVisible: "Hours"
+
+# Nav sections
+- assertVisible: "COMMUNICATION"
+- assertVisible: "TRAINING"
+- assertVisible: "RECOVERY"
+
+# Scroll down to reach the Data / App / Danger zone
+- swipe:
+    direction: UP
+    duration: 500
+- assertVisible: "DATA"
+- assertVisible: "APP"
+
+- swipe:
+    direction: UP
+    duration: 500
+- assertVisible: "Sign out"
+- assertVisible: "DANGER ZONE"
