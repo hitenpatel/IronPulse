@@ -1,50 +1,66 @@
-import { Pressable, Text, type PressableProps } from "react-native";
+import { Pressable, Text, View, type PressableProps } from "react-native";
+import { colors, radii, fonts, shadows } from "@/lib/theme";
 
 interface ButtonProps extends PressableProps {
-  variant?: "default" | "outline" | "ghost" | "destructive";
+  /**
+   * Design handoff: `default` = bg-2/line; `primary` = brand blue with glow;
+   * `ghost` = transparent with border; `destructive` = red; `outline` alias for ghost.
+   */
+  variant?: "default" | "primary" | "ghost" | "outline" | "destructive";
+  size?: "md" | "sm";
   children: React.ReactNode;
 }
 
-// Pulse design system — hex values sourced from tailwind.config.ts tokens
-const variantStyles = {
-  default: { backgroundColor: "#0077FF" },
-  outline: { borderWidth: 1, borderColor: "#1E2B47", backgroundColor: "transparent" },
-  ghost: { backgroundColor: "transparent" },
-  destructive: { backgroundColor: "#EF4444" },
+const variantStyles: Record<NonNullable<ButtonProps["variant"]>, object> = {
+  default: { backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line },
+  primary: { backgroundColor: colors.blue, ...shadows.primaryButton },
+  ghost: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.line },
+  outline: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.line },
+  destructive: { backgroundColor: colors.red },
 };
 
-const textColorMap = {
-  default: "#FFFFFF",
-  outline: "#F0F4F8",
-  ghost: "#0077FF",
-  destructive: "#FFFFFF",
+const textColorMap: Record<NonNullable<ButtonProps["variant"]>, string> = {
+  default: colors.text,
+  primary: colors.white,
+  ghost: colors.text2,
+  outline: colors.text2,
+  destructive: colors.white,
 };
 
-export function Button({ variant = "default", children, ...props }: ButtonProps) {
+export function Button({ variant = "default", size = "md", children, style, ...props }: ButtonProps) {
+  const isSm = size === "sm";
   return (
     <Pressable
-      style={[
+      style={({ pressed }) => [
         {
-          borderRadius: 8,
-          height: 48,
-          paddingHorizontal: 16,
+          borderRadius: isSm ? radii.buttonSm : radii.button,
+          paddingVertical: isSm ? 6 : 11,
+          paddingHorizontal: isSm ? 10 : 14,
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
+          gap: 6,
+          opacity: pressed ? 0.85 : 1,
         },
         variantStyles[variant],
+        style as object,
       ]}
       {...props}
     >
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: textColorMap[variant],
-        }}
-      >
-        {typeof children === "string" ? children : null}
-      </Text>
-      {typeof children !== "string" ? children : null}
+      {typeof children === "string" ? (
+        <Text
+          style={{
+            fontSize: isSm ? 11.5 : 13.5,
+            fontWeight: "600",
+            color: textColorMap[variant],
+            fontFamily: fonts.body,
+          }}
+        >
+          {children}
+        </Text>
+      ) : (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>{children}</View>
+      )}
     </Pressable>
   );
 }

@@ -1,0 +1,85 @@
+appId: com.ironpulse.app
+---
+# Second pass. App is already logged in; starts from wherever and taps into
+# remaining profile rows. Screenshots land in cwd.
+
+- launchApp
+- tapOn: "Profile"
+- waitForAnimationToEnd
+- takeScreenshot: 06-profile-top
+
+# Scroll down so later rows become tappable.
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+- tapOn: "Nutrition"
+- waitForAnimationToEnd
+- takeScreenshot: 10-nutrition
+- back
+- waitForAnimationToEnd
+
+- tapOn: "Sleep"
+- waitForAnimationToEnd
+- takeScreenshot: 11-sleep
+- back
+- waitForAnimationToEnd
+
+- tapOn: "Progress Photos"
+- waitForAnimationToEnd
+- takeScreenshot: 11b-progress-photos
+- back
+- waitForAnimationToEnd
+
+- tapOn: "My Program"
+- waitForAnimationToEnd
+- takeScreenshot: 12-program
+- back
+- waitForAnimationToEnd
+
+# Scroll further to expose APP section
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+- tapOn: "Workout Templates"
+- waitForAnimationToEnd
+- takeScreenshot: 13-templates
+- back
+- waitForAnimationToEnd
+
+- tapOn: "Connected Apps"
+- waitForAnimationToEnd
+- takeScreenshot: 14-integrations
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- takeScreenshot: 15-integrations-scrolled
+- back
+- waitForAnimationToEnd
+
+- tapOn: "Find a Coach"
+- waitForAnimationToEnd
+- takeScreenshot: 16-coaches
+- back
+- waitForAnimationToEnd
+
+- tapOn: "Settings"
+- waitForAnimationToEnd
+- takeScreenshot: 17-settings
+- back
+- waitForAnimationToEnd
+
+# Scroll further down for data/security section
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+
+- tapOn: "Export Data"
+- waitForAnimationToEnd
+- takeScreenshot: 19-export
+- back
+- waitForAnimationToEnd

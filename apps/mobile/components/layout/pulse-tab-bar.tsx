@@ -1,19 +1,16 @@
-import { View, Text, Pressable, Platform, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Home, BarChart3, Dumbbell, User, Plus, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors, radii, fonts, shadows } from "@/lib/theme";
 
-// ─── Design tokens ───────────────────────────────────────────────
-const ACTIVE_COLOR = "#0077FF";
-const INACTIVE_COLOR = "#4E6180";
-const TAB_BG = "rgba(6, 11, 20, 0.85)";
-const TAB_HEIGHT = 64;
-const FAB_SIZE = 56;
-const ICON_SIZE = 24;
-const FAB_ICON_SIZE = 28;
-const LABEL_SIZE = 10;
+// Sizes from designs/claude-design-handoff/mobile.css `.tabs`, `.tab-fab`,
+// `.gesture-pill`. Squircle FAB radius 14 (sm) / 16 (lg) — NOT circular.
+const FAB_SIZE = 48;
+const FAB_RADIUS = 14;
+const ICON_SIZE = 22;
+const FAB_ICON_SIZE = 26;
 
-// ─── Tab definitions (minus the center FAB slot) ─────────────────
 const LEFT_TABS = [
   { name: "Home", label: "Home", Icon: Home },
   { name: "Stats", label: "Stats", Icon: BarChart3 },
@@ -24,7 +21,6 @@ const RIGHT_TABS = [
   { name: "Profile", label: "Profile", Icon: User },
 ] as const;
 
-// ─── Custom Tab Bar (exported for use in App.tsx) ────────────────
 export function PulseTabBar({
   state,
   navigation,
@@ -34,7 +30,6 @@ export function PulseTabBar({
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
 
-  // Map route name → index in the Tab.Screen order
   const routeNames = state.routes.map((r) => r.name);
 
   const handleTabPress = (routeName: string, routeIndex: number) => {
@@ -43,9 +38,7 @@ export function PulseTabBar({
       target: state.routes[routeIndex].key,
       canPreventDefault: true,
     });
-    if (!event.defaultPrevented) {
-      navigation.navigate(routeName);
-    }
+    if (!event.defaultPrevented) navigation.navigate(routeName);
   };
 
   const renderTabButton = (
@@ -55,8 +48,9 @@ export function PulseTabBar({
   ) => {
     const routeIndex = routeNames.indexOf(name);
     const isActive = state.index === routeIndex;
-    const color = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
-    const tabTestId = `tab-${name.toLowerCase() === "home" ? "home" : name.toLowerCase()}`;
+    const iconColor = isActive ? colors.blue : colors.text4;
+    const labelColor = isActive ? colors.blue2 : colors.text4;
+    const tabTestId = `tab-${name.toLowerCase()}`;
 
     return (
       <Pressable
@@ -68,113 +62,105 @@ export function PulseTabBar({
         accessibilityLabel={label}
         accessibilityState={{ selected: isActive }}
       >
-        <Icon size={ICON_SIZE} color={color} />
-        {isActive && <View style={styles.activeDot} />}
-        <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+        <Icon size={ICON_SIZE} color={iconColor} />
+        <Text style={[styles.tabLabel, { color: labelColor }]}>{label}</Text>
       </Pressable>
     );
   };
 
   return (
-    <View style={[styles.tabBarWrapper, { paddingBottom: bottomPad }]}>
-      {/* Left tabs */}
-      <View style={styles.tabGroup}>
-        {LEFT_TABS.map(({ name, label, Icon }) => renderTabButton(name, label, Icon))}
+    <View style={styles.wrapper}>
+      <View style={styles.tabBar}>
+        <View style={styles.tabGroup}>
+          {LEFT_TABS.map(({ name, label, Icon }) => renderTabButton(name, label, Icon))}
+        </View>
+
+        <View style={styles.fabSlot}>
+          <Pressable
+            testID="fab-button"
+            onPress={onFabPress}
+            style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.88 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel={sheetOpen ? "Close menu" : "New session"}
+          >
+            {sheetOpen ? (
+              <X size={FAB_ICON_SIZE} color={colors.white} strokeWidth={2.5} />
+            ) : (
+              <Plus size={FAB_ICON_SIZE} color={colors.white} strokeWidth={2.5} />
+            )}
+          </Pressable>
+        </View>
+
+        <View style={styles.tabGroup}>
+          {RIGHT_TABS.map(({ name, label, Icon }) => renderTabButton(name, label, Icon))}
+        </View>
       </View>
 
-      {/* Center FAB */}
-      <View style={styles.fabContainer}>
-        <Pressable
-          testID="fab-button"
-          style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.85 : 1 }]}
-          onPress={onFabPress}
-          accessibilityRole="button"
-          accessibilityLabel={sheetOpen ? "Close menu" : "New session"}
-        >
-          {sheetOpen ? (
-            <X size={FAB_ICON_SIZE} color="#FFFFFF" strokeWidth={2.5} />
-          ) : (
-            <Plus size={FAB_ICON_SIZE} color="#FFFFFF" strokeWidth={2.5} />
-          )}
-        </Pressable>
-      </View>
-
-      {/* Right tabs */}
-      <View style={styles.tabGroup}>
-        {RIGHT_TABS.map(({ name, label, Icon }) => renderTabButton(name, label, Icon))}
+      {/* Gesture nav pill — 104×3 bar, 50% opacity text-2 */}
+      <View style={[styles.gestureArea, { paddingBottom: bottomPad }]}>
+        <View style={styles.gesturePill} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabBarWrapper: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    backgroundColor: TAB_BG,
+  wrapper: {
+    backgroundColor: "rgba(6,11,20,0.96)",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#1E2B47",
-    height: TAB_HEIGHT + 20, // extra room for FAB overflow
-    paddingHorizontal: 8,
-    // iOS blur approximation via shadow
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-      },
-      android: { elevation: 8 },
-    }),
+    borderTopColor: colors.lineSoft,
+  },
+  tabBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 6,
+    paddingHorizontal: 4,
+    gap: 0,
   },
   tabGroup: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "flex-end",
-    paddingBottom: 6,
   },
   tabItem: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 3,
+    justifyContent: "center",
     paddingVertical: 6,
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: ACTIVE_COLOR,
-    marginTop: -1,
+    gap: 3,
   },
   tabLabel: {
-    fontSize: LABEL_SIZE,
+    fontSize: 10,
     fontWeight: "500",
-    lineHeight: 14,
+    lineHeight: 13,
+    fontFamily: fonts.body,
   },
-  fabContainer: {
-    width: FAB_SIZE + 16,
+  fabSlot: {
+    width: 72,
     alignItems: "center",
-    // Raise FAB above the bar
-    marginBottom: 14,
+    justifyContent: "center",
   },
   fab: {
     width: FAB_SIZE,
     height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: ACTIVE_COLOR,
+    // Material 3 squircle — 14–16px border radius, NOT circular
+    borderRadius: FAB_RADIUS,
+    backgroundColor: colors.blue,
     alignItems: "center",
     justifyContent: "center",
-    // Blue glow
-    ...Platform.select({
-      ios: {
-        shadowColor: "#0077FF",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: { elevation: 6 },
-    }),
+    ...shadows.fab,
+    // Inset highlight — approximated on Android with a hairline top border.
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.22)",
+  },
+  gestureArea: {
+    alignItems: "center",
+    paddingTop: 6,
+  },
+  gesturePill: {
+    width: 104,
+    height: 3,
+    borderRadius: radii.chip,
+    backgroundColor: colors.text2,
+    opacity: 0.5,
   },
 });
-

@@ -1,0 +1,130 @@
+appId: com.ironpulse.app
+---
+# Capture screenshot tour of the mobile app for design iteration.
+# Logs in as athlete@test.com, navigates through every major screen,
+# takes a screenshot at each step. Screenshots land in the cwd as
+# ${name}.png via takeScreenshot.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+
+# Login screen
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- takeScreenshot: 01-login
+- tapOn:
+    id: "email-input"
+- inputText: "athlete@test.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+
+# Dashboard
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 02-dashboard
+
+# Stats tab
+- tapOn: "Stats"
+- waitForAnimationToEnd
+- takeScreenshot: 03-stats
+
+# Exercises tab
+- tapOn: "Exercises"
+- waitForAnimationToEnd
+- takeScreenshot: 04-exercises
+
+# Scroll into exercise list area and tap the first row
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- takeScreenshot: 04b-exercises-scrolled
+
+# Profile tab
+- tapOn: "Profile"
+- waitForAnimationToEnd
+- takeScreenshot: 06-profile
+
+# Scroll down profile to see all sections
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- takeScreenshot: 07-profile-scrolled
+
+# Goals
+- tapOn: "Goals"
+- waitForAnimationToEnd
+- takeScreenshot: 08-goals
+- back
+
+# Notifications
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- takeScreenshot: 09-notifications
+- back
+
+# Nutrition
+- tapOn: "Nutrition"
+- waitForAnimationToEnd
+- takeScreenshot: 10-nutrition
+- back
+
+# Sleep
+- tapOn: "Sleep"
+- waitForAnimationToEnd
+- takeScreenshot: 11-sleep
+- back
+
+# Program
+- tapOn: "My Program"
+- waitForAnimationToEnd
+- takeScreenshot: 12-program
+- back
+
+# Workout Templates
+- tapOn: "Workout Templates"
+- waitForAnimationToEnd
+- takeScreenshot: 13-templates
+- back
+
+# Connected Apps
+- tapOn: "Connected Apps"
+- waitForAnimationToEnd
+- takeScreenshot: 14-integrations
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- takeScreenshot: 15-integrations-scrolled
+- back
+
+# Settings
+- tapOn: "Settings"
+- waitForAnimationToEnd
+- takeScreenshot: 16-settings
+- back
+
+# Security
+- tapOn: "Password & Passkeys"
+- waitForAnimationToEnd
+- takeScreenshot: 17-security
+- back
+
+# Export Data
+- tapOn: "Export Data"
+- waitForAnimationToEnd
+- takeScreenshot: 18-export
+- back
+
+# Messages
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- takeScreenshot: 19-messages

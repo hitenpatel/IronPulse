@@ -9,3 +9,4 @@ dist/
 .worktrees/
 apps/web/public/@powersync/
 apps/web/e2e/*.spec.ts-snapshots/
+designs/screenshots-*/

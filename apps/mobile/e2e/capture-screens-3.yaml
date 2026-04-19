@@ -1,0 +1,55 @@
+appId: com.ironpulse.app
+---
+# Third pass — highest-priority screen per design brief: the active workout.
+# Also grabs notifications (bell), messages (via coach flow), subscription.
+
+- launchApp
+- waitForAnimationToEnd
+
+# Go to Home/Dashboard tab
+- tapOn: "Home"
+- waitForAnimationToEnd
+- takeScreenshot: 02b-dashboard-home
+
+# Tap the big blue + FAB to start a workout
+- tapOn: "Start Workout"
+- waitForAnimationToEnd
+- takeScreenshot: 05-active-workout-empty
+
+# Scroll / inspect
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- takeScreenshot: 05b-active-workout-scrolled
+
+# Back to dashboard
+- back
+- waitForAnimationToEnd
+
+# Subscription screen
+- tapOn: "Profile"
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- tapOn: "Subscription"
+- waitForAnimationToEnd
+- takeScreenshot: 21-subscription
+- back
+- waitForAnimationToEnd
+
+# Coaching settings
+- tapOn: "Coaching"
+- waitForAnimationToEnd
+- takeScreenshot: 22-coaching
+- back
+- waitForAnimationToEnd
+
+# Import workouts screen
+- swipe:
+    direction: UP
+- waitForAnimationToEnd
+- tapOn: "Import Workouts"
+- waitForAnimationToEnd
+- takeScreenshot: 23-import
+- back
