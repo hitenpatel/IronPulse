@@ -133,7 +133,9 @@ export function SetRow({
         : EMPTY_PLACEHOLDER;
 
   // v2: row backgrounds and value-text contrast
-  // - isActive (lime bg)  → blueInk for values, rgba(blueInk,.45) for placeholder
+  // - isActive (lime bg)  → everything renders in solid blueInk. No opacity
+  //   dimming on lime — translucent ink is illegible against the bright
+  //   primary.
   // - isCompleted         → text3 (muted, greyed)
   // - default             → text2
   const valueColor = isActive
@@ -141,7 +143,7 @@ export function SetRow({
     : isCompleted
       ? colors.text3
       : colors.text2;
-  const placeholderColor = isActive ? "rgba(15,21,8,0.45)" : colors.text4;
+  const placeholderColor = isActive ? colors.blueInk : colors.text4;
 
   const textInputStyle = {
     color: valueColor,
@@ -205,7 +207,7 @@ export function SetRow({
         numberOfLines={1}
         style={{
           flex: 1.2,
-          color: isActive ? "rgba(15,21,8,0.55)" : colors.text4,
+          color: isActive ? colors.blueInk : colors.text4,
           fontSize: 11,
           fontFamily: fonts.monoRegular,
           textAlign: "center",
@@ -222,6 +224,7 @@ export function SetRow({
         keyboardType="decimal-pad"
         placeholder={EMPTY_PLACEHOLDER}
         placeholderTextColor={placeholderColor}
+        underlineColorAndroid="transparent"
         style={textInputStyle}
       />
 
@@ -233,6 +236,7 @@ export function SetRow({
         keyboardType="number-pad"
         placeholder={EMPTY_PLACEHOLDER}
         placeholderTextColor={placeholderColor}
+        underlineColorAndroid="transparent"
         style={textInputStyle}
       />
 
@@ -259,9 +263,7 @@ export function SetRow({
         <Text
           style={{
             color: isActive
-              ? rpe != null
-                ? colors.blueInk
-                : "rgba(15,21,8,0.55)"
+              ? colors.blueInk
               : rpe != null
                 ? colors.text
                 : colors.text4,
@@ -310,7 +312,7 @@ export function SetRow({
           alignItems: "center",
         }}
       >
-        <Minus size={14} color={isActive ? "rgba(15,21,8,0.55)" : colors.text4} />
+        <Minus size={14} color={isActive ? colors.blueInk : colors.text4} />
       </Pressable>
     </View>
   );
