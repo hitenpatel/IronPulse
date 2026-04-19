@@ -8,6 +8,7 @@ export { TopBar } from "./top-bar";
 export { Pills, SegmentedControl, type PillItem } from "./pills";
 export { Sparkline, sparkPath } from "./sparkline";
 export { UppercaseLabel } from "./uppercase-label";
+export { Logo } from "./logo";
 export { Badge } from "./badge";
 export { EmptyState } from "./empty-state";
 export { ErrorState } from "./error-state";

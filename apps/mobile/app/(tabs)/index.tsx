@@ -10,7 +10,6 @@ import {
   Play,
   Dumbbell,
   Activity,
-  Trophy,
 } from "lucide-react-native";
 import { usePowerSync, useQuery } from "@powersync/react";
 
@@ -33,6 +32,7 @@ import {
   BigNum,
   Card,
   Chip,
+  Logo,
   Row,
   RowList,
   UppercaseLabel,
@@ -220,25 +220,11 @@ export default function DashboardScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 7,
-                backgroundColor: colors.bg1,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: colors.line,
-              }}
-            >
-              <Dumbbell size={14} color={colors.blue} />
-            </View>
+            <Logo size={26} flat />
             <Text
               style={{
                 fontFamily: fonts.displaySemi,
                 fontSize: 16,
-                fontWeight: "600",
                 color: colors.text,
                 letterSpacing: -0.2,
               }}

@@ -3,14 +3,14 @@ import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Dumbbell, Eye, EyeOff, Fingerprint } from "lucide-react-native";
+import { Eye, EyeOff, Fingerprint } from "lucide-react-native";
 import type { AuthStackParamList } from "../../App";
 import * as AuthSession from "@/lib/auth-session";
 import * as AppleAuthentication from "@/lib/apple-authentication";
 import { useAuth } from "@/lib/auth";
 import { isBiometricEnabled, isBiometricAvailable, getBiometricLabel } from "@/lib/biometric";
 import { colors, fonts, radii, tracking } from "@/lib/theme";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, Logo } from "@/components/ui";
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
@@ -125,43 +125,71 @@ export default function LoginScreen() {
         }}
       />
 
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 28 }}>
-        {/* Logo + wordmark */}
-        <View style={{ alignItems: "center", marginBottom: 40 }}>
+      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 28 }}>
+        {/* Logo + wordmark — v2 hero per
+            designs/design_handoff_new/reference/screens-primary.jsx::Login */}
+        <View style={{ alignItems: "center", marginTop: 40, marginBottom: 36 }}>
+          {/* Logo with two concentric ring borders at -8 and -16 inset */}
           <View
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
-              backgroundColor: colors.bg1,
-              borderWidth: 1,
-              borderColor: colors.line2,
+              width: 84,
+              height: 84,
+              marginBottom: 20,
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: 18,
+              position: "relative",
             }}
           >
-            <Dumbbell size={26} color={colors.blue} />
+            <Logo size={84} />
+            {/* Outer rings echo the cobalt glow around the tile */}
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                left: -8,
+                right: -8,
+                top: -8,
+                bottom: -8,
+                borderRadius: 28,
+                borderWidth: 1,
+                borderColor: "rgba(58,109,255,0.35)",
+              }}
+            />
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                left: -16,
+                right: -16,
+                top: -16,
+                bottom: -16,
+                borderRadius: 32,
+                borderWidth: 1,
+                borderColor: "rgba(58,109,255,0.18)",
+              }}
+            />
           </View>
+
           <Text
             style={{
-              fontFamily: fonts.displaySemi,
-              fontSize: 30,
-              letterSpacing: -0.8,
+              fontFamily: fonts.displayBold,
+              fontSize: 38,
+              letterSpacing: -1.3,
+              lineHeight: 40,
               color: colors.text,
             }}
           >
-            Iron<Text style={{ color: colors.blue2 }}>Pulse</Text>
+            Iron<Text style={{ color: colors.blue }}>Pulse</Text>
           </Text>
           <Text
             style={{
               color: colors.text3,
-              fontSize: 12,
-              marginTop: 6,
-              fontFamily: fonts.bodyRegular,
+              fontSize: 13,
+              marginTop: 8,
+              fontFamily: fonts.bodyMedium,
             }}
           >
-            Strength · Cardio · One place
+            Train hard. Track easy.
           </Text>
         </View>
 
