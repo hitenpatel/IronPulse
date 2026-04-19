@@ -1,0 +1,52 @@
+appId: com.ironpulse.app
+---
+# QA for ticket #218 — Dashboard redesign.
+# Asserts the handoff landmarks are present: brand row, greeting, Next Up
+# hero, streak card, 3-col metrics, Recent section. Also verifies that
+# tapping the hero starts a workout (core flow preserved).
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+
+# Log in
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "athlete@test.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+
+# Dashboard landmarks
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- assertVisible: "IronPulse"
+- assertVisible: "Ready to train?"
+- assertVisible:
+    id: "next-up-hero"
+- assertVisible: "Start workout"
+- assertVisible: "-day streak"
+- assertVisible: "Sessions"
+- assertVisible: "Volume"
+- assertVisible: "Time"
+- assertVisible: "Recent"
+
+# Bell opens notifications
+- tapOn:
+    id: "notifications-bell"
+- assertVisible: "Notifications"
+- back
+
+# Hero tap creates a workout
+- tapOn:
+    id: "next-up-hero"
+- assertVisible: "Add Exercise"
