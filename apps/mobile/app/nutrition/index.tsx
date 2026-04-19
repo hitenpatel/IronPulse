@@ -1,8 +1,7 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,30 +11,25 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
-import { Trash2, Utensils } from "lucide-react-native";
-import { trpc } from "@/lib/trpc";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import Svg, { Circle } from "react-native-svg";
+import { ChevronDown, ChevronUp, Coffee, Croissant, Moon, Plus, Sun, Trash2, Utensils } from "lucide-react-native";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
-  error: "#EF4444",
-};
+import { trpc } from "@/lib/trpc";
+import { colors, fonts, radii, spacing } from "@/lib/theme";
+import { BigNum, Button, TopBar, UppercaseLabel } from "@/components/ui";
 
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";
-const MEAL_TYPES: { value: MealType; label: string }[] = [
-  { value: "breakfast", label: "Breakfast" },
-  { value: "lunch", label: "Lunch" },
-  { value: "dinner", label: "Dinner" },
-  { value: "snack", label: "Snack" },
+
+const MEAL_TYPES: {
+  value: MealType;
+  label: string;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+}[] = [
+  { value: "breakfast", label: "Breakfast", icon: Sun },
+  { value: "lunch", label: "Lunch", icon: Utensils },
+  { value: "snack", label: "Snack", icon: Croissant },
+  { value: "dinner", label: "Dinner", icon: Moon },
 ];
 
 function todayDate(): Date {
@@ -47,11 +41,17 @@ function todayDate(): Date {
 type DailySummary = Awaited<ReturnType<typeof trpc.nutrition.dailySummary.query>>;
 type MealList = Awaited<ReturnType<typeof trpc.nutrition.listMeals.query>>;
 
+// Target assumptions — the user-editable version lives under settings.
+// These are the denominators the rings track.
+const DEFAULTS = { calories: 2600, protein: 200, carbs: 260, fat: 80 };
+
 export default function NutritionScreen() {
+  const navigation = useNavigation();
   const [summary, setSummary] = useState<DailySummary | null>(null);
   const [meals, setMeals] = useState<MealList["meals"]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   // Form state
   const [mealType, setMealType] = useState<MealType>("breakfast");
@@ -60,7 +60,6 @@ export default function NutritionScreen() {
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
-  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -72,7 +71,7 @@ export default function NutritionScreen() {
       setSummary(sum);
       setMeals(list.meals);
     } catch {
-      // keep stale data
+      /* keep stale */
     } finally {
       setLoading(false);
     }
@@ -92,17 +91,16 @@ export default function NutritionScreen() {
         ...(protein !== "" && { proteinG: parseFloat(protein) }),
         ...(carbs !== "" && { carbsG: parseFloat(carbs) }),
         ...(fat !== "" && { fatG: parseFloat(fat) }),
-        ...(notes.trim() !== "" && { notes: notes.trim() }),
       });
       setName("");
       setCalories("");
       setProtein("");
       setCarbs("");
       setFat("");
-      setNotes("");
+      setFormOpen(false);
       await load();
     } catch {
-      Alert.alert("Error", "Failed to log meal. Please try again.");
+      Alert.alert("Error", "Failed to log meal.");
     } finally {
       setSaving(false);
     }
@@ -120,241 +118,435 @@ export default function NutritionScreen() {
     }
   }
 
-  const grouped = MEAL_TYPES.map((t) => ({
-    ...t,
-    meals: meals.filter((m) => m.mealType === t.value),
-  })).filter((g) => g.meals.length > 0);
+  const totals = {
+    calories: summary?.totalCalories ?? 0,
+    protein: Number(summary?.totalProteinG ?? 0),
+    carbs: Number(summary?.totalCarbsG ?? 0),
+    fat: Number(summary?.totalFatG ?? 0),
+  };
+  const caloriesRemaining = Math.max(0, DEFAULTS.calories - totals.calories);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+        <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 40 }}>
+          <TopBar
+            title="Nutrition"
+            onBack={() => navigation.goBack()}
+            right={
+              <Pressable
+                onPress={() => setFormOpen((v) => !v)}
+                hitSlop={6}
+                accessibilityLabel={formOpen ? "Close meal form" : "Log meal"}
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  backgroundColor: formOpen ? colors.bg2 : colors.blue,
+                  borderWidth: 1,
+                  borderColor: formOpen ? colors.line : colors.blue,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Plus
+                  size={16}
+                  color={formOpen ? colors.text2 : colors.white}
+                  style={{ transform: [{ rotate: formOpen ? "45deg" : "0deg" }] }}
+                />
+              </Pressable>
+            }
+          />
 
-          {/* Macro Summary */}
-          {summary && summary.mealCount > 0 && (
-            <View
-              style={{
-                backgroundColor: colors.card,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: 16,
-              }}
-            >
-              <Text style={{ color: colors.mutedFg, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 12 }}>
-                Today's Macros
-              </Text>
-              <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-                {[
-                  { label: "kcal", value: String(summary.totalCalories) },
-                  { label: "protein", value: `${Number(summary.totalProteinG).toFixed(1)}g` },
-                  { label: "carbs", value: `${Number(summary.totalCarbsG).toFixed(1)}g` },
-                  { label: "fat", value: `${Number(summary.totalFatG).toFixed(1)}g` },
-                ].map(({ label, value }) => (
-                  <View key={label} style={{ alignItems: "center" }}>
-                    <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "700" }}>{value}</Text>
-                    <Text style={{ color: colors.mutedFg, fontSize: 11, marginTop: 2 }}>{label}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Log Meal Form */}
+          {/* Calorie ring hero */}
           <View
             style={{
-              backgroundColor: colors.card,
-              borderRadius: 12,
+              backgroundColor: colors.bg1,
+              borderRadius: radii.card,
               borderWidth: 1,
-              borderColor: colors.border,
-              padding: 16,
-              gap: 12,
+              borderColor: colors.lineSoft,
+              paddingVertical: 16,
+              paddingHorizontal: 14,
+              alignItems: "center",
+              marginBottom: 10,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
-              <Utensils size={16} color={colors.mutedFg} />
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>Log Meal</Text>
-            </View>
-
-            {/* Meal type picker */}
-            <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
-              {MEAL_TYPES.map((t) => (
-                <Pressable
-                  key={t.value}
-                  onPress={() => setMealType(t.value)}
-                  style={{
-                    backgroundColor: mealType === t.value ? colors.primary : colors.accent,
-                    borderWidth: 1,
-                    borderColor: mealType === t.value ? colors.primary : colors.border,
-                    borderRadius: 20,
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                  }}
-                >
-                  <Text style={{ color: mealType === t.value ? "#fff" : colors.mutedFg, fontSize: 13, fontWeight: "500" }}>
-                    {t.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Food name */}
-            <TextInput
-              style={{
-                backgroundColor: colors.accent,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                height: 44,
-                paddingHorizontal: 12,
-                color: colors.foreground,
-                fontSize: 15,
-              }}
-              placeholder="Food name *"
-              placeholderTextColor={colors.dimFg}
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
+            <UppercaseLabel style={{ marginBottom: 10 }}>
+              Today · {totals.calories.toLocaleString()} / {DEFAULTS.calories.toLocaleString()} cal
+            </UppercaseLabel>
+            <CalorieRing
+              calories={totals.calories}
+              protein={totals.protein}
+              carbs={totals.carbs}
+              remaining={caloriesRemaining}
             />
-
-            {/* Macros row */}
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {[
-                { label: "Calories", value: calories, setter: setCalories, placeholder: "kcal" },
-                { label: "Protein (g)", value: protein, setter: setProtein, placeholder: "g" },
-                { label: "Carbs (g)", value: carbs, setter: setCarbs, placeholder: "g" },
-                { label: "Fat (g)", value: fat, setter: setFat, placeholder: "g" },
-              ].map(({ label, value, setter, placeholder }) => (
-                <View key={label} style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ color: colors.dimFg, fontSize: 10, fontWeight: "600", textTransform: "uppercase" }}>{label}</Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: colors.accent,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: 8,
-                      height: 40,
-                      paddingHorizontal: 8,
-                      color: colors.foreground,
-                      fontSize: 14,
-                      textAlign: "center",
-                    }}
-                    placeholder={placeholder}
-                    placeholderTextColor={colors.dimFg}
-                    value={value}
-                    onChangeText={setter}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-              ))}
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 16, alignSelf: "stretch" }}>
+              <MacroBar label="Protein" color={colors.blue} value={totals.protein} target={DEFAULTS.protein} />
+              <MacroBar label="Carbs" color={colors.amber} value={totals.carbs} target={DEFAULTS.carbs} />
+              <MacroBar label="Fat" color={colors.green} value={totals.fat} target={DEFAULTS.fat} />
             </View>
-
-            {/* Notes */}
-            <TextInput
-              style={{
-                backgroundColor: colors.accent,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                height: 44,
-                paddingHorizontal: 12,
-                color: colors.foreground,
-                fontSize: 15,
-              }}
-              placeholder="Notes (optional)"
-              placeholderTextColor={colors.dimFg}
-              value={notes}
-              onChangeText={setNotes}
-            />
-
-            <Pressable
-              onPress={handleLogMeal}
-              disabled={saving || !name.trim()}
-              style={{
-                backgroundColor: saving || !name.trim() ? colors.muted : colors.primary,
-                borderRadius: 8,
-                height: 44,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>
-                {saving ? "Saving…" : "Log Meal"}
-              </Text>
-            </Pressable>
           </View>
 
-          {/* Today's meals */}
-          <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>Today's Meals</Text>
+          {/* Log form */}
+          {formOpen ? (
+            <View
+              style={{
+                backgroundColor: colors.bg1,
+                borderRadius: radii.card,
+                borderWidth: 1,
+                borderColor: colors.lineSoft,
+                padding: 14,
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <UppercaseLabel>Log meal</UppercaseLabel>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {MEAL_TYPES.map((t) => {
+                  const active = mealType === t.value;
+                  return (
+                    <Pressable
+                      key={t.value}
+                      onPress={() => setMealType(t.value)}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 12,
+                        borderRadius: radii.chip,
+                        backgroundColor: active ? colors.blue : colors.bg2,
+                        borderWidth: 1,
+                        borderColor: active ? "transparent" : colors.line,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: active ? colors.white : colors.text2,
+                          fontFamily: fonts.bodyMedium,
+                        }}
+                      >
+                        {t.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
+              <TextInput
+                placeholder="Food name"
+                placeholderTextColor={colors.text4}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                style={textInputStyle}
+              />
+
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {[
+                  { v: calories, set: setCalories, ph: "kcal" },
+                  { v: protein, set: setProtein, ph: "P g" },
+                  { v: carbs, set: setCarbs, ph: "C g" },
+                  { v: fat, set: setFat, ph: "F g" },
+                ].map((m, i) => (
+                  <TextInput
+                    key={i}
+                    placeholder={m.ph}
+                    placeholderTextColor={colors.text4}
+                    keyboardType="decimal-pad"
+                    value={m.v}
+                    onChangeText={m.set}
+                    style={[textInputStyle, { flex: 1, textAlign: "center" as const }]}
+                  />
+                ))}
+              </View>
+
+              <Button variant="primary" onPress={handleLogMeal} disabled={saving || !name.trim()}>
+                {saving ? "Saving…" : "Log meal"}
+              </Button>
+            </View>
+          ) : null}
+
+          {/* Meal list */}
           {loading ? (
-            <ActivityIndicator color={colors.foreground} />
-          ) : grouped.length === 0 ? (
-            <Text style={{ color: colors.mutedFg, textAlign: "center", paddingVertical: 24, fontSize: 14 }}>
-              No meals logged today.
-            </Text>
+            <ActivityIndicator color={colors.text3} style={{ marginVertical: 24 }} />
           ) : (
-            grouped.map((group) => (
-              <View key={group.value} style={{ gap: 8 }}>
-                <Text style={{ color: colors.mutedFg, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4 }}>
-                  {group.label}
-                </Text>
-                {group.meals.map((meal) => (
+            <View
+              style={{
+                backgroundColor: colors.bg1,
+                borderWidth: 1,
+                borderColor: colors.lineSoft,
+                borderRadius: radii.rowList,
+                overflow: "hidden",
+              }}
+            >
+              {MEAL_TYPES.map((t, i) => {
+                const IconCmp = t.icon;
+                const entries = meals.filter((m) => m.mealType === t.value);
+                const total = entries.reduce((s, m) => s + (m.calories ?? 0), 0);
+                const foods = entries.length
+                  ? entries.map((m) => m.name).join(" · ")
+                  : "";
+                const empty = entries.length === 0;
+                const firstTime = entries[0]?.createdAt;
+                const timeLabel = firstTime
+                  ? new Date(String(firstTime)).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "—";
+
+                return (
                   <View
-                    key={meal.id}
+                    key={t.value}
                     style={{
-                      backgroundColor: colors.card,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      padding: 12,
+                      borderTopWidth: i === 0 ? 0 : 1,
+                      borderTopColor: colors.lineSoft,
+                      padding: 14,
                       flexDirection: "row",
                       alignItems: "flex-start",
                       gap: 10,
                     }}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 15 }} numberOfLines={1}>
-                        {meal.name}
-                      </Text>
-                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                        {meal.calories != null && (
-                          <Text style={{ color: colors.mutedFg, fontSize: 12 }}>{meal.calories} kcal</Text>
-                        )}
-                        {meal.proteinG != null && (
-                          <Text style={{ color: colors.mutedFg, fontSize: 12 }}>{Number(meal.proteinG).toFixed(1)}g protein</Text>
-                        )}
-                        {meal.carbsG != null && (
-                          <Text style={{ color: colors.mutedFg, fontSize: 12 }}>{Number(meal.carbsG).toFixed(1)}g carbs</Text>
-                        )}
-                        {meal.fatG != null && (
-                          <Text style={{ color: colors.mutedFg, fontSize: 12 }}>{Number(meal.fatG).toFixed(1)}g fat</Text>
-                        )}
-                      </View>
-                      {meal.notes && (
-                        <Text style={{ color: colors.dimFg, fontSize: 12, marginTop: 3, fontStyle: "italic" }}>
-                          {meal.notes}
-                        </Text>
-                      )}
-                    </View>
-                    <Pressable
-                      onPress={() => handleDelete(meal.id)}
-                      disabled={deleting === meal.id}
-                      hitSlop={8}
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        backgroundColor: empty ? colors.bg2 : colors.greenSoft,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
-                      {deleting === meal.id ? (
-                        <ActivityIndicator size="small" color={colors.mutedFg} />
-                      ) : (
-                        <Trash2 size={16} color={colors.dimFg} />
-                      )}
-                    </Pressable>
+                      <IconCmp size={14} color={empty ? colors.text4 : colors.green} />
+                    </View>
+
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: colors.text,
+                            fontFamily: fonts.bodyMedium,
+                          }}
+                        >
+                          {t.label}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            color: colors.text4,
+                            fontFamily: fonts.monoRegular,
+                          }}
+                        >
+                          {timeLabel}
+                        </Text>
+                      </View>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 11,
+                          color: empty ? colors.text4 : colors.text3,
+                          marginTop: 2,
+                          fontFamily: fonts.bodyRegular,
+                        }}
+                      >
+                        {empty ? "Add meal" : foods}
+                      </Text>
+                    </View>
+
+                    {empty ? (
+                      <Pressable
+                        onPress={() => {
+                          setMealType(t.value);
+                          setFormOpen(true);
+                        }}
+                        hitSlop={4}
+                      >
+                        <Plus size={16} color={colors.text3} />
+                      </Pressable>
+                    ) : (
+                      <View style={{ alignItems: "flex-end", gap: 4 }}>
+                        <BigNum size={14}>{total}</BigNum>
+                        <Text style={{ fontSize: 9, color: colors.text4, fontFamily: fonts.monoRegular }}>
+                          kcal
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                ))}
-              </View>
-            ))
+                );
+              })}
+            </View>
           )}
+
+          {/* Per-entry meal list with delete */}
+          {meals.length > 0 ? (
+            <View style={{ marginTop: 14 }}>
+              <UppercaseLabel style={{ marginBottom: 6 }}>Entries</UppercaseLabel>
+              {meals.map((m) => (
+                <View
+                  key={m.id}
+                  style={{
+                    backgroundColor: colors.bg1,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.lineSoft,
+                    padding: 10,
+                    marginBottom: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{ fontSize: 12.5, color: colors.text, fontFamily: fonts.bodyMedium }}
+                    >
+                      {m.name}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: colors.text4, marginTop: 1, fontFamily: fonts.monoRegular }}>
+                      {[
+                        m.calories != null ? `${m.calories} kcal` : null,
+                        m.proteinG != null ? `${Number(m.proteinG).toFixed(0)}P` : null,
+                        m.carbsG != null ? `${Number(m.carbsG).toFixed(0)}C` : null,
+                        m.fatG != null ? `${Number(m.fatG).toFixed(0)}F` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => handleDelete(m.id)} disabled={deleting === m.id} hitSlop={6}>
+                    {deleting === m.id ? (
+                      <ActivityIndicator size="small" color={colors.text3} />
+                    ) : (
+                      <Trash2 size={14} color={colors.text4} />
+                    )}
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+const textInputStyle = {
+  backgroundColor: colors.bg2,
+  borderWidth: 1,
+  borderColor: colors.line,
+  borderRadius: radii.button,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  color: colors.text,
+  fontSize: 13,
+  fontFamily: fonts.bodyRegular,
+};
+
+/** Triple concentric rings: outer = calories (green), middle = protein (blue),
+ *  inner = carbs (amber). Center shows remaining kcal. */
+function CalorieRing({
+  calories,
+  protein,
+  carbs,
+  remaining,
+}: {
+  calories: number;
+  protein: number;
+  carbs: number;
+  remaining: number;
+}) {
+  const size = 140;
+  const c = size / 2;
+  const make = (r: number, v: number, max: number) => {
+    const circ = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(1, max > 0 ? v / max : 0));
+    return { r, circ, offset: circ * (1 - pct) };
+  };
+  const outer = make(58, calories, DEFAULTS.calories);
+  const middle = make(46, protein, DEFAULTS.protein);
+  const inner = make(36, carbs, DEFAULTS.carbs);
+
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={size} height={size} style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
+        <Circle cx={c} cy={c} r={outer.r} stroke={colors.bg3} strokeWidth={6} fill="none" />
+        <Circle
+          cx={c}
+          cy={c}
+          r={outer.r}
+          stroke={colors.green}
+          strokeWidth={6}
+          fill="none"
+          strokeDasharray={outer.circ}
+          strokeDashoffset={outer.offset}
+          strokeLinecap="round"
+        />
+        <Circle cx={c} cy={c} r={middle.r} stroke={colors.bg3} strokeWidth={3} fill="none" />
+        <Circle
+          cx={c}
+          cy={c}
+          r={middle.r}
+          stroke={colors.blue}
+          strokeWidth={3}
+          fill="none"
+          strokeDasharray={middle.circ}
+          strokeDashoffset={middle.offset}
+          strokeLinecap="round"
+        />
+        <Circle cx={c} cy={c} r={inner.r} stroke={colors.bg3} strokeWidth={3} fill="none" />
+        <Circle
+          cx={c}
+          cy={c}
+          r={inner.r}
+          stroke={colors.amber}
+          strokeWidth={3}
+          fill="none"
+          strokeDasharray={inner.circ}
+          strokeDashoffset={inner.offset}
+          strokeLinecap="round"
+        />
+      </Svg>
+      <View style={{ alignItems: "center" }}>
+        <UppercaseLabel>Remaining</UppercaseLabel>
+        <BigNum size={26}>{remaining.toLocaleString()}</BigNum>
+        <Text style={{ fontSize: 10, color: colors.text4, fontFamily: fonts.monoRegular }}>cal</Text>
+      </View>
+    </View>
+  );
+}
+
+function MacroBar({
+  label,
+  value,
+  target,
+  color,
+}: {
+  label: string;
+  value: number;
+  target: number;
+  color: string;
+}) {
+  const pct = Math.max(0, Math.min(1, target > 0 ? value / target : 0));
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ fontSize: 10, color: colors.text3, fontFamily: fonts.bodyMedium }}>{label}</Text>
+        <Text style={{ fontSize: 10, color: colors.text2, fontFamily: fonts.monoRegular }}>
+          {value.toFixed(0)}
+          <Text style={{ color: colors.text4 }}>/{target}g</Text>
+        </Text>
+      </View>
+      <View style={{ height: 3, backgroundColor: colors.bg3, borderRadius: 2, marginTop: 4 }}>
+        <View
+          style={{
+            width: `${pct * 100}%`,
+            height: 3,
+            backgroundColor: color,
+            borderRadius: 2,
+          }}
+        />
+      </View>
+    </View>
   );
 }

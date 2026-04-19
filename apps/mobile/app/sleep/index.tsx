@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,31 +11,21 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
-import { Moon, Trash2 } from "lucide-react-native";
-import { trpc } from "@/lib/trpc";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import Svg, { Rect } from "react-native-svg";
+import { Moon, Plus, Trash2 } from "lucide-react-native";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
-  error: "#EF4444",
-};
+import { trpc } from "@/lib/trpc";
+import { colors, fonts, radii, spacing } from "@/lib/theme";
+import { BigNum, Button, Chip, TopBar, UppercaseLabel } from "@/components/ui";
 
 type SleepQuality = "poor" | "fair" | "good" | "excellent";
 
-const QUALITY_OPTIONS: { value: SleepQuality; label: string; color: string }[] = [
-  { value: "poor", label: "Poor", color: "#EF4444" },
-  { value: "fair", label: "Fair", color: "#F59E0B" },
-  { value: "good", label: "Good", color: "#3B82F6" },
-  { value: "excellent", label: "Excellent", color: "#22C55E" },
+const QUALITY_OPTIONS: { value: SleepQuality; label: string; tone: "amber" | "green" | "blue" | "purple" }[] = [
+  { value: "poor", label: "Poor", tone: "amber" },
+  { value: "fair", label: "Fair", tone: "amber" },
+  { value: "good", label: "Good", tone: "blue" },
+  { value: "excellent", label: "Excellent", tone: "green" },
 ];
 
 function todayDateStr(): string {
@@ -43,38 +33,29 @@ function todayDateStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function formatDurationMins(mins: number | null): string {
-  if (!mins) return "—";
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+function durationHm(mins: number | null | undefined): { h: number; m: number } {
+  if (!mins) return { h: 0, m: 0 };
+  return { h: Math.floor(mins / 60), m: mins % 60 };
 }
 
-function formatTime(iso: Date | string | null): string {
+function formatTime(iso: Date | string | null | undefined): string {
   if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-}
-
-function formatDate(iso: Date | string): string {
-  return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
 type SleepLogs = Awaited<ReturnType<typeof trpc.sleep.listSleep.query>>;
 
 export default function SleepScreen() {
+  const navigation = useNavigation();
   const [logs, setLogs] = useState<SleepLogs["logs"]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
-  // Form state
   const [bedtime, setBedtime] = useState("");
   const [wakeTime, setWakeTime] = useState("");
   const [durationMins, setDurationMins] = useState("");
   const [quality, setQuality] = useState<SleepQuality | "">("");
-  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -82,7 +63,7 @@ export default function SleepScreen() {
       const result = await trpc.sleep.listSleep.query({ days: 14 });
       setLogs(result.logs);
     } catch {
-      // keep stale data
+      /* keep stale */
     } finally {
       setLoading(false);
     }
@@ -92,9 +73,8 @@ export default function SleepScreen() {
 
   async function handleLogSleep() {
     const today = todayDateStr();
-    const parsedDate = new Date(today + "T00:00:00");
+    const parsedDate = new Date(`${today}T00:00:00`);
     if (isNaN(parsedDate.getTime())) return;
-
     setSaving(true);
     try {
       await trpc.sleep.logSleep.mutate({
@@ -104,16 +84,15 @@ export default function SleepScreen() {
         ...(durationMins !== "" && { durationMins: parseInt(durationMins, 10) }),
         ...(quality !== "" && { quality }),
         source: "manual",
-        ...(notes.trim() !== "" && { notes: notes.trim() }),
       });
       setBedtime("");
       setWakeTime("");
       setDurationMins("");
       setQuality("");
-      setNotes("");
+      setFormOpen(false);
       await load();
     } catch {
-      Alert.alert("Error", "Failed to log sleep. Please try again.");
+      Alert.alert("Error", "Failed to log sleep.");
     } finally {
       setSaving(false);
     }
@@ -131,211 +110,307 @@ export default function SleepScreen() {
     }
   }
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+  const latest = logs[0];
+  const latestHm = durationHm(latest?.durationMins ?? null);
+  const latestQuality = QUALITY_OPTIONS.find((q) => q.value === latest?.quality);
 
-          {/* Log Sleep Form */}
+  // 7-day bar chart — last 7 logs, oldest-left
+  const chartData = useMemo(() => {
+    return [...logs].slice(0, 7).reverse();
+  }, [logs]);
+
+  const maxDuration = Math.max(1, ...chartData.map((l) => l.durationMins ?? 0)) * 1.1;
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 32 }}>
+          <TopBar
+            title="Sleep"
+            onBack={() => navigation.goBack()}
+            right={
+              <Pressable
+                onPress={() => setFormOpen((v) => !v)}
+                hitSlop={6}
+                accessibilityLabel="Log sleep"
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  backgroundColor: formOpen ? colors.bg2 : colors.purple,
+                  borderWidth: 1,
+                  borderColor: formOpen ? colors.line : colors.purple,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Plus
+                  size={16}
+                  color={formOpen ? colors.text2 : colors.white}
+                  style={{ transform: [{ rotate: formOpen ? "45deg" : "0deg" }] }}
+                />
+              </Pressable>
+            }
+          />
+
+          {/* Hero: most recent night */}
           <View
             style={{
-              backgroundColor: colors.card,
-              borderRadius: 12,
+              backgroundColor: colors.purpleSoft,
+              borderRadius: radii.card,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: colors.purpleSoft,
               padding: 16,
-              gap: 12,
+              marginBottom: 10,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
-              <Moon size={16} color={colors.mutedFg} />
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>Log Sleep</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <UppercaseLabel color={colors.purple}>Last night</UppercaseLabel>
+              {latestQuality ? <Chip tone={latestQuality.tone}>{latestQuality.label}</Chip> : null}
             </View>
+            {latest ? (
+              <>
+                <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 10, gap: 4 }}>
+                  <BigNum size={36}>{latestHm.h}</BigNum>
+                  <Text style={{ fontSize: 14, color: colors.text3, fontFamily: fonts.bodyRegular }}>h</Text>
+                  <BigNum size={36}>{latestHm.m}</BigNum>
+                  <Text style={{ fontSize: 14, color: colors.text3, fontFamily: fonts.bodyRegular }}>m</Text>
+                </View>
+                <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
+                  <TimeStat label="Bedtime" value={formatTime(latest.bedtime)} />
+                  <TimeStat label="Wake" value={formatTime(latest.wakeTime)} />
+                </View>
+              </>
+            ) : (
+              <Text style={{ color: colors.text3, marginTop: 10, fontSize: 13, fontFamily: fonts.bodyRegular }}>
+                No sleep logged yet. Tap the + to log last night.
+              </Text>
+            )}
+          </View>
 
-            {/* Bedtime + Wake time */}
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              {[
-                { label: "Bedtime (HH:MM)", value: bedtime, setter: setBedtime, placeholder: "22:30" },
-                { label: "Wake Time (HH:MM)", value: wakeTime, setter: setWakeTime, placeholder: "06:30" },
-              ].map(({ label, value, setter, placeholder }) => (
-                <View key={label} style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ color: colors.dimFg, fontSize: 10, fontWeight: "600", textTransform: "uppercase" }}>{label}</Text>
+          {/* 7-day chart */}
+          {chartData.length > 0 ? (
+            <View
+              style={{
+                backgroundColor: colors.bg1,
+                borderRadius: radii.card,
+                borderWidth: 1,
+                borderColor: colors.lineSoft,
+                padding: 14,
+                marginBottom: 10,
+              }}
+            >
+              <UppercaseLabel style={{ marginBottom: 10 }}>Last 7 days</UppercaseLabel>
+              <Svg width="100%" height={70} viewBox="0 0 240 70" preserveAspectRatio="none">
+                {chartData.map((l, i, arr) => {
+                  const dur = l.durationMins ?? 0;
+                  const bh = (dur / maxDuration) * 60;
+                  const barW = (240 - 2 * (arr.length - 1)) / arr.length - 4;
+                  const x = i * (barW + 4) + 2;
+                  const y = 66 - bh;
+                  const isLatest = i === arr.length - 1;
+                  return (
+                    <Rect
+                      key={l.id}
+                      x={x}
+                      y={y}
+                      width={barW}
+                      height={bh}
+                      rx={2}
+                      fill={isLatest ? colors.purple : colors.bg3}
+                    />
+                  );
+                })}
+              </Svg>
+            </View>
+          ) : null}
+
+          {/* Log form */}
+          {formOpen ? (
+            <View
+              style={{
+                backgroundColor: colors.bg1,
+                borderRadius: radii.card,
+                borderWidth: 1,
+                borderColor: colors.lineSoft,
+                padding: 14,
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Moon size={14} color={colors.purple} />
+                <UppercaseLabel>Log sleep</UppercaseLabel>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <UppercaseLabel style={{ marginBottom: 6 }}>Bedtime</UppercaseLabel>
                   <TextInput
-                    style={{
-                      backgroundColor: colors.accent,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: 8,
-                      height: 44,
-                      paddingHorizontal: 12,
-                      color: colors.foreground,
-                      fontSize: 15,
-                    }}
-                    placeholder={placeholder}
-                    placeholderTextColor={colors.dimFg}
-                    value={value}
-                    onChangeText={setter}
+                    style={textInputStyle}
+                    placeholder="22:30"
+                    placeholderTextColor={colors.text4}
+                    value={bedtime}
+                    onChangeText={setBedtime}
                     keyboardType="numbers-and-punctuation"
                   />
                 </View>
-              ))}
-            </View>
+                <View style={{ flex: 1 }}>
+                  <UppercaseLabel style={{ marginBottom: 6 }}>Wake</UppercaseLabel>
+                  <TextInput
+                    style={textInputStyle}
+                    placeholder="06:30"
+                    placeholderTextColor={colors.text4}
+                    value={wakeTime}
+                    onChangeText={setWakeTime}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+              </View>
 
-            {/* Duration */}
-            <View style={{ gap: 4 }}>
-              <Text style={{ color: colors.dimFg, fontSize: 10, fontWeight: "600", textTransform: "uppercase" }}>
-                Duration (minutes)
-              </Text>
-              <TextInput
-                style={{
-                  backgroundColor: colors.accent,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  height: 44,
-                  paddingHorizontal: 12,
-                  color: colors.foreground,
-                  fontSize: 15,
-                }}
-                placeholder="e.g. 480 for 8 hours"
-                placeholderTextColor={colors.dimFg}
-                value={durationMins}
-                onChangeText={setDurationMins}
-                keyboardType="number-pad"
-              />
-            </View>
+              <View>
+                <UppercaseLabel style={{ marginBottom: 6 }}>Duration (min)</UppercaseLabel>
+                <TextInput
+                  style={textInputStyle}
+                  placeholder="480"
+                  placeholderTextColor={colors.text4}
+                  value={durationMins}
+                  onChangeText={setDurationMins}
+                  keyboardType="number-pad"
+                />
+              </View>
 
-            {/* Quality picker */}
-            <View style={{ gap: 6 }}>
-              <Text style={{ color: colors.dimFg, fontSize: 10, fontWeight: "600", textTransform: "uppercase" }}>Quality</Text>
-              <View style={{ flexDirection: "row", gap: 6 }}>
-                {QUALITY_OPTIONS.map((q) => (
-                  <Pressable
-                    key={q.value}
-                    onPress={() => setQuality((prev) => prev === q.value ? "" : q.value)}
+              <View>
+                <UppercaseLabel style={{ marginBottom: 6 }}>Quality</UppercaseLabel>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  {QUALITY_OPTIONS.map((q) => {
+                    const active = quality === q.value;
+                    return (
+                      <Pressable
+                        key={q.value}
+                        onPress={() => setQuality(active ? "" : q.value)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          borderRadius: radii.buttonSm,
+                          borderWidth: 1,
+                          borderColor: active ? colors.purple : colors.line,
+                          backgroundColor: active ? colors.purpleSoft : colors.bg2,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: active ? colors.purple : colors.text3,
+                            fontFamily: fonts.bodyMedium,
+                          }}
+                        >
+                          {q.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <Button variant="primary" onPress={handleLogSleep} disabled={saving}>
+                {saving ? "Saving…" : "Log sleep"}
+              </Button>
+            </View>
+          ) : null}
+
+          {/* History */}
+          {loading ? (
+            <ActivityIndicator color={colors.text3} style={{ marginVertical: 20 }} />
+          ) : logs.length === 0 ? null : (
+            <View>
+              <UppercaseLabel style={{ marginBottom: 6 }}>History</UppercaseLabel>
+              {logs.map((l) => {
+                const hm = durationHm(l.durationMins ?? null);
+                const q = QUALITY_OPTIONS.find((x) => x.value === l.quality);
+                return (
+                  <View
+                    key={l.id}
                     style={{
-                      flex: 1,
-                      backgroundColor: quality === q.value ? q.color : colors.accent,
-                      borderWidth: 1,
-                      borderColor: quality === q.value ? q.color : colors.border,
-                      borderRadius: 8,
-                      paddingVertical: 8,
+                      flexDirection: "row",
                       alignItems: "center",
+                      gap: 10,
+                      backgroundColor: colors.bg1,
+                      borderWidth: 1,
+                      borderColor: colors.lineSoft,
+                      borderRadius: 10,
+                      padding: 10,
+                      marginBottom: 6,
                     }}
                   >
-                    <Text style={{ color: quality === q.value ? "#fff" : colors.mutedFg, fontSize: 12, fontWeight: "500" }}>
-                      {q.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* Notes */}
-            <TextInput
-              style={{
-                backgroundColor: colors.accent,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                height: 44,
-                paddingHorizontal: 12,
-                color: colors.foreground,
-                fontSize: 15,
-              }}
-              placeholder="Notes (optional)"
-              placeholderTextColor={colors.dimFg}
-              value={notes}
-              onChangeText={setNotes}
-            />
-
-            <Pressable
-              onPress={handleLogSleep}
-              disabled={saving}
-              style={{
-                backgroundColor: saving ? colors.muted : colors.primary,
-                borderRadius: 8,
-                height: 44,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>
-                {saving ? "Saving…" : "Log Sleep"}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Sleep History */}
-          <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>Recent Sleep</Text>
-
-          {loading ? (
-            <ActivityIndicator color={colors.foreground} />
-          ) : logs.length === 0 ? (
-            <Text style={{ color: colors.mutedFg, textAlign: "center", paddingVertical: 24, fontSize: 14 }}>
-              No sleep logs yet.
-            </Text>
-          ) : (
-            logs.map((log) => {
-              const qualityOption = QUALITY_OPTIONS.find((q) => q.value === log.quality);
-              return (
-                <View
-                  key={log.id}
-                  style={{
-                    backgroundColor: colors.card,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    padding: 14,
-                    flexDirection: "row",
-                    alignItems: "flex-start",
-                    gap: 10,
-                  }}
-                >
-                  <View style={{ flex: 1, gap: 6 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                      <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 15 }}>
-                        {formatDate(log.date)}
-                      </Text>
-                      {qualityOption && (
-                        <View style={{ backgroundColor: qualityOption.color + "22", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                          <Text style={{ color: qualityOption.color, fontSize: 11, fontWeight: "600" }}>
-                            {qualityOption.label}
-                          </Text>
-                        </View>
-                      )}
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        backgroundColor: colors.purpleSoft,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Moon size={14} color={colors.purple} />
                     </View>
-                    <View style={{ flexDirection: "row", gap: 12 }}>
-                      <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
-                        {formatDurationMins(log.durationMins)}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontSize: 13, color: colors.text, fontFamily: fonts.bodyMedium }}>
+                        {new Date(l.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                       </Text>
-                      {log.bedtime && (
-                        <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
-                          {formatTime(log.bedtime)} → {log.wakeTime ? formatTime(log.wakeTime) : "?"}
-                        </Text>
-                      )}
+                      <Text
+                        style={{
+                          fontSize: 10.5,
+                          color: colors.text3,
+                          marginTop: 1,
+                          fontFamily: fonts.monoRegular,
+                        }}
+                      >
+                        {hm.h}h {hm.m}m · {formatTime(l.bedtime)} → {formatTime(l.wakeTime)}
+                      </Text>
                     </View>
-                    {log.notes && (
-                      <Text style={{ color: colors.dimFg, fontSize: 12, fontStyle: "italic" }}>{log.notes}</Text>
-                    )}
+                    {q ? <Chip tone={q.tone}>{q.label}</Chip> : null}
+                    <Pressable onPress={() => handleDelete(l.id)} disabled={deleting === l.id} hitSlop={6}>
+                      {deleting === l.id ? (
+                        <ActivityIndicator size="small" color={colors.text3} />
+                      ) : (
+                        <Trash2 size={14} color={colors.text4} />
+                      )}
+                    </Pressable>
                   </View>
-                  <Pressable
-                    onPress={() => handleDelete(log.id)}
-                    disabled={deleting === log.id}
-                    hitSlop={8}
-                  >
-                    {deleting === log.id ? (
-                      <ActivityIndicator size="small" color={colors.mutedFg} />
-                    ) : (
-                      <Trash2 size={16} color={colors.dimFg} />
-                    )}
-                  </Pressable>
-                </View>
-              );
-            })
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+function TimeStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View>
+      <Text style={{ fontSize: 9, color: colors.text4, fontFamily: fonts.monoRegular, letterSpacing: 1.2 }}>
+        {label.toUpperCase()}
+      </Text>
+      <Text style={{ fontSize: 13, color: colors.text, fontFamily: fonts.monoMedium, marginTop: 2 }}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const textInputStyle = {
+  backgroundColor: colors.bg2,
+  borderWidth: 1,
+  borderColor: colors.line,
+  borderRadius: radii.button,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  color: colors.text,
+  fontSize: 13,
+  fontFamily: fonts.bodyRegular,
+};
