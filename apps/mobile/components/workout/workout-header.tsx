@@ -1,23 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Alert,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { X } from "lucide-react-native";
 import { formatElapsed } from "../../lib/workout-utils";
-
-// Pulse design system tokens
-const colors = {
-  background: "#060B14",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  primary: "#0077FF",
-  error: "#EF4444",
-  border: "#1E2B47",
-};
+import { colors, fonts } from "@/lib/theme";
+import { BigNum, Button, UppercaseLabel } from "@/components/ui";
 
 interface WorkoutHeaderProps {
   workoutId: string;
@@ -28,8 +15,12 @@ interface WorkoutHeaderProps {
   onNameChange: (name: string) => void;
 }
 
+/**
+ * Matches designs/claude-design-handoff/screens-primary.jsx::ActiveWorkout
+ * header — close X + workout name/timer cluster on the left, Finish sm
+ * primary on the right.
+ */
 export function WorkoutHeader({
-  workoutId,
   name,
   startedAt,
   onCancel,
@@ -41,15 +32,9 @@ export function WorkoutHeader({
 
   useEffect(() => {
     const start = new Date(startedAt).getTime();
-
-    const tick = () => {
-      const now = Date.now();
-      setElapsed(Math.floor((now - start) / 1000));
-    };
-
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
     tick();
     intervalRef.current = setInterval(tick, 1000);
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -57,87 +42,62 @@ export function WorkoutHeader({
 
   const handleNamePress = () => {
     if (Platform.OS === "ios") {
-      Alert.prompt("Workout Name", "Enter a new name", (text) => {
-        if (text && text.trim()) onNameChange(text.trim());
-      }, "plain-text", name);
+      Alert.prompt(
+        "Workout Name",
+        "Enter a new name",
+        (text) => {
+          if (text && text.trim()) onNameChange(text.trim());
+        },
+        "plain-text",
+        name,
+      );
     } else {
-      // Android fallback — Alert.prompt is iOS-only
       Alert.alert("Workout Name", `Current: ${name}`);
     }
   };
 
   return (
-    <SafeAreaView
-      style={{ backgroundColor: colors.background }}
-      edges={["top"]}
-    >
+    <SafeAreaView style={{ backgroundColor: colors.bg }} edges={["top"]}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "space-between",
           paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: colors.background,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+          paddingVertical: 10,
+          gap: 10,
         }}
       >
-        {/* Elapsed timer — left */}
         <Pressable
           onPress={onCancel}
           hitSlop={8}
-          style={{ minWidth: 60 }}
-        >
-          <Text
-            style={{
-              color: colors.mutedFg,
-              fontSize: 15,
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {formatElapsed(elapsed)}
-          </Text>
-        </Pressable>
-
-        {/* Workout name — center */}
-        <Pressable
-          onPress={handleNamePress}
-          style={{ alignItems: "center", flex: 1 }}
-        >
-          <Text
-            style={{
-              color: colors.foreground,
-              fontSize: 18,
-              fontWeight: "500",
-              fontFamily: "ClashDisplay",
-            }}
-            numberOfLines={1}
-          >
-            {name}
-          </Text>
-        </Pressable>
-
-        {/* Finish — right */}
-        <Pressable
-          onPress={onFinish}
-          testID="finish-button"
-          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel workout"
           style={{
-            minWidth: 60,
-            alignItems: "flex-end",
+            width: 30,
+            height: 30,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <Text
-            style={{
-              color: colors.primary,
-              fontSize: 16,
-              fontWeight: "700",
-            }}
-          >
-            Finish
-          </Text>
+          <X size={20} color={colors.text2} />
         </Pressable>
+
+        <Pressable onPress={handleNamePress} style={{ flex: 1 }}>
+          <UppercaseLabel color={colors.blue2}>{name}</UppercaseLabel>
+          <BigNum size={18} color={colors.text} style={{ marginTop: 1 }}>
+            {formatElapsed(elapsed)}
+          </BigNum>
+        </Pressable>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onPress={onFinish}
+          testID="finish-button"
+          style={{ paddingHorizontal: 12 }}
+        >
+          Finish
+        </Button>
       </View>
     </SafeAreaView>
   );

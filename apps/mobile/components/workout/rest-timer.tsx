@@ -1,17 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "@/lib/haptics";
-
-const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  muted: "hsl(223, 47%, 11%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  accent: "hsl(216, 34%, 17%)",
-  green: "hsl(142, 71%, 45%)",
-};
+import { colors, fonts, radii } from "@/lib/theme";
+import { BigNum, Button, UppercaseLabel } from "@/components/ui";
 
 const DEFAULT_REST = 90;
 
@@ -19,28 +12,35 @@ interface RestTimerProps {
   visible: boolean;
   onDismiss: () => void;
   defaultRest?: number;
+  /** Next set preview text, e.g. "Bench · 102.5 × 5". Optional. */
+  nextSetLabel?: string;
 }
 
-export function RestTimer({ visible, onDismiss, defaultRest = DEFAULT_REST }: RestTimerProps) {
+/**
+ * Rest-timer surface shown inline during a workout. Matches the handoff:
+ * blue-tinted card with a 40×40 SVG ring showing countdown, "Rest"
+ * uppercase label, next-set preview, +30s / Skip buttons.
+ */
+export function RestTimer({
+  visible,
+  onDismiss,
+  defaultRest = DEFAULT_REST,
+  nextSetLabel,
+}: RestTimerProps) {
   const insets = useSafeAreaInsets();
   const [remaining, setRemaining] = useState(defaultRest);
   const [totalDuration, setTotalDuration] = useState(defaultRest);
-  const [expanded, setExpanded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Reset when becoming visible
   useEffect(() => {
     if (visible) {
       setRemaining(defaultRest);
       setTotalDuration(defaultRest);
-      setExpanded(false);
     }
   }, [visible, defaultRest]);
 
-  // Countdown logic
   useEffect(() => {
     if (!visible) return;
-
     intervalRef.current = setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
@@ -51,7 +51,6 @@ export function RestTimer({ visible, onDismiss, defaultRest = DEFAULT_REST }: Re
         return prev - 1;
       });
     }, 1000);
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -68,6 +67,11 @@ export function RestTimer({ visible, onDismiss, defaultRest = DEFAULT_REST }: Re
   const seconds = remaining % 60;
   const progress = totalDuration > 0 ? remaining / totalDuration : 0;
 
+  // Ring: 40×40 with r=16 per handoff. Circumference ≈ 100.53.
+  const RING_RADIUS = 16;
+  const RING_CIRC = 2 * Math.PI * RING_RADIUS;
+  const dashOffset = RING_CIRC * (1 - progress);
+
   return (
     <View
       style={{
@@ -80,117 +84,107 @@ export function RestTimer({ visible, onDismiss, defaultRest = DEFAULT_REST }: Re
         paddingTop: 12,
       }}
     >
-      <Pressable
-        onPress={() => setExpanded((e) => !e)}
+      <View
         style={{
-          backgroundColor: colors.muted,
-          borderRadius: 16,
-          padding: 16,
+          backgroundColor: colors.blueSoft,
+          borderWidth: 1,
+          borderColor: colors.blueSoft,
+          borderRadius: radii.card,
+          paddingVertical: 10,
+          paddingHorizontal: 12,
+          flexDirection: "row",
           alignItems: "center",
+          gap: 10,
         }}
       >
-        {/* Progress bar */}
-        <View
-          style={{
-            width: "100%",
-            height: 4,
-            backgroundColor: colors.accent,
-            borderRadius: 2,
-            marginBottom: 12,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              width: `${Math.min(progress * 100, 100)}%`,
-              height: "100%",
-              backgroundColor: colors.green,
-              borderRadius: 2,
-            }}
-          />
-        </View>
-
-        {/* Countdown */}
-        <Text
-          style={{
-            color: colors.foreground,
-            fontSize: 36,
-            fontWeight: "700",
-            fontVariant: ["tabular-nums"],
-          }}
-        >
-          {minutes}:{seconds.toString().padStart(2, "0")}
-        </Text>
-
-        <Text
-          style={{
-            color: colors.mutedFg,
-            fontSize: 13,
-            marginTop: 4,
-          }}
-        >
-          Rest Timer
-        </Text>
-
-        {/* Adjustment buttons (shown when expanded) */}
-        {expanded && (
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 12,
-              marginTop: 12,
-            }}
-          >
-            <Pressable
-              onPress={() => adjustTime(-15)}
-              style={{
-                backgroundColor: colors.accent,
-                borderRadius: 8,
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-              }}
-            >
-              <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "600" }}>
-                -15s
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => adjustTime(15)}
-              style={{
-                backgroundColor: colors.accent,
-                borderRadius: 8,
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-              }}
-            >
-              <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "600" }}>
-                +15s
-              </Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* Skip button */}
-        <Pressable
-          onPress={onDismiss}
-          style={{
-            marginTop: 12,
-            paddingVertical: 8,
-            paddingHorizontal: 24,
-          }}
-        >
+        {/* Ring */}
+        <View style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+          <Svg width={40} height={40} viewBox="0 0 40 40" style={{ position: "absolute" }}>
+            <Circle
+              cx={20}
+              cy={20}
+              r={RING_RADIUS}
+              stroke={colors.bg3}
+              strokeWidth={2.5}
+              fill="none"
+            />
+            <Circle
+              cx={20}
+              cy={20}
+              r={RING_RADIUS}
+              stroke={colors.blue}
+              strokeWidth={2.5}
+              fill="none"
+              strokeDasharray={RING_CIRC}
+              strokeDashoffset={dashOffset}
+              strokeLinecap="round"
+              transform="rotate(-90 20 20)"
+            />
+          </Svg>
           <Text
             style={{
-              color: colors.mutedFg,
-              fontSize: 14,
-              fontWeight: "600",
+              fontSize: 10,
+              fontFamily: fonts.displaySemi,
+              color: colors.text,
+              fontVariant: ["tabular-nums"],
             }}
           >
+            {minutes}:{seconds.toString().padStart(2, "0")}
+          </Text>
+        </View>
+
+        {/* Label + next */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <UppercaseLabel color={colors.blue2}>Rest</UppercaseLabel>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 11,
+              color: colors.text3,
+              marginTop: 1,
+              fontFamily: fonts.bodyRegular,
+            }}
+          >
+            {nextSetLabel ?? "Next set coming up"}
+          </Text>
+        </View>
+
+        {/* +30 / Skip controls */}
+        <Pressable
+          onPress={() => adjustTime(30)}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Add 30 seconds"
+          style={{
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            borderWidth: 1,
+            borderColor: colors.line,
+            borderRadius: radii.buttonSm,
+          }}
+        >
+          <Text style={{ fontSize: 10, color: colors.text2, fontFamily: fonts.bodyMedium }}>
+            +30s
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onDismiss}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Skip rest"
+          style={{
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            borderWidth: 1,
+            borderColor: colors.line,
+            borderRadius: radii.buttonSm,
+          }}
+        >
+          <Text style={{ fontSize: 10, color: colors.text2, fontFamily: fonts.bodyMedium }}>
             Skip
           </Text>
         </Pressable>
-      </Pressable>
+      </View>
     </View>
   );
 }

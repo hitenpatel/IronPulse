@@ -5,21 +5,21 @@ import { Swipeable } from "react-native-gesture-handler";
 import { usePowerSync } from "@powersync/react";
 import { Link2, Link2Off, Plus, Trash2 } from "lucide-react-native";
 import { SetRow } from "./set-row";
-import { Badge } from "../ui/badge";
+import { colors as t, fonts, radii, tracking } from "@/lib/theme";
 
-// Pulse design system tokens
+// Token aliases kept for backwards-compat with the body of this component.
 const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
-  error: "#EF4444",
-  border: "#1E2B47",
-  superset: "#A855F7",
+  background: t.bg,
+  card: t.bg1,
+  accent: t.bg3,
+  muted: t.bg4,
+  foreground: t.text,
+  mutedFg: t.text2,
+  dimFg: t.text4,
+  primary: t.blue,
+  error: t.red,
+  border: t.lineSoft,
+  superset: t.purple,
 };
 
 interface SetData {
@@ -146,16 +146,45 @@ export function ExerciseCard({
       <View
         style={{
           backgroundColor: colors.card,
-          borderRadius: 12,
+          borderRadius: radii.card,
           borderWidth: 1,
-          borderColor: isInSuperset ? colors.superset : colors.border,
-          borderLeftWidth: isInSuperset ? 3 : 1,
-          borderLeftColor: isInSuperset ? colors.superset : colors.border,
-          paddingVertical: 12,
+          borderColor: colors.border,
+          paddingTop: 20, // extra top room for the floating badge
+          paddingBottom: 12,
           marginHorizontal: 16,
           marginBottom: 12,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Top-tab badge replaces the old left-border accent.
+            Style per handoff: solid colour, 8.5px mono 700, +0.16em tracking,
+            border-radius 0 0 5 5, floats off upper edge. */}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 14,
+            paddingVertical: 2,
+            paddingHorizontal: 8,
+            paddingBottom: 3,
+            backgroundColor: isInSuperset ? colors.superset : t.blue,
+            borderBottomLeftRadius: 5,
+            borderBottomRightRadius: 5,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: fonts.monoSemi,
+              fontSize: 8.5,
+              color: t.white,
+              letterSpacing: 1.3,
+            }}
+          >
+            {isInSuperset ? `B${exerciseIndex + 1} · SUPERSET` : `A${exerciseIndex + 1}`}
+          </Text>
+        </View>
+
         {/* Exercise name header + superset button */}
         <View
           style={{
@@ -167,20 +196,12 @@ export function ExerciseCard({
           }}
         >
           <View style={{ flex: 1 }}>
-            {isInSuperset && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.superset }} />
-                <Text style={{ color: colors.superset, fontSize: 10, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" }}>
-                  Superset
-                </Text>
-              </View>
-            )}
             <Text
               style={{
                 color: colors.foreground,
-                fontSize: 18,
-                fontWeight: "500",
-                fontFamily: "ClashDisplay",
+                fontSize: 16,
+                fontFamily: fonts.displaySemi,
+                letterSpacing: -0.3,
               }}
             >
               {exerciseName}
@@ -227,10 +248,12 @@ export function ExerciseCard({
             alignItems: "center",
             paddingHorizontal: 16,
             paddingBottom: 6,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
           }}
         >
-          <Text style={[headerText, { width: 28 }]}>SET</Text>
-          <Text style={[headerText, { flex: 1.2 }]}>PREVIOUS</Text>
+          <Text style={[headerText, { width: 28 }]}>#</Text>
+          <Text style={[headerText, { flex: 1.2 }]}>PREV</Text>
           <Text style={[headerText, { flex: 1 }]}>KG</Text>
           <Text style={[headerText, { flex: 1 }]}>REPS</Text>
           <Text style={[headerText, { width: 44 }]}>RPE</Text>
@@ -288,9 +311,10 @@ export function ExerciseCard({
 }
 
 const headerText = {
-  color: "#8899B4",
-  fontSize: 11,
-  fontWeight: "600" as const,
+  color: t.text3,
+  fontSize: 8.5,
   textAlign: "center" as const,
-  letterSpacing: 0.5,
+  letterSpacing: tracking.caps,
+  fontFamily: fonts.bodySemi,
+  textTransform: "uppercase" as const,
 };

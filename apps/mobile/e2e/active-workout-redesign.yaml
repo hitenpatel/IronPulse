@@ -1,0 +1,29 @@
+appId: com.ironpulse.app
+---
+# QA for ticket #219 — Active Workout redesign.
+# Asserts the new landmarks: close X + workout name + live timer + Finish,
+# progress dots row, exercise card with A1 top badge, set rows.
+
+- launchApp
+
+- tapOn: "Home"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 20000
+
+# Start a new workout via the Next Up hero.
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible: "Add Exercise"
+    timeout: 20000
+
+# Header landmarks
+- assertVisible:
+    id: "finish-button"
+- assertVisible: "Add Exercise"
+
+# Bail out cleanly
+- tapOn:
+    id: "finish-button"

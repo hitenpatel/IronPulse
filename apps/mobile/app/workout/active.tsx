@@ -20,19 +20,11 @@ import { WorkoutHeader } from "../../components/workout/workout-header";
 import { ExerciseCard } from "../../components/workout/exercise-card";
 import { RestTimer } from "../../components/workout/rest-timer";
 import { RpePicker } from "../../components/workout/rpe-picker";
-import { calculateVolume } from "../../lib/workout-utils";
+import { ProgressDots } from "../../components/workout/progress-dots";
 import { trpc } from "../../lib/trpc";
 import { useAuth } from "../../lib/auth";
 import { maybeRequestReview } from "../../lib/review-prompt";
-
-const colors = {
-  background: "hsl(224, 71%, 4%)",
-  foreground: "hsl(213, 31%, 91%)",
-  muted: "hsl(223, 47%, 11%)",
-  mutedFg: "hsl(215, 20%, 65%)",
-  primary: "hsl(210, 40%, 98%)",
-  accent: "hsl(216, 34%, 17%)",
-};
+import { colors, fonts } from "@/lib/theme";
 
 export default function ActiveWorkoutScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "WorkoutActive">>();
@@ -223,8 +215,12 @@ export default function ActiveWorkoutScreen() {
 
   if (!workout) return null;
 
+  // Progress: sum of completed vs total sets across all exercises.
+  const totalSets = sets?.length ?? 0;
+  const doneSets = (sets ?? []).filter((s) => s.completed).length;
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <WorkoutHeader
         workoutId={workout.id}
         name={workout.name}
@@ -233,6 +229,8 @@ export default function ActiveWorkoutScreen() {
         onFinish={handleFinish}
         onNameChange={handleNameChange}
       />
+
+      <ProgressDots total={Math.max(totalSets, 14)} completed={doneSets} />
 
       <FlatList
         ref={flatListRef}
@@ -268,12 +266,16 @@ export default function ActiveWorkoutScreen() {
                 onSetComplete={handleSetComplete}
                 onRpePick={handleRpePick}
               />
-              {/* Superset connector — show between consecutive grouped exercises */}
+              {/* Superset connector — hinge between paired exercises.
+                  Per handoff: vertical gradient-ish line interrupted by
+                  a 16×16 purple-bordered circle with a center dot. */}
               {item.superset_group != null && !isSupersetEnd && next?.superset_group === item.superset_group && (
                 <View style={{ alignItems: "center", marginTop: -8, marginBottom: 4 }}>
-                  <View style={{ width: 2, height: 12, backgroundColor: "#A855F7" }} />
-                  <Text style={{ color: "#A855F7", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 }}>SS</Text>
-                  <View style={{ width: 2, height: 12, backgroundColor: "#A855F7" }} />
+                  <View style={{ width: 1, height: 14, backgroundColor: colors.purple, opacity: 0.5 }} />
+                  <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.bg1, alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.purple }} />
+                  </View>
+                  <View style={{ width: 1, height: 14, backgroundColor: colors.purple, opacity: 0.5 }} />
                 </View>
               )}
             </>
@@ -291,16 +293,18 @@ export default function ActiveWorkoutScreen() {
               marginHorizontal: 16,
               marginTop: 4,
               paddingVertical: 14,
-              backgroundColor: colors.accent,
+              backgroundColor: colors.bg2,
               borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.line,
             }}
           >
-            <Plus size={20} color={colors.primary} />
+            <Plus size={18} color={colors.blue2} />
             <Text
               style={{
-                color: colors.primary,
-                fontSize: 16,
-                fontWeight: "600",
+                color: colors.blue2,
+                fontSize: 13.5,
+                fontFamily: fonts.bodySemi,
               }}
             >
               Add Exercise
