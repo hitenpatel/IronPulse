@@ -120,7 +120,8 @@ export default function LoginScreen() {
           left: 0,
           right: 0,
           height: 260,
-          backgroundColor: "rgba(0,119,255,0.10)",
+          // v2 login glow — cobalt wash, matching the new logo's tile.
+          backgroundColor: colors.greenSoft,
         }}
       />
 

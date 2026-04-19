@@ -132,7 +132,16 @@ export function SetRow({
         ? `${previousSet.reps}r`
         : EMPTY_PLACEHOLDER;
 
-  const valueColor = isCompleted ? colors.text3 : isActive ? colors.text : colors.text2;
+  // v2: row backgrounds and value-text contrast
+  // - isActive (lime bg)  → blueInk for values, rgba(blueInk,.45) for placeholder
+  // - isCompleted         → text3 (muted, greyed)
+  // - default             → text2
+  const valueColor = isActive
+    ? colors.blueInk
+    : isCompleted
+      ? colors.text3
+      : colors.text2;
+  const placeholderColor = isActive ? "rgba(15,21,8,0.45)" : colors.text4;
 
   const textInputStyle = {
     color: valueColor,
@@ -155,7 +164,9 @@ export function SetRow({
         gap: 4,
         paddingVertical: isActive ? 8 : 4,
         paddingHorizontal: 12,
-        backgroundColor: isActive ? "rgba(0,119,255,0.14)" : "transparent",
+        // v2: solid lime bg on the active row. All text/icons ON this row
+        // MUST render in blueInk — lime on warm-white is illegible.
+        backgroundColor: isActive ? colors.blue : "transparent",
         marginHorizontal: isActive ? 8 : 0,
         marginVertical: isActive ? 3 : 0,
         borderRadius: isActive ? radii.button : 0,
@@ -165,7 +176,7 @@ export function SetRow({
       {isActive ? (
         <Text
           style={{
-            color: colors.blue2,
+            color: colors.blueInk,
             fontSize: 8.5,
             fontFamily: fonts.monoSemi,
             width: 28,
@@ -194,7 +205,7 @@ export function SetRow({
         numberOfLines={1}
         style={{
           flex: 1.2,
-          color: colors.text4,
+          color: isActive ? "rgba(15,21,8,0.55)" : colors.text4,
           fontSize: 11,
           fontFamily: fonts.monoRegular,
           textAlign: "center",
@@ -210,7 +221,7 @@ export function SetRow({
         onChangeText={handleWeightChange}
         keyboardType="decimal-pad"
         placeholder={EMPTY_PLACEHOLDER}
-        placeholderTextColor={colors.text4}
+        placeholderTextColor={placeholderColor}
         style={textInputStyle}
       />
 
@@ -221,7 +232,7 @@ export function SetRow({
         onChangeText={handleRepsChange}
         keyboardType="number-pad"
         placeholder={EMPTY_PLACEHOLDER}
-        placeholderTextColor={colors.text4}
+        placeholderTextColor={placeholderColor}
         style={textInputStyle}
       />
 
@@ -234,13 +245,26 @@ export function SetRow({
           minHeight: 36,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: rpe != null ? colors.bg3 : "transparent",
+          // On the lime active row the inner chip reads as a cutout — use
+          // a subtle ink-tinted bg instead of bg3 which would look bruised.
+          backgroundColor:
+            rpe != null
+              ? isActive
+                ? "rgba(15,21,8,0.12)"
+                : colors.bg3
+              : "transparent",
           borderRadius: radii.buttonSm,
         }}
       >
         <Text
           style={{
-            color: rpe != null ? colors.text : colors.text4,
+            color: isActive
+              ? rpe != null
+                ? colors.blueInk
+                : "rgba(15,21,8,0.55)"
+              : rpe != null
+                ? colors.text
+                : colors.text4,
             fontSize: 11,
             fontFamily: fonts.monoMedium,
           }}
@@ -259,13 +283,19 @@ export function SetRow({
           minHeight: 36,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: isCompleted ? colors.green : isActive ? colors.blue : colors.bg3,
+          // On the lime row the check button sits on lime — flip it to
+          // ink so the icon (blueInk) stays legible against the tile.
+          backgroundColor: isCompleted
+            ? colors.green
+            : isActive
+              ? colors.blueInk
+              : colors.bg3,
           borderRadius: radii.buttonSm,
         }}
       >
         <Check
           size={16}
-          color={isActive ? colors.blueInk : isCompleted ? colors.white : colors.text3}
+          color={isActive ? colors.blue : isCompleted ? colors.white : colors.text3}
         />
       </Pressable>
 
@@ -280,7 +310,7 @@ export function SetRow({
           alignItems: "center",
         }}
       >
-        <Minus size={14} color={colors.text4} />
+        <Minus size={14} color={isActive ? "rgba(15,21,8,0.55)" : colors.text4} />
       </Pressable>
     </View>
   );

@@ -251,7 +251,8 @@ export default function ProfileScreen() {
             paddingTop: 36,
             paddingBottom: 20,
             paddingHorizontal: 16,
-            backgroundColor: "rgba(0,119,255,0.10)",
+            // v2 hero tint — soft cobalt wash on the warmer ink base.
+            backgroundColor: colors.greenSoft,
             position: "relative",
           }}
         >
