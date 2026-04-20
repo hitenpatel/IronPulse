@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -38,6 +38,7 @@ import {
   UppercaseLabel,
 } from "@/components/ui";
 import { AnimatedNumber } from "@/components/ui/animated-number";
+import { AnimatedFlame } from "@/components/ui/animated-flame";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SyncIndicator } from "@/components/layout/sync-indicator";
 import type { RootStackParamList } from "../../App";
@@ -115,10 +116,33 @@ export default function DashboardScreen() {
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchStreak = useCallback(async () => {
+    try {
+      const s = await trpc.analytics.streak.query();
+      setStreak(s);
+    } catch {
+      // offline — keep stale
+    }
+  }, []);
 
   useEffect(() => {
-    trpc.analytics.streak.query().then(setStreak).catch(() => {});
-  }, []);
+    fetchStreak();
+  }, [fetchStreak]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // PowerSync rows re-render automatically when the server pushes updates;
+      // we just need to force a fresh streak query + give the sync service a
+      // beat to process any pending writes before we hide the spinner.
+      await fetchStreak();
+      await new Promise((r) => setTimeout(r, 350));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchStreak]);
 
   const [weekMon, weekSun] = useMemo(() => currentWeekRange(new Date()), []);
   const { data: volumeRows } = useQuery<WeeklyVolumeRow>(
@@ -210,7 +234,18 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 32 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.blue}
+            colors={[colors.blue, colors.green]}
+            progressBackgroundColor={colors.bg2}
+          />
+        }
+      >
         {/* Brand row */}
         <View
           style={{
@@ -377,7 +412,7 @@ export default function DashboardScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Flame size={18} color={colors.amber} />
+                <AnimatedFlame size={18} color={colors.amber} active={(streak?.current ?? 0) > 0} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text, fontFamily: fonts.body }}>
