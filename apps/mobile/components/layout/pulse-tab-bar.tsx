@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { colors, radii, fonts, shadows, typography } from "@/lib/theme";
+import * as Haptics from "@/lib/haptics";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -59,7 +60,10 @@ export function PulseTabBar({
       target: state.routes[routeIndex].key,
       canPreventDefault: true,
     });
-    if (!event.defaultPrevented) navigation.navigate(routeName);
+    if (!event.defaultPrevented) {
+      if (state.index !== routeIndex) Haptics.selectionAsync();
+      navigation.navigate(routeName);
+    }
   };
 
   const renderTabButton = (
@@ -103,6 +107,7 @@ export function PulseTabBar({
             testID="fab-button"
             onPressIn={() => {
               fabScale.value = withSpring(0.9, { damping: 14, stiffness: 340 });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }}
             onPressOut={() => {
               fabScale.value = withSpring(1, { damping: 12, stiffness: 260 });
