@@ -1,0 +1,412 @@
+/* IronPulse Mobile — design tokens (v3, acid-sport) */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root {
+  /* Ink surfaces — cool near-black with subtle blue undertone */
+  --bg: #0B0D12;
+  --bg-1: #13161E;
+  --bg-2: #1B1F29;
+  --bg-3: #252A38;
+  --bg-4: #323848;
+  --line: #252A38;
+  --line-2: #323848;
+  --line-soft: #181B24;
+
+  --text: #F4F0E6;        /* warm white — not pure white */
+  --text-2: #D4D1C6;      /* was C8C5BC — bumped for AA on bg-1 */
+  --text-3: #A6A49C;      /* was 8B8A85 — now ~7:1 on bg, 5.6:1 on bg-2 */
+  --text-4: #8F8D86;      /* was 5A5A58 → 7F7D76 → bumped again; now ~5.5:1 on bg. Only for larger decorative labels */
+
+  /* PRIMARY = electric lime — mapped to --blue slot for compat */
+  --blue: #D4FF3A;
+  --blue-2: #C4EF2A;
+  --blue-soft: rgba(212,255,58,.16);
+  --blue-glow: rgba(212,255,58,.45);
+  --blue-ink: #0F1508;    /* on-lime text */
+
+  /* SECONDARY = cobalt blue */
+  --green: #3A6DFF;        /* cobalt — replaces lime in the "green" slot */
+  --green-soft: rgba(58,109,255,.16);
+
+  /* TERTIARY = warm cream (highlights, muted positive) */
+  --purple: #F4F0E6;
+  --purple-soft: rgba(244,240,230,.10);
+
+  /* Warnings / records */
+  --amber: #FFB800;
+  --amber-soft: rgba(255,184,0,.14);
+  --red: #FF3D5A;
+  --pink: #FF3D5A;
+  --orange: #FF7A3C;
+  --peach: #FFB199;
+  --cyan: #4FD1E8;
+  --cyan-soft: rgba(79,209,232,.14);
+
+  --ff-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --ff-body: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background:
+    radial-gradient(1100px 700px at 12% -5%, rgba(58,109,255,0.14), transparent 60%),
+    radial-gradient(800px 600px at 92% 40%, rgba(212,255,58,0.06), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, rgba(79,209,232,0.05), transparent 60%),
+    #06080D;
+  color: var(--text);
+  font-family: var(--ff-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
+  min-height: 100vh;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+input, textarea, select { font-family: inherit; color: inherit; }
+::selection { background: var(--blue); color: var(--blue-ink); }
+
+.mono { font-family: var(--ff-body); font-feature-settings: "tnum", "zero"; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.display { font-family: var(--ff-display); letter-spacing: -0.02em; font-weight: 700; }
+.uppercase-xs { font-size: 10.5px; letter-spacing: .02em; color: var(--text-3); font-weight: 700; text-transform: none; }
+
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+/* === Canvas / Gallery === */
+.gallery {
+  padding: 56px 40px 100px;
+  max-width: 1720px;
+  margin: 0 auto;
+}
+.gallery-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 42px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line-soft);
+  gap: 40px;
+}
+.gallery-head > div:first-child { flex: 1; min-width: 0; max-width: 760px; }
+.gallery-head > div:last-child { flex-shrink: 0; padding-top: 50px; min-width: 200px; }
+.gallery-head h1 {
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: 42px;
+  margin: 0 0 10px;
+  letter-spacing: -0.035em;
+}
+.gallery-head .sub { color: var(--text-2); font-size: 15px; max-width: 560px; line-height: 1.55; }
+.gallery-head .brand-mark {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text-3); font-size: 12.5px;
+  font-family: var(--ff-body);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+
+.section-label {
+  font-family: var(--ff-display);
+  font-size: 18px;
+  letter-spacing: -0.018em;
+  text-transform: none;
+  color: var(--text);
+  font-weight: 700;
+  margin: 56px 0 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-label::before {
+  content: "";
+  width: 12px; height: 12px;
+  border-radius: 4px;
+  background: var(--blue);
+  box-shadow: 0 0 0 4px var(--blue-soft);
+}
+.section-label .count {
+  margin-left: auto; color: var(--text-4); font-size: 12px;
+  font-weight: 500; letter-spacing: 0;
+  text-transform: none;
+  font-family: var(--ff-body);
+}
+
+.phone-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 36px 28px;
+  align-items: start;
+}
+.phone-cell { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.phone-caption {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  text-align: center;
+}
+.phone-caption b {
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: 15.5px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.phone-caption span {
+  font-size: 12px;
+  color: var(--text-4);
+  font-family: var(--ff-body);
+  text-transform: none;
+  letter-spacing: -0.005em;
+  font-weight: 500;
+}
+
+/* === Phone frame (Android / Pixel) === */
+.phone {
+  --w: 300px;
+  width: var(--w);
+  aspect-ratio: 300 / 636;
+  background: #12151b;
+  border-radius: 30px;
+  padding: 6px;
+  border: 1px solid #2a3240;
+  box-shadow:
+    0 40px 80px -24px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 1px 1px rgba(255,255,255,0.03);
+  position: relative;
+}
+.phone.lg { --w: 360px; aspect-ratio: 360 / 780; border-radius: 36px; padding: 7px; }
+.phone-screen {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.phone.lg .phone-screen { border-radius: 30px; }
+/* Punch-hole camera (centered top) */
+.phone-screen .notch {
+  position: absolute;
+  top: 8px; left: 50%; transform: translateX(-50%);
+  width: 10px; height: 10px;
+  background: #000;
+  border-radius: 50%;
+  z-index: 20;
+  box-shadow: 0 0 0 1.5px #12151b;
+}
+.phone.lg .phone-screen .notch { width: 12px; height: 12px; top: 10px; }
+
+/* Status bar (Android) */
+.sb {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 18px 4px;
+  font-size: 11.5px; font-weight: 500; color: var(--text);
+  position: relative; z-index: 10;
+  min-height: 28px;
+  font-family: var(--ff-body);
+  letter-spacing: .01em;
+}
+.phone.lg .sb { padding: 10px 22px 4px; font-size: 12.5px; min-height: 32px; }
+.sb-left { display: flex; align-items: center; gap: 5px; }
+.sb-right { display: flex; gap: 5px; align-items: center; color: var(--text); }
+
+/* Tab bar (Android bottom nav — flatter, no home indicator bar, gesture pill instead) */
+.tabs {
+  border-top: 1px solid var(--line-soft);
+  background: rgba(6,11,20,0.96);
+  backdrop-filter: blur(10px);
+  display: grid;
+  grid-template-columns: 1fr 1fr 72px 1fr 1fr;
+  padding: 6px 4px 4px;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+}
+.phone.lg .tabs { padding: 8px 6px 6px; }
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 0;
+  font-size: 10.5px; font-weight: 500;
+  color: var(--text-3);
+  letter-spacing: .01em;
+}
+.phone.lg .tab-item { font-size: 10.5px; }
+.tab-item.active { color: var(--blue-2); }
+.tab-item.active svg { color: var(--blue); }
+.tab-fab {
+  width: 44px; height: 44px;
+  background: var(--blue);
+  border-radius: 14px; /* Material3 squircle */
+  display: grid; place-items: center;
+  justify-self: center;
+  box-shadow: 0 8px 24px -6px var(--blue-glow), 0 0 0 1px rgba(255,255,255,.08) inset;
+}
+.phone.lg .tab-fab { width: 50px; height: 50px; border-radius: 16px; }
+.tab-fab svg { color: var(--blue-ink); }
+
+/* Gesture nav pill */
+.gesture-pill {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 0 8px;
+  background: rgba(6,11,20,0.96);
+}
+.gesture-pill::after {
+  content: "";
+  width: 104px; height: 3px;
+  background: var(--text-2);
+  opacity: .5;
+  border-radius: 2px;
+}
+.phone.lg .gesture-pill::after { width: 128px; height: 4px; }
+
+/* Body container */
+.body {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px 16px 0;
+}
+.phone.lg .body { padding: 6px 20px 0; }
+
+/* Header */
+.page-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0 14px;
+}
+.page-hd h1 {
+  font-family: var(--ff-display);
+  font-weight: 500;
+  font-size: 22px;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+.phone.lg .page-hd h1 { font-size: 26px; }
+.page-hd.with-back { gap: 10px; }
+
+.back-btn {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  color: var(--text-2);
+  margin-left: -6px;
+}
+
+/* Common bits */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.chip .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.chip.blue { color: var(--blue-2); background: var(--blue-soft); }
+.chip.green { color: var(--green); background: var(--green-soft); }
+.chip.amber { color: var(--amber); background: var(--amber-soft); }
+.chip.purple { color: var(--purple); background: var(--purple-soft); }
+.chip.mono { color: var(--text-2); background: var(--bg-3); }
+
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: 22px;
+  padding: 14px 16px;
+}
+.phone.lg .card { padding: 16px 18px; border-radius: 24px; }
+.row-list {
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.phone.lg .row-list { border-radius: 22px; }
+.row-list .row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13.5px;
+}
+.row-list .row:first-child { border-top: 0; }
+.row-list .row .chev { margin-left: auto; color: var(--text-4); }
+
+.scroll-fade-bottom {
+  mask-image: linear-gradient(180deg, #000 0 calc(100% - 20px), transparent);
+}
+
+/* Scrollable body sim */
+.scroll {
+  flex: 1;
+  overflow: hidden;
+  padding-bottom: 6px;
+}
+
+/* Input */
+.input {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  color: var(--text);
+  width: 100%;
+}
+.input::placeholder { color: var(--text-4); }
+
+/* Pill tab row */
+.pills {
+  display: flex; gap: 6px;
+  overflow: hidden;
+  padding: 2px 0;
+}
+.pill {
+  padding: 7px 14px;
+  font-size: 12.5px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pill.active {
+  background: var(--blue);
+  border-color: transparent;
+  color: var(--blue-ink);
+  box-shadow: 0 4px 14px -4px var(--blue-glow);
+  font-weight: 700;
+}
+
+/* Button */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 13px 16px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  width: 100%;
+  letter-spacing: -0.005em;
+}
+.btn.primary {
+  background: var(--blue);
+  border-color: transparent;
+  color: var(--blue-ink);
+  box-shadow:
+    0 10px 24px -8px var(--blue-glow),
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 -2px 0 rgba(0,0,0,.18) inset;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--text-2); }
+.btn.sm { padding: 7px 12px; font-size: 12px; font-weight: 600; width: auto; border-radius: 12px; }
+.btn.danger { color: var(--red); }
+
+/* Value display */
+.bignum {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
