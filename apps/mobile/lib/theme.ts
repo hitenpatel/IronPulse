@@ -116,10 +116,34 @@ export const radii = {
 
 export const spacing = {
   gutter: 16,
-  cardPaddingY: 12,
-  cardPaddingX: 14,
-  rowPaddingY: 11,
-  rowPaddingX: 14,
+  cardPaddingY: 16,
+  cardPaddingX: 18,
+  rowPaddingY: 14,
+  rowPaddingX: 16,
+  // Minimum interactive target — iOS HIG and Material 3 both recommend 48dp.
+  touchTarget: 48,
+} as const;
+
+// Type scale, grounded in iOS HIG + Material 3. Prefer these over literals
+// so sizes stay consistent across screens. New screens should import these;
+// legacy screens migrate opportunistically.
+export const typography = {
+  // Hero — login, onboarding, empty-state headlines. iOS Large Title-ish.
+  hero: { size: 42, lineHeight: 48, letterSpacing: -1.4 },
+  // Screen titles / section heroes — iOS Title 1 / M3 Headline Large-ish.
+  display: { size: 28, lineHeight: 34, letterSpacing: -0.6 },
+  // Sub-titles, card headers — iOS Title 2-ish.
+  title: { size: 22, lineHeight: 28, letterSpacing: -0.4 },
+  // Primary body — iOS Body 17, M3 Body Large 16. We pick 16 for density.
+  body: { size: 16, lineHeight: 22, letterSpacing: -0.1 },
+  // Secondary body / row descriptions — iOS Callout.
+  bodySmall: { size: 14, lineHeight: 20, letterSpacing: 0 },
+  // Labels, captions — iOS Footnote / M3 Label Medium.
+  caption: { size: 13, lineHeight: 17, letterSpacing: 0 },
+  // Eyebrow / section labels — uppercase, loose tracking.
+  eyebrow: { size: 11, lineHeight: 14, letterSpacing: 1.2 },
+  // Tab bar labels — Material 3 Label Medium.
+  tabLabel: { size: 12, lineHeight: 15, letterSpacing: 0 },
 } as const;
 
 // Font families. Instrument Sans replaces Inter as the body family in v2.
@@ -179,4 +203,4 @@ export const shadows = {
   })!,
 } as const;
 
-export const tokens = { colors, radii, spacing, fonts, tracking, shadows };
+export const tokens = { colors, radii, spacing, fonts, tracking, shadows, typography };
