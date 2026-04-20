@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import type { PrismaClient } from "@ironpulse/db";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { signPowerSyncToken } from "../lib/powersync-auth";
 import {
@@ -6,6 +7,29 @@ import {
   syncUpdateSchema,
   syncDeleteSchema,
 } from "@ironpulse/shared/src/schemas/sync";
+
+// Narrow delegate shape used for dynamic model access in this router. Prisma's
+// generated delegate types differ per model (the `where`/`data` shapes vary);
+// sync's column-mapper already normalises input, so a structural minimum is safe.
+type DynamicModelDelegate = {
+  findUnique: (args: {
+    where: { id: string };
+  }) => Promise<Record<string, unknown> | null>;
+  upsert: (args: {
+    where: { id: string };
+    create: Record<string, unknown>;
+    update: Record<string, unknown>;
+  }) => Promise<unknown>;
+  update: (args: {
+    where: { id: string };
+    data: Record<string, unknown>;
+  }) => Promise<unknown>;
+  delete: (args: { where: { id: string } }) => Promise<unknown>;
+};
+
+function model(db: PrismaClient, name: string): DynamicModelDelegate {
+  return (db as unknown as Record<string, DynamicModelDelegate>)[name]!;
+}
 
 // ─── Table → Prisma model mapping ──────────────────────
 
@@ -114,15 +138,15 @@ function mapColumnsToPrisma(record: Record<string, unknown>): Record<string, unk
 // ─── Ownership verification ─────────────────────────────
 
 async function verifyOwnership(
-  db: any,
+  db: PrismaClient,
   table: string,
   recordId: string,
   userId: string
 ): Promise<void> {
-  const model = TABLE_TO_MODEL[table]!;
+  const modelName = TABLE_TO_MODEL[table]!;
 
   if (USER_OWNED_TABLES.has(table)) {
-    const row = await (db[model] as any).findUnique({ where: { id: recordId } });
+    const row = await model(db, modelName).findUnique({ where: { id: recordId } });
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Record not found" });
     if (row.userId !== userId) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Not your record" });
@@ -146,15 +170,15 @@ async function verifyOwnership(
 
   for (const step of chain) {
     const currentModel = TABLE_TO_MODEL[currentTable]!;
-    const row = await (db[currentModel] as any).findUnique({ where: { id: currentId } });
+    const row = await model(db, currentModel).findUnique({ where: { id: currentId } });
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Record not found" });
-    currentId = row[step.fk];
+    currentId = row[step.fk] as string;
     currentTable = step.parentTable;
   }
 
   // Now currentTable is user-owned, currentId is its id
   const parentModel = TABLE_TO_MODEL[currentTable]!;
-  const parentRow = await (db[parentModel] as any).findUnique({ where: { id: currentId } });
+  const parentRow = await model(db, parentModel).findUnique({ where: { id: currentId } });
   if (!parentRow) throw new TRPCError({ code: "NOT_FOUND", message: "Parent not found" });
   if (parentRow.userId !== userId) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Not your record" });
@@ -217,8 +241,8 @@ export const syncRouter = createTRPCRouter({
     .input(syncApplySchema)
     .mutation(async ({ ctx, input }) => {
       const { table, record: rawRecord } = input;
-      const model = TABLE_TO_MODEL[table];
-      if (!model) {
+      const modelName = TABLE_TO_MODEL[table];
+      if (!modelName) {
         throw new TRPCError({ code: "BAD_REQUEST", message: `Unknown table: ${table}` });
       }
 
@@ -227,7 +251,7 @@ export const syncRouter = createTRPCRouter({
 
       const { id, ...data } = mapped;
 
-      await (ctx.db as any)[model].upsert({
+      await model(ctx.db, modelName).upsert({
         where: { id: id as string },
         create: mapped,
         update: data,
@@ -240,8 +264,8 @@ export const syncRouter = createTRPCRouter({
     .input(syncUpdateSchema)
     .mutation(async ({ ctx, input }) => {
       const { table, id, data: rawData } = input;
-      const model = TABLE_TO_MODEL[table];
-      if (!model) {
+      const modelName = TABLE_TO_MODEL[table];
+      if (!modelName) {
         throw new TRPCError({ code: "BAD_REQUEST", message: `Unknown table: ${table}` });
       }
 
@@ -251,7 +275,7 @@ export const syncRouter = createTRPCRouter({
       // Prevent changing user_id via update
       delete mapped.userId;
 
-      await (ctx.db as any)[model].update({
+      await model(ctx.db, modelName).update({
         where: { id },
         data: mapped,
       });
@@ -263,14 +287,14 @@ export const syncRouter = createTRPCRouter({
     .input(syncDeleteSchema)
     .mutation(async ({ ctx, input }) => {
       const { table, id } = input;
-      const model = TABLE_TO_MODEL[table];
-      if (!model) {
+      const modelName = TABLE_TO_MODEL[table];
+      if (!modelName) {
         throw new TRPCError({ code: "BAD_REQUEST", message: `Unknown table: ${table}` });
       }
 
       await verifyOwnership(ctx.db, table, id, ctx.user.id);
 
-      await (ctx.db as any)[model].delete({ where: { id } });
+      await model(ctx.db, modelName).delete({ where: { id } });
 
       return { success: true };
     }),

@@ -93,11 +93,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
 
         // For credentials provider, custom fields are on the user object
-        if ((user as any).tier) {
-          token.tier = (user as any).tier;
-          token.subscriptionStatus = (user as any).subscriptionStatus;
-          token.unitSystem = (user as any).unitSystem;
-          token.onboardingComplete = (user as any).onboardingComplete ?? true;
+        if (user.tier) {
+          token.tier = user.tier;
+          token.subscriptionStatus = user.subscriptionStatus;
+          token.unitSystem = user.unitSystem;
+          token.onboardingComplete = user.onboardingComplete ?? true;
         }
       }
 
@@ -122,12 +122,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        (session.user as any).tier = token.tier;
-        (session.user as any).subscriptionStatus = token.subscriptionStatus;
-        (session.user as any).unitSystem = token.unitSystem;
-        (session.user as any).onboardingComplete = token.onboardingComplete as boolean;
+      if (session.user && token.id) {
+        session.user.id = token.id;
+        session.user.tier = token.tier ?? "athlete";
+        session.user.subscriptionStatus = token.subscriptionStatus ?? "none";
+        session.user.unitSystem = token.unitSystem ?? "metric";
+        session.user.onboardingComplete = token.onboardingComplete ?? true;
+        session.user.defaultRestSeconds = token.defaultRestSeconds ?? 90;
       }
       return session;
     },

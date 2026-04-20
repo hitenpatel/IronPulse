@@ -236,7 +236,7 @@ function ExerciseCard({
 
       {/* Set rows */}
       {sets.map((set) => {
-        const isPR = (set as any).is_pr;
+        const isPR = Boolean((set as { is_pr?: unknown }).is_pr);
         return (
           <View
             key={set.id}

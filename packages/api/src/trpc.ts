@@ -41,7 +41,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   }
 
   // Bearer token (mobile)
-  const authHeader = (ctx as any).authHeader as string | undefined;
+  const authHeader = ctx.authHeader;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     const user = verifyMobileToken(token);

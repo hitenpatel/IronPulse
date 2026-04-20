@@ -62,12 +62,16 @@ export function ActivityFeed() {
 
   if (workoutList) {
     for (const w of workoutList) {
+      const extra = w as typeof w & {
+        exerciseCount?: number;
+        _count?: { workoutExercises?: number };
+      };
       items.push({
         kind: "workout",
         id: w.id,
         startedAt: new Date(w.startedAt),
         name: w.name,
-        exerciseCount: (w as any).exerciseCount ?? (w as any)._count?.workoutExercises ?? 0,
+        exerciseCount: extra.exerciseCount ?? extra._count?.workoutExercises ?? 0,
         durationSeconds: w.durationSeconds,
       });
     }

@@ -147,7 +147,7 @@ export const passkeyRouter = createTRPCRouter({
         }
 
         const hasAlternative = await hasAlternativeAuthMethod(
-          tx as any,
+          tx,
           ctx.user.id,
           input.passkeyId,
         );

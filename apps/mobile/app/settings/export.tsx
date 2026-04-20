@@ -75,7 +75,7 @@ export default function ExportScreen() {
           result = await trpc.export.bodyMetrics.mutate({ format });
           break;
         case "allData":
-          result = await (trpc.export.allData as any).mutate();
+          result = await trpc.export.allData.mutate();
           break;
       }
 

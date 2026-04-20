@@ -136,9 +136,10 @@ export default function SecurityPage() {
 
   const passkeys = data?.passkeys ?? [];
   const atLimit = passkeys.length >= 5;
-  const hasOAuth = (userData?.user as any)?.accounts?.some(
-    (a: any) => a.provider !== "email",
-  );
+  const userAccounts = (
+    userData?.user as { accounts?: { provider: string }[] } | undefined
+  )?.accounts;
+  const hasOAuth = userAccounts?.some((a) => a.provider !== "email");
   const canRemovePassword = passkeys.length > 0 || hasOAuth;
 
   if (isLoading) {

@@ -14,15 +14,14 @@ export async function createServerCaller() {
       session: session?.user
         ? {
             user: {
-              id: session.user.id!,
+              id: session.user.id,
               email: session.user.email!,
               name: session.user.name!,
-              tier: (session.user as any).tier ?? "athlete",
-              subscriptionStatus:
-                (session.user as any).subscriptionStatus ?? "none",
-              unitSystem: (session.user as any).unitSystem ?? "metric",
-              onboardingComplete: (session.user as any).onboardingComplete ?? true,
-              defaultRestSeconds: (session.user as any).defaultRestSeconds ?? 90,
+              tier: session.user.tier,
+              subscriptionStatus: session.user.subscriptionStatus,
+              unitSystem: session.user.unitSystem,
+              onboardingComplete: session.user.onboardingComplete,
+              defaultRestSeconds: session.user.defaultRestSeconds,
             },
           }
         : null,

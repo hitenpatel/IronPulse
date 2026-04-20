@@ -290,8 +290,12 @@ export function verifyPasskeyLoginToken(token: string): string | null {
   }
 }
 
+// Accept any client exposing the delegates used below so both a PrismaClient
+// and a transaction client (Prisma.TransactionClient) satisfy the signature.
+type AuthMethodClient = Pick<PrismaClient, "user" | "account" | "passkey">;
+
 export async function hasAlternativeAuthMethod(
-  db: PrismaClient,
+  db: AuthMethodClient,
   userId: string,
   excludePasskeyId?: string,
 ): Promise<boolean> {

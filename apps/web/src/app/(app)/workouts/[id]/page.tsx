@@ -297,7 +297,7 @@ export default function WorkoutDetailPage() {
                   {exerciseSets
                     .sort((a, b) => a.set_number - b.set_number)
                     .map((set) => {
-                      const isPR = (set as any).is_pr === 1 || (set as any).is_pr === true;
+                      const isPR = Boolean((set as { is_pr?: unknown }).is_pr);
                       return (
                         <div
                           key={set.id}

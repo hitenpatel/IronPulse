@@ -33,7 +33,7 @@ function getMonthYear(iso: string): string {
 }
 
 function WorkoutCard({ item, onPress }: { item: WorkoutRow; onPress: () => void }) {
-  const hasPR = (item as any).has_pr;
+  const hasPR = Boolean((item as { has_pr?: unknown }).has_pr);
 
   return (
     <Pressable onPress={onPress} style={{ marginBottom: 10 }}>
