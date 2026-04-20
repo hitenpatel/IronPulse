@@ -1,31 +1,26 @@
-import { Image, type ImageStyle, type StyleProp } from "react-native";
+import { View, type ViewStyle, type StyleProp } from "react-native";
+import { SvgXml } from "react-native-svg";
+import { LOGO_XML } from "./logo-xml";
+
+const ASPECT = 487 / 215;
 
 interface LogoProps {
-  /** Size in dp. The logo renders square — width and height both use this value. */
+  /** Height in dp. Width scales from the logo's natural 487:215 aspect. */
   size?: number;
-  /**
-   * @deprecated Kept for backwards compatibility with the v2 SVG Logo — the
-   * PNG asset is a single baked-in rendition that already reads well at small
-   * sizes. Accepting but ignoring the prop so existing callers still compile.
-   */
+  /** @deprecated Kept so existing callers compile; not used. */
   flat?: boolean;
-  style?: StyleProp<ImageStyle>;
+  style?: StyleProp<ViewStyle>;
 }
 
-/**
- * IronPulse brand mark. Renders the canonical PNG asset from
- * `apps/mobile/assets/logo-mark.png`, which mirrors
- * `designs/IronPulse-logo.png` (cream tile + cobalt dumbbell outline + lime
- * ECG pulse). Kept as a dedicated component so callers can swap the
- * implementation (PNG → SVG → animated) without touching every screen.
- */
 export function Logo({ size = 32, style }: LogoProps) {
+  const width = Math.round(size * ASPECT);
   return (
-    <Image
-      source={require("../../assets/logo-mark.png")}
-      style={[{ width: size, height: size }, style]}
+    <View
+      accessibilityRole="image"
       accessibilityLabel="IronPulse"
-      resizeMode="contain"
-    />
+      style={[{ width, height: size }, style]}
+    >
+      <SvgXml xml={LOGO_XML} width={width} height={size} />
+    </View>
   );
 }

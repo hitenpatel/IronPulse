@@ -129,45 +129,9 @@ export default function LoginScreen() {
         {/* Logo + wordmark — v2 hero per
             designs/design_handoff_new/reference/screens-primary.jsx::Login */}
         <View style={{ alignItems: "center", marginTop: 40, marginBottom: 36 }}>
-          {/* Logo with two concentric ring borders at -8 and -16 inset */}
-          <View
-            style={{
-              width: 84,
-              height: 84,
-              marginBottom: 20,
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-            }}
-          >
-            <Logo size={84} />
-            {/* Outer rings echo the cobalt glow around the tile */}
-            <View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                left: -8,
-                right: -8,
-                top: -8,
-                bottom: -8,
-                borderRadius: 28,
-                borderWidth: 1,
-                borderColor: "rgba(58,109,255,0.35)",
-              }}
-            />
-            <View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                left: -16,
-                right: -16,
-                top: -16,
-                bottom: -16,
-                borderRadius: 32,
-                borderWidth: 1,
-                borderColor: "rgba(58,109,255,0.18)",
-              }}
-            />
+          {/* Hero logo — natural-aspect symbol rendered large for presence */}
+          <View style={{ marginBottom: 20 }}>
+            <Logo size={96} />
           </View>
 
           <Text
