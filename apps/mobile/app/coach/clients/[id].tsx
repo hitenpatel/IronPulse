@@ -13,17 +13,19 @@ import type { RootStackParamList } from "../../../App";
 import { trpc } from "@/lib/trpc";
 import { Dumbbell, Activity, Trophy, MessageCircle } from "lucide-react-native";
 
+import { colors as theme } from "@/lib/theme";
+
 const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  primary: "#0077FF",
-  success: "#10B981",
-  prGold: "#FFD700",
-  border: "#1E2B47",
-  text: "#F0F4F8",
-  textMuted: "#8899B4",
-  textFaint: "#4E6180",
+  background: theme.bg,
+  card: theme.bg1,
+  accent: theme.bg3,
+  primary: theme.green,
+  success: theme.blue, // lime
+  prGold: theme.amber,
+  border: theme.line,
+  text: theme.text,
+  textMuted: theme.text3,
+  textFaint: theme.text4,
 };
 
 type ClientProgress = {

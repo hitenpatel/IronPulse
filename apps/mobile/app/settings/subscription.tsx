@@ -14,16 +14,18 @@ interface IAPItemDetails {
   subscriptionPeriod?: string;
 }
 
+import { colors as theme } from "@/lib/theme";
+
 const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  primary: "#0077FF",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  text: "#F0F4F8",
-  textMuted: "#8899B4",
-  textFaint: "#4E6180",
+  background: theme.bg,
+  card: theme.bg1,
+  accent: theme.bg3,
+  primary: theme.green,
+  border: theme.line,
+  borderSubtle: theme.lineSoft,
+  text: theme.text,
+  textMuted: theme.text3,
+  textFaint: theme.text4,
 };
 
 export default function SubscriptionScreen() {

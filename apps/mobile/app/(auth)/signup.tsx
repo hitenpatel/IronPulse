@@ -13,15 +13,17 @@ import { Input } from "@/components/ui/input";
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
-// Pulse design system tokens
+// v2 acid-sport tokens — re-aliased onto the legacy `C` shape this file uses.
+import { colors as theme } from "@/lib/theme";
+
 const C = {
-  bg: "#060B14",
-  card: "#0F1629",
-  primary: "#0077FF",
-  primaryMuted: "rgba(0, 119, 255, 0.10)",
-  border: "#1E2B47",
-  text: "#F0F4F8",
-  textSecondary: "#4E6180",
+  bg: theme.bg,
+  card: theme.bg1,
+  primary: theme.green, // cobalt v2
+  primaryMuted: theme.greenSoft,
+  border: theme.line,
+  text: theme.text,
+  textSecondary: theme.text4,
 };
 
 function PasswordStrengthBar({ password }: { password: string }) {
@@ -36,7 +38,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
   })();
 
   const labels = ["", "Weak", "Fair", "Good", "Strong"];
-  const colors = ["transparent", "#EF4444", "#F59E0B", "#22C55E", "#0077FF"];
+  const colors = ["transparent", theme.red, theme.amber, theme.blue, theme.green];
 
   if (!password) return null;
 

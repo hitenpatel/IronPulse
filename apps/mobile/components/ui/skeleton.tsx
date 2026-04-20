@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, ViewStyle, StyleSheet } from "react-native";
+import { colors } from "@/lib/theme";
 
 interface SkeletonProps {
   width?: number | string;
@@ -25,7 +26,7 @@ export function Skeleton({ width = "100%", height = 16, borderRadius = 8, style 
   return (
     <Animated.View
       style={[
-        { width, height, borderRadius, backgroundColor: "#243052", opacity },
+        { width, height, borderRadius, backgroundColor: colors.bg3, opacity },
         style,
       ]}
     />
@@ -65,10 +66,10 @@ export function StatsSkeleton() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#0F1629",
+    backgroundColor: colors.bg1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#1E2B47",
+    borderColor: colors.line,
     padding: 16,
   },
   listItem: {
@@ -77,6 +78,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#152035",
+    borderBottomColor: colors.lineSoft,
   },
 });

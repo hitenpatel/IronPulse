@@ -4,22 +4,24 @@ import { FlatList, Pressable, Text, View, ActivityIndicator } from "react-native
 import { trpc } from "@/lib/trpc";
 import { Dumbbell, Activity, Trophy, Heart, MessageCircle, Share2 } from "lucide-react-native";
 
+import { colors as theme } from "@/lib/theme";
+
 const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  primary: "#0077FF",
-  success: "#10B981",
-  warning: "#F59E0B",
-  error: "#EF4444",
-  prGold: "#FFD700",
-  streakOrange: "#FF6B2C",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  text: "#F0F4F8",
-  textMuted: "#8899B4",
-  textFaint: "#4E6180",
+  background: theme.bg,
+  card: theme.bg1,
+  accent: theme.bg3,
+  muted: theme.bg2,
+  primary: theme.green, // cobalt v2
+  success: theme.blue, // lime v2
+  warning: theme.amber,
+  error: theme.red,
+  prGold: theme.amber,
+  streakOrange: theme.orange,
+  border: theme.line,
+  borderSubtle: theme.lineSoft,
+  text: theme.text,
+  textMuted: theme.text3,
+  textFaint: theme.text4,
 };
 
 type FeedItem = {
