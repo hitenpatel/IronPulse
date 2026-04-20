@@ -12,18 +12,7 @@ import {
   type SetRow,
 } from "@ironpulse/sync";
 import { calculateVolume, formatElapsed } from "@/lib/workout-utils";
-
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  muted: "#243052",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  prGold: "#FFD700",
-};
+import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 
 interface WorkoutRow {
   id: string;
@@ -67,43 +56,45 @@ export default function WorkoutDetailScreen() {
   if (!workout) return null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
       <FlatList
         data={exercises ?? []}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: spacing.gutter }}
         ListHeaderComponent={
           <View style={{ marginBottom: 20 }}>
             {/* Stat pills row */}
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View
                 style={{
-                  backgroundColor: colors.muted,
-                  borderRadius: 24,
+                  backgroundColor: colors.bg2,
+                  borderRadius: radii.chip,
                   paddingHorizontal: 16,
-                  paddingVertical: 10,
+                  paddingVertical: 12,
                   alignItems: "center",
                   flex: 1,
                 }}
               >
                 <Text
                   style={{
-                    color: colors.mutedFg,
-                    fontSize: 11,
+                    color: colors.text3,
+                    fontSize: typography.eyebrow.size,
                     fontWeight: "600",
                     textTransform: "uppercase",
-                    letterSpacing: 0.4,
-                    marginBottom: 2,
+                    letterSpacing: typography.eyebrow.letterSpacing,
+                    marginBottom: 4,
+                    fontFamily: fonts.bodySemi,
                   }}
                 >
                   Duration
                 </Text>
                 <Text
                   style={{
-                    color: colors.foreground,
-                    fontSize: 20,
+                    color: colors.text,
+                    fontSize: typography.title.size,
                     fontWeight: "700",
                     fontVariant: ["tabular-nums"],
+                    fontFamily: fonts.displayBold,
                   }}
                 >
                   {formatElapsed(duration)}
@@ -111,32 +102,34 @@ export default function WorkoutDetailScreen() {
               </View>
               <View
                 style={{
-                  backgroundColor: colors.muted,
-                  borderRadius: 24,
+                  backgroundColor: colors.bg2,
+                  borderRadius: radii.chip,
                   paddingHorizontal: 16,
-                  paddingVertical: 10,
+                  paddingVertical: 12,
                   alignItems: "center",
                   flex: 1,
                 }}
               >
                 <Text
                   style={{
-                    color: colors.mutedFg,
-                    fontSize: 11,
+                    color: colors.text3,
+                    fontSize: typography.eyebrow.size,
                     fontWeight: "600",
                     textTransform: "uppercase",
-                    letterSpacing: 0.4,
-                    marginBottom: 2,
+                    letterSpacing: typography.eyebrow.letterSpacing,
+                    marginBottom: 4,
+                    fontFamily: fonts.bodySemi,
                   }}
                 >
                   Volume
                 </Text>
                 <Text
                   style={{
-                    color: colors.foreground,
-                    fontSize: 20,
+                    color: colors.text,
+                    fontSize: typography.title.size,
                     fontWeight: "700",
                     fontVariant: ["tabular-nums"],
+                    fontFamily: fonts.displayBold,
                   }}
                 >
                   {totalVolume.toLocaleString()} kg
@@ -146,9 +139,11 @@ export default function WorkoutDetailScreen() {
 
             <Text
               style={{
-                color: colors.foreground,
-                fontSize: 18,
+                color: colors.text,
+                fontSize: typography.title.size,
+                lineHeight: typography.title.lineHeight,
                 fontWeight: "700",
+                fontFamily: fonts.displaySemi,
                 marginTop: 24,
                 marginBottom: 4,
               }}
@@ -175,18 +170,20 @@ function ExerciseCard({
   return (
     <View
       style={{
-        backgroundColor: colors.card,
-        borderRadius: 12,
+        backgroundColor: colors.bg1,
+        borderRadius: radii.card,
         borderWidth: 1,
-        borderColor: colors.border,
-        padding: 16,
+        borderColor: colors.line,
+        paddingVertical: spacing.cardPaddingY,
+        paddingHorizontal: spacing.cardPaddingX,
         marginBottom: 10,
       }}
     >
       <Text
         style={{
-          color: colors.foreground,
-          fontSize: 16,
+          color: colors.text,
+          fontSize: typography.body.size,
+          fontFamily: fonts.bodySemi,
           fontWeight: "600",
           marginBottom: 12,
         }}
@@ -196,14 +193,25 @@ function ExerciseCard({
 
       {/* Table header */}
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
-        <Text style={{ color: colors.dimFg, fontSize: 12, fontWeight: "600", width: 36 }}>
+        <Text
+          style={{
+            color: colors.text4,
+            fontSize: typography.eyebrow.size,
+            fontWeight: "600",
+            letterSpacing: typography.eyebrow.letterSpacing,
+            fontFamily: fonts.bodySemi,
+            width: 36,
+          }}
+        >
           SET
         </Text>
         <Text
           style={{
-            color: colors.dimFg,
-            fontSize: 12,
+            color: colors.text4,
+            fontSize: typography.eyebrow.size,
             fontWeight: "600",
+            letterSpacing: typography.eyebrow.letterSpacing,
+            fontFamily: fonts.bodySemi,
             flex: 1,
             textAlign: "center",
           }}
@@ -212,9 +220,11 @@ function ExerciseCard({
         </Text>
         <Text
           style={{
-            color: colors.dimFg,
-            fontSize: 12,
+            color: colors.text4,
+            fontSize: typography.eyebrow.size,
             fontWeight: "600",
+            letterSpacing: typography.eyebrow.letterSpacing,
+            fontFamily: fonts.bodySemi,
             flex: 1,
             textAlign: "center",
           }}
@@ -223,9 +233,11 @@ function ExerciseCard({
         </Text>
         <Text
           style={{
-            color: colors.dimFg,
-            fontSize: 12,
+            color: colors.text4,
+            fontSize: typography.eyebrow.size,
             fontWeight: "600",
+            letterSpacing: typography.eyebrow.letterSpacing,
+            fontFamily: fonts.bodySemi,
             width: 48,
             textAlign: "center",
           }}
@@ -242,18 +254,19 @@ function ExerciseCard({
             key={set.id}
             style={{
               flexDirection: "row",
-              paddingVertical: 6,
+              paddingVertical: 8,
               borderTopWidth: 1,
-              borderTopColor: colors.borderSubtle,
+              borderTopColor: colors.lineSoft,
               borderLeftWidth: isPR ? 2 : 0,
-              borderLeftColor: isPR ? colors.prGold : "transparent",
+              borderLeftColor: isPR ? colors.amber : "transparent",
               paddingLeft: isPR ? 6 : 0,
             }}
           >
             <Text
               style={{
-                color: isPR ? colors.prGold : colors.mutedFg,
-                fontSize: 14,
+                color: isPR ? colors.amber : colors.text3,
+                fontSize: typography.bodySmall.size,
+                fontFamily: fonts.monoMedium,
                 width: 36,
                 fontVariant: ["tabular-nums"],
                 fontWeight: isPR ? "700" : "400",
@@ -263,8 +276,9 @@ function ExerciseCard({
             </Text>
             <Text
               style={{
-                color: colors.foreground,
-                fontSize: 14,
+                color: colors.text,
+                fontSize: typography.bodySmall.size,
+                fontFamily: fonts.monoMedium,
                 flex: 1,
                 textAlign: "center",
                 fontVariant: ["tabular-nums"],
@@ -274,8 +288,9 @@ function ExerciseCard({
             </Text>
             <Text
               style={{
-                color: colors.foreground,
-                fontSize: 14,
+                color: colors.text,
+                fontSize: typography.bodySmall.size,
+                fontFamily: fonts.monoMedium,
                 flex: 1,
                 textAlign: "center",
                 fontVariant: ["tabular-nums"],
@@ -285,8 +300,9 @@ function ExerciseCard({
             </Text>
             <Text
               style={{
-                color: colors.mutedFg,
-                fontSize: 14,
+                color: colors.text3,
+                fontSize: typography.bodySmall.size,
+                fontFamily: fonts.monoMedium,
                 width: 48,
                 textAlign: "center",
                 fontVariant: ["tabular-nums"],

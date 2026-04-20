@@ -20,15 +20,7 @@ import {
   getZoneBoundaries,
 } from "@ironpulse/shared";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  muted: "#243052",
-  border: "#1E2B47",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-};
+import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 
 interface CardioRow {
   id: string;
@@ -58,21 +50,23 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.card,
-        borderRadius: 12,
+        backgroundColor: colors.bg1,
+        borderRadius: radii.card,
         borderWidth: 1,
-        borderColor: colors.border,
-        padding: 16,
+        borderColor: colors.line,
+        paddingVertical: spacing.cardPaddingY,
+        paddingHorizontal: spacing.cardPaddingX,
         alignItems: "center",
       }}
     >
       <Text
         style={{
-          color: colors.mutedFg,
-          fontSize: 11,
+          color: colors.text3,
+          fontSize: typography.eyebrow.size,
           fontWeight: "600",
           textTransform: "uppercase",
-          letterSpacing: 0.4,
+          letterSpacing: typography.eyebrow.letterSpacing,
+          fontFamily: fonts.bodySemi,
           marginBottom: 4,
         }}
       >
@@ -80,9 +74,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
       </Text>
       <Text
         style={{
-          color: colors.foreground,
-          fontSize: 20,
+          color: colors.text,
+          fontSize: typography.title.size,
           fontWeight: "700",
+          fontFamily: fonts.displayBold,
           fontVariant: ["tabular-nums"],
         }}
       >
@@ -135,31 +130,31 @@ export default function CardioDetailScreen() {
       : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
       {/* Title set via navigation options in App.tsx */}
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: spacing.gutter }}>
         {/* Route map for GPS sessions — full-width at top */}
         {session.source === "gps" && (
           <View
             style={{
               height: 240,
-              borderRadius: 12,
+              borderRadius: radii.card,
               overflow: "hidden",
               marginBottom: 16,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: colors.line,
             }}
           >
             {loadingRoute ? (
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: colors.card,
+                  backgroundColor: colors.bg1,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <ActivityIndicator color={colors.foreground} />
+                <ActivityIndicator color={colors.text} />
               </View>
             ) : routePoints.length >= 2 ? (
               <RouteMap routePoints={routePoints} interactive={false} />
@@ -167,12 +162,18 @@ export default function CardioDetailScreen() {
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: colors.card,
+                  backgroundColor: colors.bg1,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: colors.mutedFg, fontSize: 14 }}>
+                <Text
+                  style={{
+                    color: colors.text3,
+                    fontSize: typography.caption.size,
+                    fontFamily: fonts.bodyRegular,
+                  }}
+                >
                   No route data
                 </Text>
               </View>
@@ -214,20 +215,42 @@ export default function CardioDetailScreen() {
           return (
             <View
               style={{
-                backgroundColor: colors.card,
-                borderRadius: 12,
+                backgroundColor: colors.bg1,
+                borderRadius: radii.card,
                 borderWidth: 1,
-                borderColor: colors.border,
-                padding: 16,
+                borderColor: colors.line,
+                paddingVertical: spacing.cardPaddingY,
+                paddingHorizontal: spacing.cardPaddingX,
                 marginBottom: 12,
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <Text style={{ color: colors.mutedFg, fontSize: 13, fontWeight: "600" }}>
+                <Text
+                  style={{
+                    color: colors.text3,
+                    fontSize: typography.caption.size,
+                    fontFamily: fonts.bodySemi,
+                    fontWeight: "600",
+                  }}
+                >
                   Heart Rate Zone
                 </Text>
-                <View style={{ backgroundColor: zoneColor, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 }}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
+                <View
+                  style={{
+                    backgroundColor: zoneColor,
+                    borderRadius: radii.chip,
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.blueInk,
+                      fontSize: typography.caption.size,
+                      fontWeight: "700",
+                      fontFamily: fonts.bodyBold,
+                    }}
+                  >
                     Zone {zone} — {zoneName}
                   </Text>
                 </View>
@@ -254,8 +277,9 @@ export default function CardioDetailScreen() {
                     style={{
                       flex: 1,
                       textAlign: "center",
-                      fontSize: 10,
-                      color: colors.mutedFg,
+                      fontSize: typography.eyebrow.size,
+                      fontFamily: fonts.bodyMedium,
+                      color: colors.text3,
                       fontWeight: b.zone === zone ? "700" : "400",
                     }}
                   >
@@ -271,25 +295,34 @@ export default function CardioDetailScreen() {
         {session.notes != null && session.notes.length > 0 && (
           <View
             style={{
-              backgroundColor: colors.card,
-              borderRadius: 12,
+              backgroundColor: colors.bg1,
+              borderRadius: radii.card,
               borderWidth: 1,
-              borderColor: colors.border,
-              padding: 16,
+              borderColor: colors.line,
+              paddingVertical: spacing.cardPaddingY,
+              paddingHorizontal: spacing.cardPaddingX,
               marginTop: 4,
             }}
           >
             <Text
               style={{
-                color: colors.mutedFg,
-                fontSize: 13,
+                color: colors.text3,
+                fontSize: typography.caption.size,
+                fontFamily: fonts.bodySemi,
                 fontWeight: "600",
                 marginBottom: 6,
               }}
             >
               Notes
             </Text>
-            <Text style={{ color: colors.foreground, fontSize: 15, lineHeight: 22 }}>
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: typography.bodySmall.size,
+                lineHeight: typography.bodySmall.lineHeight,
+                fontFamily: fonts.bodyRegular,
+              }}
+            >
               {session.notes}
             </Text>
           </View>

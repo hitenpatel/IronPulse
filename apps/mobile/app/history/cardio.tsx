@@ -8,25 +8,14 @@ import { Bike, Footprints, Heart, Mountain } from "lucide-react-native";
 import { useCardioSessions, type CardioSessionRow } from "@ironpulse/sync";
 import { formatElapsed } from "@/lib/workout-utils";
 import { metersToKm } from "@/lib/geo-utils";
+import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  border: "#1E2B47",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
-  success: "#10B981",
-  warning: "#F59E0B",
-};
-
-// Per-activity icon background colours for the colored circle
+// Per-activity icon tint — sticks with v2 palette slots.
 const typeIconColors: Record<string, string> = {
-  run: "#0077FF",
-  walk: "#10B981",
-  hike: "#F59E0B",
-  cycle: "#8B5CF6",
+  run: colors.green, // cobalt
+  walk: colors.cyan,
+  hike: colors.amber,
+  cycle: colors.blue, // lime
 };
 
 const typeIcons: Record<string, React.ComponentType<{ size: number; color: string }>> = {
@@ -41,7 +30,7 @@ function getTypeIcon(type: string) {
 }
 
 function getTypeIconColor(type: string): string {
-  return typeIconColors[type] ?? "#8899B4";
+  return typeIconColors[type] ?? colors.text3;
 }
 
 function formatDate(iso: string): string {
@@ -71,11 +60,12 @@ function CardioCard({
     <Pressable onPress={onPress} style={{ marginBottom: 10 }}>
       <View
         style={{
-          backgroundColor: colors.card,
-          borderRadius: 12,
+          backgroundColor: colors.bg1,
+          borderRadius: radii.card,
           borderWidth: 1,
-          borderColor: colors.border,
-          padding: 16,
+          borderColor: colors.line,
+          paddingVertical: spacing.cardPaddingY,
+          paddingHorizontal: spacing.cardPaddingX,
           flexDirection: "row",
           alignItems: "center",
           gap: 14,
@@ -98,8 +88,9 @@ function CardioCard({
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              color: colors.foreground,
-              fontSize: 16,
+              color: colors.text,
+              fontSize: typography.body.size,
+              fontFamily: fonts.bodySemi,
               fontWeight: "600",
             }}
           >
@@ -107,19 +98,32 @@ function CardioCard({
           </Text>
           <Text
             style={{
-              color: colors.mutedFg,
-              fontSize: 13,
+              color: colors.text3,
+              fontSize: typography.caption.size,
+              fontFamily: fonts.bodyRegular,
               marginTop: 3,
             }}
           >
             {formatDate(item.started_at)}
           </Text>
           <View style={{ flexDirection: "row", gap: 16, marginTop: 6 }}>
-            <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+            <Text
+              style={{
+                color: colors.text3,
+                fontSize: typography.caption.size,
+                fontFamily: fonts.monoMedium,
+              }}
+            >
               {formatElapsed(item.duration_seconds)}
             </Text>
             {item.distance_meters != null && (
-              <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+              <Text
+                style={{
+                  color: colors.text3,
+                  fontSize: typography.caption.size,
+                  fontFamily: fonts.monoMedium,
+                }}
+              >
                 {metersToKm(item.distance_meters).toFixed(2)} km
               </Text>
             )}
@@ -135,11 +139,11 @@ export default function CardioHistoryScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
       <FlatList
         data={sessions}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        contentContainerStyle={{ padding: spacing.gutter, flexGrow: 1 }}
         renderItem={({ item }) => (
           <CardioCard
             item={item}
@@ -155,11 +159,12 @@ export default function CardioHistoryScreen() {
               paddingTop: 80,
             }}
           >
-            <Heart size={48} color={colors.dimFg} />
+            <Heart size={48} color={colors.text4} />
             <Text
               style={{
-                color: colors.mutedFg,
-                fontSize: 16,
+                color: colors.text3,
+                fontSize: typography.body.size,
+                fontFamily: fonts.bodyRegular,
                 marginTop: 16,
               }}
             >

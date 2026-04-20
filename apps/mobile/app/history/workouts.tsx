@@ -7,16 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Dumbbell, Star } from "lucide-react-native";
 import { useWorkouts, type WorkoutRow } from "@ironpulse/sync";
 import { formatElapsed } from "@/lib/workout-utils";
-
-const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  border: "#1E2B47",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  prGold: "#FFD700",
-};
+import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -39,18 +30,27 @@ function WorkoutCard({ item, onPress }: { item: WorkoutRow; onPress: () => void 
     <Pressable onPress={onPress} style={{ marginBottom: 10 }}>
       <View
         style={{
-          backgroundColor: colors.card,
-          borderRadius: 12,
+          backgroundColor: colors.bg1,
+          borderRadius: radii.card,
           borderWidth: 1,
-          borderColor: colors.border,
-          padding: 16,
+          borderColor: colors.line,
+          paddingVertical: spacing.cardPaddingY,
+          paddingHorizontal: spacing.cardPaddingX,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+          }}
+        >
           <Text
             style={{
-              color: colors.foreground,
-              fontSize: 16,
+              color: colors.text,
+              fontSize: typography.body.size,
+              lineHeight: typography.body.lineHeight,
+              fontFamily: fonts.bodySemi,
               fontWeight: "600",
               flex: 1,
               marginRight: 8,
@@ -58,23 +58,37 @@ function WorkoutCard({ item, onPress }: { item: WorkoutRow; onPress: () => void 
           >
             {item.name ?? "Untitled Workout"}
           </Text>
-          {hasPR && <Star size={16} color={colors.prGold} fill={colors.prGold} />}
+          {hasPR && <Star size={18} color={colors.amber} fill={colors.amber} />}
         </View>
         <Text
           style={{
-            color: colors.mutedFg,
-            fontSize: 13,
+            color: colors.text3,
+            fontSize: typography.caption.size,
+            lineHeight: typography.caption.lineHeight,
+            fontFamily: fonts.bodyRegular,
             marginTop: 4,
           }}
         >
           {formatDate(item.started_at)}
         </Text>
         <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
-          <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+          <Text
+            style={{
+              color: colors.text3,
+              fontSize: typography.caption.size,
+              fontFamily: fonts.bodyRegular,
+            }}
+          >
             {item.exercise_count ?? 0} exercise{(item.exercise_count ?? 0) !== 1 ? "s" : ""}
           </Text>
           {item.duration_seconds != null && (
-            <Text style={{ color: colors.mutedFg, fontSize: 13 }}>
+            <Text
+              style={{
+                color: colors.text3,
+                fontSize: typography.caption.size,
+                fontFamily: fonts.bodyRegular,
+              }}
+            >
               {formatElapsed(item.duration_seconds)}
             </Text>
           )}
@@ -88,7 +102,6 @@ export default function WorkoutHistoryScreen() {
   const { data: workouts } = useWorkouts();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  // Group workouts by month
   const grouped = React.useMemo(() => {
     const map = new Map<string, WorkoutRow[]>();
     (workouts ?? []).forEach((w) => {
@@ -113,22 +126,24 @@ export default function WorkoutHistoryScreen() {
   }, [grouped]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["bottom"]}>
       <FlatList
         data={flatData}
-        keyExtractor={(item, index) =>
+        keyExtractor={(item) =>
           item.type === "header" ? `header-${item.title}` : item.item.id
         }
-        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        contentContainerStyle={{ padding: spacing.gutter, flexGrow: 1 }}
         renderItem={({ item }) => {
           if (item.type === "header") {
             return (
               <Text
                 style={{
-                  fontFamily: "ClashDisplay",
+                  fontFamily: fonts.displaySemi,
                   fontWeight: "600",
-                  fontSize: 22,
-                  color: colors.foreground,
+                  fontSize: typography.title.size,
+                  lineHeight: typography.title.lineHeight,
+                  letterSpacing: typography.title.letterSpacing,
+                  color: colors.text,
                   marginTop: 8,
                   marginBottom: 12,
                 }}
@@ -153,11 +168,12 @@ export default function WorkoutHistoryScreen() {
               paddingTop: 80,
             }}
           >
-            <Dumbbell size={48} color={colors.dimFg} />
+            <Dumbbell size={48} color={colors.text4} />
             <Text
               style={{
-                color: colors.mutedFg,
-                fontSize: 16,
+                color: colors.text3,
+                fontSize: typography.body.size,
+                fontFamily: fonts.bodyRegular,
                 marginTop: 16,
               }}
             >
