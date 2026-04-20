@@ -262,17 +262,17 @@ export default function ProfileScreen() {
             hitSlop={8}
             style={{
               position: "absolute",
-              top: 12,
-              right: 14,
-              width: 30,
-              height: 30,
+              top: 10,
+              right: 12,
+              width: 44,
+              height: 44,
               alignItems: "center",
               justifyContent: "center",
             }}
             accessibilityRole="button"
             accessibilityLabel="Settings"
           >
-            <SettingsIcon size={18} color={colors.text2} />
+            <SettingsIcon size={24} color={colors.text2} />
           </Pressable>
 
           <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
@@ -391,7 +391,7 @@ export default function ProfileScreen() {
                   return (
                     <Row
                       key={`${section.title}-${item.label}`}
-                      leading={<IconCmp size={14} />}
+                      leading={<IconCmp size={18} />}
                       leadingTone={item.tone}
                       title={item.label}
                       subtitle={item.subtitle}

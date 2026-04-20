@@ -82,7 +82,7 @@ export function Row({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: 14,
         paddingVertical: spacing.rowPaddingY,
         paddingHorizontal: spacing.rowPaddingX,
       }}
@@ -90,9 +90,9 @@ export function Row({
       {leading !== undefined ? (
         <View
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
+            width: 36,
+            height: 36,
+            borderRadius: 10,
             backgroundColor: tone.bg,
             alignItems: "center",
             justifyContent: "center",
@@ -109,7 +109,7 @@ export function Row({
           <Text
             numberOfLines={1}
             style={{
-              fontSize: 13,
+              fontSize: 16,
               fontWeight: "500",
               color: colors.text,
               fontFamily: fonts.body,
@@ -125,9 +125,9 @@ export function Row({
             <Text
               numberOfLines={1}
               style={{
-                fontSize: 10.5,
+                fontSize: 13,
                 color: colors.text3,
-                marginTop: 1,
+                marginTop: 2,
                 fontFamily: fonts.body,
               }}
             >
