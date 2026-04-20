@@ -1,10 +1,15 @@
 // IronPulse design tokens — mirrors designs/design_handoff_new/reference/mobile.css
 // v2 "acid sport" — electric lime primary, cobalt secondary, warm off-white text.
-// Consume via `import { tokens } from "@/lib/theme"`.
+//
+// Consume via:
+//   - `import { colors } from "@/lib/theme"` → dark (static, legacy call sites)
+//   - `import { useColors } from "@/lib/theme-context"` → theme-reactive
+//
+// See theme-context.tsx for the light/dark toggle infrastructure.
 
 import { Platform } from "react-native";
 
-export const colors = {
+export const darkColors = {
   // Ink surfaces — cool near-black with subtle blue undertone
   bg: "#0B0D12",
   bg1: "#13161E",
@@ -48,6 +53,54 @@ export const colors = {
 
   white: "#FFFFFF",
 } as const;
+
+// Light-mode palette — mirrors darkColors by key so consumers can swap
+// wholesale via useColors(). Lime primary + cobalt secondary keep their
+// brand identity; backgrounds flip to warm off-whites and text inverts to
+// near-black for legibility on bright surfaces.
+export const lightColors: typeof darkColors = {
+  bg: "#F9F4E1",
+  bg1: "#FFFBEE",
+  bg2: "#F2ECD6",
+  bg3: "#E8E1C6",
+  bg4: "#D4CBAE",
+
+  line: "#D4CBAE",
+  line2: "#BDB499",
+  lineSoft: "#EBE4CE",
+
+  text: "#0F1508",
+  text2: "#2A3020",
+  text3: "#525845",
+  text4: "#6E7561",
+
+  blue: "#C4EF2A",
+  blue2: "#B2DC1E",
+  blueSoft: "rgba(196,239,42,0.30)",
+  blueGlow: "rgba(196,239,42,0.55)",
+  blueInk: "#0F1508",
+
+  green: "#2553D6",
+  greenSoft: "rgba(37,83,214,0.16)",
+
+  purple: "#2A2416",
+  purpleSoft: "rgba(42,36,22,0.08)",
+
+  amber: "#CC9500",
+  amberSoft: "rgba(204,149,0,0.18)",
+  red: "#D0253F",
+  orange: "#CC5A1E",
+  pink: "#D0253F",
+  cyan: "#0E8FA8",
+  cyanSoft: "rgba(14,143,168,0.14)",
+
+  white: "#FFFFFF",
+} as const;
+
+// Keep `colors` as an alias for darkColors so legacy call sites (hundreds of
+// imports) keep compiling against the dark palette until they're migrated
+// to useColors(). New code should use useColors() from theme-context.
+export const colors = darkColors;
 
 export const radii = {
   card: 14,

@@ -11,6 +11,7 @@ import { StatusBar } from "react-native";
 try { require("./global.css"); } catch {}
 
 import { AuthProvider, useAuth } from "./lib/auth";
+import { ThemeProvider } from "./lib/theme-context";
 import { trpc } from "./lib/trpc";
 import { useNotificationDeepLink } from "./lib/useNotificationDeepLink";
 import { registerForPushNotifications, addPushTokenListener } from "./lib/notifications";
@@ -534,10 +535,12 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ErrorBoundary>
-          <AuthProvider>
-            <StatusBar barStyle="light-content" backgroundColor="#060B14" />
-            <RootNavigator />
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <StatusBar barStyle="light-content" backgroundColor="#060B14" />
+              <RootNavigator />
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
