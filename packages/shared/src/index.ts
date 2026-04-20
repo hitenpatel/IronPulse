@@ -25,3 +25,4 @@ export * from "./schemas/goal";
 export * from "./schemas/notification";
 export * from "./hr-zones";
 export * from "./streaks";
+export * from "./warmup";
