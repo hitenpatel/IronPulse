@@ -219,14 +219,14 @@ export default function DashboardScreen() {
             paddingBottom: 14,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Logo size={26} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Logo size={30} />
             <Text
               style={{
                 fontFamily: fonts.displaySemi,
-                fontSize: 16,
+                fontSize: 18,
                 color: colors.text,
-                letterSpacing: -0.2,
+                letterSpacing: -0.3,
               }}
             >
               IronPulse
@@ -254,11 +254,11 @@ export default function DashboardScreen() {
             accessibilityRole="header"
             style={{
               fontFamily: fonts.displaySemi,
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: "600",
               color: colors.text,
               letterSpacing: -0.6,
-              marginTop: 4,
+              marginTop: 6,
             }}
           >
             {greeting()}, {firstName}
@@ -267,8 +267,8 @@ export default function DashboardScreen() {
             testID="sub-greeting"
             style={{
               color: colors.text3,
-              fontSize: 12,
-              marginTop: 2,
+              fontSize: 14,
+              marginTop: 4,
               fontFamily: fonts.bodyRegular,
             }}
           >

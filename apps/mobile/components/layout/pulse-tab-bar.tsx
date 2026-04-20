@@ -2,14 +2,14 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Home, BarChart3, Dumbbell, User, Plus, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radii, fonts, shadows } from "@/lib/theme";
+import { colors, radii, fonts, shadows, typography } from "@/lib/theme";
 
-// Sizes from designs/claude-design-handoff/mobile.css `.tabs`, `.tab-fab`,
-// `.gesture-pill`. Squircle FAB radius 14 (sm) / 16 (lg) — NOT circular.
-const FAB_SIZE = 48;
-const FAB_RADIUS = 14;
-const ICON_SIZE = 22;
-const FAB_ICON_SIZE = 26;
+// Tab bar geometry aligns with iOS HIG (50pt effective bar) and Material 3
+// (80dp total). Sizes bumped from v2 handoff for better tap ergonomics + legibility.
+const FAB_SIZE = 56;
+const FAB_RADIUS = 16;
+const ICON_SIZE = 28;
+const FAB_ICON_SIZE = 28;
 
 const LEFT_TABS = [
   { name: "Home", label: "Home", Icon: Home },
@@ -115,9 +115,11 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 6,
+    paddingTop: 8,
     paddingHorizontal: 4,
     gap: 0,
+    // Min height ≈ iOS HIG effective tab bar (50pt) + label + breathing room.
+    minHeight: 68,
   },
   tabGroup: {
     flex: 1,
@@ -127,18 +129,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
-    gap: 3,
+    paddingVertical: 10,
+    // 48dp min tap target per WCAG 2.5.5 + Material 3.
+    minHeight: 48,
+    gap: 4,
   },
   tabLabel: {
-    // v2 a11y: tab bar labels enforced at 10.5px floor per handoff README.
-    fontSize: 10.5,
+    fontSize: typography.tabLabel.size,
     fontWeight: "500",
-    lineHeight: 13,
-    fontFamily: fonts.body,
+    lineHeight: typography.tabLabel.lineHeight,
+    fontFamily: fonts.bodyMedium,
   },
   fabSlot: {
-    width: 72,
+    width: 80,
     alignItems: "center",
     justifyContent: "center",
   },

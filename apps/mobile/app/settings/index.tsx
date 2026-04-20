@@ -31,12 +31,12 @@ const colors = {
 };
 
 const LABEL_STYLE = {
-  fontSize: 10,
+  fontSize: 11,
   color: colors.textFaint,
   textTransform: "uppercase" as const,
   fontWeight: "500" as const,
-  letterSpacing: 1,
-  marginBottom: 8,
+  letterSpacing: 1.2,
+  marginBottom: 12,
 };
 
 export default function SettingsScreen() {

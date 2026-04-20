@@ -4,7 +4,7 @@ vi.mock("react-native", () => ({
   Platform: { OS: "android", select: (m: any) => m.android ?? m.default },
 }));
 
-import { colors, radii, spacing, fonts, tokens } from "../theme";
+import { colors, radii, spacing, fonts, tokens, typography } from "../theme";
 
 // These values mirror designs/design_handoff_new/reference/mobile.css. If the
 // handoff changes, both files must move together.
@@ -55,6 +55,24 @@ describe("v2 theme tokens — acid sport", () => {
     expect(spacing.gutter).toBe(16);
   });
 
+  it("spacing padding tokens sized for modern density (iOS HIG + Material 3)", () => {
+    // Card padding aligns with Material 3 card spec.
+    expect(spacing.cardPaddingY).toBe(16);
+    expect(spacing.cardPaddingX).toBe(18);
+    // Rows: min 48dp tap target + breathing room.
+    expect(spacing.rowPaddingY).toBeGreaterThanOrEqual(14);
+    expect(spacing.touchTarget).toBe(48);
+  });
+
+  it("typography scale has hero > display > title > body > caption", () => {
+    expect(typography.hero.size).toBeGreaterThan(typography.display.size);
+    expect(typography.display.size).toBeGreaterThan(typography.title.size);
+    expect(typography.title.size).toBeGreaterThan(typography.body.size);
+    expect(typography.body.size).toBeGreaterThanOrEqual(16);
+    expect(typography.body.size).toBeGreaterThan(typography.bodySmall.size);
+    expect(typography.caption.size).toBeGreaterThanOrEqual(12);
+  });
+
   it("fonts: Instrument Sans replaces Inter for body in v2", () => {
     expect(fonts.bodyRegular).toBe("InstrumentSans-Regular");
     expect(fonts.bodyMedium).toBe("InstrumentSans-Medium");
@@ -69,5 +87,6 @@ describe("v2 theme tokens — acid sport", () => {
     expect(tokens.radii).toBe(radii);
     expect(tokens.spacing).toBe(spacing);
     expect(tokens.fonts).toBe(fonts);
+    expect(tokens.typography).toBe(typography);
   });
 });
