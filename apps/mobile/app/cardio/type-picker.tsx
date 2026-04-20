@@ -18,17 +18,19 @@ import {
 import type { LucideIcon } from "lucide-react-native";
 import { TypeCard } from "@/components/cardio/type-card";
 
-// Pulse design system tokens
+// v2 acid-sport tokens re-aliased onto legacy `C` shape.
+import { colors as theme } from "@/lib/theme";
+
 const C = {
-  bg: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  primary: "#0077FF",
-  border: "#1E2B47",
-  text: "#F0F4F8",
-  textSecondary: "#8899B4",
-  textTertiary: "#4E6180",
+  bg: theme.bg,
+  card: theme.bg1,
+  accent: theme.bg3,
+  muted: theme.bg2,
+  primary: theme.green,
+  border: theme.line,
+  text: theme.text,
+  textSecondary: theme.text3,
+  textTertiary: theme.text4,
 };
 
 interface ActivityType {

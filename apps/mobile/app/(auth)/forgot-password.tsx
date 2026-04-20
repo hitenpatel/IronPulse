@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Mail } from "lucide-react-native";
 
 import { trpc } from "../../lib/trpc";
+import { colors, fonts, radii, typography } from "@/lib/theme";
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
@@ -28,7 +29,7 @@ export default function ForgotPasswordScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Mail size={32} color="#0077FF" style={{ alignSelf: "center" }} />
+        <Mail size={32} color={colors.blue} style={{ alignSelf: "center" }} />
         <Text style={styles.heading}>Reset your password</Text>
         <Text style={styles.subtext} testID="forgot-status-text">
           {sent
@@ -41,7 +42,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#4E6180"
+              placeholderTextColor={colors.text4}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -61,7 +62,11 @@ export default function ForgotPasswordScreen() {
           </>
         )}
 
-        <Pressable testID="forgot-back-button" onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
+        <Pressable
+          testID="forgot-back-button"
+          onPress={() => navigation.goBack()}
+          style={{ marginTop: 16 }}
+        >
           <Text style={styles.link}>Back to login</Text>
         </Pressable>
       </View>
@@ -72,58 +77,63 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#060B14",
+    backgroundColor: colors.bg,
     justifyContent: "center",
     paddingHorizontal: 24,
   },
   card: {
-    backgroundColor: "#0F1629",
-    borderRadius: 12,
+    backgroundColor: colors.bg1,
+    borderRadius: radii.card,
     borderWidth: 1,
-    borderColor: "#1E2B47",
+    borderColor: colors.line,
     padding: 32,
   },
   heading: {
-    fontFamily: "ClashDisplay",
+    fontFamily: fonts.displaySemi,
     fontWeight: "600",
-    fontSize: 22,
-    color: "#F0F4F8",
+    fontSize: typography.title.size,
+    lineHeight: typography.title.lineHeight,
+    color: colors.text,
     textAlign: "center",
     marginTop: 16,
   },
   subtext: {
-    fontSize: 14,
-    color: "#8899B4",
+    fontSize: typography.bodySmall.size,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text3,
     textAlign: "center",
     marginTop: 8,
     marginBottom: 24,
   },
   input: {
     height: 48,
-    backgroundColor: "#0F1629",
+    backgroundColor: colors.bg2,
     borderWidth: 1,
-    borderColor: "#1E2B47",
-    borderRadius: 8,
+    borderColor: colors.line,
+    borderRadius: radii.button,
     paddingHorizontal: 16,
-    color: "#F0F4F8",
-    fontSize: 16,
+    color: colors.text,
+    fontSize: typography.body.size,
+    fontFamily: fonts.bodyRegular,
   },
   button: {
     height: 48,
-    backgroundColor: "#0077FF",
-    borderRadius: 8,
+    backgroundColor: colors.blue, // lime primary
+    borderRadius: radii.button,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 16,
   },
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.blueInk, // on-lime ink
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: typography.body.size,
+    fontFamily: fonts.bodySemi,
   },
   link: {
-    color: "#0077FF",
-    fontSize: 14,
+    color: colors.text2,
+    fontSize: typography.bodySmall.size,
+    fontFamily: fonts.bodyRegular,
     textAlign: "center",
   },
 });

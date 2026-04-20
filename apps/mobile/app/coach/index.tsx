@@ -21,20 +21,22 @@ import {
   Users,
 } from "lucide-react-native";
 
+import { colors as theme } from "@/lib/theme";
+
 const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  primary: "#0077FF",
-  success: "#10B981",
-  warning: "#F59E0B",
-  gold: "#F59E0B",
-  border: "#1E2B47",
-  borderSubtle: "#152035",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
+  background: theme.bg,
+  card: theme.bg1,
+  accent: theme.bg3,
+  muted: theme.bg2,
+  primary: theme.green,
+  success: theme.blue, // lime
+  warning: theme.amber,
+  gold: theme.amber,
+  border: theme.line,
+  borderSubtle: theme.lineSoft,
+  foreground: theme.text,
+  mutedFg: theme.text3,
+  dimFg: theme.text4,
 };
 
 type Client = {

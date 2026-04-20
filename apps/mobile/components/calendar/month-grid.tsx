@@ -1,14 +1,16 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { colors as theme } from "@/lib/theme";
+
 const colors = {
-  background: "#060B14",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
-  success: "#10B981",
-  border: "#1E2B47",
+  background: theme.bg,
+  foreground: theme.text,
+  mutedFg: theme.text3,
+  dimFg: theme.text4,
+  primary: theme.green,
+  success: theme.blue, // lime
+  border: theme.line,
 };
 
 interface MonthGridProps {

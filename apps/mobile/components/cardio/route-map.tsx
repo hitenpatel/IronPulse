@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Platform, View, Text, type ViewStyle } from "react-native";
+import { colors } from "@/lib/theme";
 
 let MapView: any = null;
 let Polyline: any = null;
@@ -59,8 +60,8 @@ export function RouteMap({
 
   if (!MapView) {
     return (
-      <View style={[{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0F1629" }, style]}>
-        <Text style={{ color: "#4E6180", fontSize: 14 }}>Map not available</Text>
+      <View style={[{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg1 }, style]}>
+        <Text style={{ color: colors.text4, fontSize: 14 }}>Map not available</Text>
       </View>
     );
   }

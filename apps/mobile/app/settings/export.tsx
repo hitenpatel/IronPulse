@@ -13,16 +13,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Download, FileText } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
 
+import { colors as theme } from "@/lib/theme";
+
 const colors = {
-  background: "#060B14",
-  card: "#0F1629",
-  accent: "#1A2340",
-  muted: "#243052",
-  border: "#1E2B47",
-  foreground: "#F0F4F8",
-  mutedFg: "#8899B4",
-  dimFg: "#4E6180",
-  primary: "#0077FF",
+  background: theme.bg,
+  card: theme.bg1,
+  accent: theme.bg3,
+  muted: theme.bg2,
+  border: theme.line,
+  foreground: theme.text,
+  mutedFg: theme.text3,
+  dimFg: theme.text4,
+  primary: theme.green,
 };
 
 type ExportType = "workouts" | "cardio" | "bodyMetrics" | "allData";
