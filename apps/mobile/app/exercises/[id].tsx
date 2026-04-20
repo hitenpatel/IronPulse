@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -10,8 +10,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
+import { useQuery } from "@powersync/react";
 import { Dumbbell, Target, Trophy } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
+import type { ExerciseRow } from "@ironpulse/sync";
 import type { RootStackParamList } from "../../App";
 
 import { colors as theme } from "@/lib/theme";
@@ -120,30 +122,79 @@ function Badge({ label, variant }: { label: string; variant?: "default" | "outli
 
 type ExerciseDetailData = Awaited<ReturnType<typeof trpc.exercise.getDetail.query>>;
 
+function parseJsonArray(val: string | null | undefined): string[] {
+  if (!val) return [];
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ExerciseDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "ExerciseDetail">>();
   const { id } = route.params;
 
-  const [data, setData] = useState<ExerciseDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [remote, setRemote] = useState<ExerciseDetailData | null>(null);
+  const [remoteLoading, setRemoteLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  // Offline-first fallback — PowerSync keeps the exercises table on device,
+  // so we can always render the basic detail view even when the server
+  // query fails (offline, auth expired, rate limit, etc.). PRs + recent sets
+  // still require the server.
+  const { data: localRows, isLoading: localLoading } = useQuery<ExerciseRow>(
+    "SELECT * FROM exercises WHERE id = ? LIMIT 1",
+    [id],
+  );
+  const local = localRows?.[0];
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    setRemoteLoading(true);
     trpc.exercise.getDetail
       .query({ id })
       .then((result) => {
-        if (!cancelled) setData(result);
+        if (!cancelled) setRemote(result);
       })
-      .catch(() => {})
+      .catch((err) => {
+        // Swallow silently — local fallback takes over below. Log once for debug.
+        console.warn("[exercise-detail] getDetail failed:", err?.message ?? err);
+      })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setRemoteLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, [id]);
+
+  // Synthesise the detail shape from local SQLite so the rest of the render
+  // tree doesn't branch on "which source". PRs + recentSets stay empty when
+  // we're offline-only — the server supplies those.
+  const data: ExerciseDetailData | null = useMemo(() => {
+    if (remote) return remote;
+    if (!local) return null;
+    return {
+      exercise: {
+        id: local.id,
+        name: local.name,
+        category: local.category,
+        primaryMuscles: parseJsonArray(local.primary_muscles),
+        secondaryMuscles: parseJsonArray(local.secondary_muscles),
+        equipment: local.equipment,
+        instructions: local.instructions,
+        imageUrls: parseJsonArray(local.image_urls),
+        videoUrls: parseJsonArray(local.video_urls),
+        isCustom: local.is_custom === 1,
+      },
+      personalRecords: [],
+      recentSets: [],
+    } as unknown as ExerciseDetailData;
+  }, [remote, local]);
+
+  const loading = remoteLoading && localLoading && !data;
 
   if (loading) {
     return (
