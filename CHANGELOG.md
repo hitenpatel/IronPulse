@@ -1,5 +1,40 @@
 # Changelog
 
+## v1.0.0-rc.6 (2026-04-20) — Mobile v2 Acid-Sport Redesign
+
+Mobile app ground-up redesign to the "acid-sport" palette (electric lime primary, cobalt secondary, warm off-white text on near-black), plus a full SVG-sourced brand mark refresh with dark/light theme variants on web.
+
+### Features — v2 redesign
+- Redesign foundation: v2 design tokens, primitives, bottom tab bar (#213, #215, #216, #230)
+- Bundled display/body/mono typefaces — Instrument Sans, Space Grotesk, JetBrains Mono (#214, #232)
+- Dashboard redesign (#218, #231)
+- Active workout redesign (#219, #233)
+- Login redesign (#217)
+- Stats redesign (#220, #239)
+- Profile redesign (#221, #238)
+- Exercises, templates, goals (#222, #228, #226, #241)
+- Nutrition, sleep, progress photos (#223, #224, #227, #242)
+- My program redesign (#229)
+- v2 acid-sport palette + on-lime legibility pass (#244, #245, #246, #250)
+- v2 logo mark + login hero (#247)
+- App-wide v2 audit + accessibility sweep (#248)
+- Connected apps v2 (#249, #255)
+- Intervals.icu integration added to connected apps
+
+### Features — brand
+- Logo v3: SVG vector source of truth, theme-aware variants (cobalt-on-light / off-white-on-dark) auto-switched on web via `next-themes` class (#256)
+- All PWA, Android launcher, and favicon assets regenerated from the SVG with transparent backgrounds
+- Mobile `Logo` component renders via `react-native-svg` `SvgXml` at natural 487:215 aspect
+
+### Bug Fixes
+- Active-workout polish, single global active-set highlight, hook-ordering crash, left accent bar removed (#234, #235, #236, #237)
+- Dark-ink-on-lime contrast fixes across A1 badge, active row, and lime surfaces (#251)
+- Mobile sign-in error sanitized when database unreachable
+- Connected-apps: corrected Strava/Garmin integration URLs; added Polar, Oura, Withings
+
+### Documentation
+- Design brief captured for the Claude Design redesign session (source of truth in `designs/design_handoff_new/`)
+
 ## v1.0.0-rc.5 (2026-04-18) — Production Readiness
 
 ### Security
