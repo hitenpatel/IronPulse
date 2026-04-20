@@ -37,6 +37,8 @@ import {
   RowList,
   UppercaseLabel,
 } from "@/components/ui";
+import { AnimatedNumber } from "@/components/ui/animated-number";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SyncIndicator } from "@/components/layout/sync-indicator";
 import type { RootStackParamList } from "../../App";
 
@@ -253,7 +255,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Greeting */}
-        <View style={{ marginBottom: 16 }}>
+        <Animated.View entering={FadeInUp.duration(400)} style={{ marginBottom: 16 }}>
           <UppercaseLabel color={colors.blue2}>{dateLabel()}</UppercaseLabel>
           <Text
             testID="greeting"
@@ -280,9 +282,10 @@ export default function DashboardScreen() {
           >
             Ready to train?
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Next Up hero */}
+        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
         <Pressable testID="next-up-hero" onPress={handleStartWorkout}>
           <View
             style={{
@@ -357,8 +360,10 @@ export default function DashboardScreen() {
             </View>
           </View>
         </Pressable>
+        </Animated.View>
 
         {/* Streak */}
+        <Animated.View entering={FadeInDown.delay(140).duration(500)}>
         <Pressable onPress={() => navigation.navigate("Calendar")}>
           <Card style={{ marginBottom: 12 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -387,27 +392,32 @@ export default function DashboardScreen() {
             </View>
           </Card>
         </Pressable>
+        </Animated.View>
 
-        {/* 3-col weekly metrics */}
-        <View style={{ flexDirection: "row", gap: 6, marginBottom: 16 }}>
+        {/* 3-col weekly metrics — numbers tick up from 0 on mount */}
+        <Animated.View
+          entering={FadeInDown.delay(200).duration(500)}
+          style={{ flexDirection: "row", gap: 6, marginBottom: 16 }}
+        >
           <MetricTile
             label="Sessions"
-            value={String(weeklySummary.workoutCount + weeklySummary.cardioCount)}
+            value={weeklySummary.workoutCount + weeklySummary.cardioCount}
             color={colors.blue2}
           />
           <MetricTile
             label="Volume"
-            value={volumeTons(Number(weeklyVolumeKg))}
+            value={Number(weeklyVolumeKg)}
+            format={(v) => volumeTons(v)}
             unit="t"
             color={colors.green}
           />
           <MetricTile
             label="Time"
-            value={timeDuration.value}
+            value={Number(timeDuration.value)}
             unit={timeDuration.unit}
             color={colors.purple}
           />
-        </View>
+        </Animated.View>
 
         {/* Recent */}
         <View
@@ -498,12 +508,15 @@ export default function DashboardScreen() {
 
 interface MetricTileProps {
   label: string;
-  value: string;
+  /** Numeric value — animated 0 → value on mount. */
+  value: number;
+  /** Optional custom formatter (e.g. volume tons). */
+  format?: (v: number) => string;
   unit?: string;
   color: string;
 }
 
-function MetricTile({ label, value, unit, color }: MetricTileProps) {
+function MetricTile({ label, value, format, unit, color }: MetricTileProps) {
   return (
     <View
       style={{
@@ -517,9 +530,13 @@ function MetricTile({ label, value, unit, color }: MetricTileProps) {
     >
       <UppercaseLabel style={{ fontSize: 9.5 }}>{label}</UppercaseLabel>
       <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 3 }}>
-        <BigNum size={20} color={color}>
-          {value}
-        </BigNum>
+        <AnimatedNumber
+          value={value}
+          format={format}
+          size={20}
+          color={color}
+          fontFamily={fonts.display}
+        />
         {unit ? (
           <Text
             style={{

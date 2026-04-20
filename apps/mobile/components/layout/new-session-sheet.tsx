@@ -14,6 +14,7 @@ import { Dumbbell, Activity, Scale, ChevronRight } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors, fonts, radii } from "@/lib/theme";
+import * as Haptics from "@/lib/haptics";
 import type { RootStackParamList } from "../../App";
 
 interface Props {
@@ -72,6 +73,7 @@ function ActionRow({
       <Pressable
         onPressIn={() => {
           scale.value = withSpring(0.97, { damping: 16, stiffness: 320 });
+          Haptics.selectionAsync();
         }}
         onPressOut={() => {
           scale.value = withSpring(1, { damping: 14, stiffness: 260 });
