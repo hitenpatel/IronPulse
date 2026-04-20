@@ -1,8 +1,16 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Home, BarChart3, Dumbbell, User, Plus, X } from "lucide-react-native";
+import { Home, BarChart3, Dumbbell, User, Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { colors, radii, fonts, shadows, typography } from "@/lib/theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Tab bar geometry aligns with iOS HIG (50pt effective bar) and Material 3
 // (80dp total). Sizes bumped from v2 handoff for better tap ergonomics + legibility.
@@ -29,6 +37,19 @@ export function PulseTabBar({
 }: BottomTabBarProps & { sheetOpen: boolean; onFabPress: () => void }) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
+
+  // FAB press spring — subtle scale dip for tactile feedback + a rotation
+  // when the sheet is open (+ → × feels more connected).
+  const fabScale = useSharedValue(1);
+  const fabRotation = useSharedValue(sheetOpen ? 1 : 0);
+  fabRotation.value = withTiming(sheetOpen ? 1 : 0, { duration: 220 });
+
+  const fabAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: fabScale.value },
+      { rotate: `${fabRotation.value * 90}deg` },
+    ],
+  }));
 
   const routeNames = state.routes.map((r) => r.name);
 
@@ -78,19 +99,21 @@ export function PulseTabBar({
         </View>
 
         <View style={styles.fabSlot}>
-          <Pressable
+          <AnimatedPressable
             testID="fab-button"
+            onPressIn={() => {
+              fabScale.value = withSpring(0.9, { damping: 14, stiffness: 340 });
+            }}
+            onPressOut={() => {
+              fabScale.value = withSpring(1, { damping: 12, stiffness: 260 });
+            }}
             onPress={onFabPress}
-            style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.88 : 1 }]}
+            style={[styles.fab, fabAnimatedStyle]}
             accessibilityRole="button"
             accessibilityLabel={sheetOpen ? "Close menu" : "New session"}
           >
-            {sheetOpen ? (
-              <X size={FAB_ICON_SIZE} color={colors.blueInk} strokeWidth={2.5} />
-            ) : (
-              <Plus size={FAB_ICON_SIZE} color={colors.blueInk} strokeWidth={2.5} />
-            )}
-          </Pressable>
+            <Plus size={FAB_ICON_SIZE} color={colors.blueInk} strokeWidth={2.5} />
+          </AnimatedPressable>
         </View>
 
         <View style={styles.tabGroup}>

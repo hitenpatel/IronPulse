@@ -1,7 +1,15 @@
-import { useRef, useEffect } from "react";
-import { Pressable, Text } from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Pressable, Text, View } from "react-native";
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { Dumbbell, Activity, Scale, ChevronRight } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -20,7 +28,6 @@ type ActionKey = "workout" | "cardio" | "metrics";
 const ACTIONS: ReadonlyArray<{
   key: ActionKey;
   icon: typeof Dumbbell;
-  /** Tone colour pulled from tokens — keep adjacent to the acid-sport palette. */
   iconColor: string;
   label: string;
 }> = [
@@ -28,6 +35,78 @@ const ACTIONS: ReadonlyArray<{
   { key: "cardio", icon: Activity, iconColor: colors.green, label: "Start cardio" },
   { key: "metrics", icon: Scale, iconColor: colors.purple, label: "Log body metrics" },
 ];
+
+// Soft, responsive spring — feels closer to native iOS sheets than gorhom's default.
+const SHEET_SPRING = {
+  damping: 22,
+  stiffness: 240,
+  mass: 1,
+  overshootClamping: false,
+  restDisplacementThreshold: 0.01,
+  restSpeedThreshold: 0.01,
+} as const;
+
+function ActionRow({
+  icon: Icon,
+  iconColor,
+  label,
+  onPress,
+  index,
+}: {
+  icon: typeof Dumbbell;
+  iconColor: string;
+  label: string;
+  onPress: () => void;
+  index: number;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(80 + index * 55).springify().damping(18).mass(0.9)}
+      style={animatedStyle}
+    >
+      <Pressable
+        onPressIn={() => {
+          scale.value = withSpring(0.97, { damping: 16, stiffness: 320 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 14, stiffness: 260 });
+        }}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          height: 60,
+          borderRadius: radii.card,
+          backgroundColor: colors.bg2,
+          borderWidth: 1,
+          borderColor: colors.lineSoft,
+          paddingHorizontal: 16,
+          gap: 14,
+        }}
+      >
+        <Icon size={24} color={iconColor} />
+        <Text
+          style={{
+            flex: 1,
+            color: colors.text,
+            fontSize: 16,
+            fontFamily: fonts.bodyMedium,
+          }}
+        >
+          {label}
+        </Text>
+        <ChevronRight size={18} color={colors.text4} />
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -38,14 +117,19 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
     else bottomSheetRef.current?.close();
   }, [open]);
 
-  const renderBackdrop = (props: BottomSheetBackdropProps) => (
-    <BottomSheetBackdrop
-      {...props}
-      disappearsOnIndex={-1}
-      appearsOnIndex={0}
-      opacity={0.6}
-      style={[props.style, { backgroundColor: "rgba(11,13,18,0.6)" }]}
-    />
+  const renderBackdrop = useMemo(
+    () => (props: BottomSheetBackdropProps) =>
+      (
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          opacity={0.55}
+          pressBehavior="close"
+          style={[props.style, { backgroundColor: "rgba(11,13,18,1)" }]}
+        />
+      ),
+    [],
   );
 
   const handleAction = (key: ActionKey) => {
@@ -59,53 +143,52 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
     <BottomSheet
       ref={bottomSheetRef}
       index={-1}
-      snapPoints={["35%"]}
+      snapPoints={["38%"]}
       enablePanDownToClose
+      animationConfigs={SHEET_SPRING}
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor: colors.bg1,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
       }}
-      handleIndicatorStyle={{ backgroundColor: colors.line2, width: 40, height: 4 }}
+      handleIndicatorStyle={{
+        backgroundColor: colors.line2,
+        width: 44,
+        height: 4,
+      }}
     >
       <BottomSheetView
-        style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 }}
+        style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 28, gap: 10 }}
       >
-        {ACTIONS.map(({ key, icon: Icon, iconColor, label }) => (
-          <Pressable
-            key={key}
-            style={({ pressed }) => ({
-              flexDirection: "row",
-              alignItems: "center",
-              height: 56,
-              borderRadius: radii.card,
-              backgroundColor: colors.bg2,
-              borderWidth: 1,
-              borderColor: colors.lineSoft,
-              paddingHorizontal: 16,
-              gap: 14,
-              opacity: pressed ? 0.75 : 1,
-            })}
-            onPress={() => handleAction(key)}
-            accessibilityRole="button"
-            accessibilityLabel={label}
+        <Animated.View entering={FadeInUp.duration(280)}>
+          <Text
+            style={{
+              color: colors.text3,
+              fontSize: 12,
+              fontFamily: fonts.bodySemi,
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
+              marginBottom: 8,
+              paddingHorizontal: 4,
+            }}
           >
-            <Icon size={22} color={iconColor} />
-            <Text
-              style={{
-                flex: 1,
-                color: colors.text,
-                fontSize: 15,
-                fontFamily: fonts.bodyMedium,
-              }}
-            >
-              {label}
-            </Text>
-            <ChevronRight size={18} color={colors.text4} />
-          </Pressable>
-        ))}
+            New Session
+          </Text>
+        </Animated.View>
+        <View style={{ gap: 10 }}>
+          {ACTIONS.map(({ key, icon, iconColor, label }, index) => (
+            <ActionRow
+              key={key}
+              index={index}
+              icon={icon}
+              iconColor={iconColor}
+              label={label}
+              onPress={() => handleAction(key)}
+            />
+          ))}
+        </View>
       </BottomSheetView>
     </BottomSheet>
   );
