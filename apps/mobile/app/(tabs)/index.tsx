@@ -220,7 +220,7 @@ export default function DashboardScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Logo size={26} flat />
+            <Logo size={26} />
             <Text
               style={{
                 fontFamily: fonts.displaySemi,

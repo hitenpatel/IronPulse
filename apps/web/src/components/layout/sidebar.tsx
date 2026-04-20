@@ -235,9 +235,15 @@ export function Sidebar({
       >
         {/* Logo mark */}
         <img
-          src="/icons/icon-192.png"
+          src="/ironpulse-logo-light.svg"
           alt="IronPulse"
-          className="h-9 w-9 shrink-0 rounded-lg"
+          className="h-8 w-auto shrink-0 block dark:hidden"
+        />
+        <img
+          src="/ironpulse-logo-dark.svg"
+          alt=""
+          aria-hidden="true"
+          className="h-8 w-auto shrink-0 hidden dark:block"
         />
 
         {!collapsed && (

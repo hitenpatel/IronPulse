@@ -106,9 +106,15 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <img
-              src="/icons/icon-192.png"
+              src="/ironpulse-logo-light.svg"
               alt="IronPulse"
-              className="h-8 w-8 rounded-lg"
+              className="h-8 w-auto block dark:hidden"
+            />
+            <img
+              src="/ironpulse-logo-dark.svg"
+              alt=""
+              aria-hidden="true"
+              className="h-8 w-auto hidden dark:block"
             />
             <span className="text-xl font-bold tracking-tight">
               <span className="text-primary">Iron</span>Pulse
