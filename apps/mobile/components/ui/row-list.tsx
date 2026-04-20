@@ -109,7 +109,7 @@ export function Row({
           <Text
             numberOfLines={1}
             style={{
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: "500",
               color: colors.text,
               fontFamily: fonts.body,
@@ -125,7 +125,7 @@ export function Row({
             <Text
               numberOfLines={1}
               style={{
-                fontSize: 13,
+                fontSize: 14,
                 color: colors.text3,
                 marginTop: 2,
                 fontFamily: fonts.body,

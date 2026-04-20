@@ -224,7 +224,7 @@ export default function DashboardScreen() {
             <Text
               style={{
                 fontFamily: fonts.displaySemi,
-                fontSize: 18,
+                fontSize: 20,
                 color: colors.text,
                 letterSpacing: -0.3,
               }}
@@ -260,10 +260,10 @@ export default function DashboardScreen() {
             accessibilityRole="header"
             style={{
               fontFamily: fonts.displaySemi,
-              fontSize: 28,
+              fontSize: 32,
               fontWeight: "600",
               color: colors.text,
-              letterSpacing: -0.6,
+              letterSpacing: -0.7,
               marginTop: 6,
             }}
           >
@@ -273,7 +273,7 @@ export default function DashboardScreen() {
             testID="sub-greeting"
             style={{
               color: colors.text3,
-              fontSize: 14,
+              fontSize: 16,
               marginTop: 4,
               fontFamily: fonts.bodyRegular,
             }}

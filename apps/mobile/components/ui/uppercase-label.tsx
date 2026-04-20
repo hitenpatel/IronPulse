@@ -17,7 +17,7 @@ export function UppercaseLabel({ children, color = colors.text3, style }: Props)
     <Text
       style={[
         {
-          fontSize: 10,
+          fontSize: 12,
           color,
           textTransform: "uppercase",
           letterSpacing: tracking.caps,

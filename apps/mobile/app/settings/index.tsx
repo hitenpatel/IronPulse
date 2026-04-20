@@ -31,7 +31,7 @@ const colors = {
 };
 
 const LABEL_STYLE = {
-  fontSize: 11,
+  fontSize: 12,
   color: colors.textFaint,
   textTransform: "uppercase" as const,
   fontWeight: "500" as const,
@@ -316,7 +316,7 @@ export default function SettingsScreen() {
             returnKeyType="done"
             onSubmitEditing={handleSaveRestTimer}
           />
-          <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>
             Between 15 and 600 seconds
           </Text>
           <Button
@@ -331,7 +331,7 @@ export default function SettingsScreen() {
         {/* Appearance */}
         <Card style={{ gap: 12 }}>
           <Text style={LABEL_STYLE}>Appearance</Text>
-          <Text style={{ color: colors.text, fontSize: 16 }}>Theme</Text>
+          <Text style={{ color: colors.text, fontSize: 17 }}>Theme</Text>
           <Text
             style={{
               color: colors.textMuted,
@@ -368,7 +368,7 @@ export default function SettingsScreen() {
                   <Text
                     style={{
                       color: active ? "#FFFFFF" : colors.text,
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: "600",
                       textTransform: "capitalize",
                     }}
@@ -392,10 +392,10 @@ export default function SettingsScreen() {
             }}
           >
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={{ color: colors.text, fontSize: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 17 }}>
                 Workout Reminders
               </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
                 Receive push notifications for reminders and updates
               </Text>
             </View>
@@ -421,10 +421,10 @@ export default function SettingsScreen() {
             }}
           >
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={{ color: colors.text, fontSize: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 17 }}>
                 Weekly Summary
               </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
                 Get a weekly training summary via email and push
               </Text>
             </View>
@@ -458,7 +458,7 @@ export default function SettingsScreen() {
 
           {deletionRequested ? (
             <View style={{ gap: 8 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 14 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 15 }}>
                 Your account is scheduled for deletion. All data will be
                 permanently removed after 7 days.
               </Text>
@@ -472,7 +472,7 @@ export default function SettingsScreen() {
             </View>
           ) : (
             <View style={{ gap: 8 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 14 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 15 }}>
                 Permanently delete your account and all associated data.
               </Text>
               <Pressable
@@ -489,7 +489,7 @@ export default function SettingsScreen() {
               >
                 <Text
                   style={{
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: "600",
                     color: colors.error,
                   }}
