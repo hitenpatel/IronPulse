@@ -219,8 +219,8 @@ export default function DashboardScreen() {
             paddingBottom: 14,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Logo size={30} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Logo size={24} />
             <Text
               style={{
                 fontFamily: fonts.displaySemi,
@@ -240,8 +240,14 @@ export default function DashboardScreen() {
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Notifications"
+              style={{
+                width: 44,
+                height: 44,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <Bell size={20} color={colors.text2} />
+              <Bell size={24} color={colors.text2} />
             </Pressable>
           </View>
         </View>
