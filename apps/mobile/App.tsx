@@ -193,25 +193,48 @@ function AuthNavigator() {
 function MainTabNavigator() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  // Safe here — MainTabNavigator renders inside RootStack.Screen, which is
+  // inside NavigationContainer. The earlier "remove sheets" fix left the
+  // state toggle in place but removed the sheet render; the FAB was dead.
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const toggleSheet = () => setSheetOpen((prev) => !prev);
 
   return (
-    <Tab.Navigator
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => (
-        <PulseTabBar
-          {...props}
-          sheetOpen={sheetOpen}
-          onFabPress={toggleSheet}
-        />
-      )}
-    >
-      <Tab.Screen name="Home" component={DashboardScreen} options={{ title: "Home" }} />
-      <Tab.Screen name="Stats" component={StatsScreen} options={{ title: "Stats" }} />
-      <Tab.Screen name="Exercises" component={ExercisesScreen} options={{ title: "Exercises" }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
-    </Tab.Navigator>
+    <>
+      <Tab.Navigator
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => (
+          <PulseTabBar
+            {...props}
+            sheetOpen={sheetOpen}
+            onFabPress={toggleSheet}
+          />
+        )}
+      >
+        <Tab.Screen name="Home" component={DashboardScreen} options={{ title: "Home" }} />
+        <Tab.Screen name="Stats" component={StatsScreen} options={{ title: "Stats" }} />
+        <Tab.Screen name="Exercises" component={ExercisesScreen} options={{ title: "Exercises" }} />
+        <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
+      </Tab.Navigator>
+
+      <NewSessionSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onStartWorkout={() => {
+          setSheetOpen(false);
+          setTemplatePickerOpen(true);
+        }}
+        onLogCardio={() => {
+          setSheetOpen(false);
+          navigation.navigate("CardioTypePicker");
+        }}
+      />
+      <TemplatePicker
+        open={templatePickerOpen}
+        onClose={() => setTemplatePickerOpen(false)}
+      />
+    </>
   );
 }
 
