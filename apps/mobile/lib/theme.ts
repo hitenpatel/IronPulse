@@ -128,22 +128,22 @@ export const spacing = {
 // so sizes stay consistent across screens. New screens should import these;
 // legacy screens migrate opportunistically.
 export const typography = {
-  // Hero — login, onboarding, empty-state headlines. iOS Large Title-ish.
-  hero: { size: 42, lineHeight: 48, letterSpacing: -1.4 },
-  // Screen titles / section heroes — iOS Title 1 / M3 Headline Large-ish.
-  display: { size: 28, lineHeight: 34, letterSpacing: -0.6 },
-  // Sub-titles, card headers — iOS Title 2-ish.
-  title: { size: 22, lineHeight: 28, letterSpacing: -0.4 },
-  // Primary body — iOS Body 17, M3 Body Large 16. We pick 16 for density.
-  body: { size: 16, lineHeight: 22, letterSpacing: -0.1 },
+  // Hero — login, onboarding, empty-state headlines.
+  hero: { size: 44, lineHeight: 50, letterSpacing: -1.4 },
+  // Screen titles / section heroes.
+  display: { size: 32, lineHeight: 38, letterSpacing: -0.7 },
+  // Sub-titles, card headers.
+  title: { size: 24, lineHeight: 30, letterSpacing: -0.4 },
+  // Primary body — matches iOS Body exactly at 17.
+  body: { size: 17, lineHeight: 24, letterSpacing: -0.1 },
   // Secondary body / row descriptions — iOS Callout.
-  bodySmall: { size: 14, lineHeight: 20, letterSpacing: 0 },
-  // Labels, captions — iOS Footnote / M3 Label Medium.
-  caption: { size: 13, lineHeight: 17, letterSpacing: 0 },
+  bodySmall: { size: 15, lineHeight: 21, letterSpacing: 0 },
+  // Labels, captions — iOS Footnote.
+  caption: { size: 14, lineHeight: 19, letterSpacing: 0 },
   // Eyebrow / section labels — uppercase, loose tracking.
-  eyebrow: { size: 11, lineHeight: 14, letterSpacing: 1.2 },
-  // Tab bar labels — Material 3 Label Medium.
-  tabLabel: { size: 12, lineHeight: 15, letterSpacing: 0 },
+  eyebrow: { size: 12, lineHeight: 15, letterSpacing: 1.2 },
+  // Tab bar labels.
+  tabLabel: { size: 13, lineHeight: 16, letterSpacing: 0 },
 } as const;
 
 // Font families. Instrument Sans replaces Inter as the body family in v2.
