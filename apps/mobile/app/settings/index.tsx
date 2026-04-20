@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
 import { registerForPushNotifications } from "@/lib/notifications";
+import { useTheme, type ThemeMode } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -40,6 +41,7 @@ const LABEL_STYLE = {
 
 export default function SettingsScreen() {
   const { user, updateUser } = useAuth();
+  const theme = useTheme();
 
   // Name
   const [name, setName] = useState(user?.name ?? "");
@@ -324,6 +326,59 @@ export default function SettingsScreen() {
           >
             {restSaving ? "Saving…" : "Save Rest Timer"}
           </Button>
+        </Card>
+
+        {/* Appearance */}
+        <Card style={{ gap: 12 }}>
+          <Text style={LABEL_STYLE}>Appearance</Text>
+          <Text style={{ color: colors.text, fontSize: 16 }}>Theme</Text>
+          <Text
+            style={{
+              color: colors.textMuted,
+              fontSize: 12,
+              marginTop: -6,
+              marginBottom: 4,
+            }}
+          >
+            Currently: {theme.resolvedTheme}
+            {theme.mode === "system" ? " (system)" : ""}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {(["system", "dark", "light"] as ThemeMode[]).map((opt) => {
+              const active = theme.mode === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Theme: ${opt}`}
+                  accessibilityState={{ selected: active }}
+                  onPress={() => {
+                    void theme.setMode(opt);
+                  }}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: active ? colors.primary : colors.border,
+                    backgroundColor: active ? colors.primary : "transparent",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: active ? "#FFFFFF" : colors.text,
+                      fontSize: 14,
+                      fontWeight: "600",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {opt}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </Card>
 
         {/* Notifications */}
