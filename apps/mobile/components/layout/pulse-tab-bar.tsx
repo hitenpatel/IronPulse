@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Home, BarChart3, Dumbbell, User, Plus } from "lucide-react-native";
@@ -5,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
@@ -12,6 +14,80 @@ import { colors, radii, fonts, shadows, typography } from "@/lib/theme";
 import * as Haptics from "@/lib/haptics";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Dedicated TabButton so each tab holds its own icon-scale shared value —
+// a tab pop only affects the tab being tapped, not the whole bar.
+function TabButton({
+  name,
+  label,
+  Icon,
+  isActive,
+  onPress,
+}: {
+  name: string;
+  label: string;
+  Icon: React.ComponentType<{ size: number; color: string }>;
+  isActive: boolean;
+  onPress: () => void;
+}) {
+  const iconColor = isActive ? colors.blue : colors.text3;
+  const labelColor = isActive ? colors.blue2 : colors.text3;
+  const tabTestId = `tab-${name.toLowerCase()}`;
+
+  const iconScale = useSharedValue(1);
+  const dotScale = useSharedValue(isActive ? 1 : 0);
+
+  // Pop the icon on activation.
+  useEffect(() => {
+    if (isActive) {
+      iconScale.value = withSequence(
+        withSpring(1.18, { damping: 10, stiffness: 340 }),
+        withSpring(1, { damping: 14, stiffness: 260 }),
+      );
+      dotScale.value = withSpring(1, { damping: 14, stiffness: 260 });
+    } else {
+      dotScale.value = withTiming(0, { duration: 160 });
+    }
+  }, [isActive, iconScale, dotScale]);
+
+  const iconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
+  const dotAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dotScale.value }],
+    opacity: dotScale.value,
+  }));
+
+  return (
+    <Pressable
+      testID={tabTestId}
+      style={styles.tabItem}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: isActive }}
+    >
+      <Animated.View style={iconAnimatedStyle}>
+        <Icon size={ICON_SIZE} color={iconColor} />
+      </Animated.View>
+      <Text style={[styles.tabLabel, { color: labelColor }]}>{label}</Text>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: "absolute",
+            bottom: 6,
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: colors.blue,
+          },
+          dotAnimatedStyle,
+        ]}
+      />
+    </Pressable>
+  );
+}
 
 // Tab bar geometry aligns with iOS HIG (50pt effective bar) and Material 3
 // (80dp total). Sizes bumped from v2 handoff for better tap ergonomics + legibility.
@@ -73,25 +149,15 @@ export function PulseTabBar({
   ) => {
     const routeIndex = routeNames.indexOf(name);
     const isActive = state.index === routeIndex;
-    // v2 a11y: inactive tab label uses text-3 (~7:1 on bg) per handoff README,
-    // not text-4 which is reserved for decorative labels.
-    const iconColor = isActive ? colors.blue : colors.text3;
-    const labelColor = isActive ? colors.blue2 : colors.text3;
-    const tabTestId = `tab-${name.toLowerCase()}`;
-
     return (
-      <Pressable
+      <TabButton
         key={name}
-        testID={tabTestId}
-        style={styles.tabItem}
+        name={name}
+        label={label}
+        Icon={Icon}
+        isActive={isActive}
         onPress={() => handleTabPress(name, routeIndex)}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ selected: isActive }}
-      >
-        <Icon size={ICON_SIZE} color={iconColor} />
-        <Text style={[styles.tabLabel, { color: labelColor }]}>{label}</Text>
-      </Pressable>
+      />
     );
   };
 

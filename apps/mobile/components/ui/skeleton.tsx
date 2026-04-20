@@ -1,66 +1,105 @@
-import { useEffect, useRef } from "react";
-import { Animated, ViewStyle, StyleSheet } from "react-native";
+import { useEffect } from "react";
+import { View, StyleSheet, type ViewStyle, type DimensionValue } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { colors } from "@/lib/theme";
 
 interface SkeletonProps {
-  width?: number | string;
-  height?: number | string;
+  width?: DimensionValue;
+  height?: DimensionValue;
   borderRadius?: number;
   style?: ViewStyle;
 }
 
-export function Skeleton({ width = "100%", height = 16, borderRadius = 8, style }: SkeletonProps) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+/**
+ * Reanimated skeleton with a moving highlight sweep. The base tile stays
+ * at colors.bg3; a lighter `bg4` strip sweeps from left→right on a 1.4s loop.
+ * All animation runs on the UI thread.
+ */
+export function Skeleton({
+  width = "100%",
+  height = 16,
+  borderRadius = 8,
+  style,
+}: SkeletonProps) {
+  const progress = useSharedValue(-1);
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ])
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false,
     );
-    animation.start();
-    return () => animation.stop();
-  }, [opacity]);
+  }, [progress]);
+
+  const shimmer = useAnimatedStyle(() => ({
+    transform: [{ translateX: `${progress.value * 100}%` }],
+  }));
 
   return (
-    <Animated.View
+    <View
       style={[
-        { width, height, borderRadius, backgroundColor: colors.bg3, opacity },
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: colors.bg3,
+          overflow: "hidden",
+        },
         style,
       ]}
-    />
+    >
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: "50%",
+            backgroundColor: colors.bg4,
+            opacity: 0.55,
+          },
+          shimmer,
+        ]}
+      />
+    </View>
   );
 }
 
 export function CardSkeleton() {
   return (
-    <Animated.View style={styles.card}>
+    <View style={styles.card}>
       <Skeleton width="66%" height={20} />
       <Skeleton width="50%" height={16} style={{ marginTop: 8 }} />
       <Skeleton width="75%" height={16} style={{ marginTop: 8 }} />
-    </Animated.View>
+    </View>
   );
 }
 
 export function ListItemSkeleton() {
   return (
-    <Animated.View style={styles.listItem}>
+    <View style={styles.listItem}>
       <Skeleton width={32} height={32} borderRadius={16} />
-      <Animated.View style={{ flex: 1, marginLeft: 12 }}>
+      <View style={{ flex: 1, marginLeft: 12 }}>
         <Skeleton width="60%" height={16} />
         <Skeleton width="40%" height={12} style={{ marginTop: 6 }} />
-      </Animated.View>
-    </Animated.View>
+      </View>
+    </View>
   );
 }
 
 export function StatsSkeleton() {
   return (
-    <Animated.View style={styles.card}>
+    <View style={styles.card}>
       <Skeleton width={60} height={32} />
       <Skeleton width={100} height={12} style={{ marginTop: 8 }} />
-    </Animated.View>
+    </View>
   );
 }
 
