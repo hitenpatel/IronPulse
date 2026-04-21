@@ -53,31 +53,29 @@ function GroupIndicator({
 
   if (tabWidth === 0) return null;
 
+  // Visible pill — fixed width so it reads as an indicator, not a background
+  // fill of the whole tab slot. Centered inside the tab by offsetting half
+  // the pill width.
+  const PILL_WIDTH = 46;
+  const PILL_HEIGHT = 4;
+  const centerOffset = (tabWidth - PILL_WIDTH) / 2;
+
   return (
     <Animated.View
       pointerEvents="none"
       style={[
         {
           position: "absolute",
-          bottom: 6,
-          left: 0,
-          width: tabWidth,
-          height: 34,
-          paddingHorizontal: 8,
+          bottom: 4,
+          left: centerOffset,
+          width: PILL_WIDTH,
+          height: PILL_HEIGHT,
+          borderRadius: PILL_HEIGHT / 2,
+          backgroundColor: colors.blue,
         },
         animatedStyle,
       ]}
-    >
-      <View
-        style={{
-          flex: 1,
-          borderRadius: radii.button,
-          backgroundColor: colors.blueSoft,
-          borderWidth: 1,
-          borderColor: colors.blueSoft,
-        }}
-      />
-    </Animated.View>
+    />
   );
 }
 
