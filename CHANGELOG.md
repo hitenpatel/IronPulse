@@ -1,5 +1,45 @@
 # Changelog
 
+## v1.0.0-rc.7 (2026-04-21) — Polish, Primitives & Motion
+
+24 commits: Launch-Prep backlog burn-down (themes, tools, warmup, panel, ADRs, CSRF, CDN, types, integrations runbook), ~15 motion/polish upgrades on mobile, four user-reported bug fixes, and a v2 theme migration across the 24 remaining secondary screens.
+
+### Features
+- **Mobile dark/light theme toggle** — system detection + secure-store persistence in Settings (#165)
+- **Mobile 1RM + plate calculators** — Profile → Tools. Backed by a new `@ironpulse/shared` math layer (Epley/Brzycki/Lander 1RM, greedy plate loader for kg/lb) used by web too (#172)
+- **Warm-up set generator** in `@ironpulse/shared` — strength / hypertrophy / light schemes, plate-granular rounding (#177)
+- **Interactive tRPC API panel** at `/dev/api-panel` — dev-only, 180+ procedures with Zod schemas (#178)
+
+### UI polish — density & type scale
+- Tab bar bumped (icons 22→28, min height 68dp), card/row padding aligned with Material 3 + iOS HIG, typography tokens introduced (body 17, display 32, hero 44) (#262–#264, #270–#271)
+- Dashboard header icons balanced, menu rows given room to breathe
+
+### Motion & haptics
+- FAB spring on press + rotating `+` → `×` transition; New Session sheet spring slide with staggered row entrances (#276)
+- Dashboard cascade entrance, stat count-up (0 → value), tab icon pop + lime indicator, streak flame pulse, skeleton shimmer (#277–#278)
+- Parallax Next-Up hero, rest-timer breathing glow (speeds up in final 10s), PR confetti cannon on workout complete (#280)
+- Sliding lime pill under active tab (later refined to a slim underline bar), workout-history row cascade, login breathing hero (#282–#283)
+- Swipe-to-delete set rows with red reveal + scaling trash icon (#281)
+- Haptic feedback on FAB, tab switch, sheet row, set delete
+
+### v2 theme migration
+- 24 secondary screens migrated from the v1 navy palette onto v2 acid-sport tokens: history (workouts, workout detail, cardio, cardio detail), settings (5), auth (signup, forgot-password), social/coach (6), calendar, exercises, cardio/type-picker, route-map, month-grid, skeleton (#272 part 1 + part 2)
+
+### Bug fixes
+- **FAB dead button**: restored `NewSessionSheet` + `TemplatePicker` rendering (removed in a prior `useNavigation` refactor) (#274)
+- **Dashboard Time NaN HR**: animated number now takes total minutes and reformats past 60 (#281)
+- **Exercise detail "not found"**: falls back to local SQLite when the tRPC call fails (offline, auth-stale, rate-limit) (#279)
+- **Login**: visible alert when fields are empty + diagnostic logging so future auth failures surface in logcat (#284)
+
+### Documentation & infrastructure
+- Integration provider setup runbook covering 10 providers — OAuth app steps, callback URLs, scopes, webhooks, env vars, test plans, rotation (BookStack 74) (#209)
+- Architecture decision records for PowerSync, tRPC, offline-first, auth strategy (`docs/adr/`) (#180)
+- CSRF protection audit across every public mutation surface + E2E spec for server-side rejections (BookStack 76) (#181)
+- S3 `Cache-Control` profiles (immutable / longLived / shortLived) + Cloudflare CDN topology runbook (BookStack 77) (#183)
+
+### Tech debt
+- `as any` in API + auth code: **55 → 9**. NextAuth module augmentation for `Session.user` / `JWT` custom fields, typed dynamic-Prisma helper in sync router, widened `hasAlternativeAuthMethod` param (#208)
+
 ## v1.0.0-rc.6 (2026-04-20) — Mobile v2 Acid-Sport Redesign
 
 Mobile app ground-up redesign to the "acid-sport" palette (electric lime primary, cobalt secondary, warm off-white text on near-black), plus a full SVG-sourced brand mark refresh with dark/light theme variants on web.
