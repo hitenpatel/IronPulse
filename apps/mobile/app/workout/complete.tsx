@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef } from "react";
+import { Dimensions, FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
 import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
@@ -7,6 +7,8 @@ import type { RootStackParamList } from "../../App";
 import { useQuery } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { Trophy } from "lucide-react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
+import * as Haptics from "@/lib/haptics";
 
 import { calculateVolume, formatElapsed } from "../../lib/workout-utils";
 
@@ -59,6 +61,18 @@ export default function WorkoutCompleteScreen() {
   const { data: exercises } = useWorkoutExercises(workoutId);
   const { data: sets } = useWorkoutSets(workoutId);
 
+  // Celebrate PRs on mount — confetti cannon + heavy success haptic.
+  const hasPR = prs.length > 0;
+  const confettiFired = useRef(false);
+  useEffect(() => {
+    if (hasPR && !confettiFired.current) {
+      confettiFired.current = true;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [hasPR]);
+
+  const windowWidth = Dimensions.get("window").width;
+
   // Group sets by workout_exercise_id
   const setsByExercise = useMemo(() => {
     const map = new Map<string, typeof sets>();
@@ -85,6 +99,16 @@ export default function WorkoutCompleteScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {hasPR && (
+        <ConfettiCannon
+          count={160}
+          origin={{ x: windowWidth / 2, y: -10 }}
+          explosionSpeed={380}
+          fallSpeed={2600}
+          fadeOut
+          colors={["#D4FF3A", "#C4EF2A", "#3A6DFF", "#FFB800", "#F4F0E6"]}
+        />
+      )}
       <FlatList
         data={exercises ?? []}
         keyExtractor={(item) => item.id}

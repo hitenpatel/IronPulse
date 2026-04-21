@@ -39,7 +39,17 @@ import {
 } from "@/components/ui";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { AnimatedFlame } from "@/components/ui/animated-flame";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  Extrapolation,
+} from "react-native-reanimated";
+
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { SyncIndicator } from "@/components/layout/sync-indicator";
 import type { RootStackParamList } from "../../App";
 
@@ -117,6 +127,23 @@ export default function DashboardScreen() {
   const { data: cardioSessions } = useCardioSessions();
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Parallax — Next-Up hero drifts up slightly and fades as the user scrolls.
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const heroParallaxStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(scrollY.value, [0, 200], [0, -30], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(scrollY.value, [-100, 0, 200], [1.04, 1, 0.97], Extrapolation.CLAMP),
+      },
+    ],
+    opacity: interpolate(scrollY.value, [0, 180], [1, 0.7], Extrapolation.CLAMP),
+  }));
 
   const fetchStreak = useCallback(async () => {
     try {
@@ -234,8 +261,10 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView
+      <AnimatedScrollView
         contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 32 }}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -319,8 +348,11 @@ export default function DashboardScreen() {
           </Text>
         </Animated.View>
 
-        {/* Next Up hero */}
-        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
+        {/* Next Up hero — parallax drift + fade on scroll */}
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(500)}
+          style={heroParallaxStyle}
+        >
         <Pressable testID="next-up-hero" onPress={handleStartWorkout}>
           <View
             style={{
@@ -536,7 +568,7 @@ export default function DashboardScreen() {
             ))}
           </RowList>
         )}
-      </ScrollView>
+      </AnimatedScrollView>
     </SafeAreaView>
   );
 }

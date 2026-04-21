@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
 import { colors, fonts, radii } from "@/lib/theme";
 import { BigNum, Button, UppercaseLabel } from "@/components/ui";
@@ -61,6 +69,31 @@ export function RestTimer({
     setTotalDuration((prev) => Math.max(15, prev + delta));
   }, []);
 
+  // Breathing glow — pulse the card's tint opacity on a 2.6s loop while the
+  // timer is running, speed up on the final 10s to build urgency.
+  const glow = useSharedValue(0);
+  useEffect(() => {
+    if (!visible) {
+      glow.value = withTiming(0);
+      return;
+    }
+    const fast = remaining <= 10 && remaining > 0;
+    const dur = fast ? 500 : 1300;
+    glow.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: dur, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, [visible, remaining <= 10, glow]);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    // Shift the card tint from `blueSoft` (16% lime) up to ~32% at peak.
+    opacity: 0.55 + glow.value * 0.45,
+  }));
+
   if (!visible) return null;
 
   const minutes = Math.floor(remaining / 60);
@@ -95,8 +128,25 @@ export function RestTimer({
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
+          overflow: "hidden",
         }}
       >
+        {/* Breathing glow layer — pulses the lime tint while resting */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: colors.blueGlow,
+              borderRadius: radii.card,
+            },
+            glowStyle,
+          ]}
+        />
         {/* Ring */}
         <View style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Svg width={40} height={40} viewBox="0 0 40 40" style={{ position: "absolute" }}>
