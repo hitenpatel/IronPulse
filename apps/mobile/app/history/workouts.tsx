@@ -8,6 +8,7 @@ import { Dumbbell, Star } from "lucide-react-native";
 import { useWorkouts, type WorkoutRow } from "@ironpulse/sync";
 import { formatElapsed } from "@/lib/workout-utils";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -133,10 +134,14 @@ export default function WorkoutHistoryScreen() {
           item.type === "header" ? `header-${item.title}` : item.item.id
         }
         contentContainerStyle={{ padding: spacing.gutter, flexGrow: 1 }}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
+          // Stagger the first dozen or so items on mount — later items are
+          // likely scrolled into view naturally and don't need an entrance.
+          const delay = Math.min(index * 35, 420);
           if (item.type === "header") {
             return (
-              <Text
+              <Animated.Text
+                entering={FadeInDown.delay(delay).duration(420)}
                 style={{
                   fontFamily: fonts.displaySemi,
                   fontWeight: "600",
@@ -149,14 +154,16 @@ export default function WorkoutHistoryScreen() {
                 }}
               >
                 {item.title}
-              </Text>
+              </Animated.Text>
             );
           }
           return (
-            <WorkoutCard
-              item={item.item}
-              onPress={() => navigation.navigate("HistoryWorkoutDetail", { id: item.item.id })}
-            />
+            <Animated.View entering={FadeInDown.delay(delay).duration(420)}>
+              <WorkoutCard
+                item={item.item}
+                onPress={() => navigation.navigate("HistoryWorkoutDetail", { id: item.item.id })}
+              />
+            </Animated.View>
           );
         }}
         ListEmptyComponent={
