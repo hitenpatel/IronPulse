@@ -110,11 +110,17 @@ export default function LoginScreen() {
   }, []);
 
   async function handleSignIn() {
-    if (!email || !password) return;
+    console.warn("[login] handleSignIn tapped", { hasEmail: !!email, hasPassword: !!password });
+    if (!email || !password) {
+      Alert.alert("Missing fields", "Enter both email and password.");
+      return;
+    }
     setLoading(true);
     try {
       await signIn(email, password);
+      console.warn("[login] signIn succeeded");
     } catch (error: any) {
+      console.warn("[login] signIn failed", error?.message, error?.data?.code);
       Alert.alert("Sign In Failed", error?.message ?? "Invalid credentials");
     } finally {
       setLoading(false);
