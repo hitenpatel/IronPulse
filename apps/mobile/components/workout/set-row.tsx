@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Animated as RNAnimated, Pressable, Text, TextInput, View } from "react-native";
 import { usePowerSync } from "@powersync/react";
+import { Swipeable } from "react-native-gesture-handler";
 import * as Haptics from "@/lib/haptics";
-import { Check, Minus } from "lucide-react-native";
+import { Check, Minus, Trash2 } from "lucide-react-native";
 import { colors, fonts, radii } from "@/lib/theme";
 
 interface PreviousSet {
@@ -122,7 +123,38 @@ export function SetRow({
   };
 
   const handleDelete = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await db.execute("DELETE FROM exercise_sets WHERE id = ?", [setId]);
+  };
+
+  const swipeableRef = useRef<Swipeable>(null);
+
+  // Red reveal behind the row when the user swipes left. Trash icon scales
+  // up as the row slides further, giving that iOS-native "about to commit"
+  // feedback. Releasing past `rightThreshold` triggers onSwipeableOpen →
+  // handleDelete.
+  const renderRightActions = (
+    progress: RNAnimated.AnimatedInterpolation<number>,
+  ) => {
+    const iconScale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.4, 1],
+      extrapolate: "clamp",
+    });
+    return (
+      <View
+        style={{
+          width: 88,
+          backgroundColor: colors.red,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <RNAnimated.View style={{ transform: [{ scale: iconScale }] }}>
+          <Trash2 size={22} color="#FFFFFF" />
+        </RNAnimated.View>
+      </View>
+    );
   };
 
   const prevLabel =
@@ -159,6 +191,26 @@ export function SetRow({
   };
 
   return (
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+      friction={1.6}
+      rightThreshold={60}
+      onSwipeableOpen={(direction) => {
+        if (direction === "right") {
+          handleDelete();
+        }
+      }}
+      // Active-row margins moved to the Swipeable wrapper so the red reveal
+      // panel slots flush against the row's rounded edge.
+      containerStyle={{
+        marginHorizontal: isActive ? 8 : 0,
+        marginVertical: isActive ? 3 : 0,
+        borderRadius: isActive ? radii.button : 0,
+        overflow: "hidden",
+      }}
+    >
     <View
       style={{
         flexDirection: "row",
@@ -169,9 +221,6 @@ export function SetRow({
         // v2: solid lime bg on the active row. All text/icons ON this row
         // MUST render in blueInk — lime on warm-white is illegible.
         backgroundColor: isActive ? colors.blue : "transparent",
-        marginHorizontal: isActive ? 8 : 0,
-        marginVertical: isActive ? 3 : 0,
-        borderRadius: isActive ? radii.button : 0,
       }}
     >
       {/* Set number / complete indicator */}
@@ -315,5 +364,6 @@ export function SetRow({
         <Minus size={14} color={isActive ? colors.blueInk : colors.text4} />
       </Pressable>
     </View>
+    </Swipeable>
   );
 }

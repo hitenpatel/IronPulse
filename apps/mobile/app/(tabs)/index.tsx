@@ -480,8 +480,16 @@ export default function DashboardScreen() {
           />
           <MetricTile
             label="Time"
-            value={Number(timeDuration.value)}
-            unit={timeDuration.unit}
+            // Animate total minutes; format to "h:mm" once it crosses an hour.
+            value={Math.floor(weeklySummary.totalSeconds / 60)}
+            format={(v) => {
+              const mins = Math.max(0, Math.round(v));
+              if (mins < 60) return String(mins);
+              const h = Math.floor(mins / 60);
+              const m = mins % 60;
+              return `${h}:${String(m).padStart(2, "0")}`;
+            }}
+            unit={weeklySummary.totalSeconds >= 3600 ? "hr" : "min"}
             color={colors.purple}
           />
         </Animated.View>
