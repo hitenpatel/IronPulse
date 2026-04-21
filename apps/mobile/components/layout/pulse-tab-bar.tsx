@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Home, BarChart3, Dumbbell, User, Plus } from "lucide-react-native";
@@ -14,6 +14,72 @@ import { colors, radii, fonts, shadows, typography } from "@/lib/theme";
 import * as Haptics from "@/lib/haptics";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Lime pill that slides between tabs in a group. Each side of the FAB
+// gets its own indicator so the pill never has to skip across the gap.
+// groupWidth is measured on the parent tabGroup's onLayout so we can
+// translate by real pixels rather than percents (reanimated's web runtime
+// is picky about percent translations).
+function GroupIndicator({
+  activeIndex,
+  tabCount,
+  groupWidth,
+}: {
+  activeIndex: number;
+  tabCount: number;
+  groupWidth: number;
+}) {
+  const tabWidth = groupWidth / tabCount;
+  const translate = useSharedValue(Math.max(0, activeIndex) * tabWidth);
+  const visibility = useSharedValue(activeIndex >= 0 ? 1 : 0);
+
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      translate.value = withSpring(activeIndex * tabWidth, {
+        damping: 18,
+        stiffness: 220,
+        mass: 0.9,
+      });
+      visibility.value = withTiming(1, { duration: 180 });
+    } else {
+      visibility.value = withTiming(0, { duration: 160 });
+    }
+  }, [activeIndex, tabWidth, translate, visibility]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translate.value }],
+    opacity: visibility.value,
+  }));
+
+  if (tabWidth === 0) return null;
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          bottom: 6,
+          left: 0,
+          width: tabWidth,
+          height: 34,
+          paddingHorizontal: 8,
+        },
+        animatedStyle,
+      ]}
+    >
+      <View
+        style={{
+          flex: 1,
+          borderRadius: radii.button,
+          backgroundColor: colors.blueSoft,
+          borderWidth: 1,
+          borderColor: colors.blueSoft,
+        }}
+      />
+    </Animated.View>
+  );
+}
 
 // Dedicated TabButton so each tab holds its own icon-scale shared value —
 // a tab pop only affects the tab being tapped, not the whole bar.
@@ -35,27 +101,18 @@ function TabButton({
   const tabTestId = `tab-${name.toLowerCase()}`;
 
   const iconScale = useSharedValue(1);
-  const dotScale = useSharedValue(isActive ? 1 : 0);
 
-  // Pop the icon on activation.
   useEffect(() => {
     if (isActive) {
       iconScale.value = withSequence(
         withSpring(1.18, { damping: 10, stiffness: 340 }),
         withSpring(1, { damping: 14, stiffness: 260 }),
       );
-      dotScale.value = withSpring(1, { damping: 14, stiffness: 260 });
-    } else {
-      dotScale.value = withTiming(0, { duration: 160 });
     }
-  }, [isActive, iconScale, dotScale]);
+  }, [isActive, iconScale]);
 
   const iconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: iconScale.value }],
-  }));
-  const dotAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: dotScale.value }],
-    opacity: dotScale.value,
   }));
 
   return (
@@ -71,20 +128,6 @@ function TabButton({
         <Icon size={ICON_SIZE} color={iconColor} />
       </Animated.View>
       <Text style={[styles.tabLabel, { color: labelColor }]}>{label}</Text>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          {
-            position: "absolute",
-            bottom: 6,
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: colors.blue,
-          },
-          dotAnimatedStyle,
-        ]}
-      />
     </Pressable>
   );
 }
@@ -161,10 +204,30 @@ export function PulseTabBar({
     );
   };
 
+  // Which tab within each group is active? -1 = none (e.g. user is on the
+  // other group's tab).
+  const leftActiveIndex = LEFT_TABS.findIndex(
+    (t) => routeNames.indexOf(t.name) === state.index,
+  );
+  const rightActiveIndex = RIGHT_TABS.findIndex(
+    (t) => routeNames.indexOf(t.name) === state.index,
+  );
+
+  // Measured once via onLayout — both groups are flex:1 so they share width.
+  const [groupWidth, setGroupWidth] = useState(0);
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.tabBar}>
-        <View style={styles.tabGroup}>
+        <View
+          style={styles.tabGroup}
+          onLayout={(e) => setGroupWidth(e.nativeEvent.layout.width)}
+        >
+          <GroupIndicator
+            activeIndex={leftActiveIndex}
+            tabCount={LEFT_TABS.length}
+            groupWidth={groupWidth}
+          />
           {LEFT_TABS.map(({ name, label, Icon }) => renderTabButton(name, label, Icon))}
         </View>
 
@@ -188,6 +251,11 @@ export function PulseTabBar({
         </View>
 
         <View style={styles.tabGroup}>
+          <GroupIndicator
+            activeIndex={rightActiveIndex}
+            tabCount={RIGHT_TABS.length}
+            groupWidth={groupWidth}
+          />
           {RIGHT_TABS.map(({ name, label, Icon }) => renderTabButton(name, label, Icon))}
         </View>
       </View>

@@ -11,6 +11,79 @@ import { useAuth } from "@/lib/auth";
 import { isBiometricEnabled, isBiometricAvailable, getBiometricLabel } from "@/lib/biometric";
 import { colors, fonts, radii, tracking } from "@/lib/theme";
 import { Button, Input, Logo } from "@/components/ui";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+
+// Soft cobalt wash at the top of the screen — breathes on a slow loop.
+function AnimatedGlow() {
+  const opacity = useSharedValue(0.55);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.55, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, [opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 260,
+          backgroundColor: colors.greenSoft,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+// Hero logo that gently rises and falls on a 3s loop, with a whisper of
+// scale so it reads as "breathing" rather than a static tile.
+function FloatingLogo() {
+  const y = useSharedValue(0);
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    y.value = withRepeat(
+      withSequence(
+        withTiming(-4, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.02, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, [y, scale]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: y.value }, { scale: scale.value }],
+  }));
+  return (
+    <Animated.View style={[{ marginBottom: 20 }, style]}>
+      <Logo size={96} />
+    </Animated.View>
+  );
+}
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
@@ -111,28 +184,17 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* soft glow behind the logo */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 260,
-          // v2 login glow — cobalt wash, matching the new logo's tile.
-          backgroundColor: colors.greenSoft,
-        }}
-      />
+      {/* Soft glow behind the logo — slow breath loop so the hero feels alive */}
+      <AnimatedGlow />
 
       <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 28 }}>
         {/* Logo + wordmark — v2 hero per
             designs/design_handoff_new/reference/screens-primary.jsx::Login */}
         <View style={{ alignItems: "center", marginTop: 40, marginBottom: 36 }}>
-          {/* Hero logo — natural-aspect symbol rendered large for presence */}
-          <View style={{ marginBottom: 20 }}>
-            <Logo size={96} />
-          </View>
+          {/* Hero logo — gently floats on a 3s cycle so it reads as a
+              confident, breathing brand mark rather than a static PNG. */}
+          <FloatingLogo />
+
 
           <Text
             style={{
