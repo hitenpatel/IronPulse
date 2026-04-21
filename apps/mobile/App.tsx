@@ -89,6 +89,11 @@ import WorkoutTemplatesScreen from "./app/templates/index";
 // Goals
 import GoalsScreen from "./app/goals/index";
 
+// Tools
+import ToolsScreen from "./app/tools/index";
+import OneRepMaxScreen from "./app/tools/one-rep-max";
+import PlateCalculatorScreen from "./app/tools/plate-calculator";
+
 // Notifications
 import NotificationsScreen from "./app/notifications/index";
 
@@ -144,6 +149,10 @@ export type RootStackParamList = {
   WorkoutTemplates: undefined;
   // Goals
   Goals: undefined;
+  // Tools
+  Tools: undefined;
+  ToolsOneRepMax: undefined;
+  ToolsPlates: undefined;
   // Notifications
   Notifications: undefined;
 };
@@ -509,6 +518,23 @@ function RootNavigator() {
           name="Goals"
           component={GoalsScreen}
           options={{ headerShown: true, title: "Goals", ...HEADER_STYLE }}
+        />
+
+        {/* Tools */}
+        <RootStack.Screen
+          name="Tools"
+          component={ToolsScreen}
+          options={{ headerShown: true, title: "Tools", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="ToolsOneRepMax"
+          component={OneRepMaxScreen}
+          options={{ headerShown: true, title: "1RM Calculator", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="ToolsPlates"
+          component={PlateCalculatorScreen}
+          options={{ headerShown: true, title: "Plate Calculator", ...HEADER_STYLE }}
         />
 
         {/* Notifications */}

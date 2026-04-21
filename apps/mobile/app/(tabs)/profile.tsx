@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@powersync/react";
 import {
   Bell,
+  Calculator,
   Calendar,
   Camera,
   ChevronRight,
@@ -203,6 +204,7 @@ export default function ProfileScreen() {
         },
         { label: "Goals", screen: "Goals", icon: Target, tone: "purple" },
         { label: "Progress photos", screen: "ProgressPhotos", icon: Camera, tone: "green" },
+        { label: "Tools", subtitle: "1RM + plate calculators", screen: "Tools", icon: Calculator, tone: "amber" },
       ],
     },
     {
