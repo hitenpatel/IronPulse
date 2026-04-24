@@ -27,13 +27,17 @@ export async function detectPRs(
   workoutId: string,
   achievedAt: Date
 ): Promise<NewPR[]> {
-  // Fetch completed sets with weight > 0
+  // Fetch completed sets with weight > 0. Warm-ups, drop sets, and
+  // "to-failure" sets are excluded from PR detection — they'd inflate
+  // volume PRs and make ramp work look like strength progress. Legacy
+  // rows written before the `type` column existed default to "working".
   const sets = await db.exerciseSet.findMany({
     where: {
       workoutExercise: { workoutId },
       completed: true,
       reps: { gt: 0 },
       weightKg: { gt: 0 },
+      type: { notIn: ["warmup", "dropset", "failure"] },
     },
     select: {
       id: true,

@@ -174,6 +174,16 @@ describe("detectPRs", () => {
     expect(squat1rm.setId).toBe("set-b1");
   });
 
+  it("excludes warmup / dropset / failure sets from PR detection", async () => {
+    mockDb.exerciseSet.findMany.mockResolvedValue([]);
+
+    await detectPRs(mockDb, "u1", "w1", achievedAt);
+
+    const where = mockDb.exerciseSet.findMany.mock.calls[0]![0].where;
+    expect(where.type).toEqual({ notIn: ["warmup", "dropset", "failure"] });
+    expect(where.completed).toBe(true);
+  });
+
   it("uses raw weight as 1RM when reps is 1", async () => {
     mockDb.exerciseSet.findMany.mockResolvedValue([
       {

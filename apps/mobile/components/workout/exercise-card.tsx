@@ -336,6 +336,7 @@ export function ExerciseCard({
             reps={set.reps}
             rpe={set.rpe}
             completed={set.completed}
+            type={set.type}
             exerciseIndex={exerciseIndex}
             setIndex={idx}
             previousSet={previousSets?.[idx]}

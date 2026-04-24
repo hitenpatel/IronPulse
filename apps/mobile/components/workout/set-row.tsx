@@ -1,10 +1,25 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated as RNAnimated, Pressable, Text, TextInput, View } from "react-native";
+import { ActionSheetIOS, Alert, Animated as RNAnimated, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { usePowerSync } from "@powersync/react";
 import { Swipeable } from "react-native-gesture-handler";
 import * as Haptics from "@/lib/haptics";
 import { Check, Minus, Trash2 } from "lucide-react-native";
 import { colors, fonts, radii } from "@/lib/theme";
+
+type SetType = "working" | "warmup" | "dropset" | "failure";
+
+const SET_TYPE_LABEL: Record<SetType, string> = {
+  working: "Working",
+  warmup: "Warm-up",
+  dropset: "Drop set",
+  failure: "To failure",
+};
+
+const SET_TYPE_BADGE: Record<Exclude<SetType, "working">, { letter: string; bg: string; fg: string }> = {
+  warmup: { letter: "W", bg: colors.amberSoft, fg: colors.amber },
+  dropset: { letter: "D", bg: colors.purpleSoft, fg: colors.purple },
+  failure: { letter: "F", bg: colors.red, fg: "#FFFFFF" },
+};
 
 interface PreviousSet {
   weight_kg: number | null;
@@ -19,6 +34,8 @@ interface SetRowProps {
   reps: number | null;
   rpe: number | null;
   completed: 0 | 1;
+  /** Working / warmup / dropset / failure. Defaults to working for legacy rows. */
+  type?: SetType | string;
   exerciseIndex: number;
   setIndex: number;
   previousSet?: PreviousSet;
@@ -41,6 +58,7 @@ export function SetRow({
   reps,
   rpe,
   completed,
+  type,
   exerciseIndex,
   setIndex,
   previousSet,
@@ -49,6 +67,47 @@ export function SetRow({
   onRpePick,
 }: SetRowProps) {
   const db = usePowerSync();
+  const currentType: SetType = (
+    type === "warmup" || type === "dropset" || type === "failure" ? type : "working"
+  ) as SetType;
+  const badge = currentType === "working" ? null : SET_TYPE_BADGE[currentType];
+
+  const handleChangeType = useCallback(
+    async (next: SetType) => {
+      if (next === currentType) return;
+      Haptics.selectionAsync().catch(() => {});
+      await db.execute(
+        "UPDATE exercise_sets SET type = ? WHERE id = ?",
+        [next, setId],
+      );
+    },
+    [db, setId, currentType],
+  );
+
+  const handleLongPressType = useCallback(() => {
+    Haptics.selectionAsync().catch(() => {});
+    const options: SetType[] = ["working", "warmup", "dropset", "failure"];
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: "Set type",
+          options: [...options.map((o) => SET_TYPE_LABEL[o]), "Cancel"],
+          cancelButtonIndex: options.length,
+        },
+        (idx) => {
+          if (idx < options.length) handleChangeType(options[idx]!);
+        },
+      );
+    } else {
+      Alert.alert("Set type", "How should this set be classified?", [
+        ...options.map((o) => ({
+          text: SET_TYPE_LABEL[o] + (o === currentType ? " ✓" : ""),
+          onPress: () => handleChangeType(o),
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ]);
+    }
+  }, [currentType, handleChangeType]);
 
   const [localWeight, setLocalWeight] = useState(
     weightKg != null ? String(weightKg) : "",
@@ -223,33 +282,65 @@ export function SetRow({
         backgroundColor: isActive ? colors.blue : "transparent",
       }}
     >
-      {/* Set number / complete indicator */}
-      {isActive ? (
-        <Text
-          style={{
-            color: colors.blueInk,
-            fontSize: 8.5,
-            fontFamily: fonts.monoSemi,
-            width: 28,
-            textAlign: "center",
-            letterSpacing: 1.3,
-          }}
-        >
-          NEXT
-        </Text>
-      ) : (
-        <Text
-          style={{
-            color: isCompleted ? colors.green : colors.text3,
-            fontSize: 13,
-            fontFamily: fonts.monoMedium,
-            width: 28,
-            textAlign: "center",
-          }}
-        >
-          {isCompleted ? "✓" : setNumber}
-        </Text>
-      )}
+      {/* Set number / complete indicator. Long-press opens the set-type
+          picker (working / warm-up / drop set / failure). Non-working types
+          render a coloured letter badge instead of the plain number so the
+          row's role is legible at a glance. */}
+      <Pressable
+        onLongPress={handleLongPressType}
+        testID={`set-row-type-${exerciseIndex}-${setIndex}`}
+        hitSlop={4}
+        delayLongPress={350}
+        accessibilityRole="button"
+        accessibilityLabel={`Set type: ${SET_TYPE_LABEL[currentType]}. Long-press to change.`}
+        style={{ width: 28, alignItems: "center" }}
+      >
+        {isActive ? (
+          <Text
+            style={{
+              color: colors.blueInk,
+              fontSize: 8.5,
+              fontFamily: fonts.monoSemi,
+              textAlign: "center",
+              letterSpacing: 1.3,
+            }}
+          >
+            NEXT
+          </Text>
+        ) : badge ? (
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              backgroundColor: badge.bg,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: badge.fg,
+                fontSize: 11,
+                fontFamily: fonts.monoSemi,
+              }}
+            >
+              {badge.letter}
+            </Text>
+          </View>
+        ) : (
+          <Text
+            style={{
+              color: isCompleted ? colors.green : colors.text3,
+              fontSize: 13,
+              fontFamily: fonts.monoMedium,
+              textAlign: "center",
+            }}
+          >
+            {isCompleted ? "✓" : setNumber}
+          </Text>
+        )}
+      </Pressable>
 
       {/* PREV — read-only, mono small */}
       <Text
