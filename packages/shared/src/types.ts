@@ -7,4 +7,6 @@ export interface SessionUser {
   unitSystem: string;
   onboardingComplete: boolean;
   defaultRestSeconds: number;
+  warmupScheme?: "strength" | "hypertrophy" | "light" | "none";
+  warmupEnabled?: boolean;
 }

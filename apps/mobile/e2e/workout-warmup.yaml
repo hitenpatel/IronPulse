@@ -1,0 +1,75 @@
+appId: com.ironpulse.app
+---
+# Verifies the warm-up chip appears after entering a working weight,
+# opens the sheet, and inserts warm-up sets at the top of the list.
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn:
+    id: "fab-button"
+- extendedWaitUntil:
+    visible: "Start Workout"
+    timeout: 10000
+- tapOn: "Start Workout"
+- extendedWaitUntil:
+    visible: "Empty Workout"
+    timeout: 10000
+- tapOn: "Empty Workout"
+- extendedWaitUntil:
+    visible: "Finish"
+    timeout: 10000
+# Add an exercise
+- tapOn:
+    id: "add-exercise-button"
+- extendedWaitUntil:
+    visible: "Bench Press"
+    timeout: 10000
+- tapOn: "Bench Press"
+- waitForAnimationToEnd
+# Enter a working weight + reps into the first (only) set
+- tapOn:
+    id: "set-row-0-0-weight"
+- inputText: "80"
+- tapOn:
+    id: "set-row-0-0-reps"
+- inputText: "5"
+- hideKeyboard
+# "+ warm-up" chip should now be visible
+- extendedWaitUntil:
+    visible: "+ warm-up"
+    timeout: 10000
+- tapOn: "+ warm-up"
+- extendedWaitUntil:
+    visible:
+      id: "warmup-sheet"
+    timeout: 5000
+# Default scheme is strength — confirm and check sets inserted
+- tapOn:
+    id: "warmup-confirm"
+- waitForAnimationToEnd
+# Three warm-up rows slot in at the top; the working set shifts to #4
+- assertVisible: "32kg"
+- assertVisible: "48kg"
+- assertVisible: "64kg"
+- tapOn: "Cancel"
+- extendedWaitUntil:
+    visible: "Discard"
+    timeout: 10000
+- tapOn: "Discard"

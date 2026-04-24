@@ -1,10 +1,12 @@
 import { randomUUID } from "@/lib/uuid";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { usePowerSync } from "@powersync/react";
-import { Link2, Link2Off, Plus, Trash2 } from "lucide-react-native";
+import { Flame, Link2, Link2Off, Plus, Trash2 } from "lucide-react-native";
+import type { WarmupScheme, WarmupSet } from "@ironpulse/shared";
 import { SetRow } from "./set-row";
+import { WarmupSheet } from "./warmup-sheet";
 import { colors as t, fonts, radii, tracking } from "@/lib/theme";
 
 // Token aliases kept for backwards-compat with the body of this component.
@@ -25,6 +27,7 @@ const colors = {
 interface SetData {
   id: string;
   set_number: number;
+  type?: string;
   weight_kg: number | null;
   reps: number | null;
   rpe: number | null;
@@ -50,6 +53,10 @@ interface ExerciseCardProps {
   nextWorkoutExerciseId?: string;
   /** Global active set id — only the row matching this id is highlighted. */
   activeSetId?: string | null;
+  /** User's preferred warm-up scheme; drives the sheet default. */
+  warmupScheme?: Exclude<WarmupScheme, "none">;
+  /** When false, the "+ warm-up" chip is hidden entirely. */
+  warmupEnabled?: boolean;
   onSetComplete: () => void;
   onRpePick: (setId: string, rpe: number | null) => void;
 }
@@ -66,12 +73,58 @@ export function ExerciseCard({
   canLinkSuperset,
   nextWorkoutExerciseId,
   activeSetId,
+  warmupScheme = "strength",
+  warmupEnabled = true,
   onSetComplete,
   onRpePick,
 }: ExerciseCardProps) {
   const db = usePowerSync();
   const swipeableRef = useRef<Swipeable>(null);
   const isInSuperset = supersetGroup != null;
+  const [warmupSheetOpen, setWarmupSheetOpen] = useState(false);
+
+  // Warm-up chip appears when: the user has warm-ups enabled, at least one
+  // set has a working weight, and no warm-up set has been added yet.
+  const hasWarmup = sets.some((s) => s.type === "warmup");
+  const firstWorkingSet = sets.find(
+    (s) => s.type !== "warmup" && s.weight_kg != null && s.reps != null,
+  );
+  const showWarmupChip =
+    warmupEnabled && !hasWarmup && firstWorkingSet != null;
+
+  const handleConfirmWarmup = useCallback(
+    async (_scheme: Exclude<WarmupScheme, "none">, warmupSets: WarmupSet[]) => {
+      if (warmupSets.length === 0) {
+        setWarmupSheetOpen(false);
+        return;
+      }
+      // Renumber existing sets so warm-ups slot in at the front. Every
+      // existing set_number gets bumped by the warm-up count.
+      const shift = warmupSets.length;
+      await db.writeTransaction(async (tx) => {
+        // Bump from highest to lowest to avoid unique-index collisions if
+        // any were added later (none currently, but safe either way).
+        const existing = [...sets].sort((a, b) => b.set_number - a.set_number);
+        for (const s of existing) {
+          await tx.execute(
+            "UPDATE exercise_sets SET set_number = ? WHERE id = ?",
+            [s.set_number + shift, s.id],
+          );
+        }
+        for (const w of warmupSets) {
+          const id = randomUUID() ?? `${Date.now()}-${Math.random()}-${w.setNumber}`;
+          await tx.execute(
+            `INSERT INTO exercise_sets
+               (id, workout_exercise_id, set_number, type, weight_kg, reps, rpe, completed)
+             VALUES (?, ?, ?, 'warmup', ?, ?, NULL, 0)`,
+            [id, workoutExerciseId, w.setNumber, w.weight, w.reps],
+          );
+        }
+      });
+      setWarmupSheetOpen(false);
+    },
+    [db, sets, workoutExerciseId],
+  );
 
   const handleDeleteExercise = useCallback(async () => {
     // Two-step delete: sets first (no CASCADE in PowerSync SQLite)
@@ -291,6 +344,47 @@ export function ExerciseCard({
             onRpePick={onRpePick}
           />
         ))}
+
+        {/* "+ warm-up" chip — only when enabled and working weight is set. */}
+        {showWarmupChip && (
+          <Pressable
+            testID={`warmup-chip-${workoutExerciseId}`}
+            onPress={() => setWarmupSheetOpen(true)}
+            style={{
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              marginTop: 8,
+              marginHorizontal: 16,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              backgroundColor: t.amberSoft,
+              borderRadius: 999,
+            }}
+          >
+            <Flame size={12} color={t.amber} />
+            <Text
+              style={{
+                color: t.amber,
+                fontSize: 11,
+                fontFamily: fonts.bodySemi,
+                letterSpacing: 0.2,
+              }}
+            >
+              + warm-up
+            </Text>
+          </Pressable>
+        )}
+
+        <WarmupSheet
+          visible={warmupSheetOpen}
+          workingWeight={Number(firstWorkingSet?.weight_kg ?? 0)}
+          workingReps={firstWorkingSet?.reps ?? 5}
+          defaultScheme={warmupScheme}
+          onDismiss={() => setWarmupSheetOpen(false)}
+          onConfirm={handleConfirmWarmup}
+        />
 
         {/* + Add Set button */}
         <Pressable

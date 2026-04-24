@@ -58,6 +58,15 @@ export default function SettingsScreen() {
   );
   const [restSaving, setRestSaving] = useState(false);
 
+  // Warm-up preferences
+  const [warmupEnabled, setWarmupEnabled] = useState(user?.warmupEnabled ?? true);
+  const [warmupScheme, setWarmupScheme] = useState<
+    "strength" | "hypertrophy" | "light"
+  >(
+    (user?.warmupScheme === "none" ? "strength" : user?.warmupScheme) ?? "strength",
+  );
+  const [warmupSaving, setWarmupSaving] = useState(false);
+
   // Notifications
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -95,6 +104,17 @@ export default function SettingsScreen() {
         setDeletionRequested(!!result.user.deletionRequestedAt);
         if (result.user.weeklySummaryEnabled !== undefined) {
           setWeeklySummaryEnabled(result.user.weeklySummaryEnabled);
+        }
+        if (result.user.warmupEnabled !== undefined) {
+          setWarmupEnabled(result.user.warmupEnabled);
+        }
+        if (
+          result.user.warmupScheme &&
+          result.user.warmupScheme !== "none"
+        ) {
+          setWarmupScheme(
+            result.user.warmupScheme as "strength" | "hypertrophy" | "light",
+          );
         }
       } catch {
         // network error — show stale state
@@ -156,6 +176,35 @@ export default function SettingsScreen() {
       Alert.alert("Error", "Failed to update rest timer. Please try again.");
     } finally {
       setRestSaving(false);
+    }
+  }
+
+  async function handleWarmupToggle(value: boolean) {
+    setWarmupSaving(true);
+    try {
+      await trpc.user.updateProfile.mutate({ warmupEnabled: value });
+      await updateUser({ warmupEnabled: value });
+      setWarmupEnabled(value);
+    } catch {
+      Alert.alert("Error", "Failed to update warm-up preference.");
+    } finally {
+      setWarmupSaving(false);
+    }
+  }
+
+  async function handleWarmupSchemeChange(
+    scheme: "strength" | "hypertrophy" | "light",
+  ) {
+    if (scheme === warmupScheme || warmupSaving) return;
+    setWarmupSaving(true);
+    try {
+      await trpc.user.updateProfile.mutate({ warmupScheme: scheme });
+      await updateUser({ warmupScheme: scheme });
+      setWarmupScheme(scheme);
+    } catch {
+      Alert.alert("Error", "Failed to update warm-up scheme.");
+    } finally {
+      setWarmupSaving(false);
     }
   }
 
@@ -328,6 +377,71 @@ export default function SettingsScreen() {
           >
             {restSaving ? "Saving…" : "Save Rest Timer"}
           </Button>
+        </Card>
+
+        {/* Warm-up Preferences */}
+        <Card style={{ gap: 12 }}>
+          <Text style={LABEL_STYLE}>Warm-up Sets</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={{ color: colors.text, fontSize: 17 }}>
+              Enable warm-up suggestions
+            </Text>
+            <Switch
+              testID="warmup-enabled-switch"
+              value={warmupEnabled}
+              onValueChange={handleWarmupToggle}
+              disabled={warmupSaving}
+            />
+          </View>
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>
+            Show a "+ warm-up" chip on exercise cards once you've entered a working
+            weight.
+          </Text>
+          {warmupEnabled && (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: colors.textFaint, fontSize: 12, marginTop: 4 }}>
+                PREFERRED SCHEME
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {(["strength", "hypertrophy", "light"] as const).map((s) => {
+                  const selected = warmupScheme === s;
+                  return (
+                    <Pressable
+                      key={s}
+                      testID={`warmup-pref-${s}`}
+                      onPress={() => handleWarmupSchemeChange(s)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: selected ? colors.primary : colors.border,
+                        backgroundColor: selected ? colors.primary : colors.card,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: selected ? colors.background : colors.text,
+                          fontSize: 13,
+                          fontWeight: "600",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {s}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </Card>
 
         {/* Appearance */}

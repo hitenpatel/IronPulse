@@ -1,11 +1,16 @@
 import { z } from "zod";
 import { UnitSystem } from "../enums";
 
+export const warmupSchemeSchema = z.enum(["strength", "hypertrophy", "light", "none"]);
+export type WarmupSchemePref = z.infer<typeof warmupSchemeSchema>;
+
 export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   unitSystem: z.enum([UnitSystem.METRIC, UnitSystem.IMPERIAL]).optional(),
   defaultRestSeconds: z.number().int().min(15).max(600).optional(),
   weeklySummaryEnabled: z.boolean().optional(),
+  warmupScheme: warmupSchemeSchema.optional(),
+  warmupEnabled: z.boolean().optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 

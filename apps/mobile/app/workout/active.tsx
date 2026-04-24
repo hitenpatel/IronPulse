@@ -280,6 +280,12 @@ export default function ActiveWorkoutScreen() {
                 canLinkSuperset={canLink}
                 nextWorkoutExerciseId={next?.id}
                 activeSetId={activeSetId}
+                warmupScheme={
+                  (user?.warmupScheme && user.warmupScheme !== "none"
+                    ? user.warmupScheme
+                    : "strength") as "strength" | "hypertrophy" | "light"
+                }
+                warmupEnabled={user?.warmupEnabled ?? true}
                 onSetComplete={handleSetComplete}
                 onRpePick={handleRpePick}
               />

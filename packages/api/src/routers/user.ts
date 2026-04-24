@@ -28,6 +28,8 @@ export const userRouter = createTRPCRouter({
         subscriptionStatus: true,
         defaultRestSeconds: true,
         weeklySummaryEnabled: true,
+        warmupScheme: true,
+        warmupEnabled: true,
         deletionRequestedAt: true,
         createdAt: true,
       },
@@ -46,6 +48,8 @@ export const userRouter = createTRPCRouter({
           ...(input.unitSystem !== undefined && { unitSystem: input.unitSystem }),
           ...(input.defaultRestSeconds !== undefined && { defaultRestSeconds: input.defaultRestSeconds }),
           ...(input.weeklySummaryEnabled !== undefined && { weeklySummaryEnabled: input.weeklySummaryEnabled }),
+          ...(input.warmupScheme !== undefined && { warmupScheme: input.warmupScheme }),
+          ...(input.warmupEnabled !== undefined && { warmupEnabled: input.warmupEnabled }),
         },
         select: {
           id: true,
@@ -57,6 +61,8 @@ export const userRouter = createTRPCRouter({
           subscriptionStatus: true,
           defaultRestSeconds: true,
           weeklySummaryEnabled: true,
+          warmupScheme: true,
+          warmupEnabled: true,
         },
       });
 
