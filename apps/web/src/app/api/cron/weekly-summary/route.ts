@@ -70,7 +70,24 @@ export async function POST(req: Request) {
         emailAddress: u.email,
         resendSend: resend
           ? async ({ to, subject, text }) => {
-              await resend.emails.send({ from: fromAddr, to, subject, text });
+              // Resend returns { data, error } — error is populated when
+              // the provider rejects the send (bad address, paused
+              // account, rate-limited). Throw on error so the outer
+              // try/catch records the failure and the user stays eligible
+              // for the next run (weeklySummaryLastSentAt not bumped).
+              const response = await resend.emails.send({
+                from: fromAddr,
+                to,
+                subject,
+                text,
+              });
+              if (response?.error) {
+                throw new Error(
+                  `Resend rejected: ${response.error.name ?? "unknown"} — ${
+                    response.error.message ?? ""
+                  }`,
+                );
+              }
             }
           : undefined,
       });

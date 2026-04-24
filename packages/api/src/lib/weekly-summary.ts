@@ -242,7 +242,11 @@ export async function sendWeeklySummaryForUser(
     captureError(err, { context: "weeklySummary.notification", userId });
   }
 
-  // Email via Resend (best-effort)
+  // Email via Resend. If the provider rejects the send (throws), leave
+  // `weeklySummaryLastSentAt` unchanged so the user stays eligible for
+  // the next run — otherwise one transient 5xx silently drops an entire
+  // week's summary.
+  let emailDelivered = true;
   if (opts.sendEmail && opts.emailAddress && opts.resendSend) {
     try {
       await opts.resendSend({
@@ -251,14 +255,22 @@ export async function sendWeeklySummaryForUser(
         text: formatWeeklySummaryText(data),
       });
     } catch (err) {
-      captureError(err, { context: "weeklySummary.email", userId });
+      emailDelivered = false;
+      captureError(err, {
+        context: "weeklySummary.email",
+        userId,
+        weekEnding: new Date().toISOString().slice(0, 10),
+      });
     }
   }
 
-  await db.user.update({
-    where: { id: userId },
-    data: { weeklySummaryLastSentAt: new Date() },
-  });
+  if (emailDelivered) {
+    await db.user.update({
+      where: { id: userId },
+      data: { weeklySummaryLastSentAt: new Date() },
+    });
+    return { sent: true };
+  }
 
-  return { sent: true };
+  return { sent: false, skipped: "email-failed" };
 }

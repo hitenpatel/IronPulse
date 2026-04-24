@@ -7,12 +7,17 @@ import { createNativeStackNavigator, type NativeStackNavigationProp } from "@rea
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "react-native";
 
-// NativeWind CSS — import conditionally to avoid breaking without expo-router's Metro setup
+// NativeWind CSS — import conditionally to avoid breaking without
+// expo-router's Metro setup. Intentional empty catch: we expect this to
+// fail in some local dev configurations and don't want to pollute Sentry
+// every app boot in those cases.
+// eslint-disable-next-line no-empty
 try { require("./global.css"); } catch {}
 
 import { AuthProvider, useAuth } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme-context";
 import { trpc } from "./lib/trpc";
+import { captureError } from "./lib/telemetry";
 import { useNotificationDeepLink } from "./lib/useNotificationDeepLink";
 import { registerForPushNotifications, addPushTokenListener } from "./lib/notifications";
 import { NewSessionSheet } from "./components/layout/new-session-sheet";
@@ -281,7 +286,9 @@ function RootNavigator() {
         const { createMobileConnector } = require("@/lib/powersync");
         const connector = createMobileConnector();
         db.connect(connector);
-      } catch {}
+      } catch (err) {
+        captureError(err, { source: "app.powersync.connect" });
+      }
 
       // Push notifications (best-effort)
       (async () => {
@@ -293,7 +300,9 @@ function RootNavigator() {
               platform: Platform.OS as "ios" | "android",
             });
           }
-        } catch {}
+        } catch (err) {
+          captureError(err, { source: "app.push.register" });
+        }
       })();
 
       // HealthKit / Google Fit sync (best-effort)
@@ -303,13 +312,17 @@ function RootNavigator() {
           if (await isHealthKitConnected()) {
             await syncFromHealthKit(db, user.id);
           }
-        } catch {}
+        } catch (err) {
+          captureError(err, { source: "app.healthkit.sync" });
+        }
         try {
           const { isGoogleFitConnected, syncFromGoogleFit } = require("@/lib/googlefit");
           if (await isGoogleFitConnected()) {
             await syncFromGoogleFit(db, user.id);
           }
-        } catch {}
+        } catch (err) {
+          captureError(err, { source: "app.googlefit.sync" });
+        }
       })();
     }
   }, [user, db, powersyncReady]);

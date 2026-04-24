@@ -7,6 +7,7 @@ import {
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { computeGoalProgress, computeProgressPct } from "../lib/goal-progress";
+import { captureError } from "../lib/capture-error";
 
 export const goalRouter = createTRPCRouter({
   list: rateLimitedProcedure
@@ -20,7 +21,11 @@ export const goalRouter = createTRPCRouter({
         orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       });
 
-      const withProgress = await Promise.all(
+      // `Promise.allSettled` so a single bad goal (stale exerciseId, query
+      // hiccup) doesn't kill the whole list. Failures are logged to Sentry
+      // with goal context; the UI renders the goal with `currentValue: null`
+      // so it's still visible but marked as "progress unavailable".
+      const settled = await Promise.allSettled(
         goals.map(async (g) => {
           const target = Number(g.targetValue);
           const start = g.startValue != null ? Number(g.startValue) : null;
@@ -45,6 +50,27 @@ export const goalRouter = createTRPCRouter({
           };
         }),
       );
+
+      const withProgress = settled.map((r, idx) => {
+        if (r.status === "fulfilled") return r.value;
+        const g = goals[idx]!;
+        captureError(r.reason, {
+          context: "goal.list.computeProgress",
+          goalId: g.id,
+          goalType: g.type,
+          userId: ctx.user.id,
+        });
+        const target = Number(g.targetValue);
+        const start = g.startValue != null ? Number(g.startValue) : null;
+        return {
+          ...g,
+          targetValue: target,
+          startValue: start,
+          currentValue: null,
+          progressPct: null,
+          isComplete: false,
+        };
+      });
 
       return { goals: withProgress };
     }),

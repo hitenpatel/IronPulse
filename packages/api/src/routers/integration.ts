@@ -10,6 +10,7 @@ import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
 import { requireIntegrationCredentials } from "../lib/env";
 import { logger } from "../lib/logger";
+import { captureError } from "../lib/capture-error";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const GARMIN_TOKEN_URL =
@@ -235,10 +236,17 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      // Fire-and-forget backfill
+      // Fire-and-forget backfill. Both log (for local dev tail) and
+      // captureError (so Sentry sees the failure and we don't silently
+      // lose backfill errors when stdout isn't being watched).
       import("../lib/intervals-icu").then(({ runIntervalsBackfill }) => {
         runIntervalsBackfill(connection.id, ctx.db).catch((err) => {
           logger.error({ err, provider: "intervals-icu" }, "Intervals.icu backfill failed");
+          captureError(err, {
+            context: "integration.intervals.backfill",
+            connectionId: connection.id,
+            userId: ctx.user.id,
+          });
         });
       });
 
