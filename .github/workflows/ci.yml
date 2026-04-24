@@ -695,3 +695,4 @@ jobs:
             commit -m "update dashboard: run ${{ github.run_id }}" --allow-empty
           git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" 2>/dev/null || true
           git push origin gh-pages --force
+
