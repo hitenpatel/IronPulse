@@ -270,7 +270,9 @@ export default function GoalsPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">
-                              {goal.currentValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}{" "}
+                              {goal.currentValue != null
+                                ? `${goal.currentValue.toLocaleString(undefined, { maximumFractionDigits: 1 })} `
+                                : "— "}
                               {goal.unit}
                             </span>
                             <span className="font-semibold">
