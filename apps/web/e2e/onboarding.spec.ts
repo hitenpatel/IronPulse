@@ -10,7 +10,7 @@ test.describe("Onboarding page", () => {
     await page.goto("/onboarding");
 
     // Step indicator: "Step X of 3"
-    await expect(page.getByText(/step \d of 3/i)).toBeVisible();
+    await expect(page.getByText(/step \d of 4/i)).toBeVisible();
   });
 
   test("step 1 shows name field and unit preference buttons", async ({
@@ -43,7 +43,7 @@ test.describe("Onboarding page", () => {
     await expect(
       page.getByRole("heading", { name: /what's your main goal/i })
     ).toBeVisible();
-    await expect(page.getByText(/step 2 of 3/i)).toBeVisible();
+    await expect(page.getByText(/step 2 of 4/i)).toBeVisible();
   });
 
   test("step 1 shows error when name is empty and next is clicked", async ({
@@ -85,7 +85,7 @@ test.describe("Onboarding page", () => {
     await expect(
       page.getByRole("heading", { name: /your experience level/i })
     ).toBeVisible();
-    await expect(page.getByText(/step 3 of 3/i)).toBeVisible();
+    await expect(page.getByText(/step 3 of 4/i)).toBeVisible();
   });
 
   test("step 3 shows experience level options", async ({ page }) => {
@@ -115,16 +115,32 @@ test.describe("Onboarding page", () => {
     ).toBeVisible();
   });
 
-  test("step 3 shows Get Started button", async ({ page }) => {
+  test("step 3 next/skip advances to step 4 import prompt", async ({ page }) => {
     await page.goto("/onboarding");
 
     await page.getByLabel("Name").fill("Test User");
     await page.getByRole("button", { name: /next/i }).click();
     await page.getByRole("button", { name: /skip/i }).click();
 
+    // On step 3 with no experience selected, the primary CTA reads "Skip".
+    await page.getByRole("button", { name: /skip/i }).click();
+
     await expect(
-      page.getByRole("button", { name: /get started/i })
+      page.getByRole("heading", { name: /switching from another app/i })
     ).toBeVisible();
+    await expect(page.getByText(/step 4 of 4/i)).toBeVisible();
+  });
+
+  test("step 4 shows import and skip options", async ({ page }) => {
+    await page.goto("/onboarding");
+
+    await page.getByLabel("Name").fill("Test User");
+    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByRole("button", { name: /skip/i }).click();
+    await page.getByRole("button", { name: /skip/i }).click();
+
+    await expect(page.getByTestId("onboarding-import-yes")).toBeVisible();
+    await expect(page.getByTestId("onboarding-import-skip")).toBeVisible();
   });
 
   test("unit preference selection highlights chosen option", async ({

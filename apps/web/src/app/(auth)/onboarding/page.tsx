@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,13 @@ export default function OnboardingPage() {
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Ref so the mutation's onSuccess closure always reads the latest choice —
+  // setState would stale-close here since the mutation hook is created once.
+  const postOnboardingPathRef = useRef<string>("/dashboard");
+
   const completeOnboarding = trpc.user.completeOnboarding.useMutation({
     onSuccess: () => {
-      window.location.href = "/dashboard";
+      window.location.href = postOnboardingPathRef.current;
     },
     onError: (err) => {
       setError(err.message);
@@ -70,7 +74,7 @@ export default function OnboardingPage() {
     <div>
       {/* Step indicator */}
       <div className="mb-6 flex items-center gap-2">
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={cn(
@@ -84,7 +88,7 @@ export default function OnboardingPage() {
             >
               {s < step ? "✓" : s}
             </div>
-            {s < 3 && (
+            {s < 4 && (
               <div
                 className={cn(
                   "h-px w-8 transition-colors",
@@ -95,7 +99,7 @@ export default function OnboardingPage() {
           </div>
         ))}
         <span className="ml-2 text-xs text-muted-foreground">
-          Step {step} of 3
+          Step {step} of 4
         </span>
       </div>
 
@@ -249,15 +253,90 @@ export default function OnboardingPage() {
             <Button type="button" variant="outline" className="flex-1" size="lg" onClick={handleBack}>
               Back
             </Button>
+            <Button type="button" className="flex-1" size="lg" onClick={handleNext}>
+              {experienceLevel ? "Next" : "Skip"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Import existing data */}
+      {step === 4 && (
+        <div>
+          <h2 className="text-xl font-bold">Switching from another app?</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bring your workout history across from Strong, Hevy, or FitNotes.
+            You can always do this later from Settings.
+          </p>
+
+          <div className="mt-6 space-y-3">
+            <button
+              type="button"
+              data-testid="onboarding-import-yes"
+              onClick={() => {
+                postOnboardingPathRef.current = "/settings/import";
+                handleFinish();
+              }}
+              disabled={completeOnboarding.isPending}
+              className={cn(
+                "flex w-full items-start gap-4 rounded-lg border px-4 py-3 text-left transition-colors",
+                "border-primary bg-primary/10 hover:bg-primary/15 disabled:opacity-50",
+              )}
+            >
+              <span className="mt-0.5 text-2xl">📥</span>
+              <div>
+                <p className="text-sm font-medium text-primary">
+                  Yes, import my data
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Upload a CSV export from your previous app on the next screen.
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              data-testid="onboarding-import-skip"
+              onClick={() => {
+                postOnboardingPathRef.current = "/dashboard";
+                handleFinish();
+              }}
+              disabled={completeOnboarding.isPending}
+              className={cn(
+                "flex w-full items-start gap-4 rounded-lg border px-4 py-3 text-left transition-colors",
+                "border-border hover:border-border/80 hover:bg-muted/50 disabled:opacity-50",
+              )}
+            >
+              <span className="mt-0.5 text-2xl">🚀</span>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Start fresh
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Skip — I don&apos;t have data to import.
+                </p>
+              </div>
+            </button>
+          </div>
+
+          {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+
+          <div className="mt-6 flex gap-3">
             <Button
               type="button"
+              variant="outline"
               className="flex-1"
               size="lg"
-              onClick={handleFinish}
+              onClick={handleBack}
               disabled={completeOnboarding.isPending}
             >
-              {completeOnboarding.isPending ? "Setting up..." : "Get Started"}
+              Back
             </Button>
+            {completeOnboarding.isPending && (
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                Setting up…
+              </div>
+            )}
           </div>
         </div>
       )}

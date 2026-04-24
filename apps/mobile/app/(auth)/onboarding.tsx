@@ -64,7 +64,7 @@ export default function OnboardingScreen() {
     setStep((s) => s - 1);
   }
 
-  async function handleFinish() {
+  async function handleFinish(options?: { goToImport?: boolean }) {
     setError(null);
     setLoading(true);
     try {
@@ -79,9 +79,20 @@ export default function OnboardingScreen() {
         unitSystem,
         onboardingComplete: true,
       });
-      navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] })
-      );
+      if (options?.goToImport) {
+        // Land on ImportData stacked over MainTabs so the user can still
+        // back out to the dashboard with the native back gesture.
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [{ name: "MainTabs" }, { name: "ImportData" }],
+          }),
+        );
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+        );
+      }
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong. Please try again.");
       Alert.alert("Error", err?.message ?? "Something went wrong. Please try again.");
@@ -98,7 +109,7 @@ export default function OnboardingScreen() {
       >
         {/* Step indicator */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 32 }}>
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <View key={s} style={{ flexDirection: "row", alignItems: "center" }}>
               <View
                 style={{
@@ -127,7 +138,7 @@ export default function OnboardingScreen() {
                   {s < step ? "✓" : s}
                 </Text>
               </View>
-              {s < 3 && (
+              {s < 4 && (
                 <View
                   style={{
                     width: 32,
@@ -140,7 +151,7 @@ export default function OnboardingScreen() {
             </View>
           ))}
           <Text style={{ marginLeft: 10, fontSize: 12, color: COLORS.muted }}>
-            Step {step} of 3
+            Step {step} of 4
           </Text>
         </View>
 
@@ -369,14 +380,126 @@ export default function OnboardingScreen() {
                 </Button>
               </View>
               <View style={{ flex: 1 }}>
-                <Button
-                  testID="onboarding-finish"
-                  onPress={handleFinish}
-                  disabled={loading}
-                >
-                  {loading ? "Setting up..." : "Get Started"}
+                <Button testID="onboarding-next-3" onPress={handleNext}>
+                  {experienceLevel ? "Next" : "Skip"}
                 </Button>
               </View>
+            </View>
+          </View>
+        )}
+
+        {/* Step 4: Import existing data */}
+        {step === 4 && (
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 22, fontWeight: "bold", color: COLORS.text }}>
+              Switching from another app?
+            </Text>
+            <Text style={{ marginTop: 6, fontSize: 14, color: COLORS.muted }}>
+              Import your workout history from Strong, Hevy, or FitNotes. You
+              can always do this later from Settings.
+            </Text>
+
+            <View style={{ marginTop: 24, gap: 10 }}>
+              <Pressable
+                testID="onboarding-import-yes"
+                accessibilityLabel="Import my data"
+                disabled={loading}
+                onPress={() => handleFinish({ goToImport: true })}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 14,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: COLORS.selectedBorder,
+                  backgroundColor: COLORS.selectedBg,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  opacity: loading ? 0.5 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 24, marginTop: 1 }}>📥</Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "600",
+                      color: COLORS.selectedText,
+                    }}
+                  >
+                    Yes, import my data
+                  </Text>
+                  <Text
+                    style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}
+                  >
+                    Upload a CSV export on the next screen.
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                testID="onboarding-import-skip"
+                accessibilityLabel="Start fresh"
+                disabled={loading}
+                onPress={() => handleFinish({ goToImport: false })}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 14,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: COLORS.border,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  opacity: loading ? 0.5 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 24, marginTop: 1 }}>🚀</Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "600", color: COLORS.text }}
+                  >
+                    Start fresh
+                  </Text>
+                  <Text
+                    style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}
+                  >
+                    Skip — I don&apos;t have data to import.
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+
+            {error ? (
+              <Text style={{ fontSize: 14, color: COLORS.error, marginTop: 12 }}>
+                {error}
+              </Text>
+            ) : null}
+
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  testID="onboarding-back-4"
+                  variant="outline"
+                  onPress={handleBack}
+                  disabled={loading}
+                >
+                  Back
+                </Button>
+              </View>
+              {loading && (
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: COLORS.muted }}>
+                    Setting up…
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         )}
