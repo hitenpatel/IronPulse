@@ -30,6 +30,7 @@ export const userRouter = createTRPCRouter({
         weeklySummaryEnabled: true,
         warmupScheme: true,
         warmupEnabled: true,
+        firstWorkoutTutorialDismissed: true,
         deletionRequestedAt: true,
         createdAt: true,
       },
@@ -50,6 +51,9 @@ export const userRouter = createTRPCRouter({
           ...(input.weeklySummaryEnabled !== undefined && { weeklySummaryEnabled: input.weeklySummaryEnabled }),
           ...(input.warmupScheme !== undefined && { warmupScheme: input.warmupScheme }),
           ...(input.warmupEnabled !== undefined && { warmupEnabled: input.warmupEnabled }),
+          ...(input.firstWorkoutTutorialDismissed !== undefined && {
+            firstWorkoutTutorialDismissed: input.firstWorkoutTutorialDismissed,
+          }),
         },
         select: {
           id: true,
@@ -63,6 +67,7 @@ export const userRouter = createTRPCRouter({
           weeklySummaryEnabled: true,
           warmupScheme: true,
           warmupEnabled: true,
+          firstWorkoutTutorialDismissed: true,
         },
       });
 

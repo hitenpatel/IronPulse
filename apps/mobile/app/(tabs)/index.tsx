@@ -51,6 +51,7 @@ import Animated, {
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { SyncIndicator } from "@/components/layout/sync-indicator";
+import { FirstWorkoutTutorial } from "@/components/onboarding/first-workout-tutorial";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -120,13 +121,16 @@ interface WeeklyVolumeRow {
 }
 
 export default function DashboardScreen() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigation = useNavigation<Nav>();
   const db = usePowerSync();
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // Local dismissal flag so the banner disappears immediately on tap, even
+  // before the server round-trip completes.
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
 
   // Parallax — Next-Up hero drifts up slightly and fades as the user scrolls.
   const scrollY = useSharedValue(0);
@@ -259,6 +263,23 @@ export default function DashboardScreen() {
   const firstName = user?.name?.split(" ")[0] ?? "Athlete";
   const timeDuration = compactDuration(weeklySummary.totalSeconds);
 
+  const showFirstWorkoutTutorial =
+    !tutorialDismissed &&
+    user?.firstWorkoutTutorialDismissed !== true &&
+    (workouts?.length ?? 0) === 0;
+
+  const handleDismissTutorial = useCallback(async () => {
+    setTutorialDismissed(true);
+    try {
+      await trpc.user.updateProfile.mutate({
+        firstWorkoutTutorialDismissed: true,
+      });
+      await updateUser({ firstWorkoutTutorialDismissed: true });
+    } catch {
+      // Offline — the local flag already hides the banner for this session.
+    }
+  }, [updateUser]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <AnimatedScrollView
@@ -347,6 +368,14 @@ export default function DashboardScreen() {
             Ready to train?
           </Text>
         </Animated.View>
+
+        {/* First-workout tutorial — shown once, until they either tap start or dismiss */}
+        {showFirstWorkoutTutorial && (
+          <FirstWorkoutTutorial
+            onStart={handleStartWorkout}
+            onDismiss={handleDismissTutorial}
+          />
+        )}
 
         {/* Next Up hero — parallax drift + fade on scroll */}
         <Animated.View

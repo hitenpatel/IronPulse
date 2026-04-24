@@ -9,4 +9,5 @@ export interface SessionUser {
   defaultRestSeconds: number;
   warmupScheme?: "strength" | "hypertrophy" | "light" | "none";
   warmupEnabled?: boolean;
+  firstWorkoutTutorialDismissed?: boolean;
 }

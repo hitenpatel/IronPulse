@@ -11,6 +11,7 @@ export const updateProfileSchema = z.object({
   weeklySummaryEnabled: z.boolean().optional(),
   warmupScheme: warmupSchemeSchema.optional(),
   warmupEnabled: z.boolean().optional(),
+  firstWorkoutTutorialDismissed: z.boolean().optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 

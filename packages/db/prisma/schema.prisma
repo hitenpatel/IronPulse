@@ -31,6 +31,7 @@ model User {
   weeklySummaryLastSentAt DateTime? @map("weekly_summary_last_sent_at")
   warmupScheme          String    @default("strength") @map("warmup_scheme")
   warmupEnabled         Boolean   @default(true) @map("warmup_enabled")
+  firstWorkoutTutorialDismissed Boolean @default(false) @map("first_workout_tutorial_dismissed")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
