@@ -18,6 +18,12 @@ import { AuthProvider, useAuth } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme-context";
 import { trpc } from "./lib/trpc";
 import { captureError } from "./lib/telemetry";
+import { configureTextDefaults } from "./lib/text-defaults";
+
+// Apply before any component renders — makes iOS Dynamic Type + Android
+// font-scale work while capping growth at 1.3× so the v2 layouts don't
+// collapse. See apps/mobile/lib/text-defaults.ts for the rationale.
+configureTextDefaults();
 import { useNotificationDeepLink } from "./lib/useNotificationDeepLink";
 import { registerForPushNotifications, addPushTokenListener } from "./lib/notifications";
 import { NewSessionSheet } from "./components/layout/new-session-sheet";
