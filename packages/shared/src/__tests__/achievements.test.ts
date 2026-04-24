@@ -2,14 +2,37 @@ import { describe, expect, it } from "vitest";
 import { ACHIEVEMENT_CATALOG } from "../achievements";
 
 describe("ACHIEVEMENT_CATALOG", () => {
-  it("covers every achievement type the unlock helper supports", () => {
+  it("has at least 20 badge types per the expansion spec", () => {
+    expect(ACHIEVEMENT_CATALOG.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it("includes the original six plus every expansion-phase type", () => {
     const expected = [
+      // Original v1 badges — must never be dropped.
       "first_workout",
       "streak_7",
       "streak_30",
       "pr_count_10",
       "workouts_50",
       "workouts_100",
+      // Expansion — referenced by checkAndUnlock in the API.
+      "first_cardio",
+      "first_follow",
+      "first_reaction",
+      "workouts_10",
+      "workouts_250",
+      "workouts_500",
+      "streak_90",
+      "pr_count_25",
+      "pr_count_50",
+      "volume_10k_kg",
+      "volume_100k_kg",
+      "cardio_total_10km",
+      "cardio_total_100km",
+      "cardio_marathon",
+      "nutrition_streak_7",
+      "sleep_streak_7",
+      "first_goal_complete",
     ];
     const actual = ACHIEVEMENT_CATALOG.map((b) => b.type);
     for (const t of expected) expect(actual).toContain(t);

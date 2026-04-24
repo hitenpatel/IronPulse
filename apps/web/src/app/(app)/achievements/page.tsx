@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@ironpulse/shared";
@@ -63,7 +64,20 @@ function BadgeCard({
 }
 
 export default function AchievementsPage() {
-  const { data, isLoading } = trpc.achievement.list.useQuery();
+  const { data, isLoading, refetch } = trpc.achievement.list.useQuery();
+  const checkMine = trpc.achievement.checkMine.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+  const checkedRef = useRef(false);
+
+  // Retroactive unlock pass for users who qualified before this build landed.
+  useEffect(() => {
+    if (checkedRef.current) return;
+    checkedRef.current = true;
+    checkMine.mutate();
+  }, [checkMine]);
 
   const unlockedMap = new Map<string, Date>(
     (data?.achievements ?? []).map((a) => [a.type, new Date(a.unlockedAt)])

@@ -9,7 +9,12 @@ vi.mock("../src/lib/capture-error", () => ({
   captureError: vi.fn(),
 }));
 
-import { notifyNewPR, notifyNewMessage } from "../src/lib/notifications";
+import {
+  notifyAchievement,
+  notifyNewMessage,
+  notifyNewPR,
+} from "../src/lib/notifications";
+import { ACHIEVEMENT_CATALOG } from "@ironpulse/shared";
 import { sendPushNotification } from "../src/lib/push";
 import { captureError } from "../src/lib/capture-error";
 
@@ -103,5 +108,22 @@ describe("notifyNewMessage", () => {
     await expect(
       notifyNewMessage(db, "receiver-1", "Charlie"),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("notifyAchievement", () => {
+  it("pushes a notification with the badge's label and description", async () => {
+    mockSend.mockResolvedValue(undefined);
+    const db = mockDb(["token-a"]);
+    const badge = ACHIEVEMENT_CATALOG.find((b) => b.type === "streak_7")!;
+
+    await notifyAchievement(db, "user-1", badge);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const [token, title, body] = mockSend.mock.calls[0]!;
+    expect(token).toBe("token-a");
+    expect(title).toContain(badge.label);
+    expect(body).toBe(badge.description);
+    expect(mockCapture).not.toHaveBeenCalled();
   });
 });

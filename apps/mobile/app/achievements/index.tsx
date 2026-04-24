@@ -112,6 +112,21 @@ function BadgeCard({ badge, unlockedAt }: BadgeCardProps) {
 
 export default function AchievementsScreen() {
   const query = trpc.achievement.list.useQuery();
+  const refetch = query.refetch;
+  const checkMine = trpc.achievement.checkMine.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+  const checkedRef = React.useRef(false);
+
+  // Kick off a retroactive unlock check exactly once on mount so users
+  // who qualified for new badges before this build landed pick them up.
+  React.useEffect(() => {
+    if (checkedRef.current) return;
+    checkedRef.current = true;
+    checkMine.mutate();
+  }, [checkMine]);
 
   const unlockedMap = React.useMemo(() => {
     const map = new Map<string, Date>();

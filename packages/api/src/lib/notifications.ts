@@ -1,5 +1,6 @@
 import { sendPushNotification } from "./push";
 import { captureError } from "./capture-error";
+import type { AchievementBadge } from "@ironpulse/shared";
 
 // Intentionally loose: callers pass the PrismaClient but tests pass a partial mock.
 // We use `any` here because Prisma's generated types are nominal and don't structurally
@@ -143,6 +144,21 @@ export async function notifyGoalComplete(
     title: "Goal achieved! 🎉",
     body: goalTitle,
     linkPath: `/goals`,
+  });
+}
+
+export async function notifyAchievement(
+  db: Db,
+  userId: string,
+  badge: AchievementBadge,
+) {
+  await createNotification(db, {
+    userId,
+    type: "achievement",
+    title: `${badge.emoji} ${badge.label}`,
+    body: badge.description,
+    linkPath: `/achievements`,
+    data: { achievementType: badge.type },
   });
 }
 
