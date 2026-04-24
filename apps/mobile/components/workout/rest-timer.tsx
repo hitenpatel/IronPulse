@@ -38,17 +38,23 @@ export function RestTimer({
   const insets = useSafeAreaInsets();
   const [remaining, setRemaining] = useState(defaultRest);
   const [totalDuration, setTotalDuration] = useState(defaultRest);
+  const [paused, setPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (visible) {
       setRemaining(defaultRest);
       setTotalDuration(defaultRest);
+      setPaused(false);
     }
   }, [visible, defaultRest]);
 
   useEffect(() => {
-    if (!visible) return;
+    // Only tick while visible AND not paused. Pausing releases the
+    // interval entirely so the countdown truly freezes rather than
+    // skipping ahead when resumed (which happens if you just gate inside
+    // the callback).
+    if (!visible || paused) return;
     intervalRef.current = setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
@@ -62,11 +68,16 @@ export function RestTimer({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [visible, onDismiss]);
+  }, [visible, paused, onDismiss]);
 
   const adjustTime = useCallback((delta: number) => {
     setRemaining((prev) => Math.max(0, prev + delta));
     setTotalDuration((prev) => Math.max(15, prev + delta));
+  }, []);
+
+  const togglePause = useCallback(() => {
+    setPaused((p) => !p);
+    Haptics.selectionAsync().catch(() => {});
   }, []);
 
   // Breathing glow — pulse the card's tint opacity on a 2.6s loop while the
@@ -75,6 +86,11 @@ export function RestTimer({
   useEffect(() => {
     if (!visible) {
       glow.value = withTiming(0);
+      return;
+    }
+    if (paused) {
+      // Freeze mid-pulse when paused so the glow doesn't keep breathing.
+      glow.value = withTiming(0.2);
       return;
     }
     const fast = remaining <= 10 && remaining > 0;
@@ -87,7 +103,7 @@ export function RestTimer({
       -1,
       false,
     );
-  }, [visible, remaining <= 10, glow]);
+  }, [visible, paused, remaining <= 10, glow]);
 
   const glowStyle = useAnimatedStyle(() => ({
     // Shift the card tint from `blueSoft` (16% lime) up to ~32% at peak.
@@ -198,6 +214,27 @@ export function RestTimer({
             {nextSetLabel ?? "Next set coming up"}
           </Text>
         </View>
+
+        {/* Pause / Resume */}
+        <Pressable
+          onPress={togglePause}
+          testID="rest-timer-pause"
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={paused ? "Resume rest timer" : "Pause rest timer"}
+          style={{
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            borderWidth: 1,
+            borderColor: paused ? colors.blue : colors.line,
+            backgroundColor: paused ? colors.blueSoft : "transparent",
+            borderRadius: radii.buttonSm,
+          }}
+        >
+          <Text style={{ fontSize: 10, color: paused ? colors.blue2 : colors.text2, fontFamily: fonts.bodyMedium }}>
+            {paused ? "Resume" : "Pause"}
+          </Text>
+        </Pressable>
 
         {/* +30 / Skip controls */}
         <Pressable

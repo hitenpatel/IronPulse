@@ -4,25 +4,31 @@ import { useEffect, useRef } from "react";
 
 interface RestTimerProps {
   running: boolean;
+  /** When true, the countdown is frozen — the interval stops ticking. */
+  paused?: boolean;
   remainingSeconds: number;
   onTick: () => void;
   onSkip: () => void;
   onAdjust: (delta: number) => void;
   onDismiss: () => void;
+  /** Optional — when present, renders a Pause/Resume button. */
+  onPauseToggle?: () => void;
 }
 
 export function RestTimer({
   running,
+  paused = false,
   remainingSeconds,
   onTick,
   onSkip,
   onAdjust,
   onDismiss,
+  onPauseToggle,
 }: RestTimerProps) {
   const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || paused) return;
 
     if (remainingSeconds <= 0) {
       // Vibrate if available
@@ -45,7 +51,7 @@ export function RestTimer({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [running, remainingSeconds, onTick, onDismiss]);
+  }, [running, paused, remainingSeconds, onTick, onDismiss]);
 
   if (!running) return null;
 
@@ -72,6 +78,20 @@ export function RestTimer({
             <span className="text-sm text-muted-foreground">Rest</span>
           </div>
           <div className="flex gap-2">
+            {onPauseToggle && (
+              <button
+                onClick={onPauseToggle}
+                aria-label={paused ? "Resume rest timer" : "Pause rest timer"}
+                data-testid="rest-timer-pause"
+                className={
+                  paused
+                    ? "rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors"
+                    : "rounded-lg bg-muted px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                }
+              >
+                {paused ? "Resume" : "Pause"}
+              </button>
+            )}
             <button
               onClick={() => onAdjust(-15)}
               aria-label="Subtract 15 seconds"

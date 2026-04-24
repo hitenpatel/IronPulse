@@ -48,6 +48,7 @@ export function ActiveWorkout({
   const restDuration = userData?.user?.defaultRestSeconds ?? DEFAULT_REST_DURATION;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [restRunning, setRestRunning] = useState(false);
+  const [restPaused, setRestPaused] = useState(false);
   const [restRemaining, setRestRemaining] = useState(DEFAULT_REST_DURATION);
   const [completionPRs, setCompletionPRs] = useState<
     { exerciseId: string; type: string; value: number; setId: string }[] | null
@@ -237,6 +238,7 @@ export function ActiveWorkout({
   function handleSetCompleted() {
     setRestRemaining(restDuration);
     setRestRunning(true);
+    setRestPaused(false);
   }
 
   function handleFinish() {
@@ -463,13 +465,21 @@ export function ActiveWorkout({
       {/* Rest timer */}
       <RestTimer
         running={restRunning}
+        paused={restPaused}
         remainingSeconds={restRemaining}
         onTick={() => setRestRemaining((r) => Math.max(0, r - 1))}
-        onSkip={() => setRestRunning(false)}
+        onPauseToggle={() => setRestPaused((p) => !p)}
+        onSkip={() => {
+          setRestRunning(false);
+          setRestPaused(false);
+        }}
         onAdjust={(delta) =>
           setRestRemaining((r) => Math.max(0, r + delta))
         }
-        onDismiss={() => setRestRunning(false)}
+        onDismiss={() => {
+          setRestRunning(false);
+          setRestPaused(false);
+        }}
       />
     </div>
   );
