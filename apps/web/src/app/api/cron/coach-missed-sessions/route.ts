@@ -13,9 +13,15 @@ function getDb() {
 
 /**
  * Coach "missed sessions" notifier. For each athlete with an active program
- * assignment, checks if the athlete has missed 2+ consecutive scheduled
+ * assignment, checks whether the athlete has missed 2+ consecutive scheduled
  * workout days (based on program.schedule). If so, sends a notification to
  * the coach with a link to the client detail page.
+ *
+ * Performance: the previous implementation called `workout.findFirst` once
+ * per day per assignment (N × 10). This pass fetches every completed workout
+ * in the last 10 days for every assignee in a single query and indexes them
+ * in memory, so the whole cron scales with the number of assignments rather
+ * than the product.
  *
  * Run daily. Auth via CRON_SECRET bearer token.
  */
@@ -40,16 +46,61 @@ export async function POST(req: Request) {
   });
 
   const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-
   function getDayOfWeek(d: Date): string {
     const jsDay = d.getDay();
     return DAYS[jsDay === 0 ? 6 : jsDay - 1]!;
   }
 
+  // One round-trip: every completed workout in the last 10 days across
+  // every unique athlete in the assignment set.
+  const athleteIds = Array.from(
+    new Set(assignments.map((a) => a.athleteId)),
+  );
+  const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+  tenDaysAgo.setHours(0, 0, 0, 0);
+
+  const completedRows = athleteIds.length
+    ? await db.workout.findMany({
+        where: {
+          userId: { in: athleteIds },
+          completedAt: { gte: tenDaysAgo, not: null },
+        },
+        select: { userId: true, completedAt: true },
+      })
+    : [];
+
+  // Index as `${athleteId}:YYYY-MM-DD` → boolean for O(1) lookups below.
+  const completedKey = (userId: string, day: Date) =>
+    `${userId}:${day.toISOString().slice(0, 10)}`;
+  const completedSet = new Set<string>();
+  for (const row of completedRows) {
+    if (row.completedAt) completedSet.add(completedKey(row.userId, row.completedAt));
+  }
+
+  // Same 48-hour de-duplication check for coach notifications, batched.
+  const coachIds = Array.from(new Set(assignments.map((a) => a.coachId)));
+  const dedupWindow = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  const recentMissedNotifs = coachIds.length
+    ? await db.notification.findMany({
+        where: {
+          userId: { in: coachIds },
+          type: "coach_activity",
+          createdAt: { gte: dedupWindow },
+          data: { path: ["kind"], equals: "missed_sessions" },
+        },
+        select: { userId: true },
+      })
+    : [];
+  const recentlyNotifiedCoaches = new Set(
+    recentMissedNotifs.map((n) => n.userId),
+  );
+
   let notified = 0;
 
   for (const a of assignments) {
     if (!a.startedAt || !a.program) continue;
+    if (recentlyNotifiedCoaches.has(a.coachId)) continue;
+
     const schedule = a.program.schedule as Record<
       string,
       Record<string, { templateId?: string; isRestDay?: boolean } | undefined>
@@ -57,7 +108,6 @@ export async function POST(req: Request) {
     const startMs = new Date(a.startedAt).getTime();
     const daysSinceStart = Math.floor((Date.now() - startMs) / (24 * 60 * 60 * 1000));
 
-    // Check the last 2 scheduled training days
     const missedDays: string[] = [];
     for (let offset = 1; offset <= 10; offset++) {
       const checkMs = Date.now() - offset * 24 * 60 * 60 * 1000;
@@ -65,45 +115,21 @@ export async function POST(req: Request) {
       if (checkMs < startMs) break;
       const dayOffset = Math.floor((checkMs - startMs) / (24 * 60 * 60 * 1000));
       const weekNum = Math.floor(dayOffset / 7) + 1;
-      if (!a.program || weekNum > a.program.durationWeeks) continue;
+      if (weekNum > a.program.durationWeeks) continue;
       const cell = schedule[String(weekNum)]?.[getDayOfWeek(checkDate)];
       if (!cell || cell.isRestDay || !cell.templateId) continue;
 
-      // Check if the athlete has a completed workout on this day
-      const dayStart = new Date(checkDate);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-      const completed = await db.workout.findFirst({
-        where: {
-          userId: a.athleteId,
-          completedAt: { gte: dayStart, lt: dayEnd },
-        },
-        select: { id: true },
-      });
-      if (!completed) {
+      const didComplete = completedSet.has(completedKey(a.athleteId, checkDate));
+      if (!didComplete) {
         missedDays.push(checkDate.toISOString().slice(0, 10));
         if (missedDays.length >= 2) break;
       } else {
-        // Hit a completed day — reset streak
         break;
       }
       if (daysSinceStart < 2) break;
     }
 
     if (missedDays.length >= 2) {
-      // Check if we've already notified in the last 48h to avoid spam
-      const recentlyNotified = await db.notification.findFirst({
-        where: {
-          userId: a.coachId,
-          type: "coach_activity",
-          createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
-          data: { path: ["kind"], equals: "missed_sessions" },
-        },
-        select: { id: true },
-      });
-      if (recentlyNotified) continue;
-
       await notifyCoachActivity(
         db,
         a.coachId,
@@ -111,6 +137,9 @@ export async function POST(req: Request) {
         `missed ${missedDays.length} scheduled session${missedDays.length === 1 ? "" : "s"}`,
         a.athleteId,
       );
+      // Treat this coach as notified for the rest of this cron pass so we
+      // don't double-notify for two athletes in the same batch.
+      recentlyNotifiedCoaches.add(a.coachId);
       notified++;
     }
   }
@@ -119,5 +148,6 @@ export async function POST(req: Request) {
     ok: true,
     checkedAssignments: assignments.length,
     notified,
+    cacheHits: completedSet.size,
   });
 }

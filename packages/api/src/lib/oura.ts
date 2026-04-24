@@ -252,20 +252,25 @@ export async function importOuraSleep(
   for (const doc of sleepResponse.data) {
     const externalId = `oura:${doc.id}`;
 
-    // Dedup check
-    const existing = await db.sleepLog.findFirst({
-      where: { externalId },
+    // Dedup + create inside a transaction so a concurrent webhook
+    // delivery can't observe "not exists" and insert a duplicate. The
+    // (userId, externalId) unique constraint should land as part of
+    // R3's DB-level reinforcement, but the tx keeps us correct today.
+    const sleepLog = await db.$transaction(async (tx: typeof db) => {
+      const existing = await tx.sleepLog.findFirst({
+        where: { externalId },
+        select: { id: true },
+      });
+      if (existing) return null;
+
+      const readinessScore = readinessMap.get(doc.day);
+      const mapped = mapOuraSleep(doc, connection.userId, readinessScore);
+      return tx.sleepLog.create({
+        data: { id: crypto.randomUUID(), ...mapped },
+      });
     });
-    if (existing) continue;
 
-    const readinessScore = readinessMap.get(doc.day);
-    const mapped = mapOuraSleep(doc, connection.userId, readinessScore);
-
-    const sleepLog = await db.sleepLog.create({
-      data: { id: crypto.randomUUID(), ...mapped },
-    });
-
-    results.push(sleepLog);
+    if (sleepLog) results.push(sleepLog);
   }
 
   return results;

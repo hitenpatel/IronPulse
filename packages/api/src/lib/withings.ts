@@ -286,45 +286,52 @@ export async function importWithingsMeasures(
 
     const externalId = `withings:${group.grpid}`;
 
-    // Dedup check by externalId
-    const existing = await db.bodyMetric.findFirst({
-      where: { externalId },
-    });
-    if (existing) continue;
+    // Dedup + upsert run together inside a single transaction so two
+    // concurrent webhook deliveries of the same grpid can't both see
+    // "not exists" and race into a duplicate write. The existence check
+    // *and* the upsert are bound to one DB session.
+    const wasImported = await db.$transaction(async (tx: typeof db) => {
+      const existing = await tx.bodyMetric.findFirst({
+        where: { externalId },
+        select: { id: true },
+      });
+      if (existing) return false;
 
-    await db.bodyMetric.upsert({
-      where: {
-        userId_date: {
+      await tx.bodyMetric.upsert({
+        where: {
+          userId_date: {
+            userId,
+            date: dateOnly,
+          },
+        },
+        create: {
+          id: crypto.randomUUID(),
           userId,
           date: dateOnly,
+          weightKg: mapped.weightKg,
+          bodyFatPct: mapped.bodyFatPct,
+          measurements:
+            Object.keys(mapped.measurements).length > 0
+              ? mapped.measurements
+              : undefined,
+          source: "withings",
+          externalId,
         },
-      },
-      create: {
-        id: crypto.randomUUID(),
-        userId,
-        date: dateOnly,
-        weightKg: mapped.weightKg,
-        bodyFatPct: mapped.bodyFatPct,
-        measurements:
-          Object.keys(mapped.measurements).length > 0
-            ? mapped.measurements
-            : undefined,
-        source: "withings",
-        externalId,
-      },
-      update: {
-        weightKg: mapped.weightKg ?? undefined,
-        bodyFatPct: mapped.bodyFatPct ?? undefined,
-        measurements:
-          Object.keys(mapped.measurements).length > 0
-            ? mapped.measurements
-            : undefined,
-        source: "withings",
-        externalId,
-      },
+        update: {
+          weightKg: mapped.weightKg ?? undefined,
+          bodyFatPct: mapped.bodyFatPct ?? undefined,
+          measurements:
+            Object.keys(mapped.measurements).length > 0
+              ? mapped.measurements
+              : undefined,
+          source: "withings",
+          externalId,
+        },
+      });
+      return true;
     });
 
-    imported++;
+    if (wasImported) imported++;
   }
 
   return imported;
