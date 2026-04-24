@@ -96,6 +96,7 @@ import PlateCalculatorScreen from "./app/tools/plate-calculator";
 
 // Notifications
 import NotificationsScreen from "./app/notifications/index";
+import AchievementsScreen from "./app/achievements/index";
 
 // Custom Tab Bar
 import { PulseTabBar } from "./components/layout/pulse-tab-bar";
@@ -155,6 +156,8 @@ export type RootStackParamList = {
   ToolsPlates: undefined;
   // Notifications
   Notifications: undefined;
+  // Achievements
+  Achievements: undefined;
 };
 
 export type AuthStackParamList = {
@@ -542,6 +545,13 @@ function RootNavigator() {
           name="Notifications"
           component={NotificationsScreen}
           options={{ headerShown: true, title: "Notifications", ...HEADER_STYLE }}
+        />
+
+        {/* Achievements */}
+        <RootStack.Screen
+          name="Achievements"
+          component={AchievementsScreen}
+          options={{ headerShown: true, title: "Achievements", ...HEADER_STYLE }}
         />
           </>
         )}

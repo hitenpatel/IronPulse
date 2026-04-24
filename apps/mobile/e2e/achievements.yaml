@@ -1,0 +1,40 @@
+appId: com.ironpulse.app
+---
+# Opens the Achievements screen from Profile and verifies the catalog renders.
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- tapOn: "Profile"
+- extendedWaitUntil:
+    visible: "Achievements"
+    timeout: 10000
+- tapOn: "Achievements"
+- extendedWaitUntil:
+    visible:
+      id: "achievements-progress"
+    timeout: 10000
+# Every badge card from the shared catalog should render
+- assertVisible:
+    id: "badge-first_workout"
+- assertVisible:
+    id: "badge-streak_7"
+- assertVisible:
+    id: "badge-pr_count_10"
+- assertVisible:
+    id: "badge-workouts_100"

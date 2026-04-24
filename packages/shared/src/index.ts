@@ -26,5 +26,6 @@ export * from "./schemas/notification";
 export * from "./hr-zones";
 export * from "./streaks";
 export * from "./warmup";
+export * from "./achievements";
 export * from "./tools/one-rep-max";
 export * from "./tools/plate-calculator";

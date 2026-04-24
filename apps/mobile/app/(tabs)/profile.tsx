@@ -203,6 +203,7 @@ export default function ProfileScreen() {
           tone: "amber",
         },
         { label: "Goals", screen: "Goals", icon: Target, tone: "purple" },
+        { label: "Achievements", screen: "Achievements", icon: Trophy, tone: "amber" },
         { label: "Progress photos", screen: "ProgressPhotos", icon: Camera, tone: "green" },
         { label: "Tools", subtitle: "1RM + plate calculators", screen: "Tools", icon: Calculator, tone: "amber" },
       ],

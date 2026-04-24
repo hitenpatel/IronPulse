@@ -2,59 +2,14 @@
 
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
+import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@ironpulse/shared";
 import { Lock, Trophy } from "lucide-react";
-
-interface BadgeDef {
-  type: string;
-  label: string;
-  description: string;
-  emoji: string;
-}
-
-const ALL_BADGES: BadgeDef[] = [
-  {
-    type: "first_workout",
-    label: "First Rep",
-    description: "Complete your first workout.",
-    emoji: "🏋️",
-  },
-  {
-    type: "streak_7",
-    label: "Week Warrior",
-    description: "Work out on 7 consecutive days.",
-    emoji: "🔥",
-  },
-  {
-    type: "streak_30",
-    label: "Iron Streak",
-    description: "Work out on 30 consecutive days.",
-    emoji: "⚡",
-  },
-  {
-    type: "pr_count_10",
-    label: "PR Machine",
-    description: "Set 10 personal records.",
-    emoji: "🏆",
-  },
-  {
-    type: "workouts_50",
-    label: "Half Century",
-    description: "Complete 50 workouts.",
-    emoji: "💪",
-  },
-  {
-    type: "workouts_100",
-    label: "Centurion",
-    description: "Complete 100 workouts.",
-    emoji: "🥇",
-  },
-];
 
 function BadgeCard({
   badge,
   unlockedAt,
 }: {
-  badge: BadgeDef;
+  badge: AchievementBadge;
   unlockedAt: Date | null;
 }) {
   const unlocked = unlockedAt !== null;
@@ -115,7 +70,7 @@ export default function AchievementsPage() {
   );
 
   const unlockedCount = unlockedMap.size;
-  const totalCount = ALL_BADGES.length;
+  const totalCount = ACHIEVEMENT_CATALOG.length;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
@@ -144,7 +99,7 @@ export default function AchievementsPage() {
 
       {/* Badge grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {ALL_BADGES.map((badge) => (
+        {ACHIEVEMENT_CATALOG.map((badge) => (
           <BadgeCard
             key={badge.type}
             badge={badge}
