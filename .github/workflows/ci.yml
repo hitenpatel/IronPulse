@@ -137,12 +137,12 @@ jobs:
   # ── Playwright E2E with a11y (axe-core) ──
   e2e-web:
     name: Web E2E + a11y (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: arm64
     needs: [build]
     continue-on-error: true
     services:
       postgres:
-        image: postgis/postgis:16-3.4-alpine
+        image: imresamu/postgis:16-3.4-alpine  # multi-arch (has arm64, unlike upstream)
         env:
           POSTGRES_USER: ironpulse
           POSTGRES_PASSWORD: ironpulse
