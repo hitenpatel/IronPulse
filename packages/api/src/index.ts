@@ -18,3 +18,9 @@ export {
   notifyGoalComplete,
   notifyCoachActivity,
 } from "./lib/notifications";
+export {
+  findStreakAtRiskUsers,
+  findInactiveUsers,
+  sendRetentionNudge,
+  type RetentionUser,
+} from "./lib/retention";

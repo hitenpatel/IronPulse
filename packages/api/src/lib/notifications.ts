@@ -16,7 +16,9 @@ type NotificationKind =
   | "workout_complete"
   | "goal_complete"
   | "achievement"
-  | "coach_activity";
+  | "coach_activity"
+  | "streak_recovery"
+  | "reengagement";
 
 /**
  * Persist an in-app notification AND fire a push notification to all of

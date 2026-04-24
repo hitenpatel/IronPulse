@@ -9,6 +9,9 @@ export const notificationTypeEnum = z.enum([
   "goal_complete",
   "achievement",
   "coach_activity",
+  // Retention hooks
+  "streak_recovery",
+  "reengagement",
 ]);
 export type NotificationType = z.infer<typeof notificationTypeEnum>;
 
