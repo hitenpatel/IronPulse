@@ -45,7 +45,6 @@ jobs:
   test-api:
     name: API Tests (real PostgreSQL)
     runs-on: ubuntu-latest
-    continue-on-error: true  # pre-existing test suite bugs — not migration-related
     services:
       postgres:
         image: postgis/postgis:16-3.4-alpine
@@ -58,8 +57,18 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test
+      REDIS_URL: redis://redis:6379
+      STRIPE_SECRET_KEY: sk_test_dummy_for_ci_do_not_use
+      STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -143,8 +152,18 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test
+      REDIS_URL: redis://redis:6379
+      STRIPE_SECRET_KEY: sk_test_dummy_for_ci_do_not_use
+      STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
