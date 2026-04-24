@@ -16,6 +16,7 @@ import {
   ClipboardList,
   BookOpen,
   Calculator,
+  Camera,
   Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const navItems = [
   { icon: User, label: "Profile", href: "/profile" },
   { icon: Calculator, label: "Tools", href: "/tools/1rm" },
   { icon: Trophy, label: "Achievements", href: "/achievements" },
+  { icon: Camera, label: "Progress photos", href: "/progress-photos" },
 ];
 
 interface SidebarNavProps {
