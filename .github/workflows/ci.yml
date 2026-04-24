@@ -54,15 +54,13 @@ jobs:
           POSTGRES_USER: ironpulse
           POSTGRES_PASSWORD: ironpulse
           POSTGRES_DB: ironpulse_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U ironpulse"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
+      DATABASE_URL: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -141,15 +139,13 @@ jobs:
           POSTGRES_USER: ironpulse
           POSTGRES_PASSWORD: ironpulse
           POSTGRES_DB: ironpulse_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U ironpulse"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://ironpulse:ironpulse@localhost:5432/ironpulse_test
+      DATABASE_URL: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
