@@ -20,7 +20,6 @@ import {
   Heart,
   RefreshCw,
   Scale,
-  Watch,
   Zap,
 } from "lucide-react-native";
 import { usePowerSync } from "@powersync/react";
@@ -83,9 +82,12 @@ interface ProviderMeta {
 // Provider catalog — colour is the brand-adjacent accent (cobalt for blue
 // fitness services, red for HR/Apple Health, etc.). All accents come from
 // tokens so the redesign palette drives everything.
+// Garmin Connect hidden from the catalog — partner approval pipeline is
+// multi-week, not viable for launch. Backend routes remain intact so any
+// existing connections keep working; users can use Intervals.icu as a
+// stopgap (it pulls from Garmin Connect upstream).
 const PROVIDERS: ProviderMeta[] = [
   { key: "strava", name: "Strava", subtitle: "Runs · rides · workouts", Icon: Activity, color: colors.orange, auth: "oauth" },
-  { key: "garmin", name: "Garmin Connect", subtitle: "Multi-sport tracking", Icon: Watch, color: colors.green, auth: "oauth" },
   { key: "polar", name: "Polar", subtitle: "Heart rate · recovery", Icon: Heart, color: colors.red, auth: "oauth" },
   { key: "oura", name: "Oura", subtitle: "Sleep · readiness · HRV", Icon: Zap, color: colors.purple, auth: "oauth" },
   { key: "withings", name: "Withings", subtitle: "Weight · body fat · BMI", Icon: Scale, color: colors.green, auth: "oauth" },

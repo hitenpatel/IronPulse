@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
-import { Link2, Link2Off, Watch, Moon, Scale, Activity, BarChart3 } from "lucide-react";
+import { Link2, Link2Off, Moon, Scale, Activity, BarChart3 } from "lucide-react";
 
 function ConnectionCard({
   name,
@@ -195,14 +195,11 @@ export default function IntegrationsPage() {
             disconnect={disconnect}
           />
 
-          <ConnectionCard
-            name="Garmin Connect"
-            provider="garmin"
-            icon={<Watch className="h-6 w-6 text-[#007CC3]" aria-hidden />}
-            connection={findConnection("garmin")}
-            connectHref="/api/garmin/connect"
-            disconnect={disconnect}
-          />
+          {/* Garmin Connect temporarily removed — the partner approval
+              pipeline takes weeks and isn't viable for launch. Users with
+              Garmin devices can sync via Intervals.icu as a workaround.
+              Backend routes (/api/garmin/*) and the DeviceConnection model
+              remain intact so existing connections keep functioning. */}
 
           <ConnectionCard
             name="Polar"
