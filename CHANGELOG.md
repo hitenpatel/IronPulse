@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.0.0 (2026-04-24) — General Availability
+
+Consolidates seven release candidates (rc.1–rc.7) plus Sprint 16's final feature batch into the production release. IronPulse is GA.
+
+### Sprint 16 — Launch-Prep finish
+- **Warm-up generator UI wired into active workout** (#268) — chip appears once a working weight is entered; sheet lets the user pick strength/hypertrophy/light and previews the ramp before inserting; warm-ups slot in front of working sets via a single renumber transaction. User pref (scheme + enabled) in Settings.
+- **Mobile Achievements screen** (#171) — grid of unlocked + locked badges with dates and progress. Shared `ACHIEVEMENT_CATALOG` extracted to `@ironpulse/shared` so web and mobile consume one source of truth.
+- **Expanded achievements to 23 badge types** (#157) — added volume totals, cardio distance, social firsts, recovery streaks, goal completion, and extended workout/PR/streak milestones. New `achievement.checkMine` mutation lets screens trigger retroactive unlock on open; unlocks now emit per-badge in-app + push notifications via `notifyAchievement`.
+- **Import prompt in onboarding** (#170) — optional 4th step inviting users migrating from Strong/Hevy/FitNotes to upload CSV; on confirm, lands the user directly on the import screen post-onboarding.
+- **Guided first-workout tutorial** (#169) — dismissible dashboard banner (web + mobile) walks new users through start / add exercise / log sets / finish. Preference persisted on the User model so it never reappears.
+
+### Consolidated from release candidates
+- **rc.7** Polish, primitives & motion — density/type scale, 15 motion upgrades, warm-up primitive, interactive tRPC panel, ADRs, CSRF audit, CDN runbook
+- **rc.6** Mobile v2 acid-sport redesign — lime primary, cobalt secondary, Instrument Sans/Space Grotesk/JetBrains Mono bundled, 40+ screens redesigned, theme-aware SVG logo v3
+- **rc.5** Production readiness — critical privilege-escalation fix on `processPendingDeletions`, GDPR Article 20 export, tightened CSP, mobile release signing
+- **rc.4** Engagement & quality — goals + notification centre + weekly summary + coach push + Lighthouse CI + axe-core a11y
+- **rc.3** Mobile parity — 10 new mobile screens, superset UI, coach dashboard, profile nav refactor
+- **rc.2** Messaging & polish — Redis Pub/Sub SSE messaging, SQL-window conversations, sync indicator, bundle analyzer, Uptime Kuma
+- **rc.1** Reliability — ESLint, pino logging, env validation, push notifications, backup verification, NextAuth upgrade, 70+ new tests
+
+### Deferred to follow-ups
+- **#210 Register OAuth developer apps** and **#211 Apple Developer account** remain open as manual prerequisites for provider integrations in production.
+- **#212 Pre-release regression suite** — code-level gates (unit + typecheck + lint) all green; live-infra runs (Maestro iOS/Android, Playwright, Lighthouse, Sentry triage) remain for manual sign-off.
+- Hardening & enhancement backlog for v1.0.1 / v1.1.0 / v1.2.0 opened as #291–#322 from the 2026-04-24 product audit.
+
 ## v1.0.0-rc.7 (2026-04-21) — Polish, Primitives & Motion
 
 24 commits: Launch-Prep backlog burn-down (themes, tools, warmup, panel, ADRs, CSRF, CDN, types, integrations runbook), ~15 motion/polish upgrades on mobile, four user-reported bug fixes, and a v2 theme migration across the 24 remaining secondary screens.
