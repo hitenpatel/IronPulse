@@ -1,5 +1,79 @@
 # Changelog
 
+## v1.1.0 (2026-04-24) — Hardening & Core Parity
+
+Lands 15 of the 18 tickets from the post-GA audit. #299 (webhook retry
+queue) was genuinely larger than a minor-release item and has been
+deferred to v1.1.1.
+
+### Reliability & transactions
+- **#300** Withings + Oura dedup runs inside a `$transaction` so
+  concurrent webhook deliveries can't double-insert the same external id.
+- **#301** `goal.list` uses `Promise.allSettled` — one bad goal no longer
+  crashes the whole list; failures route to Sentry with goal context and
+  the row renders with "progress unavailable" rather than disappearing.
+- **#303** Weekly-summary cron inspects the Resend response and only
+  stamps `weeklySummaryLastSentAt` on actual delivery; rejected sends
+  retry next run instead of silently skipping a week.
+
+### Security & input validation
+- **#296** `getUserProfile` activity visibility uses an explicit allowlist
+  per viewer role instead of a fragile `undefined` fallback for owners.
+- **#297** Every `z.string()` in shared schemas now has an explicit
+  length cap; new `packages/shared/src/schemas/limits.ts` centralises the
+  common shortName / mediumString / longText / tokenString / searchString
+  helpers. FIT import fileBase64 capped at 20 MB.
+- **#298** The four `Json` columns (`BodyMetric.measurements`,
+  `Program.schedule`, `SleepLog.stages`, `Notification.data`) are now
+  Zod-validated with bounded shapes.
+
+### Observability
+- **#304** PowerSync init + sync errors on mobile now flow through a new
+  `telemetry.reportClientError` tRPC mutation to Sentry. SyncIndicator
+  surfaces a "Sync paused" label when the app is running against the
+  in-memory fallback stub.
+- **#305** All no-op catches in `apps/mobile/App.tsx` replaced with
+  `captureError(err, { source: "..." })` calls; only NativeWind CSS
+  require is kept silent (with a comment explaining why).
+- **#306** Next.js `useReportWebVitals` wires CLS / LCP / INP / FCP /
+  TTFB through `Sentry.setMeasurement` so real-user perf regressions
+  surface outside Lighthouse CI.
+- **#307** `runIntervalsBackfill` rejection handler now calls
+  `captureError` in addition to the local logger.
+
+### Performance
+- **#302** Coach-missed-sessions cron rewritten: one aggregated
+  `workout.findMany` across all assignee athletes for the last 10 days,
+  indexed by `${userId}:YYYY-MM-DD`. Also batches the 48h notification
+  dedup check into one query.
+
+### Retention hooks
+- **#308** New `/api/cron/streak-recovery` — users with a 7+ day streak
+  whose last workout is 20–72h old get a push + email nudging them to
+  save the streak. Idempotent via the Notification row itself.
+- **#309** New `/api/cron/reengagement` — day-7 and day-21 nudges with
+  distinct copy (warm retention vs. identity reframe) for dormant users.
+
+### Features & UX
+- **#310** Progress Photos on web — new `/progress-photos` route with
+  upload, gallery, and side-by-side comparison. Parity with the mobile
+  screen.
+- **#311** Rest-timer pause/resume on web + mobile. Paused state freezes
+  the interval and parks the breathing animation; skip/dismiss clears.
+- **#312** Set-type UI for warmup / dropset / failure on mobile — long
+  press the set-number cell to open an ActionSheet picker; non-working
+  types render a coloured letter badge. PR detection now excludes these
+  types via a Prisma `notIn` filter, fixing long-standing PR inflation.
+
+### Accessibility
+- **#313** iOS Dynamic Type / Android font scale now honoured with a
+  1.3× cap via `Text.defaultProps.maxFontSizeMultiplier`. Users with
+  Larger Text get real scaling without the v2 layouts collapsing.
+
+### Deferred to v1.1.1
+- **#299** Provider-webhook retry queue — requires BullMQ + Redis wiring
+  + worker deployment + migration, out of minor-release scope.
+
 ## v1.0.1 (2026-04-24) — Security Patch
 
 Out-of-band security follow-up to v1.0.0, landing all four High-severity findings from the 2026-04-24 product audit plus hardening on the expired-token cleanup cron. No user-facing behaviour changes.
