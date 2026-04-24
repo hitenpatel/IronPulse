@@ -171,3 +171,86 @@ describe("user.me", () => {
     await expect(caller.me()).rejects.toThrow("UNAUTHORIZED");
   });
 });
+
+describe("user.registerPushToken", () => {
+  it("creates a fresh token for a new device", async () => {
+    const dbUser = await db.user.create({
+      data: { email: "push-new@example.com", name: "Push New" },
+    });
+    const caller = userCaller({
+      user: createTestUser({ id: dbUser.id, email: dbUser.email }),
+    });
+
+    const result = await caller.registerPushToken({
+      token: "ExponentPushToken[new-device]",
+      platform: "ios",
+    });
+
+    expect(result.success).toBe(true);
+    const row = await db.pushToken.findUnique({
+      where: { token: "ExponentPushToken[new-device]" },
+    });
+    expect(row?.userId).toBe(dbUser.id);
+  });
+
+  it("allows the same user to re-register their token (e.g. after reinstall)", async () => {
+    const dbUser = await db.user.create({
+      data: { email: "push-reregister@example.com", name: "Push Rere" },
+    });
+    await db.pushToken.create({
+      data: {
+        userId: dbUser.id,
+        token: "ExponentPushToken[stable]",
+        platform: "ios",
+      },
+    });
+    const caller = userCaller({
+      user: createTestUser({ id: dbUser.id, email: dbUser.email }),
+    });
+
+    await expect(
+      caller.registerPushToken({
+        token: "ExponentPushToken[stable]",
+        platform: "android",
+      }),
+    ).resolves.toEqual({ success: true });
+
+    const row = await db.pushToken.findUnique({
+      where: { token: "ExponentPushToken[stable]" },
+    });
+    expect(row?.userId).toBe(dbUser.id);
+    expect(row?.platform).toBe("android");
+  });
+
+  it("rejects takeover attempts from a different user", async () => {
+    const victim = await db.user.create({
+      data: { email: "push-victim@example.com", name: "Victim" },
+    });
+    const attacker = await db.user.create({
+      data: { email: "push-attacker@example.com", name: "Attacker" },
+    });
+    await db.pushToken.create({
+      data: {
+        userId: victim.id,
+        token: "ExponentPushToken[victim-device]",
+        platform: "ios",
+      },
+    });
+
+    const caller = userCaller({
+      user: createTestUser({ id: attacker.id, email: attacker.email }),
+    });
+
+    await expect(
+      caller.registerPushToken({
+        token: "ExponentPushToken[victim-device]",
+        platform: "ios",
+      }),
+    ).rejects.toThrow("FORBIDDEN");
+
+    const row = await db.pushToken.findUnique({
+      where: { token: "ExponentPushToken[victim-device]" },
+    });
+    expect(row?.userId).toBe(victim.id);
+  });
+});

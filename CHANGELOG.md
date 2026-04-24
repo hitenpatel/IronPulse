@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.1 (2026-04-24) — Security Patch
+
+Out-of-band security follow-up to v1.0.0, landing all four High-severity findings from the 2026-04-24 product audit plus hardening on the expired-token cleanup cron. No user-facing behaviour changes.
+
+### Security
+- **Prevent push-token ownership takeover** (#291) — `user.registerPushToken` now refuses tokens that are already registered to a different account, closing a notification-redirect hole.
+- **Verify Garmin webhook signatures** (#292) — inbound Garmin POSTs must present an `X-Garmin-Signature` header matching an HMAC-SHA256 of the raw body against `GARMIN_WEBHOOK_SECRET`. Requests without a valid signature return 401; unconfigured secrets fail closed with 503.
+- **Gate feed reactions on activity visibility** (#293) — `toggleReaction` now runs the same visibility check as the feed itself, shared via a new `assertFeedItemVisible` helper. Strangers can no longer react to followers-only or private posts.
+
+### Reliability
+- **Parse Expo push API responses** (#294) — `sendPushNotification` now returns a typed `{ delivered, deadToken, error }` result. Tokens flagged as `DeviceNotRegistered` / `InvalidCredentials` are deleted from `push_tokens`; transient failures (HTTP 5xx, rate limit) leave the row in place and log via `captureError`.
+- **Harden expired-token cleanup cron** (#295) — `POST /api/cron/cleanup-tokens` now runs each table's delete independently via `Promise.allSettled`, captures per-table failures to Sentry, and returns `207 Multi-Status` when partial success occurs.
+
+### Notes
+- New env var: `GARMIN_WEBHOOK_SECRET`. Set to any high-entropy string shared with Garmin's webhook configuration; rotate on a breach.
+
 ## v1.0.0 (2026-04-24) — General Availability
 
 Consolidates seven release candidates (rc.1–rc.7) plus Sprint 16's final feature batch into the production release. IronPulse is GA.

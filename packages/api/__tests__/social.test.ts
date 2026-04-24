@@ -214,3 +214,91 @@ describe("social.feed", () => {
     expect(result.nextCursor).toBeNull();
   });
 });
+
+describe("social.toggleReaction — visibility gating", () => {
+  it("allows reactions on public posts from strangers", async () => {
+    const item = await db.activityFeedItem.create({
+      data: {
+        userId: userB.id,
+        type: "workout_completed",
+        referenceId: crypto.randomUUID(),
+        visibility: "public",
+      },
+    });
+    const caller = socialCaller({ user: userA });
+    await expect(
+      caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
+    ).resolves.toEqual({ active: true });
+  });
+
+  it("rejects reactions on followers-only posts from non-followers", async () => {
+    const item = await db.activityFeedItem.create({
+      data: {
+        userId: userB.id,
+        type: "workout_completed",
+        referenceId: crypto.randomUUID(),
+        visibility: "followers",
+      },
+    });
+    const caller = socialCaller({ user: userA });
+    await expect(
+      caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
+    ).rejects.toThrow("FORBIDDEN");
+
+    const count = await db.feedReaction.count({
+      where: { feedItemId: item.id },
+    });
+    expect(count).toBe(0);
+  });
+
+  it("allows reactions on followers-only posts from followers", async () => {
+    await db.follow.create({
+      data: { followerId: userA.id, followingId: userB.id },
+    });
+    const item = await db.activityFeedItem.create({
+      data: {
+        userId: userB.id,
+        type: "workout_completed",
+        referenceId: crypto.randomUUID(),
+        visibility: "followers",
+      },
+    });
+    const caller = socialCaller({ user: userA });
+    await expect(
+      caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
+    ).resolves.toEqual({ active: true });
+  });
+
+  it("rejects reactions on private posts even from followers", async () => {
+    await db.follow.create({
+      data: { followerId: userA.id, followingId: userB.id },
+    });
+    const item = await db.activityFeedItem.create({
+      data: {
+        userId: userB.id,
+        type: "workout_completed",
+        referenceId: crypto.randomUUID(),
+        visibility: "private",
+      },
+    });
+    const caller = socialCaller({ user: userA });
+    await expect(
+      caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
+    ).rejects.toThrow("FORBIDDEN");
+  });
+
+  it("allows the author to react to their own private post", async () => {
+    const item = await db.activityFeedItem.create({
+      data: {
+        userId: userA.id,
+        type: "workout_completed",
+        referenceId: crypto.randomUUID(),
+        visibility: "private",
+      },
+    });
+    const caller = socialCaller({ user: userA });
+    await expect(
+      caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
+    ).resolves.toEqual({ active: true });
+  });
+});

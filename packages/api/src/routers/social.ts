@@ -8,6 +8,47 @@ import {
   toggleReactionSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
+import type { PrismaClient } from "@ironpulse/db";
+
+/**
+ * Visibility gate for feed items. A user can see the item when:
+ *   - they authored it, OR
+ *   - visibility is "public", OR
+ *   - visibility is "followers" AND they follow the author.
+ * Private posts are visible only to their author.
+ *
+ * Throws `NOT_FOUND` for missing rows (hides existence), `FORBIDDEN`
+ * otherwise. Returns the feed item's `userId` so callers can avoid a
+ * second lookup.
+ */
+async function assertFeedItemVisible(
+  db: PrismaClient,
+  feedItemId: string,
+  viewerId: string,
+): Promise<{ authorId: string; visibility: string }> {
+  const item = await db.activityFeedItem.findUnique({
+    where: { id: feedItemId },
+    select: { userId: true, visibility: true },
+  });
+  if (!item) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Feed item not found" });
+  }
+  if (item.userId === viewerId) return { authorId: item.userId, visibility: item.visibility };
+  if (item.visibility === "public") return { authorId: item.userId, visibility: item.visibility };
+  if (item.visibility === "followers") {
+    const follows = await db.follow.findUnique({
+      where: {
+        followerId_followingId: { followerId: viewerId, followingId: item.userId },
+      },
+      select: { id: true },
+    });
+    if (follows) return { authorId: item.userId, visibility: item.visibility };
+  }
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    message: "You do not have access to this post",
+  });
+}
 
 export const socialRouter = createTRPCRouter({
   follow: rateLimitedProcedure
@@ -356,13 +397,10 @@ export const socialRouter = createTRPCRouter({
   toggleReaction: rateLimitedProcedure
     .input(toggleReactionSchema)
     .mutation(async ({ ctx, input }) => {
-      const feedItem = await ctx.db.activityFeedItem.findUnique({
-        where: { id: input.feedItemId },
-        select: { id: true },
-      });
-      if (!feedItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Feed item not found" });
-      }
+      // Reactions must be gated on the same visibility rules as the feed
+      // itself — otherwise anyone guessing a feed-item id could react to
+      // private/followers-only posts.
+      await assertFeedItemVisible(ctx.db, input.feedItemId, ctx.user.id);
 
       const existing = await ctx.db.feedReaction.findUnique({
         where: {

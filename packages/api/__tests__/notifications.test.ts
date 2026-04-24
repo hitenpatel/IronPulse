@@ -25,9 +25,12 @@ function mockDb(tokens: string[]) {
   return {
     pushToken: {
       findMany: vi.fn().mockResolvedValue(tokens.map((t) => ({ token: t }))),
+      deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
   };
 }
+
+const OK_RESULT = { delivered: true, deadToken: false };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,14 +38,24 @@ beforeEach(() => {
 
 describe("notifyNewPR", () => {
   it("sends push notification for each token", async () => {
-    mockSend.mockResolvedValue(undefined);
+    mockSend.mockResolvedValue(OK_RESULT);
     const db = mockDb(["token-a", "token-b"]);
 
     await notifyNewPR(db, "user-1", "Bench Press", "Est. 1RM: 100kg");
 
     expect(mockSend).toHaveBeenCalledTimes(2);
-    expect(mockSend).toHaveBeenCalledWith("token-a", "New PR!", "Bench Press — Est. 1RM: 100kg");
-    expect(mockSend).toHaveBeenCalledWith("token-b", "New PR!", "Bench Press — Est. 1RM: 100kg");
+    expect(mockSend).toHaveBeenCalledWith(
+      "token-a",
+      "New PR!",
+      "Bench Press — Est. 1RM: 100kg",
+      undefined,
+    );
+    expect(mockSend).toHaveBeenCalledWith(
+      "token-b",
+      "New PR!",
+      "Bench Press — Est. 1RM: 100kg",
+      undefined,
+    );
     expect(mockCapture).not.toHaveBeenCalled();
   });
 
@@ -75,12 +88,17 @@ describe("notifyNewPR", () => {
 
 describe("notifyNewMessage", () => {
   it("sends push notification for each token", async () => {
-    mockSend.mockResolvedValue(undefined);
+    mockSend.mockResolvedValue(OK_RESULT);
     const db = mockDb(["token-x"]);
 
     await notifyNewMessage(db, "receiver-1", "Alice");
 
-    expect(mockSend).toHaveBeenCalledWith("token-x", "New Message", "From Alice");
+    expect(mockSend).toHaveBeenCalledWith(
+      "token-x",
+      "New Message",
+      "From Alice",
+      undefined,
+    );
     expect(mockCapture).not.toHaveBeenCalled();
   });
 
@@ -113,7 +131,7 @@ describe("notifyNewMessage", () => {
 
 describe("notifyAchievement", () => {
   it("pushes a notification with the badge's label and description", async () => {
-    mockSend.mockResolvedValue(undefined);
+    mockSend.mockResolvedValue(OK_RESULT);
     const db = mockDb(["token-a"]);
     const badge = ACHIEVEMENT_CATALOG.find((b) => b.type === "streak_7")!;
 
@@ -125,5 +143,39 @@ describe("notifyAchievement", () => {
     expect(title).toContain(badge.label);
     expect(body).toBe(badge.description);
     expect(mockCapture).not.toHaveBeenCalled();
+  });
+});
+
+describe("dead-token pruning", () => {
+  it("deletes the pushToken row when Expo reports DeviceNotRegistered", async () => {
+    mockSend.mockResolvedValue({
+      delivered: false,
+      deadToken: true,
+      error: "DeviceNotRegistered",
+    });
+    const db = mockDb(["token-dead"]);
+
+    await notifyNewMessage(db, "receiver-1", "Alice");
+
+    expect(db.pushToken.deleteMany).toHaveBeenCalledWith({
+      where: { token: "token-dead" },
+    });
+  });
+
+  it("captures a transient delivery error without deleting the token", async () => {
+    mockSend.mockResolvedValue({
+      delivered: false,
+      deadToken: false,
+      error: "Expo push API 503",
+    });
+    const db = mockDb(["token-alive"]);
+
+    await notifyNewMessage(db, "receiver-1", "Alice");
+
+    expect(db.pushToken.deleteMany).not.toHaveBeenCalled();
+    expect(mockCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Expo push API 503" }),
+      expect.objectContaining({ context: "createNotification.delivery" }),
+    );
   });
 });

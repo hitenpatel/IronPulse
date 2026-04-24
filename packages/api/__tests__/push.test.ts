@@ -1,52 +1,133 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sendPushNotification } from "../src/lib/push";
 
-const mockFetch = vi.fn().mockResolvedValue(new Response("ok"));
+type FetchLike = ReturnType<typeof vi.fn>;
+
+function stubFetch(impl: () => Promise<Response>): FetchLike {
+  const fn = vi.fn(impl);
+  vi.stubGlobal("fetch", fn);
+  return fn;
+}
+
+function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
+  return new Response(JSON.stringify(body), {
+    status: init.status ?? 200,
+    headers: { "content-type": "application/json" },
+  });
+}
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  vi.stubGlobal("fetch", mockFetch);
+  vi.unstubAllGlobals();
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
-describe("sendPushNotification", () => {
-  it("calls fetch with Expo Push API URL", async () => {
-    await sendPushNotification("ExponentPushToken[abc]", "Title", "Body");
-
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch.mock.calls[0][0]).toBe(
-      "https://exp.host/--/api/v2/push/send",
+describe("sendPushNotification — request shape", () => {
+  it("POSTs to the Expo Push API with the correct body", async () => {
+    const fetchMock = stubFetch(() =>
+      Promise.resolve(jsonResponse({ data: { status: "ok", id: "t1" } })),
     );
-  });
 
-  it("sends correct JSON body with token, title, body, and sound", async () => {
-    await sendPushNotification("ExponentPushToken[abc]", "My Title", "My Body");
-
-    const call = mockFetch.mock.calls[0];
-    const options = call[1];
-    expect(options.method).toBe("POST");
-    expect(options.headers).toEqual({ "Content-Type": "application/json" });
-
-    const body = JSON.parse(options.body);
-    expect(body.to).toBe("ExponentPushToken[abc]");
-    expect(body.title).toBe("My Title");
-    expect(body.body).toBe("My Body");
-    expect(body.sound).toBe("default");
-  });
-
-  it("includes data when provided", async () => {
-    await sendPushNotification("ExponentPushToken[abc]", "T", "B", {
+    await sendPushNotification("ExponentPushToken[abc]", "Title", "Body", {
       screen: "workout",
       id: "123",
     });
 
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.data).toEqual({ screen: "workout", id: "123" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://exp.host/--/api/v2/push/send");
+    expect(init.method).toBe("POST");
+    const parsed = JSON.parse(init.body);
+    expect(parsed).toEqual({
+      to: "ExponentPushToken[abc]",
+      title: "Title",
+      body: "Body",
+      data: { screen: "workout", id: "123" },
+      sound: "default",
+    });
+  });
+});
+
+describe("sendPushNotification — delivery classification", () => {
+  it("returns delivered on a status:ok ticket", async () => {
+    stubFetch(() =>
+      Promise.resolve(jsonResponse({ data: { status: "ok", id: "t1" } })),
+    );
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result).toEqual({ delivered: true, deadToken: false });
   });
 
-  it("does not include data when not provided", async () => {
-    await sendPushNotification("ExponentPushToken[abc]", "T", "B");
+  it("flags the token dead on DeviceNotRegistered", async () => {
+    stubFetch(() =>
+      Promise.resolve(
+        jsonResponse({
+          data: {
+            status: "error",
+            message: "…",
+            details: { error: "DeviceNotRegistered" },
+          },
+        }),
+      ),
+    );
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result.deadToken).toBe(true);
+    expect(result.delivered).toBe(false);
+    expect(result.error).toBe("DeviceNotRegistered");
+  });
 
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.data).toBeUndefined();
+  it("flags the token dead on InvalidCredentials", async () => {
+    stubFetch(() =>
+      Promise.resolve(
+        jsonResponse({
+          data: { status: "error", details: { error: "InvalidCredentials" } },
+        }),
+      ),
+    );
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result.deadToken).toBe(true);
+  });
+
+  it("keeps the token on transient errors (MessageRateExceeded)", async () => {
+    stubFetch(() =>
+      Promise.resolve(
+        jsonResponse({
+          data: {
+            status: "error",
+            details: { error: "MessageRateExceeded" },
+          },
+        }),
+      ),
+    );
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result.deadToken).toBe(false);
+    expect(result.delivered).toBe(false);
+  });
+
+  it("treats non-OK HTTP responses as transient", async () => {
+    stubFetch(() =>
+      Promise.resolve(new Response("upstream down", { status: 503 })),
+    );
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result).toEqual({
+      delivered: false,
+      deadToken: false,
+      error: "Expo push API 503",
+    });
+  });
+
+  it("treats fetch() rejections as transient", async () => {
+    stubFetch(() => Promise.reject(new Error("ENOTFOUND exp.host")));
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result.deadToken).toBe(false);
+    expect(result.error).toBe("ENOTFOUND exp.host");
+  });
+
+  it("normalises an array data response into a single ticket", async () => {
+    stubFetch(() =>
+      Promise.resolve(jsonResponse({ data: [{ status: "ok", id: "t1" }] })),
+    );
+    const result = await sendPushNotification("tok", "Hi", "body");
+    expect(result.delivered).toBe(true);
   });
 });
