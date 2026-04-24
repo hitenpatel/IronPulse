@@ -181,14 +181,23 @@ export const socialRouter = createTRPCRouter({
         select: { id: true },
       });
 
+      // Visibility gate: own profile sees everything, followers see
+      // public + followers-only, strangers see only public. Enumerating
+      // the allowed values explicitly (instead of using `undefined` for
+      // owners, which silently disables the filter) keeps the intent
+      // obvious and prevents a future ternary refactor from widening
+      // access by accident.
+      const isSelf = input.userId === ctx.user.id;
+      const allowedVisibility: string[] = isSelf
+        ? ["public", "followers", "private"]
+        : isFollowing
+          ? ["public", "followers"]
+          : ["public"];
+
       const recentActivity = await ctx.db.activityFeedItem.findMany({
         where: {
           userId: input.userId,
-          visibility: input.userId === ctx.user.id
-            ? undefined
-            : isFollowing
-              ? { in: ["public", "followers"] }
-              : "public",
+          visibility: { in: allowedVisibility },
         },
         orderBy: { createdAt: "desc" },
         take: 10,

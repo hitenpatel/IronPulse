@@ -1,5 +1,6 @@
 export * from "./enums";
 export * from "./types";
+export * from "./schemas/limits";
 export * from "./schemas/auth";
 export * from "./schemas/user";
 export * from "./schemas/pagination";

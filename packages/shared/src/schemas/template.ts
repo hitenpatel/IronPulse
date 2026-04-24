@@ -22,7 +22,7 @@ const templateSetInput = z.object({
 const templateExerciseInput = z.object({
   exerciseId: z.string().uuid(),
   order: z.number().int().nonnegative(),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
   sets: z.array(templateSetInput).default([]),
 });
 

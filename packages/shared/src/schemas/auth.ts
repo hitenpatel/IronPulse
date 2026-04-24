@@ -29,7 +29,7 @@ export const requestPasswordResetSchema = z.object({
 export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
 
 export const resetPasswordSchema = z.object({
-  token: z.string(),
+  token: z.string().min(1).max(512),
   password: z.string().min(8).max(128),
 });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
@@ -50,7 +50,7 @@ export type PasskeyRegisterVerifyInput = z.infer<typeof passkeyRegisterVerifySch
 
 export const passkeyLoginVerifySchema = z.object({
   assertion: z.custom<AuthenticationResponseJSON>(),
-  challenge: z.string(),
+  challenge: z.string().min(1).max(512),
 });
 export type PasskeyLoginVerifyInput = z.infer<typeof passkeyLoginVerifySchema>;
 
@@ -66,7 +66,7 @@ export const passkeyDeleteSchema = z.object({
 export type PasskeyDeleteInput = z.infer<typeof passkeyDeleteSchema>;
 
 export const removePasswordSchema = z.object({
-  currentPassword: z.string().optional(),
+  currentPassword: z.string().min(1).max(128).optional(),
   passkeyAssertion: z.custom<AuthenticationResponseJSON>().optional(),
 });
 export type RemovePasswordInput = z.infer<typeof removePasswordSchema>;
@@ -92,6 +92,6 @@ export const changeEmailSchema = z.object({
 export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
 
 export const confirmEmailChangeSchema = z.object({
-  token: z.string(),
+  token: z.string().min(1).max(512),
 });
 export type ConfirmEmailChangeInput = z.infer<typeof confirmEmailChangeSchema>;

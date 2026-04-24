@@ -11,8 +11,8 @@ export const createExerciseSchema = z.object({
     ExerciseCategory.STRETCHING,
     ExerciseCategory.PLYOMETRIC,
   ]),
-  primaryMuscles: z.array(z.string()).min(1),
-  secondaryMuscles: z.array(z.string()).default([]),
+  primaryMuscles: z.array(z.string().max(50)).min(1).max(20),
+  secondaryMuscles: z.array(z.string().max(50)).max(20).default([]),
   equipment: z
     .enum([
       Equipment.BARBELL,
@@ -26,7 +26,7 @@ export const createExerciseSchema = z.object({
     ])
     .nullable()
     .optional(),
-  instructions: z.string().optional(),
+  instructions: z.string().max(5000).optional(),
 });
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>;
 
@@ -45,9 +45,9 @@ export const uploadExerciseMediaSchema = z.object({
 export type UploadExerciseMediaInput = z.infer<typeof uploadExerciseMediaSchema>;
 
 export const listExercisesSchema = cursorPaginationSchema.extend({
-  muscleGroup: z.string().optional(),
-  equipment: z.string().optional(),
-  category: z.string().optional(),
-  search: z.string().optional(),
+  muscleGroup: z.string().max(50).optional(),
+  equipment: z.string().max(50).optional(),
+  category: z.string().max(50).optional(),
+  search: z.string().max(200).optional(),
 });
 export type ListExercisesInput = z.infer<typeof listExercisesSchema>;

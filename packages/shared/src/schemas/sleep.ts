@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+/**
+ * Sleep stage breakdown as delivered by consumer devices (Oura, Apple
+ * Watch, Garmin). Bounded to a small, typed record so downstream readers
+ * can rely on the shape and the DB can't be stuffed with arbitrary JSON.
+ */
+export const sleepStagesSchema = z.object({
+  awakeMins: z.number().finite().nonnegative().max(1440).optional(),
+  lightMins: z.number().finite().nonnegative().max(1440).optional(),
+  deepMins: z.number().finite().nonnegative().max(1440).optional(),
+  remMins: z.number().finite().nonnegative().max(1440).optional(),
+});
+export type SleepStages = z.infer<typeof sleepStagesSchema>;
+
 export const sleepQualityEnum = z.enum(["poor", "fair", "good", "excellent"]);
 export type SleepQuality = z.infer<typeof sleepQualityEnum>;
 
@@ -13,7 +26,8 @@ export const logSleepSchema = z.object({
   durationMins: z.number().int().positive().optional(),
   quality: sleepQualityEnum.optional(),
   source: sleepSourceEnum.optional(),
-  notes: z.string().optional(),
+  stages: sleepStagesSchema.optional(),
+  notes: z.string().max(2000).optional(),
 });
 export type LogSleepInput = z.infer<typeof logSleepSchema>;
 

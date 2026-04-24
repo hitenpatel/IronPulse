@@ -21,6 +21,7 @@ export const sleepRouter = createTRPCRouter({
           }),
           ...(input.quality !== undefined && { quality: input.quality }),
           ...(input.source !== undefined && { source: input.source }),
+          ...(input.stages !== undefined && { stages: input.stages }),
           ...(input.notes !== undefined && { notes: input.notes }),
         },
         select: {

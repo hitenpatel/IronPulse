@@ -21,7 +21,7 @@ export const createCardioSchema = z.object({
   avgHeartRate: z.number().int().positive().optional(),
   maxHeartRate: z.number().int().positive().optional(),
   calories: z.number().int().nonnegative().optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
 });
 export type CreateCardioInput = z.infer<typeof createCardioSchema>;
 
@@ -50,13 +50,16 @@ export const previewGpxSchema = z.object({
 });
 export type PreviewGpxInput = z.infer<typeof previewGpxSchema>;
 
+// FIT files are small — 100 KB in raw form rarely, ~135 KB base64-encoded
+// at the upper end of real-world activities. 20 MB gives headroom without
+// letting someone PAYLOAD the server.
 export const previewFitSchema = z.object({
-  fileBase64: z.string(),
+  fileBase64: z.string().max(20_000_000),
 });
 export type PreviewFitInput = z.infer<typeof previewFitSchema>;
 
 export const importFitSchema = z.object({
-  fileBase64: z.string(),
-  notes: z.string().optional(),
+  fileBase64: z.string().max(20_000_000),
+  notes: z.string().max(2000).optional(),
 });
 export type ImportFitInput = z.infer<typeof importFitSchema>;

@@ -11,7 +11,7 @@ export const logMealSchema = z.object({
   proteinG: z.number().nonnegative().optional(),
   carbsG: z.number().nonnegative().optional(),
   fatG: z.number().nonnegative().optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
 });
 export type LogMealInput = z.infer<typeof logMealSchema>;
 

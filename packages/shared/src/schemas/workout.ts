@@ -10,7 +10,7 @@ export type CreateWorkoutInput = z.infer<typeof createWorkoutSchema>;
 export const updateWorkoutSchema = z.object({
   workoutId: z.string().uuid(),
   name: z.string().min(1).max(200).optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
 });
 export type UpdateWorkoutInput = z.infer<typeof updateWorkoutSchema>;
 
