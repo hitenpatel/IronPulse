@@ -223,12 +223,14 @@ describe("refreshWithingsToken", () => {
 
 describe("importWithingsMeasures", () => {
   function makeDb() {
-    return {
+    const db: any = {
       bodyMetric: {
         findFirst: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue({}),
       },
+      $transaction: vi.fn().mockImplementation((cb: (tx: any) => Promise<any>) => cb(db)),
     };
+    return db;
   }
 
   it("imports weight and bodyFat, upserts by userId+date", async () => {
@@ -361,7 +363,7 @@ describe("runWithingsBackfill", () => {
     const mockFindFirst = vi.fn().mockResolvedValue(null);
     const mockUpsert = vi.fn().mockResolvedValue({});
 
-    const db = {
+    const db: any = {
       deviceConnection: {
         findUnique: vi.fn().mockResolvedValue({
           id: "conn-1",
@@ -376,6 +378,7 @@ describe("runWithingsBackfill", () => {
         findFirst: mockFindFirst,
         upsert: mockUpsert,
       },
+      $transaction: vi.fn().mockImplementation((cb: (tx: any) => Promise<any>) => cb(db)),
     };
 
     // Mock the Withings API response
