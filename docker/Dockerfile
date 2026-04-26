@@ -14,6 +14,8 @@ RUN pnpm install --frozen-lockfile
 
 # Build
 FROM base AS builder
+ARG SKIP_TYPECHECK_ON_BUILD=0
+ENV SKIP_TYPECHECK_ON_BUILD=$SKIP_TYPECHECK_ON_BUILD
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
