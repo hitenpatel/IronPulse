@@ -52,6 +52,16 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Staging-only escape hatch: when SKIP_TYPECHECK_ON_BUILD=1, Next.js skips
+  // TS errors during build. Used by the staging stack on the VM so a single
+  // type error doesn't block the entire QA test environment. CI builds (which
+  // do NOT set this var) remain strict and continue to catch type regressions.
+  typescript: {
+    ignoreBuildErrors: process.env.SKIP_TYPECHECK_ON_BUILD === "1",
+  },
+  eslint: {
+    ignoreDuringBuilds: process.env.SKIP_TYPECHECK_ON_BUILD === "1",
+  },
   serverExternalPackages: ["@simplewebauthn/server"],
   transpilePackages: [
     "@ironpulse/api",
