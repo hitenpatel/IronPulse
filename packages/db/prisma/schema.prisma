@@ -1,6 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
+  // Build for both glibc (default in dev / CI / linux/amd64 prod) and
+  // musl-arm64 (Alpine + ARM, used by staging on Oracle ARM VM).
+  // Without the explicit binaryTarget, Prisma fails to boot at runtime
+  // with: could not locate the Query Engine for runtime
+  // linux-musl-arm64-openssl-3.0.x.
+  binaryTargets   = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
