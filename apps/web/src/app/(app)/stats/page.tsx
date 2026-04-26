@@ -798,7 +798,7 @@ function BodyMeasurementsLogForm() {
 
       if (mode === "powersync" && db) {
         // Check if there's already an entry for today
-        const existing = (metrics ?? []).find((m) => m.date === dateStr);
+        const existing = (metrics ?? []).find((m: BodyMetricRow) => m.date === dateStr);
 
         if (existing) {
           // Merge with existing measurements for today
