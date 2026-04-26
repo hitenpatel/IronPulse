@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ClipboardList, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PowerSyncContext } from "@powersync/react";
-import { useTemplates } from "@ironpulse/sync";
+import { useTemplates, type TemplateRow } from "@ironpulse/sync";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -42,11 +42,12 @@ export default function TemplatesPage() {
 
   const isLoading = mode === "powersync" ? psLoading : trpcLoading;
 
-  const templates =
+  const templates: TemplateRow[] =
     mode === "powersync"
       ? (psTemplatesData ?? [])
-      : (trpcTemplatesData?.data ?? []).map((t) => ({
+      : (trpcTemplatesData?.data ?? []).map((t): TemplateRow => ({
           id: t.id,
+          user_id: t.userId,
           name: t.name,
           created_at: t.createdAt instanceof Date ? t.createdAt.toISOString() : String(t.createdAt),
           exercise_count: t._count?.templateExercises ?? 0,
