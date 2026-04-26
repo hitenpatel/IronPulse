@@ -30,6 +30,12 @@ FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
+# Prisma CLI + tsx are needed at runtime for migrations and dev seeding.
+# In the builder image they live in pnpm's .pnpm/ store with symlinks; the
+# minimal runtime copy below would dangle those symlinks. Install both
+# globally so they're on PATH for the entrypoint and any docker exec.
+RUN npm install -g prisma@6.3 tsx@4.21
+
 COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
 COPY --from=builder /app/packages/db/seeds ./packages/db/seeds
 COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
