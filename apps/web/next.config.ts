@@ -8,16 +8,17 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 const isDev = process.env.NODE_ENV !== "production";
 
-// Production CSP — drops unsafe-eval entirely; adds strict-dynamic so that
-// modern browsers ignore 'unsafe-inline' for scripts (scripts from the same
-// origin can load further scripts, but inline script injection is blocked).
+// Production CSP — drops unsafe-eval entirely. We can't add 'strict-dynamic'
+// here without a per-request nonce, because strict-dynamic makes modern
+// browsers IGNORE 'unsafe-inline', which breaks Next.js's inline bootstrap
+// scripts (hydration silently fails and forms fall back to native GET).
 // Dev mode keeps 'unsafe-eval' because Turbopack's HMR runtime needs it.
 //
-// Follow-up (rc.5+): migrate to per-request nonce via middleware.ts to allow
-// dropping 'unsafe-inline' entirely on modern browsers.
+// Follow-up: migrate to per-request nonce via middleware.ts to allow
+// re-adding strict-dynamic and dropping 'unsafe-inline' on modern browsers.
 const scriptSrc = isDev
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  : "script-src 'self' 'unsafe-inline' 'strict-dynamic' 'report-sample'";
+  : "script-src 'self' 'unsafe-inline'";
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
