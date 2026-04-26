@@ -283,15 +283,17 @@ describe("importOuraSleep", () => {
   }
 
   function makeDb() {
-    return {
+    const db: any = {
       sleepLog: {
         findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockImplementation(({ data }) => Promise.resolve(data)),
+        create: vi.fn().mockImplementation(({ data }: { data: any }) => Promise.resolve(data)),
       },
       deviceConnection: {
         update: vi.fn().mockResolvedValue({}),
       },
+      $transaction: vi.fn().mockImplementation((cb: (tx: any) => Promise<any>) => cb(db)),
     };
+    return db;
   }
 
   it("creates SleepLog for new entries and skips duplicates", async () => {
@@ -426,21 +428,23 @@ describe("runOuraBackfill", () => {
   });
 
   function makeDb(connection: any) {
-    return {
+    const db: any = {
       deviceConnection: {
         findUnique: vi.fn().mockResolvedValue(connection),
         update: vi.fn().mockResolvedValue({}),
       },
       sleepLog: {
         findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockImplementation(({ data }) => Promise.resolve(data)),
+        create: vi.fn().mockImplementation(({ data }: { data: any }) => Promise.resolve(data)),
       },
       bodyMetric: {
-        upsert: vi.fn().mockImplementation(({ create }) =>
+        upsert: vi.fn().mockImplementation(({ create }: { create: any }) =>
           Promise.resolve(create),
         ),
       },
+      $transaction: vi.fn().mockImplementation((cb: (tx: any) => Promise<any>) => cb(db)),
     };
+    return db;
   }
 
   it("fetches 30 days of sleep + readiness and updates lastSyncedAt", async () => {
