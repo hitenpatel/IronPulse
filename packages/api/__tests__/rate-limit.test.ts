@@ -55,7 +55,7 @@ describe("checkRateLimit", () => {
 
     await expect(
       checkRateLimit("test:user1", { windowMs: 60_000, maxRequests: 100 }),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual(expect.objectContaining({ limit: 100 }));
   });
 
   it("does not throw when count equals maxRequests", async () => {
@@ -68,7 +68,7 @@ describe("checkRateLimit", () => {
 
     await expect(
       checkRateLimit("test:user2", { windowMs: 60_000, maxRequests: 100 }),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual(expect.objectContaining({ limit: 100 }));
   });
 
   it("throws TRPCError with TOO_MANY_REQUESTS when count exceeds limit", async () => {
