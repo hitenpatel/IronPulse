@@ -185,8 +185,15 @@ jobs:
       - name: Build web app
         run: pnpm --filter @ironpulse/web build
       - name: Start API server
+        # next.config.ts sets output: "standalone", which means `next start`
+        # silently no-ops (Next prints a warning then never accepts requests).
+        # Run the standalone server.js entry directly, after staging the
+        # static + public dirs that the bundle expects to find next to it.
         run: |
-          nohup pnpm --filter @ironpulse/web start > /tmp/web-server.log 2>&1 &
+          STANDALONE=apps/web/.next/standalone/apps/web
+          cp -r apps/web/.next/static "$STANDALONE/.next/static"
+          cp -r apps/web/public "$STANDALONE/public"
+          nohup node "$STANDALONE/server.js" > /tmp/web-server.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then echo "Ready"; break; fi
             sleep 2
