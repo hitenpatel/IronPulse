@@ -176,6 +176,10 @@ jobs:
         run: |
           pnpm --filter @ironpulse/db db:push
           pnpm --filter @ironpulse/db db:seed || true
+          # E2E specs sign in as athlete@test.com (and other test tier users)
+          # which only seed-dev creates. Without this the signIn helper times
+          # out at /login on every spec.
+          pnpm --filter @ironpulse/db db:seed:dev
       - name: Install Playwright browsers
         run: pnpm --filter @ironpulse/web exec playwright install --with-deps chromium
       - name: Build web app
@@ -187,11 +191,6 @@ jobs:
             if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then echo "Ready"; break; fi
             sleep 2
           done
-      - name: Create E2E test user
-        run: |
-          curl -s -X POST http://localhost:3000/api/trpc/auth.signUp \
-            -H "Content-Type: application/json" \
-            -d '{"json":{"name":"Test User","email":"test@example.com","password":"password123"}}'
       - name: Run Playwright tests
         run: pnpm --filter @ironpulse/web test:e2e
         env:
