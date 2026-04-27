@@ -47,7 +47,7 @@ jobs:
     runs-on: arm64
     services:
       postgres:
-        image: postgis/postgis:16-3.4-alpine
+        image: imresamu/postgis:16-3.4-alpine  # multi-arch (has arm64, unlike upstream postgis/postgis)
         env:
           POSTGRES_USER: ironpulse
           POSTGRES_PASSWORD: ironpulse
