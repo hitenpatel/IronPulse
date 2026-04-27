@@ -22,6 +22,7 @@ export const templateRouter = createTRPCRouter({
           id: true,
           name: true,
           createdAt: true,
+          userId: true,
           _count: { select: { templateExercises: true } },
         },
       });
