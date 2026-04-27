@@ -44,7 +44,7 @@ jobs:
 
   test-api:
     name: API Tests (real PostgreSQL)
-    runs-on: ubuntu-latest
+    runs-on: arm64
     services:
       postgres:
         image: postgis/postgis:16-3.4-alpine
