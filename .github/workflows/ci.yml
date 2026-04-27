@@ -175,7 +175,9 @@ jobs:
       - name: Push schema and seed
         run: |
           pnpm --filter @ironpulse/db db:push
-          pnpm --filter @ironpulse/db db:seed || true
+          # No '|| true' — exercise seed must succeed or seed:dev produces a
+          # workout-less DB and the trpc-fallback / workout specs all fail.
+          pnpm --filter @ironpulse/db db:seed
           # E2E specs sign in as athlete@test.com (and other test tier users)
           # which only seed-dev creates. Without this the signIn helper times
           # out at /login on every spec.
