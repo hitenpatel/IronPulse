@@ -20,6 +20,7 @@ export const templateRouter = createTRPCRouter({
         ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
         select: {
           id: true,
+          userId: true,
           name: true,
           createdAt: true,
           _count: { select: { templateExercises: true } },
