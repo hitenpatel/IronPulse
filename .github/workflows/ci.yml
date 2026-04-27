@@ -190,18 +190,30 @@ jobs:
         # Run the standalone server.js entry directly, after staging the
         # static + public dirs that the bundle expects to find next to it.
         run: |
+          set -x
           STANDALONE=apps/web/.next/standalone/apps/web
+          ls "$STANDALONE" || true
           cp -r apps/web/.next/static "$STANDALONE/.next/static"
           cp -r apps/web/public "$STANDALONE/public"
-          nohup node "$STANDALONE/server.js" > /tmp/web-server.log 2>&1 &
+          HOSTNAME=0.0.0.0 PORT=3000 nohup node "$STANDALONE/server.js" > /tmp/web-server.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then echo "Ready"; break; fi
             sleep 2
           done
+          echo "--- web-server.log (post-wait) ---"
+          cat /tmp/web-server.log || true
+          echo "--- end ---"
+          curl -sv http://localhost:3000/api/health 2>&1 | head -20 || true
       - name: Run Playwright tests
         run: pnpm --filter @ironpulse/web test:e2e
         env:
           BASE_URL: http://localhost:3000
+      - name: Dump web server log on failure
+        if: failure()
+        run: |
+          echo "=== /tmp/web-server.log ==="
+          cat /tmp/web-server.log || echo "(no log)"
+          echo "=== end ==="
       - uses: actions/upload-artifact@v4
         if: always()
         with:
