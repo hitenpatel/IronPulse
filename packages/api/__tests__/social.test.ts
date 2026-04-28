@@ -243,7 +243,7 @@ describe("social.toggleReaction — visibility gating", () => {
     const caller = socialCaller({ user: userA });
     await expect(
       caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
-    ).rejects.toThrow("FORBIDDEN");
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     const count = await db.feedReaction.count({
       where: { feedItemId: item.id },
@@ -284,7 +284,7 @@ describe("social.toggleReaction — visibility gating", () => {
     const caller = socialCaller({ user: userA });
     await expect(
       caller.toggleReaction({ feedItemId: item.id, type: "kudos" }),
-    ).rejects.toThrow("FORBIDDEN");
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("allows the author to react to their own private post", async () => {

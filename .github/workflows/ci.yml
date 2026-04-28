@@ -44,10 +44,10 @@ jobs:
 
   test-api:
     name: API Tests (real PostgreSQL)
-    runs-on: ubuntu-latest
+    runs-on: arm64
     services:
       postgres:
-        image: postgis/postgis:16-3.4-alpine
+        image: imresamu/postgis:16-3.4-alpine  # multi-arch (has arm64, unlike upstream postgis/postgis)
         env:
           POSTGRES_USER: ironpulse
           POSTGRES_PASSWORD: ironpulse
@@ -175,27 +175,47 @@ jobs:
       - name: Push schema and seed
         run: |
           pnpm --filter @ironpulse/db db:push
-          pnpm --filter @ironpulse/db db:seed || true
+          # No '|| true' — exercise seed must succeed or seed:dev produces a
+          # workout-less DB and the trpc-fallback / workout specs all fail.
+          pnpm --filter @ironpulse/db db:seed
+          # E2E specs sign in as athlete@test.com (and other test tier users)
+          # which only seed-dev creates. Without this the signIn helper times
+          # out at /login on every spec.
+          pnpm --filter @ironpulse/db db:seed:dev
       - name: Install Playwright browsers
         run: pnpm --filter @ironpulse/web exec playwright install --with-deps chromium
       - name: Build web app
         run: pnpm --filter @ironpulse/web build
       - name: Start API server
+        # next.config.ts sets output: "standalone", which means `next start`
+        # silently no-ops (Next prints a warning then never accepts requests).
+        # Run the standalone server.js entry directly, after staging the
+        # static + public dirs that the bundle expects to find next to it.
         run: |
-          nohup pnpm --filter @ironpulse/web start > /tmp/web-server.log 2>&1 &
+          set -x
+          STANDALONE=apps/web/.next/standalone/apps/web
+          ls "$STANDALONE" || true
+          cp -r apps/web/.next/static "$STANDALONE/.next/static"
+          cp -r apps/web/public "$STANDALONE/public"
+          HOSTNAME=0.0.0.0 PORT=3000 nohup node "$STANDALONE/server.js" > /tmp/web-server.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then echo "Ready"; break; fi
             sleep 2
           done
-      - name: Create E2E test user
-        run: |
-          curl -s -X POST http://localhost:3000/api/trpc/auth.signUp \
-            -H "Content-Type: application/json" \
-            -d '{"json":{"name":"Test User","email":"test@example.com","password":"password123"}}'
+          echo "--- web-server.log (post-wait) ---"
+          cat /tmp/web-server.log || true
+          echo "--- end ---"
+          curl -sv http://localhost:3000/api/health 2>&1 | head -20 || true
       - name: Run Playwright tests
         run: pnpm --filter @ironpulse/web test:e2e
         env:
           BASE_URL: http://localhost:3000
+      - name: Dump web server log on failure
+        if: failure()
+        run: |
+          echo "=== /tmp/web-server.log ==="
+          cat /tmp/web-server.log || echo "(no log)"
+          echo "=== end ==="
       - uses: actions/upload-artifact@v4
         if: always()
         with:

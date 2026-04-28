@@ -246,7 +246,7 @@ describe("user.registerPushToken", () => {
         token: "ExponentPushToken[victim-device]",
         platform: "ios",
       }),
-    ).rejects.toThrow("FORBIDDEN");
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     const row = await db.pushToken.findUnique({
       where: { token: "ExponentPushToken[victim-device]" },
