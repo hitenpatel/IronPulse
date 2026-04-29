@@ -98,7 +98,7 @@ describe("template.create", () => {
         {
           exerciseId: ex.id,
           order: 0,
-          notes: null,
+          notes: undefined,
           sets: [{ setNumber: 1, targetReps: 8, targetWeightKg: 60, type: "working" }],
         },
       ],
