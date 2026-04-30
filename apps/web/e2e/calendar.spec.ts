@@ -59,8 +59,8 @@ test.describe("Calendar page", () => {
       year: "numeric",
     });
 
-    // Click the left chevron (previous month button)
-    const prevButton = page.locator('button:has(svg)').first();
+    // Scope to the nav row containing the month label to avoid matching sidebar SVG buttons
+    const prevButton = page.getByText(currentMonthYear, { exact: true }).locator('..').getByRole('button').first();
     await prevButton.click();
 
     await expect(page.getByText(prevMonthYear)).toBeVisible();
@@ -83,9 +83,8 @@ test.describe("Calendar page", () => {
       year: "numeric",
     });
 
-    // Click the right chevron (next month button) — it follows the prev button
-    const navButtons = page.locator('button:has(svg)');
-    const nextButton = navButtons.nth(1);
+    // Scope to the nav row containing the month label to avoid matching sidebar SVG buttons
+    const nextButton = page.getByText(currentMonthYear, { exact: true }).locator('..').getByRole('button').last();
     await nextButton.click();
 
     await expect(page.getByText(nextMonthYear)).toBeVisible();
