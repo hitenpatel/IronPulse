@@ -105,6 +105,19 @@ describe("template.list", () => {
     const db = makeDb();
     await expect(templateCaller(db, null).list({ limit: 20 })).rejects.toThrow("UNAUTHORIZED");
   });
+
+  it("selects userId so the tRPC→TemplateRow mapper can read it (regression: #339)", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findMany).mockResolvedValue([]);
+
+    await templateCaller(db, { user: testUser }).list({ limit: 20 });
+
+    expect(db.workoutTemplate.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({ userId: true }),
+      })
+    );
+  });
 });
 
 // ---------- getById ----------
