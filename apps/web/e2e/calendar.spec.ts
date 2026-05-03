@@ -116,8 +116,9 @@ test.describe("Calendar page", () => {
   test("legend shows Workout and Cardio indicators", async ({ page }) => {
     await page.goto("/calendar");
 
-    await expect(page.getByText("Workout")).toBeVisible();
-    await expect(page.getByText("Cardio")).toBeVisible();
+    const main = page.locator("main");
+    await expect(main.getByText("Workout", { exact: true })).toBeVisible();
+    await expect(main.getByText("Cardio", { exact: true })).toBeVisible();
   });
 
   test("clicking a day cell selects it and shows day detail area", async ({

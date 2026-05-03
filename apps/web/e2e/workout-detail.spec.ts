@@ -37,7 +37,8 @@ test.describe("Workout detail page", () => {
     await page.waitForTimeout(1000);
 
     // Summary cards (Exercises / Sets / Volume) should be visible
-    await expect(page.getByText("Exercises")).toBeVisible();
+    const main = page.locator("main");
+    await expect(main.getByText("Exercises", { exact: true })).toBeVisible();
     await expect(page.getByText("Sets")).toBeVisible();
     await expect(page.getByText("Volume")).toBeVisible();
   });
