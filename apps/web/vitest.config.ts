@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
     exclude: ["e2e/**", "node_modules/**"],
+    env: { NODE_ENV: "test" },
   },
   resolve: {
     alias: {
