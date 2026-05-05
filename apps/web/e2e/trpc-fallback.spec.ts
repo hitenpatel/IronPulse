@@ -179,7 +179,8 @@ test.describe("tRPC Fallback — Workout Flow", () => {
     await page.waitForTimeout(1500);
 
     // Summary cards should be visible
-    await expect(page.getByText("Exercises")).toBeVisible();
+    const main = page.locator("main");
+    await expect(main.getByText("Exercises", { exact: true })).toBeVisible();
     await expect(page.getByText("Sets")).toBeVisible();
   });
 });

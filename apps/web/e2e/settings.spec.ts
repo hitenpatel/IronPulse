@@ -79,7 +79,7 @@ test.describe("Settings – Connected Apps (integrations) page", () => {
       timeout: 10_000,
     });
 
-    await expect(page.getByText("Strava")).toBeVisible();
+    await expect(page.getByText("Strava", { exact: true })).toBeVisible();
   });
 
   test("shows the Garmin Connect card", async ({ page }) => {
