@@ -181,7 +181,7 @@ describe("sleep.listSleep", () => {
 
     await sleepCaller(db, { user: testUser }).listSleep({ days: 7 });
 
-    const callWhere = vi.mocked(db.sleepLog.findMany).mock.calls[0]![0].where as any;
+    const callWhere = vi.mocked(db.sleepLog.findMany).mock.calls[0]![0]!.where as any;
     const gte: Date = callWhere.date.gte;
     expect(gte.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000);
     expect(gte.getHours()).toBe(0);
