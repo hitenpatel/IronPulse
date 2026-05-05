@@ -164,6 +164,10 @@ jobs:
       REDIS_URL: redis://redis:6379
       STRIPE_SECRET_KEY: sk_test_dummy_for_ci_do_not_use
       STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_ci
+      GOOGLE_CLIENT_ID: dummy-google-client-id-for-ci
+      GOOGLE_CLIENT_SECRET: dummy-google-client-secret-for-ci
+      APPLE_ID: dummy-apple-id-for-ci
+      APPLE_SECRET: dummy-apple-secret-for-ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
