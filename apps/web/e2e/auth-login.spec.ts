@@ -24,7 +24,7 @@ test.describe("Login page", () => {
   test("shows error for invalid credentials", async ({ page }) => {
     await page.getByLabel("Email").fill("invalid@example.com");
     await page.getByLabel("Password").fill("wrongpassword");
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByTestId("login-button").click();
     await expect(
       page.getByText(/invalid email or password/i)
     ).toBeVisible({ timeout: 10_000 });
