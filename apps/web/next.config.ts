@@ -18,7 +18,7 @@ const isDev = process.env.NODE_ENV !== "production";
 // re-adding strict-dynamic and dropping 'unsafe-inline' on modern browsers.
 const scriptSrc = isDev
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  : "script-src 'self' 'unsafe-inline'";
+  : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'";
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },

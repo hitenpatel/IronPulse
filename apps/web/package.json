@@ -10,7 +10,7 @@
     "test:e2e": "playwright test",
     "test:visual": "playwright test e2e/visual-regression.spec.ts --update-snapshots",
     "analyze": "ANALYZE=true next build",
-    "postinstall": "npx @powersync/web copy-assets -o public"
+    "postinstall": "npx @powersync/web copy-assets -o public && node scripts/patch-powersync-wasm.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

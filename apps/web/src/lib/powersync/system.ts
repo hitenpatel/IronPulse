@@ -8,6 +8,7 @@ export function getPowerSyncDatabase(): PowerSyncDatabase {
 
   const factory = new WASQLiteOpenFactory({
     dbFilename: "ironpulse.db",
+    worker: "/@powersync/worker/WASQLiteDB.umd.js",
     flags: {
       enableMultiTabs: typeof SharedWorker !== "undefined",
     },
@@ -17,6 +18,9 @@ export function getPowerSyncDatabase(): PowerSyncDatabase {
     database: factory,
     schema: AppSchema,
     flags: { disableSSRWarning: true },
+    sync: {
+      worker: "/@powersync/worker/SharedSyncImplementation.umd.js",
+    },
   });
 
   return dbInstance;
