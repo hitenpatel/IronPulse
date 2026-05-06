@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 env:
   NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
@@ -241,4 +241,29 @@ jobs:
             echo "Build failed — blocking"
             exit 1
           fi
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: arm64
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [ci-gate]
+    steps:
+      - name: Deploy to staging VM
+        env:
+          SSH_KEY: ${{ secrets.VM_SSH_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 172.19.0.1 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ubuntu@172.19.0.1 '
+            set -e
+            cd ~/stack/ironpulse-staging/repo
+            git fetch origin develop
+            git checkout develop
+            git reset --hard origin/develop
+            cd ..
+            docker compose up -d --build --remove-orphans
+          '
+          rm -f ~/.ssh/deploy_key
 
