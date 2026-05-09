@@ -100,6 +100,50 @@ describe("exercise.list", () => {
     expect(result.data[0]!.name).toBe("Bench Press");
   });
 
+  it("returns matchedRanges for search results", async () => {
+    await db.exercise.createMany({
+      data: [
+        { name: "Bicep Curl", category: "isolation", primaryMuscles: ["biceps"], isCustom: false },
+        { name: "Cable Bicep Curl", category: "isolation", primaryMuscles: ["biceps"], isCustom: false },
+      ],
+    });
+
+    const caller = exerciseCaller();
+    const result = await caller.list({ search: "bic" });
+
+    expect(result.data.length).toBe(2);
+    const bicepCurl = result.data.find((e) => e.name === "Bicep Curl")!;
+    expect(bicepCurl.matchedRanges).toEqual([{ start: 0, end: 3 }]);
+    const cableBicepCurl = result.data.find((e) => e.name === "Cable Bicep Curl")!;
+    expect(cableBicepCurl.matchedRanges).toEqual([{ start: 6, end: 9 }]);
+  });
+
+  it("returns empty matchedRanges when no search term provided", async () => {
+    await db.exercise.create({
+      data: { name: "Bench Press", category: "compound", primaryMuscles: ["chest"], isCustom: false },
+    });
+
+    const caller = exerciseCaller();
+    const result = await caller.list({});
+
+    expect(result.data[0]!.matchedRanges).toEqual([]);
+  });
+
+  it("matchedRanges highlight multiple occurrences within a name", async () => {
+    await db.exercise.create({
+      data: { name: "Ab Ab Ab", category: "compound", primaryMuscles: ["abs"], isCustom: false },
+    });
+
+    const caller = exerciseCaller();
+    const result = await caller.list({ search: "ab" });
+
+    expect(result.data[0]!.matchedRanges).toEqual([
+      { start: 0, end: 2 },
+      { start: 3, end: 5 },
+      { start: 6, end: 8 },
+    ]);
+  });
+
   it("combines multiple filters", async () => {
     await db.exercise.createMany({
       data: [
