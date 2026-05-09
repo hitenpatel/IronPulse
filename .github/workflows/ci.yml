@@ -78,7 +78,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Push database schema
-        run: pnpm --filter @ironpulse/db db:push
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if pnpm --filter @ironpulse/db db:push; then
+              exit 0
+            fi
+            echo "db:push failed (attempt $attempt/5), retrying in $((attempt * 5))s..."
+            [ "$attempt" -lt 5 ] && sleep $((attempt * 5))
+          done
+          exit 1
       - name: Run API tests
         run: pnpm --filter @ironpulse/api test
 
