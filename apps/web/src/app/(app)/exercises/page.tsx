@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, Dumbbell, X } from "lucide-react";
 import { useExercises, type ExerciseRow } from "@ironpulse/sync";
 import { trpc } from "@/lib/trpc/client";
@@ -24,6 +24,49 @@ const EQUIPMENT = [
 const CATEGORIES = [
   "compound", "isolation", "cardio", "stretching", "plyometric",
 ] as const;
+
+function computeMatchRanges(
+  name: string,
+  query: string,
+): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const nameLower = name.toLowerCase();
+  const queryLower = query.toLowerCase();
+  let idx = 0;
+  while (idx <= nameLower.length - queryLower.length) {
+    const found = nameLower.indexOf(queryLower, idx);
+    if (found === -1) break;
+    ranges.push({ start: found, end: found + queryLower.length });
+    idx = found + queryLower.length;
+  }
+  return ranges;
+}
+
+function HighlightedName({
+  name,
+  ranges,
+}: {
+  name: string;
+  ranges: Array<{ start: number; end: number }>;
+}) {
+  if (!ranges.length) return <>{name}</>;
+  const parts: React.ReactNode[] = [];
+  let pos = 0;
+  for (const { start, end } of ranges) {
+    if (start > pos) parts.push(name.slice(pos, start));
+    parts.push(
+      <mark
+        key={start}
+        className="bg-transparent font-bold text-primary not-italic"
+      >
+        {name.slice(start, end)}
+      </mark>,
+    );
+    pos = end;
+  }
+  if (pos < name.length) parts.push(name.slice(pos));
+  return <>{parts}</>;
+}
 
 function formatLabel(s: string) {
   return s
@@ -166,6 +209,24 @@ export default function ExercisesPage() {
       : psExercises ?? [];
   const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
+  const matchRangesById = useMemo<
+    Map<string, Array<{ start: number; end: number }>>
+  >(() => {
+    if (mode !== "trpc" || !trpcQuery.data?.data) return new Map();
+    return new Map(
+      trpcQuery.data.data.map((e) => [e.id, e.matchedRanges ?? []]),
+    );
+  }, [mode, trpcQuery.data]);
+
+  function getMatchRanges(
+    id: string,
+    name: string,
+  ): Array<{ start: number; end: number }> {
+    if (!debouncedSearch) return [];
+    if (mode === "trpc") return matchRangesById.get(id) ?? [];
+    return computeMatchRanges(name, debouncedSearch);
+  }
+
   const hasActiveFilters = muscleGroup || equipment || category;
 
   const clearFilters = useCallback(() => {
@@ -265,7 +326,12 @@ export default function ExercisesPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground">{exercise.name}</span>
+                      <span className="font-medium text-foreground">
+                        <HighlightedName
+                          name={exercise.name}
+                          ranges={getMatchRanges(exercise.id, exercise.name)}
+                        />
+                      </span>
                       {exercise.is_custom === 1 && (
                         <Badge variant="outline" className="shrink-0 text-[10px] rounded-pill">
                           Custom

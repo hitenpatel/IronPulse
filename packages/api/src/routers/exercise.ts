@@ -11,6 +11,23 @@ import {
   rateLimitedProcedure,
 } from "../trpc";
 
+function computeMatchRanges(
+  name: string,
+  query: string,
+): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const nameLower = name.toLowerCase();
+  const queryLower = query.toLowerCase();
+  let idx = 0;
+  while (idx <= nameLower.length - queryLower.length) {
+    const found = nameLower.indexOf(queryLower, idx);
+    if (found === -1) break;
+    ranges.push({ start: found, end: found + queryLower.length });
+    idx = found + queryLower.length;
+  }
+  return ranges;
+}
+
 export const exerciseRouter = createTRPCRouter({
   list: publicProcedure
     .input(listExercisesSchema)
@@ -45,7 +62,14 @@ export const exerciseRouter = createTRPCRouter({
       const data = hasMore ? exercises.slice(0, -1) : exercises;
       const nextCursor = hasMore ? data[data.length - 1]!.id : null;
 
-      return { data, nextCursor };
+      const dataWithRanges = data.map((e) => ({
+        ...e,
+        matchedRanges: input.search
+          ? computeMatchRanges(e.name, input.search)
+          : [],
+      }));
+
+      return { data: dataWithRanges, nextCursor };
     }),
 
   getById: publicProcedure
