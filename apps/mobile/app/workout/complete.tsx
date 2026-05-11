@@ -9,6 +9,7 @@ import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
 import { Trophy } from "lucide-react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
 import * as Haptics from "@/lib/haptics";
+import { useReducedMotion } from "@/lib/reduced-motion";
 
 import { calculateVolume, formatElapsed } from "../../lib/workout-utils";
 
@@ -61,7 +62,7 @@ export default function WorkoutCompleteScreen() {
   const { data: exercises } = useWorkoutExercises(workoutId);
   const { data: sets } = useWorkoutSets(workoutId);
 
-  // Celebrate PRs on mount — confetti cannon + heavy success haptic.
+  const reducedMotion = useReducedMotion();
   const hasPR = prs.length > 0;
   const confettiFired = useRef(false);
   useEffect(() => {
@@ -99,7 +100,7 @@ export default function WorkoutCompleteScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      {hasPR && (
+      {hasPR && !reducedMotion && (
         <ConfettiCannon
           count={160}
           origin={{ x: windowWidth / 2, y: -10 }}

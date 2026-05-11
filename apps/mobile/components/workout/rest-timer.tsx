@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "@/lib/haptics";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { colors, fonts, radii } from "@/lib/theme";
 import { BigNum, Button, UppercaseLabel } from "@/components/ui";
 
@@ -80,16 +81,19 @@ export function RestTimer({
     Haptics.selectionAsync().catch(() => {});
   }, []);
 
-  // Breathing glow — pulse the card's tint opacity on a 2.6s loop while the
-  // timer is running, speed up on the final 10s to build urgency.
+  const reducedMotion = useReducedMotion();
+
   const glow = useSharedValue(0);
   useEffect(() => {
+    if (reducedMotion) {
+      glow.value = visible ? 0.5 : 0;
+      return;
+    }
     if (!visible) {
       glow.value = withTiming(0);
       return;
     }
     if (paused) {
-      // Freeze mid-pulse when paused so the glow doesn't keep breathing.
       glow.value = withTiming(0.2);
       return;
     }
@@ -103,7 +107,7 @@ export function RestTimer({
       -1,
       false,
     );
-  }, [visible, paused, remaining <= 10, glow]);
+  }, [visible, paused, remaining <= 10, glow, reducedMotion]);
 
   const glowStyle = useAnimatedStyle(() => ({
     // Shift the card tint from `blueSoft` (16% lime) up to ~32% at peak.

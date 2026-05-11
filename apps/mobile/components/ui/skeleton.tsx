@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { colors } from "@/lib/theme";
+import { useReducedMotion } from "@/lib/reduced-motion";
 
 interface SkeletonProps {
   width?: DimensionValue;
@@ -27,15 +28,20 @@ export function Skeleton({
   borderRadius = 8,
   style,
 }: SkeletonProps) {
+  const reducedMotion = useReducedMotion();
   const progress = useSharedValue(-1);
 
   useEffect(() => {
+    if (reducedMotion) {
+      progress.value = -1;
+      return;
+    }
     progress.value = withRepeat(
       withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
       -1,
       false,
     );
-  }, [progress]);
+  }, [progress, reducedMotion]);
 
   const shimmer = useAnimatedStyle(() => ({
     transform: [{ translateX: `${progress.value * 100}%` }],
