@@ -8,6 +8,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import { useReducedMotion } from "@/lib/reduced-motion";
 
 interface AnimatedFlameProps {
   size?: number;
@@ -24,13 +25,14 @@ interface AnimatedFlameProps {
  * Runs on the UI thread — no JS bridge cost per frame.
  */
 export function AnimatedFlame({ size = 18, color, active = true }: AnimatedFlameProps) {
+  const reducedMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    if (!active) {
-      scale.value = withTiming(1);
-      rotation.value = withTiming(0);
+    if (!active || reducedMotion) {
+      scale.value = reducedMotion ? 1 : withTiming(1);
+      rotation.value = reducedMotion ? 0 : withTiming(0);
       return;
     }
     scale.value = withRepeat(
@@ -49,7 +51,7 @@ export function AnimatedFlame({ size = 18, color, active = true }: AnimatedFlame
       -1,
       true,
     );
-  }, [active, scale, rotation]);
+  }, [active, scale, rotation, reducedMotion]);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }, { rotate: `${rotation.value}deg` }],

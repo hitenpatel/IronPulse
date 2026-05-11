@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { colors, radii, fonts, shadows, typography } from "@/lib/theme";
 import * as Haptics from "@/lib/haptics";
+import { useReducedMotion } from "@/lib/reduced-motion";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -29,22 +30,28 @@ function GroupIndicator({
   tabCount: number;
   groupWidth: number;
 }) {
+  const reducedMotion = useReducedMotion();
   const tabWidth = groupWidth / tabCount;
   const translate = useSharedValue(Math.max(0, activeIndex) * tabWidth);
   const visibility = useSharedValue(activeIndex >= 0 ? 1 : 0);
 
   useEffect(() => {
     if (activeIndex >= 0) {
-      translate.value = withSpring(activeIndex * tabWidth, {
-        damping: 18,
-        stiffness: 220,
-        mass: 0.9,
-      });
-      visibility.value = withTiming(1, { duration: 180 });
+      if (reducedMotion) {
+        translate.value = activeIndex * tabWidth;
+        visibility.value = 1;
+      } else {
+        translate.value = withSpring(activeIndex * tabWidth, {
+          damping: 18,
+          stiffness: 220,
+          mass: 0.9,
+        });
+        visibility.value = withTiming(1, { duration: 180 });
+      }
     } else {
-      visibility.value = withTiming(0, { duration: 160 });
+      visibility.value = reducedMotion ? 0 : withTiming(0, { duration: 160 });
     }
-  }, [activeIndex, tabWidth, translate, visibility]);
+  }, [activeIndex, tabWidth, translate, visibility, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translate.value }],
@@ -98,16 +105,19 @@ function TabButton({
   const labelColor = isActive ? colors.blue2 : colors.text3;
   const tabTestId = `tab-${name.toLowerCase()}`;
 
+  const reducedMotion = useReducedMotion();
   const iconScale = useSharedValue(1);
 
   useEffect(() => {
-    if (isActive) {
+    if (isActive && !reducedMotion) {
       iconScale.value = withSequence(
         withSpring(1.18, { damping: 10, stiffness: 340 }),
         withSpring(1, { damping: 14, stiffness: 260 }),
       );
+    } else if (reducedMotion) {
+      iconScale.value = 1;
     }
-  }, [isActive, iconScale]);
+  }, [isActive, iconScale, reducedMotion]);
 
   const iconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: iconScale.value }],
@@ -156,11 +166,12 @@ export function PulseTabBar({
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
 
-  // FAB press spring — subtle scale dip for tactile feedback + a rotation
-  // when the sheet is open (+ → × feels more connected).
+  const reducedMotion = useReducedMotion();
   const fabScale = useSharedValue(1);
   const fabRotation = useSharedValue(sheetOpen ? 1 : 0);
-  fabRotation.value = withTiming(sheetOpen ? 1 : 0, { duration: 220 });
+  fabRotation.value = reducedMotion
+    ? sheetOpen ? 1 : 0
+    : withTiming(sheetOpen ? 1 : 0, { duration: 220 });
 
   const fabAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -233,11 +244,15 @@ export function PulseTabBar({
           <AnimatedPressable
             testID="fab-button"
             onPressIn={() => {
-              fabScale.value = withSpring(0.9, { damping: 14, stiffness: 340 });
+              fabScale.value = reducedMotion
+                ? 0.9
+                : withSpring(0.9, { damping: 14, stiffness: 340 });
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }}
             onPressOut={() => {
-              fabScale.value = withSpring(1, { damping: 12, stiffness: 260 });
+              fabScale.value = reducedMotion
+                ? 1
+                : withSpring(1, { damping: 12, stiffness: 260 });
             }}
             onPress={onFabPress}
             style={[styles.fab, fabAnimatedStyle]}

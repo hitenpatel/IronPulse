@@ -10,6 +10,7 @@ Small, append-only notes capturing the _why_ behind significant architectural ch
 | [0002](0002-trpc-over-rest.md) | tRPC over REST for the internal API | Accepted |
 | [0003](0003-offline-first-mobile.md) | Offline-first mobile architecture | Accepted |
 | [0004](0004-auth-strategy.md) | NextAuth + mobile Bearer tokens for auth | Accepted |
+| [0005](0005-mobile-reduced-motion.md) | Respect prefers-reduced-motion on mobile | Accepted |
 
 ## Writing a new ADR
 
