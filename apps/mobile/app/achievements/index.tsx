@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   ListRenderItem,
+  Pressable,
   Text,
   View,
 } from "react-native";
@@ -10,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Lock, Trophy } from "lucide-react-native";
 import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@ironpulse/shared";
 import { trpc } from "@/lib/trpc";
+import { formatBadgeDate } from "@/lib/achievement-utils";
 
 import { colors as theme, fonts, radii } from "@/lib/theme";
 
@@ -99,11 +101,7 @@ function BadgeCard({ badge, unlockedAt }: BadgeCardProps) {
             letterSpacing: 0.3,
           }}
         >
-          {unlockedAt.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
+          {formatBadgeDate(unlockedAt)}
         </Text>
       )}
     </View>
@@ -117,15 +115,18 @@ export default function AchievementsScreen() {
     onSuccess: () => {
       refetch();
     },
+    onError: () => {},
   });
   const checkedRef = React.useRef(false);
 
-  // Kick off a retroactive unlock check exactly once on mount so users
-  // who qualified for new badges before this build landed pick them up.
   React.useEffect(() => {
     if (checkedRef.current) return;
     checkedRef.current = true;
-    checkMine.mutate();
+    try {
+      checkMine.mutate(undefined);
+    } catch {
+      // retroactive unlock is best-effort
+    }
   }, [checkMine]);
 
   const unlockedMap = React.useMemo(() => {
@@ -205,6 +206,58 @@ export default function AchievementsScreen() {
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
           <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : query.isError ? (
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 32,
+          }}
+        >
+          <Text
+            style={{
+              color: colors.foreground,
+              fontSize: 14,
+              fontFamily: fonts.bodySemi,
+              textAlign: "center",
+            }}
+          >
+            Couldn't load achievements
+          </Text>
+          <Text
+            style={{
+              color: colors.mutedFg,
+              fontSize: 12,
+              fontFamily: fonts.bodyRegular,
+              textAlign: "center",
+              marginTop: 6,
+            }}
+          >
+            {query.error?.message ?? "Network or server error"}
+          </Text>
+          <Pressable
+            onPress={() => query.refetch()}
+            testID="achievements-retry"
+            style={{
+              marginTop: 16,
+              backgroundColor: colors.primary,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 10,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.primaryInk,
+                fontSize: 13,
+                fontFamily: fonts.bodySemi,
+              }}
+            >
+              Try again
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
