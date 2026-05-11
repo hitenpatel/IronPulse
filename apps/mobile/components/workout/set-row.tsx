@@ -1,19 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActionSheetIOS, Alert, Animated as RNAnimated, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Animated as RNAnimated, Pressable, Text, TextInput, View } from "react-native";
 import { usePowerSync } from "@powersync/react";
 import { Swipeable } from "react-native-gesture-handler";
 import * as Haptics from "@/lib/haptics";
 import { Check, Minus, Trash2 } from "lucide-react-native";
 import { colors, fonts, radii } from "@/lib/theme";
-
-type SetType = "working" | "warmup" | "dropset" | "failure";
-
-const SET_TYPE_LABEL: Record<SetType, string> = {
-  working: "Working",
-  warmup: "Warm-up",
-  dropset: "Drop set",
-  failure: "To failure",
-};
+import { SetTypeSheet } from "./set-type-sheet";
+import { SET_TYPE_LABEL, normalizeSetType, type SetType } from "@/lib/set-type";
 
 const SET_TYPE_BADGE: Record<Exclude<SetType, "working">, { letter: string; bg: string; fg: string }> = {
   warmup: { letter: "W", bg: colors.amberSoft, fg: colors.amber },
@@ -67,13 +60,14 @@ export function SetRow({
   onRpePick,
 }: SetRowProps) {
   const db = usePowerSync();
-  const currentType: SetType = (
-    type === "warmup" || type === "dropset" || type === "failure" ? type : "working"
-  ) as SetType;
+  const currentType: SetType = normalizeSetType(type);
   const badge = currentType === "working" ? null : SET_TYPE_BADGE[currentType];
+
+  const [typeSheetOpen, setTypeSheetOpen] = useState(false);
 
   const handleChangeType = useCallback(
     async (next: SetType) => {
+      setTypeSheetOpen(false);
       if (next === currentType) return;
       Haptics.selectionAsync().catch(() => {});
       await db.execute(
@@ -86,28 +80,8 @@ export function SetRow({
 
   const handleLongPressType = useCallback(() => {
     Haptics.selectionAsync().catch(() => {});
-    const options: SetType[] = ["working", "warmup", "dropset", "failure"];
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          title: "Set type",
-          options: [...options.map((o) => SET_TYPE_LABEL[o]), "Cancel"],
-          cancelButtonIndex: options.length,
-        },
-        (idx) => {
-          if (idx < options.length) handleChangeType(options[idx]!);
-        },
-      );
-    } else {
-      Alert.alert("Set type", "How should this set be classified?", [
-        ...options.map((o) => ({
-          text: SET_TYPE_LABEL[o] + (o === currentType ? " ✓" : ""),
-          onPress: () => handleChangeType(o),
-        })),
-        { text: "Cancel", style: "cancel" as const },
-      ]);
-    }
-  }, [currentType, handleChangeType]);
+    setTypeSheetOpen(true);
+  }, []);
 
   const [localWeight, setLocalWeight] = useState(
     weightKg != null ? String(weightKg) : "",
@@ -454,6 +428,12 @@ export function SetRow({
       >
         <Minus size={14} color={isActive ? colors.blueInk : colors.text4} />
       </Pressable>
+      <SetTypeSheet
+        visible={typeSheetOpen}
+        current={currentType}
+        onDismiss={() => setTypeSheetOpen(false)}
+        onSelect={handleChangeType}
+      />
     </View>
     </Swipeable>
   );
