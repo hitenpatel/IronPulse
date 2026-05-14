@@ -81,7 +81,12 @@ export async function generateWorkoutWithAi(params: {
   const content = data.choices[0]?.message?.content;
   if (!content) throw new Error("Empty response from OpenAI");
 
-  const parsed = JSON.parse(content) as AiWorkoutResponse;
+  let parsed: AiWorkoutResponse;
+  try {
+    parsed = JSON.parse(content) as AiWorkoutResponse;
+  } catch {
+    throw new Error("OpenAI returned unexpected JSON structure");
+  }
 
   if (!parsed.workoutName || !Array.isArray(parsed.exercises)) {
     throw new Error("OpenAI returned unexpected JSON structure");

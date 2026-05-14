@@ -95,6 +95,16 @@ describe("generateWorkoutWithAi", () => {
     );
   });
 
+  it("throws when content is not valid JSON", async () => {
+    global.fetch = mockFetch({
+      choices: [{ message: { content: "not valid json {{truncated" } }],
+    });
+
+    await expect(generateWorkoutWithAi(BASE_PARAMS)).rejects.toThrow(
+      "OpenAI returned unexpected JSON structure",
+    );
+  });
+
   it("sends the correct model in the request body", async () => {
     let capturedBody: Record<string, unknown> | null = null;
     global.fetch = vi.fn().mockImplementation(async (_url: string, opts: RequestInit) => {
