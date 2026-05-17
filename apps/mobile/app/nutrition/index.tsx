@@ -265,6 +265,52 @@ export default function NutritionScreen() {
             </View>
           ) : null}
 
+          {/* Empty state CTA — shown before the meal list when no meals logged */}
+          {!loading && meals.length === 0 && (
+            <View
+              style={{
+                backgroundColor: colors.bg1,
+                borderRadius: radii.card,
+                borderWidth: 1,
+                borderColor: colors.lineSoft,
+                padding: 16,
+                marginBottom: 10,
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 13, color: colors.text, fontFamily: fonts.bodyMedium }}>
+                Log your first meal
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.text3, fontFamily: fonts.bodyRegular, textAlign: "center" }}>
+                Tracking nutrition helps you hit your protein and calorie targets.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setMealType("breakfast");
+                  setName("Oatmeal & eggs");
+                  setCalories("520");
+                  setProtein("32");
+                  setCarbs("58");
+                  setFat("12");
+                  setFormOpen(true);
+                }}
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: radii.button,
+                  borderWidth: 1,
+                  borderColor: colors.blue,
+                  backgroundColor: colors.bg2,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: colors.blue2, fontFamily: fonts.bodySemi }}>
+                  Start with a typical breakfast
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* Meal list */}
           {loading ? (
             <ActivityIndicator color={colors.text3} style={{ marginVertical: 24 }} />
