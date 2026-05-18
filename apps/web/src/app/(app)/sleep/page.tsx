@@ -179,7 +179,7 @@ function SleepLogForm() {
   );
 }
 
-function SleepEmptyCta() {
+export function SleepEmptyCta() {
   return (
     <div className="py-6 space-y-4">
       <p className="text-center text-sm text-muted-foreground">

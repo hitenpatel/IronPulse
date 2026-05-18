@@ -16,7 +16,7 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: "snack", label: "Snack" },
 ];
 
-const TYPICAL_BREAKFAST = {
+export const TYPICAL_BREAKFAST = {
   mealType: "breakfast" as MealType,
   name: "Oatmeal & eggs",
   calories: "520",
@@ -184,7 +184,7 @@ function MealLogForm({
   );
 }
 
-function NutritionEmptyState({
+export function NutritionEmptyState({
   onPrefillBreakfast,
 }: {
   onPrefillBreakfast: () => void;

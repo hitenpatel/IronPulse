@@ -1,31 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import React from "react";
 
-// ── Inline SleepEmptyCta from sleep/page.tsx ──────────────────────────────────
-// (Extracted to avoid pulling in tRPC context, Next.js router, etc.)
+vi.mock("next/link", () => ({
+  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
+}));
 
-function SleepEmptyCta() {
-  return (
-    <div data-testid="sleep-empty-cta">
-      <p>
-        Connect a sleep tracker to see your trends automatically, or log manually below.
-      </p>
-      <div>
-        <a href="/settings/integrations" data-testid="connect-oura">
-          Connect Oura
-        </a>
-        <a href="/settings/integrations" data-testid="connect-apple-health">
-          Connect Apple Health
-        </a>
-        <a href="#sleep-log-form" data-testid="log-manually">
-          Log manually
-        </a>
-      </div>
-    </div>
-  );
-}
-// ─────────────────────────────────────────────────────────────────────────────
+import { SleepEmptyCta } from "../page";
 
 describe("SleepEmptyCta (AC1 — empty Sleep screen)", () => {
   it("renders the value prop sentence", () => {
@@ -39,31 +22,34 @@ describe("SleepEmptyCta (AC1 — empty Sleep screen)", () => {
 
   it("shows a CTA to connect Oura", () => {
     render(<SleepEmptyCta />);
-    const ouraLink = screen.getByTestId("connect-oura");
+    const ouraLink = screen.getByRole("link", { name: /Connect Oura/i });
     expect(ouraLink).toBeInTheDocument();
-    expect(ouraLink).toHaveTextContent("Connect Oura");
     expect(ouraLink).toHaveAttribute("href", "/settings/integrations");
   });
 
   it("shows a CTA to connect Apple Health", () => {
     render(<SleepEmptyCta />);
-    const ahLink = screen.getByTestId("connect-apple-health");
+    const ahLink = screen.getByRole("link", { name: /Connect Apple Health/i });
     expect(ahLink).toBeInTheDocument();
-    expect(ahLink).toHaveTextContent("Connect Apple Health");
     expect(ahLink).toHaveAttribute("href", "/settings/integrations");
   });
 
   it("shows a manual-log affordance", () => {
     render(<SleepEmptyCta />);
-    const manualLink = screen.getByTestId("log-manually");
+    const manualLink = screen.getByRole("link", { name: /Log manually/i });
     expect(manualLink).toBeInTheDocument();
-    expect(manualLink).toHaveTextContent("Log manually");
   });
 
   it("all three CTAs are rendered together", () => {
     render(<SleepEmptyCta />);
-    expect(screen.getByTestId("connect-oura")).toBeInTheDocument();
-    expect(screen.getByTestId("connect-apple-health")).toBeInTheDocument();
-    expect(screen.getByTestId("log-manually")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Connect Oura/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Connect Apple Health/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Log manually/i }),
+    ).toBeInTheDocument();
   });
 });

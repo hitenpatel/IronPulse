@@ -2,33 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 
-// ── Inline helpers from nutrition/page.tsx ────────────────────────────────────
-
-const TYPICAL_BREAKFAST = {
-  mealType: "breakfast" as const,
-  name: "Oatmeal & eggs",
-  calories: "520",
-  proteinG: "32",
-  carbsG: "58",
-  fatG: "12",
-};
-
-function NutritionEmptyState({
-  onPrefillBreakfast,
-}: {
-  onPrefillBreakfast: () => void;
-}) {
-  return (
-    <div data-testid="nutrition-empty-state">
-      <p>Log your first meal</p>
-      <p>Tracking nutrition helps you hit your protein and calorie targets.</p>
-      <button onClick={onPrefillBreakfast} data-testid="prefill-breakfast">
-        Start with a typical breakfast
-      </button>
-    </div>
-  );
-}
-// ─────────────────────────────────────────────────────────────────────────────
+import { NutritionEmptyState, TYPICAL_BREAKFAST } from "../page";
 
 describe("NutritionEmptyState (AC2 — empty Nutrition screen)", () => {
   it("renders the log-your-first-meal heading", () => {
@@ -46,17 +20,16 @@ describe("NutritionEmptyState (AC2 — empty Nutrition screen)", () => {
   it("renders the typical-breakfast prefill button", () => {
     render(<NutritionEmptyState onPrefillBreakfast={() => {}} />);
     expect(
-      screen.getByTestId("prefill-breakfast"),
+      screen.getByRole("button", { name: /Start with a typical breakfast/i }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("prefill-breakfast")).toHaveTextContent(
-      "Start with a typical breakfast",
-    );
   });
 
   it("calls onPrefillBreakfast when the button is clicked", () => {
     const onPrefill = vi.fn();
     render(<NutritionEmptyState onPrefillBreakfast={onPrefill} />);
-    fireEvent.click(screen.getByTestId("prefill-breakfast"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Start with a typical breakfast/i }),
+    );
     expect(onPrefill).toHaveBeenCalledTimes(1);
   });
 });
