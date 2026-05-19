@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { useMessageStream } from "@/hooks/use-message-stream";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Send, ArrowLeft } from "lucide-react";
+import { MessageSquare, Send, ArrowLeft, Radio } from "lucide-react";
 
 export default function MessagesPage() {
   useMessageStream();
@@ -14,12 +14,29 @@ export default function MessagesPage() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(
     initialPartner
   );
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const { data: userData } = trpc.user.me.useQuery();
+  const isCoach = userData?.user?.tier === "coach";
 
   return (
     <div className="space-y-0 h-[calc(100vh-8rem)]">
-      <div className="flex items-center gap-3 pb-4">
+      <div className="flex items-center justify-between pb-4">
         <h1 className="font-display text-2xl font-bold text-foreground">Messages</h1>
+        {isCoach && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setBroadcastOpen(true)}
+            className="gap-1.5"
+          >
+            <Radio className="h-4 w-4" />
+            Broadcast
+          </Button>
+        )}
       </div>
+      {broadcastOpen && (
+        <BroadcastCompose onClose={() => setBroadcastOpen(false)} />
+      )}
 
       <div className="flex h-[calc(100%-3rem)] rounded-lg border border-border overflow-hidden">
         {/* Conversation List - Left Panel */}
@@ -133,6 +150,95 @@ function ConversationList({
           </div>
         </button>
       ))}
+    </div>
+  );
+}
+
+function BroadcastCompose({ onClose }: { onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const { data: clientsData, isLoading } = trpc.coach.clients.useQuery();
+  const sendBulk = trpc.message.sendBulk.useMutation({
+    onSuccess: () => {
+      utils.message.conversations.invalidate();
+      onClose();
+    },
+  });
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [content, setContent] = useState("");
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleSend() {
+    const ids = Array.from(selected);
+    if (ids.length === 0 || !content.trim()) return;
+    sendBulk.mutate({ athleteIds: ids, content: content.trim() });
+  }
+
+  const clients = clientsData ?? [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-base text-foreground">Broadcast message</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">✕</button>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-2 mb-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-9 animate-pulse rounded bg-muted/30" />
+            ))}
+          </div>
+        ) : clients.length === 0 ? (
+          <p className="text-sm text-muted-foreground mb-4">No assigned athletes.</p>
+        ) : (
+          <div className="mb-4 max-h-48 overflow-y-auto space-y-1">
+            <p className="text-xs text-muted-foreground mb-2">Select recipients</p>
+            {clients.map((c) => (
+              <label
+                key={c.athleteId}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer hover:bg-muted/20"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(c.athleteId)}
+                  onChange={() => toggle(c.athleteId)}
+                  className="accent-primary"
+                />
+                <span className="text-sm text-foreground">{c.athleteName}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Type your broadcast message…"
+          rows={3}
+          className="w-full rounded-lg bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none mb-4"
+        />
+
+        <div className="flex gap-2 justify-end">
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button
+            size="sm"
+            onClick={handleSend}
+            disabled={selected.size === 0 || !content.trim() || sendBulk.isPending}
+          >
+            <Send className="h-3.5 w-3.5 mr-1.5" />
+            Send to {selected.size} athlete{selected.size !== 1 ? "s" : ""}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

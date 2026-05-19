@@ -4,13 +4,15 @@ import {
   FlatList,
   Pressable,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
+import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
-import { MessageCircle, ChevronRight } from "lucide-react-native";
+import { MessageCircle, ChevronRight, Radio } from "lucide-react-native";
 
 import { colors as theme } from "@/lib/theme";
 
@@ -37,6 +39,8 @@ type Conversation = {
 
 export default function MessagesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useAuth();
+  const isCoach = user?.tier === "coach";
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,7 +77,21 @@ export default function MessagesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen options={{ title: "Messages" }} />
+      <Stack.Screen
+        options={{
+          title: "Messages",
+          headerRight: isCoach
+            ? () => (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("BroadcastMessage")}
+                  style={{ marginRight: 4 }}
+                >
+                  <Radio size={22} color={colors.primary} />
+                </TouchableOpacity>
+              )
+            : undefined,
+        }}
+      />
 
       {conversations.length === 0 ? (
         <View

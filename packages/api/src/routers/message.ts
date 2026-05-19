@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import {
   sendMessageSchema,
+  sendBulkMessageSchema,
   messageHistorySchema,
   markReadSchema,
 } from "@ironpulse/shared";
@@ -166,6 +167,59 @@ export const messageRouter = createTRPCRouter({
       }
 
       return { messages, nextCursor };
+    }),
+
+  sendBulk: rateLimitedProcedure
+    .input(sendBulkMessageSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.tier !== "coach") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only coaches can send bulk messages",
+        });
+      }
+
+      const assignments = await ctx.db.programAssignment.findMany({
+        where: { coachId: ctx.user.id },
+        select: { athleteId: true },
+      });
+      const assignedIds = new Set(assignments.map((a: { athleteId: string }) => a.athleteId));
+
+      const unauthorised = input.athleteIds.filter((id) => !assignedIds.has(id));
+      if (unauthorised.length > 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "One or more recipients are not your assigned athletes",
+        });
+      }
+
+      await ctx.db.message.createMany({
+        data: input.athleteIds.map((athleteId) => ({
+          senderId: ctx.user.id,
+          receiverId: athleteId,
+          content: input.content,
+        })),
+      });
+
+      const sender = await ctx.db.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { name: true },
+      });
+      const senderName = sender?.name ?? "Your coach";
+
+      for (const athleteId of input.athleteIds) {
+        publishNewMessage(athleteId, {
+          type: "new_message",
+          message: { senderId: ctx.user.id, receiverId: athleteId, content: input.content },
+        }).catch((err) =>
+          captureError(err, { context: "publishNewMessage (bulk)", receiverId: athleteId })
+        );
+        notifyNewMessage(ctx.db, athleteId, senderName).catch((err) =>
+          captureError(err, { context: "notifyNewMessage (bulk)", receiverId: athleteId, senderId: ctx.user.id })
+        );
+      }
+
+      return { messageCount: input.athleteIds.length };
     }),
 
   markRead: rateLimitedProcedure

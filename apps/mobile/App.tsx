@@ -67,6 +67,7 @@ import SubscriptionScreen from "./app/settings/subscription";
 // Messages
 import MessagesScreen from "./app/messages/index";
 import MessageThreadScreen from "./app/messages/[userId]";
+import BroadcastMessageScreen from "./app/messages/broadcast";
 
 // Coach
 import CoachScreen from "./app/coach/index";
@@ -137,6 +138,7 @@ export type RootStackParamList = {
   // Messages
   Messages: undefined;
   MessageThread: { userId: string };
+  BroadcastMessage: undefined;
   // Coach
   Coach: undefined;
   CoachClientDetail: { id: string };
@@ -444,6 +446,11 @@ function RootNavigator() {
           name="MessageThread"
           component={MessageThreadScreen}
           options={{ headerShown: true, title: "Chat", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="BroadcastMessage"
+          component={BroadcastMessageScreen}
+          options={{ headerShown: true, title: "Broadcast", ...HEADER_STYLE }}
         />
 
         {/* Coach */}
