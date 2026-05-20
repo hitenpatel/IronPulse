@@ -234,6 +234,13 @@ describe("message.sendBulk", () => {
     });
     expect(result.messageCount).toBe(1);
   });
+
+  it("rejects duplicate athlete IDs", async () => {
+    const caller = messageCaller({ user: coachUser });
+    await expect(
+      caller.sendBulk({ athleteIds: [athleteUser.id, athleteUser.id], content: "Dup test" })
+    ).rejects.toThrow("Duplicate athlete IDs not allowed");
+  });
 });
 
 describe("message.markRead", () => {
