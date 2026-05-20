@@ -18,6 +18,7 @@ import {
   Check,
   ExternalLink,
   Upload,
+  LayoutGrid,
 } from "lucide-react";
 
 const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/ironpulse";
@@ -119,7 +120,114 @@ function CoachOverview() {
         ))}
       </div>
 
+      <AttendanceHeatmap />
+
       <EditCoachProfile />
+    </div>
+  );
+}
+
+const INTENSITY_CLASS = {
+  none: "bg-muted/30",
+  low: "bg-green-500/25",
+  medium: "bg-green-500/55",
+  high: "bg-green-500",
+} as const;
+
+function AttendanceHeatmap() {
+  const [days, setDays] = useState<14 | 30>(14);
+  const { data, isLoading } = trpc.coach.attendanceHeatmap.useQuery({ days });
+
+  if (isLoading) return <div className="h-[120px] animate-pulse rounded-lg bg-muted" />;
+  if (!data || data.length === 0) return null;
+
+  const today = new Date();
+  const dates: Date[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dates.push(d);
+  }
+
+  return (
+    <div className="bg-card rounded-lg border border-border p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-semibold text-base text-foreground">Attendance Heatmap</h2>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            variant={days === 14 ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDays(14)}
+          >
+            14d
+          </Button>
+          <Button
+            variant={days === 30 ? "default" : "outline"}
+            size="sm"
+            onClick={() => setDays(30)}
+          >
+            30d
+          </Button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left text-xs text-muted-foreground pr-3 pb-1 font-medium w-32 min-w-[7rem]">
+                Athlete
+              </th>
+              {dates.map((d) => (
+                <th
+                  key={d.toISOString()}
+                  className="text-center text-xs text-muted-foreground pb-1 font-medium min-w-[22px] px-0.5"
+                >
+                  {d.getDate()}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr key={row.athleteId}>
+                <td className="text-xs text-foreground pr-3 py-0.5 max-w-[7rem] truncate">
+                  {row.athleteName ?? "Athlete"}
+                </td>
+                {dates.map((d) => {
+                  const dateStr = d.toISOString().slice(0, 10);
+                  const cell = row.cells.find((c) => c.date === dateStr);
+                  const intensity = cell?.intensity ?? "none";
+                  const count = cell?.workoutCount ?? 0;
+                  return (
+                    <td key={dateStr} className="px-0.5 py-0.5">
+                      <Link href={`/coach/clients/${row.athleteId}?date=${dateStr}`}>
+                        <div
+                          className={`h-5 w-5 rounded-sm ${INTENSITY_CLASS[intensity]} hover:ring-1 hover:ring-primary transition-all cursor-pointer`}
+                          title={`${row.athleteName ?? "Athlete"} · ${count} workout${count !== 1 ? "s" : ""} on ${dateStr}`}
+                        />
+                      </Link>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center gap-3 mt-3">
+        <span className="text-xs text-muted-foreground">Intensity:</span>
+        {(["none", "low", "medium", "high"] as const).map((level) => (
+          <div key={level} className="flex items-center gap-1">
+            <div className={`h-3 w-3 rounded-sm ${INTENSITY_CLASS[level]} border border-border/50`} />
+            <span className="text-xs text-muted-foreground capitalize">{level}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
