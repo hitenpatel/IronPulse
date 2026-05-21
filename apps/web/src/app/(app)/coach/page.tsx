@@ -142,10 +142,11 @@ function AttendanceHeatmap() {
   if (!data || data.length === 0) return null;
 
   const today = new Date();
+  const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   const dates: Date[] = [];
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
+    const d = new Date(todayUTC);
+    d.setUTCDate(d.getUTCDate() - i);
     dates.push(d);
   }
 
@@ -186,7 +187,7 @@ function AttendanceHeatmap() {
                   key={d.toISOString()}
                   className="text-center text-xs text-muted-foreground pb-1 font-medium min-w-[22px] px-0.5"
                 >
-                  {d.getDate()}
+                  {d.getUTCDate()}
                 </th>
               ))}
             </tr>
