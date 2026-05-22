@@ -272,6 +272,7 @@ export default function ActiveWorkoutScreen() {
                 exerciseId={item.exercise_id}
                 workoutExerciseId={item.id}
                 exerciseName={item.exercise_name}
+                equipment={item.exercise_equipment}
                 sets={(setsByExercise.get(item.id) ?? []) as any}
                 previousSets={previousSetsByExercise.get(item.exercise_id) ?? []}
                 exerciseIndex={index}
