@@ -4,8 +4,12 @@ import {
   listMealsSchema,
   deleteMealSchema,
   dailySummarySchema,
+  getMealScanUploadUrlSchema,
+  analyzeMealPhotoSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
+import { getPresignedUploadUrl, getPresignedDownloadUrl } from "../lib/s3";
+import { runMealScan } from "../lib/meal-scan";
 
 export const nutritionRouter = createTRPCRouter({
   logMeal: rateLimitedProcedure
@@ -119,5 +123,28 @@ export const nutritionRouter = createTRPCRouter({
       );
 
       return { date: input.date, ...summary };
+    }),
+
+  getMealScanUploadUrl: rateLimitedProcedure
+    .input(getMealScanUploadUrlSchema)
+    .mutation(async ({ ctx, input }) => {
+      const ext = input.contentType.split("/")[1] ?? "jpg";
+      const key = `meal-scans/${ctx.user.id}/${Date.now()}.${ext}`;
+      const uploadUrl = await getPresignedUploadUrl(key, input.contentType, 600, "shortLived");
+      return { uploadUrl, photoKey: key };
+    }),
+
+  analyzeMealPhoto: rateLimitedProcedure
+    .input(analyzeMealPhotoSchema)
+    .mutation(async ({ ctx: _ctx, input }) => {
+      const imageUrl = await getPresignedDownloadUrl(input.photoKey, 300);
+      try {
+        return await runMealScan(imageUrl);
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Meal scan failed",
+        });
+      }
     }),
 });
