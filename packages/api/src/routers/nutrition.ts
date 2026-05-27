@@ -136,7 +136,10 @@ export const nutritionRouter = createTRPCRouter({
 
   analyzeMealPhoto: rateLimitedProcedure
     .input(analyzeMealPhotoSchema)
-    .mutation(async ({ ctx: _ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
+      if (!input.photoKey.startsWith(`meal-scans/${ctx.user.id}/`)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Photo key does not belong to the requesting user" });
+      }
       const imageUrl = await getPresignedDownloadUrl(input.photoKey, 300);
       try {
         return await runMealScan(imageUrl);

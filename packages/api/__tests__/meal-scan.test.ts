@@ -44,7 +44,7 @@ const MOCK_SCAN_RESULT: ScanResult = {
     { name: "chicken breast", portionDescription: "1 serving" },
     { name: "rice", portionDescription: "1 serving" },
   ],
-  macros: { calories: 400, proteinG: 0, carbsG: 0, fatG: 0 },
+  macros: { calories: 400, proteinG: 0, carbsG: 0, fatG: 0, isMacroEstimate: true },
 };
 
 beforeEach(() => {
@@ -119,7 +119,7 @@ describe("nutrition.analyzeMealPhoto", () => {
 
     expect(result.items).toHaveLength(2);
     expect(result.items[0]!.name).toBe("chicken breast");
-    expect(result.macros).toEqual({ calories: 400, proteinG: 0, carbsG: 0, fatG: 0 });
+    expect(result.macros).toEqual({ calories: 400, proteinG: 0, carbsG: 0, fatG: 0, isMacroEstimate: true });
   });
 
   it("generates a presigned download URL for the photo key", async () => {
@@ -161,5 +161,15 @@ describe("nutrition.analyzeMealPhoto", () => {
         photoKey: `meal-scans/${testUser.id}/12345.jpg`,
       })
     ).rejects.toThrow("UNAUTHORIZED");
+  });
+
+  it("rejects a photo key that belongs to a different user", async () => {
+    const db = makeDb();
+    const otherUserId = "other-user-id-999";
+    await expect(
+      nutritionCaller(db, { user: testUser }).analyzeMealPhoto({
+        photoKey: `meal-scans/${otherUserId}/12345.jpg`,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

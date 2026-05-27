@@ -8,6 +8,7 @@ export interface MacroPrediction {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  isMacroEstimate: boolean;
 }
 
 export interface ScanResult {
@@ -69,6 +70,7 @@ export async function runMealScan(imageUrl: string): Promise<ScanResult> {
       proteinG: 0,
       carbsG: 0,
       fatG: 0,
+      isMacroEstimate: true,
     },
   };
 }
