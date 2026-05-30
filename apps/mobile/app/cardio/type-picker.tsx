@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { ScrollView, View, Text, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
@@ -14,6 +14,11 @@ import {
   Rows2,
   Ellipsis,
   X,
+  Dumbbell,
+  ArrowRightLeft,
+  Package,
+  Zap,
+  Target,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { TypeCard } from "@/components/cardio/type-card";
@@ -49,6 +54,15 @@ const activityTypes: ActivityType[] = [
   { key: "row", label: "Row", icon: Rows2, gps: false },
   { key: "elliptical", label: "Elliptical", icon: Ellipsis, gps: false },
   { key: "other", label: "Other", icon: Activity, gps: false },
+];
+
+const hyroxTypes: ActivityType[] = [
+  { key: "ski_erg", label: "Ski Erg", icon: Activity, gps: false },
+  { key: "sled_push", label: "Sled Push", icon: ArrowRightLeft, gps: false },
+  { key: "sled_pull", label: "Sled Pull", icon: ArrowRightLeft, gps: false },
+  { key: "sandbag_carry", label: "Sandbag Carry", icon: Package, gps: false },
+  { key: "burpee_broad_jump", label: "Burpee Broad Jump", icon: Zap, gps: false },
+  { key: "wall_ball", label: "Wall Ball", icon: Target, gps: false },
 ];
 
 export default function TypePickerScreen() {
@@ -101,7 +115,7 @@ export default function TypePickerScreen() {
         </View>
 
         {selectedType === null ? (
-          <>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <Text
               style={{
                 fontSize: 13,
@@ -130,16 +144,40 @@ export default function TypePickerScreen() {
               ))}
             </View>
 
+            {/* HYROX section */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24, marginBottom: 12 }}>
+              <Dumbbell size={14} color={C.textSecondary} />
+              <Text style={{ fontSize: 13, color: C.textSecondary, fontWeight: "500" }}>
+                HYROX
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              {hyroxTypes.map((a) => (
+                <TypeCard
+                  key={a.key}
+                  label={a.label}
+                  icon={a.icon}
+                  onPress={() => handleTypePress(a)}
+                />
+              ))}
+            </View>
+
             {/* Or log manually link */}
             <Pressable
-              style={{ alignItems: "center", marginTop: 24 }}
+              style={{ alignItems: "center", marginTop: 24, marginBottom: 16 }}
               onPress={() => navigation.navigate("CardioManual", { type: "other" })}
             >
               <Text style={{ color: C.primary, fontSize: 14, fontWeight: "500" }}>
                 Or log manually
               </Text>
             </Pressable>
-          </>
+          </ScrollView>
         ) : (
           <View style={{ flex: 1, justifyContent: "center", gap: 16, paddingHorizontal: 12 }}>
             <Text

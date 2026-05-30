@@ -138,6 +138,114 @@ describe("cardio.getRoutePoints", () => {
   });
 });
 
+describe("HYROX exercise types", () => {
+  it("creates a ski_erg session with distance in meters", async () => {
+    const caller = cardioCaller({ user: testUser });
+    const result = await caller.create({
+      type: "ski_erg",
+      startedAt: new Date("2026-05-01T09:00:00Z"),
+      durationSeconds: 240,
+      distanceMeters: 1000,
+    });
+
+    expect(result.session.type).toBe("ski_erg");
+    expect(result.session.source).toBe("manual");
+    expect(result.session.durationSeconds).toBe(240);
+    expect(Number(result.session.distanceMeters)).toBe(1000);
+  });
+
+  it("creates a sled_push session", async () => {
+    const caller = cardioCaller({ user: testUser });
+    const result = await caller.create({
+      type: "sled_push",
+      startedAt: new Date("2026-05-01T09:05:00Z"),
+      durationSeconds: 90,
+      distanceMeters: 25,
+    });
+
+    expect(result.session.type).toBe("sled_push");
+    expect(Number(result.session.distanceMeters)).toBe(25);
+  });
+
+  it("creates a wall_ball session storing reps as distanceMeters", async () => {
+    const caller = cardioCaller({ user: testUser });
+    const result = await caller.create({
+      type: "wall_ball",
+      startedAt: new Date("2026-05-01T09:10:00Z"),
+      durationSeconds: 300,
+      distanceMeters: 100,
+    });
+
+    expect(result.session.type).toBe("wall_ball");
+    expect(Number(result.session.distanceMeters)).toBe(100);
+  });
+
+  it("creates a burpee_broad_jump session", async () => {
+    const caller = cardioCaller({ user: testUser });
+    const result = await caller.create({
+      type: "burpee_broad_jump",
+      startedAt: new Date("2026-05-01T09:15:00Z"),
+      durationSeconds: 420,
+      distanceMeters: 80,
+    });
+
+    expect(result.session.type).toBe("burpee_broad_jump");
+    expect(Number(result.session.distanceMeters)).toBe(80);
+  });
+
+  it("rejects unknown cardio types", async () => {
+    const caller = cardioCaller({ user: testUser });
+    await expect(
+      caller.create({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        type: "invalid_hyrox_type" as any,
+        startedAt: new Date(),
+        durationSeconds: 300,
+      })
+    ).rejects.toThrow();
+  });
+
+  it("lists sessions filtered by HYROX type", async () => {
+    const now = new Date();
+    await db.cardioSession.create({
+      data: { userId: testUser.id, type: "ski_erg", source: "manual", startedAt: now, durationSeconds: 200, distanceMeters: 1000 },
+    });
+    await db.cardioSession.create({
+      data: { userId: testUser.id, type: "run", source: "manual", startedAt: now, durationSeconds: 1800, distanceMeters: 5000 },
+    });
+    await db.cardioSession.create({
+      data: { userId: testUser.id, type: "sled_push", source: "manual", startedAt: now, durationSeconds: 90, distanceMeters: 25 },
+    });
+
+    const caller = cardioCaller({ user: testUser });
+    const skiErgResult = await caller.list({ limit: 50, type: "ski_erg" });
+    expect(skiErgResult.data.length).toBe(1);
+    expect(skiErgResult.data[0]!.type).toBe("ski_erg");
+
+    const allResult = await caller.list({ limit: 50 });
+    expect(allResult.data.length).toBe(3);
+  });
+
+  it("HYROX sessions appear in unfiltered history", async () => {
+    const now = new Date();
+    for (const type of ["ski_erg", "sled_pull", "sandbag_carry"] as const) {
+      await db.cardioSession.create({
+        data: { userId: testUser.id, type, source: "manual", startedAt: now, durationSeconds: 120, distanceMeters: 25 },
+      });
+    }
+
+    const caller = cardioCaller({ user: testUser });
+    const result = await caller.list({ limit: 50 });
+
+    expect(result.data.length).toBe(3);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const types = result.data.map((s: any) => s.type);
+    expect(types).toContain("ski_erg");
+    expect(types).toContain("sled_pull");
+    expect(types).toContain("sandbag_carry");
+  });
+});
+
 describe("cardio ownership scoping", () => {
   it("rejects access to another user's session", async () => {
     const otherUser = createTestUser({ email: "other-cardio@test.com", id: crypto.randomUUID() });

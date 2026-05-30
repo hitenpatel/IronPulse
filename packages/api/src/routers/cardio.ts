@@ -7,7 +7,7 @@ import {
   previewGpxSchema,
   previewFitSchema,
   importFitSchema,
-  cursorPaginationSchema,
+  listCardioSchema,
 } from "@ironpulse/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { parseGpx, haversineDistance } from "../lib/gpx";
@@ -42,10 +42,13 @@ export const cardioRouter = createTRPCRouter({
     }),
 
   list: rateLimitedProcedure
-    .input(cursorPaginationSchema)
+    .input(listCardioSchema)
     .query(async ({ ctx, input }) => {
       const sessions = await ctx.db.cardioSession.findMany({
-        where: { userId: ctx.user.id },
+        where: {
+          userId: ctx.user.id,
+          ...(input.type && { type: input.type }),
+        },
         orderBy: { startedAt: "desc" },
         take: input.limit + 1,
         ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),

@@ -88,8 +88,25 @@ export const CardioType = {
   ROW: "row",
   ELLIPTICAL: "elliptical",
   OTHER: "other",
+  // HYROX functional exercise types
+  SKI_ERG: "ski_erg",
+  SLED_PUSH: "sled_push",
+  SLED_PULL: "sled_pull",
+  SANDBAG_CARRY: "sandbag_carry",
+  BURPEE_BROAD_JUMP: "burpee_broad_jump",
+  WALL_BALL: "wall_ball",
 } as const;
 export type CardioType = (typeof CardioType)[keyof typeof CardioType];
+
+export const HYROX_CARDIO_TYPES = [
+  CardioType.SKI_ERG,
+  CardioType.SLED_PUSH,
+  CardioType.SLED_PULL,
+  CardioType.SANDBAG_CARRY,
+  CardioType.BURPEE_BROAD_JUMP,
+  CardioType.WALL_BALL,
+] as const;
+export type HyroxCardioType = (typeof HYROX_CARDIO_TYPES)[number];
 
 export const CardioSource = {
   MANUAL: "manual",
