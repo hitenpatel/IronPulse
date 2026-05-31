@@ -55,7 +55,7 @@ function TableSkeleton() {
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            {["DATE", "TYPE", "DISTANCE / REPS", "DURATION", "AVG PACE"].map((col) => (
+            {["DATE", "TYPE", "DISTANCE / REPS", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
               <th key={col} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {col}
               </th>
@@ -65,7 +65,7 @@ function TableSkeleton() {
         <tbody>
           {Array.from({ length: 5 }).map((_, i) => (
             <tr key={i} className="border-b border-border last:border-0">
-              {Array.from({ length: 5 }).map((_, j) => (
+              {Array.from({ length: 6 }).map((_, j) => (
                 <td key={j} className="px-4 py-3">
                   <div className="h-4 rounded bg-muted" style={{ width: j === 0 ? 80 : j === 1 ? 60 : 48 }} />
                 </td>
@@ -163,7 +163,7 @@ export default function CardioHistoryPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                {["DATE", "TYPE", "DISTANCE / REPS", "DURATION", "AVG PACE"].map((col) => (
+                {["DATE", "TYPE", "DISTANCE / REPS", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
                   <th key={col} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {col}
                   </th>
@@ -211,6 +211,11 @@ export default function CardioHistoryPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-foreground">
                       {pace ?? <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {session.elevation_gain_m != null && Number(session.elevation_gain_m) > 0
+                        ? `${Math.round(Number(session.elevation_gain_m))} m`
+                        : <span className="text-muted-foreground">—</span>}
                     </td>
                   </tr>
                 );
