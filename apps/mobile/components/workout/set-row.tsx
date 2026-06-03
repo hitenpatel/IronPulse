@@ -496,9 +496,14 @@ export function SetRow({
             letterSpacing: 0.3,
           }}
         >
-          {`each side: ${plateResult.platesPerSide
-            .map((p) => `${p.size}kg×${p.count}`)
-            .join(" · ")}${plateResult.remainder > 0 ? ` + ${plateResult.remainder}kg` : ""}`}
+          {`each side: ${
+            plateResult.platesPerSide.length > 0
+              ? plateResult.platesPerSide
+                  .map((p) => `${p.size}kg×${p.count}`)
+                  .join(" · ") +
+                (plateResult.remainder > 0 ? ` + ${plateResult.remainder}kg` : "")
+              : "bar only"
+          }`}
         </Text>
       </View>
     )}
