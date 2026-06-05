@@ -1,8 +1,16 @@
-// Polyfill SharedArrayBuffer and Atomics for Hermes engine (Android debug builds)
-// Runs after RN default polyfills via Metro getPolyfills
+// Hermes runtime polyfills. Imported as the FIRST side-effect import in
+// index.js so these globals exist before App / tRPC / PowerSync evaluate.
+// (Inline code in index.js would run too late — ES imports are hoisted.)
 
 if (typeof globalThis.SharedArrayBuffer === "undefined") {
   globalThis.SharedArrayBuffer = ArrayBuffer;
+}
+
+// performance.now — required by React internals
+if (typeof globalThis.performance === "undefined") {
+  globalThis.performance = { now: () => Date.now() };
+} else if (typeof globalThis.performance.now !== "function") {
+  globalThis.performance.now = () => Date.now();
 }
 
 if (typeof globalThis.Atomics === "undefined") {
