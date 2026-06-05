@@ -182,9 +182,7 @@ export default function SleepScreen() {
                 </View>
               </>
             ) : (
-              <Text style={{ color: colors.text3, marginTop: 10, fontSize: 13, fontFamily: fonts.bodyRegular }}>
-                No sleep logged yet. Tap the + to log last night.
-              </Text>
+              <SleepEmptyCta navigation={navigation} onLogManually={() => setFormOpen(true)} />
             )}
           </View>
 
@@ -387,6 +385,69 @@ export default function SleepScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function SleepEmptyCta({
+  navigation,
+  onLogManually,
+}: {
+  navigation: ReturnType<typeof useNavigation>;
+  onLogManually: () => void;
+}) {
+  return (
+    <View style={{ marginTop: 10, gap: 8 }}>
+      <Text style={{ color: colors.text3, fontSize: 13, fontFamily: fonts.bodyRegular }}>
+        Connect a sleep tracker for automatic tracking, or log last night manually.
+      </Text>
+      <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
+        <Pressable
+          onPress={() => navigation.navigate("SettingsIntegrations" as never)}
+          style={{
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: radii.buttonSm,
+            borderWidth: 1,
+            borderColor: colors.purple,
+            backgroundColor: colors.purpleSoft,
+          }}
+        >
+          <Text style={{ fontSize: 11, color: colors.purple, fontFamily: fonts.bodySemi }}>
+            Connect Oura
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => navigation.navigate("SettingsIntegrations" as never)}
+          style={{
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: radii.buttonSm,
+            borderWidth: 1,
+            borderColor: colors.line,
+            backgroundColor: colors.bg2,
+          }}
+        >
+          <Text style={{ fontSize: 11, color: colors.text2, fontFamily: fonts.bodySemi }}>
+            Apple Health
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onLogManually}
+          style={{
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: radii.buttonSm,
+            borderWidth: 1,
+            borderColor: colors.line,
+            backgroundColor: "transparent",
+          }}
+        >
+          <Text style={{ fontSize: 11, color: colors.text3, fontFamily: fonts.bodyRegular }}>
+            Log manually
+          </Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 

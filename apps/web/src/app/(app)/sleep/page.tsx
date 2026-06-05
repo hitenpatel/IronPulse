@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Moon, Trash2, TrendingUp } from "lucide-react";
+import { Moon, Trash2, TrendingUp, Zap } from "lucide-react";
 
 type SleepQuality = "poor" | "fair" | "good" | "excellent";
 
@@ -178,6 +179,32 @@ function SleepLogForm() {
   );
 }
 
+export function SleepEmptyCta() {
+  return (
+    <div className="py-6 space-y-4">
+      <p className="text-center text-sm text-muted-foreground">
+        Connect a sleep tracker to see your trends automatically, or log manually below.
+      </p>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/settings/integrations">
+            <Zap className="mr-1.5 h-3.5 w-3.5" />
+            Connect Oura
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/settings/integrations">
+            Connect Apple Health
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <a href="#sleep-log-form">Log manually</a>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function WeeklyTrend() {
   const { data, isLoading } = trpc.sleep.listSleep.useQuery({ days: 7 });
 
@@ -209,9 +236,7 @@ function WeeklyTrend() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-sm text-muted-foreground py-6">
-            No sleep data yet. Log your first night above.
-          </p>
+          <SleepEmptyCta />
         </CardContent>
       </Card>
     );
@@ -403,7 +428,9 @@ export default function SleepPage() {
 
       <WeeklyTrend />
 
-      <SleepLogForm />
+      <div id="sleep-log-form">
+        <SleepLogForm />
+      </div>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Recent Logs</h2>

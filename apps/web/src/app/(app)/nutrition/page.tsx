@@ -16,30 +16,45 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: "snack", label: "Snack" },
 ];
 
+export const TYPICAL_BREAKFAST = {
+  mealType: "breakfast" as MealType,
+  name: "Oatmeal & eggs",
+  calories: "520",
+  proteinG: "32",
+  carbsG: "58",
+  fatG: "12",
+};
+
 function todayDate(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-function MealLogForm() {
+interface MealFormState {
+  mealType: MealType;
+  name: string;
+  calories: string;
+  proteinG: string;
+  carbsG: string;
+  fatG: string;
+}
+
+function MealLogForm({
+  formState,
+  onFormChange,
+}: {
+  formState: MealFormState;
+  onFormChange: (patch: Partial<MealFormState>) => void;
+}) {
   const utils = trpc.useUtils();
-  const [mealType, setMealType] = useState<MealType>("breakfast");
-  const [name, setName] = useState("");
-  const [calories, setCalories] = useState("");
-  const [proteinG, setProteinG] = useState("");
-  const [carbsG, setCarbsG] = useState("");
-  const [fatG, setFatG] = useState("");
+  const { mealType, name, calories, proteinG, carbsG, fatG } = formState;
   const [notes, setNotes] = useState("");
   const [error, setError] = useState(false);
 
   const logMeal = trpc.nutrition.logMeal.useMutation({
     onSuccess: async () => {
-      setName("");
-      setCalories("");
-      setProteinG("");
-      setCarbsG("");
-      setFatG("");
+      onFormChange({ name: "", calories: "", proteinG: "", carbsG: "", fatG: "", mealType: "breakfast" });
       setNotes("");
       setError(false);
       await utils.nutrition.listMeals.invalidate();
@@ -79,7 +94,7 @@ function MealLogForm() {
               <button
                 key={t.value}
                 type="button"
-                onClick={() => setMealType(t.value)}
+                onClick={() => onFormChange({ mealType: t.value })}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   mealType === t.value
                     ? "bg-primary text-primary-foreground"
@@ -94,7 +109,7 @@ function MealLogForm() {
           <Input
             placeholder="Food name *"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => onFormChange({ name: e.target.value })}
             required
           />
 
@@ -106,7 +121,7 @@ function MealLogForm() {
                 min="0"
                 placeholder="kcal"
                 value={calories}
-                onChange={(e) => setCalories(e.target.value)}
+                onChange={(e) => onFormChange({ calories: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -117,7 +132,7 @@ function MealLogForm() {
                 step="0.1"
                 placeholder="g"
                 value={proteinG}
-                onChange={(e) => setProteinG(e.target.value)}
+                onChange={(e) => onFormChange({ proteinG: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -128,7 +143,7 @@ function MealLogForm() {
                 step="0.1"
                 placeholder="g"
                 value={carbsG}
-                onChange={(e) => setCarbsG(e.target.value)}
+                onChange={(e) => onFormChange({ carbsG: e.target.value })}
               />
             </div>
             <div className="space-y-1">
@@ -139,7 +154,7 @@ function MealLogForm() {
                 step="0.1"
                 placeholder="g"
                 value={fatG}
-                onChange={(e) => setFatG(e.target.value)}
+                onChange={(e) => onFormChange({ fatG: e.target.value })}
               />
             </div>
           </div>
@@ -164,6 +179,31 @@ function MealLogForm() {
             Failed to save. Please try again.
           </p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function NutritionEmptyState({
+  onPrefillBreakfast,
+}: {
+  onPrefillBreakfast: () => void;
+}) {
+  return (
+    <Card>
+      <CardContent className="py-6 space-y-4">
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium">Log your first meal</p>
+          <p className="text-xs text-muted-foreground">
+            Tracking nutrition helps you hit your protein and calorie targets.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <Button variant="outline" size="sm" onClick={onPrefillBreakfast}>
+            <Utensils className="mr-1.5 h-3.5 w-3.5" />
+            Start with a typical breakfast
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -236,11 +276,7 @@ function MealList() {
   const meals = data?.meals ?? [];
 
   if (meals.length === 0) {
-    return (
-      <p className="text-center text-sm text-muted-foreground py-6">
-        No meals logged today. Use the form above to get started.
-      </p>
-    );
+    return null;
   }
 
   const grouped = MEAL_TYPES.map((t) => ({
@@ -301,13 +337,38 @@ function MealList() {
 }
 
 export default function NutritionPage() {
+  const { data: summary } = trpc.nutrition.dailySummary.useQuery({ date: todayDate() });
+  const isEmpty = !summary || summary.mealCount === 0;
+
+  const [formState, setFormState] = useState<MealFormState>({
+    mealType: "breakfast",
+    name: "",
+    calories: "",
+    proteinG: "",
+    carbsG: "",
+    fatG: "",
+  });
+
+  function handleFormChange(patch: Partial<MealFormState>) {
+    setFormState((prev) => ({ ...prev, ...patch }));
+  }
+
+  function handlePrefillBreakfast() {
+    setFormState(TYPICAL_BREAKFAST);
+    document.getElementById("nutrition-log-form")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <h1 className="text-2xl font-bold">Nutrition</h1>
 
       <MacroSummary />
 
-      <MealLogForm />
+      {isEmpty && <NutritionEmptyState onPrefillBreakfast={handlePrefillBreakfast} />}
+
+      <div id="nutrition-log-form">
+        <MealLogForm formState={formState} onFormChange={handleFormChange} />
+      </div>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Today&apos;s Meals</h2>
