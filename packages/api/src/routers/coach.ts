@@ -6,6 +6,7 @@ import {
   clientProgressSchema,
   updateCoachProfileSchema,
   uploadCoachProfileImageSchema,
+  attendanceHeatmapSchema,
 } from "@ironpulse/shared";
 import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
@@ -261,6 +262,58 @@ export const coachRouter = createTRPCRouter({
       const uploadUrl = await getPresignedUploadUrl(imageKey, input.contentType);
 
       return { uploadUrl, imageKey };
+    }),
+
+  attendanceHeatmap: coachProcedure
+    .input(attendanceHeatmapSchema)
+    .query(async ({ ctx, input }) => {
+      const since = new Date();
+      since.setUTCDate(since.getUTCDate() - input.days + 1);
+      since.setUTCHours(0, 0, 0, 0);
+
+      const assignments = await ctx.db.programAssignment.findMany({
+        where: { coachId: ctx.user.id, status: "active" },
+        include: { athlete: { select: { id: true, name: true } } },
+      });
+
+      if (assignments.length === 0) return [];
+
+      const athleteIds = assignments.map((a) => a.athleteId);
+
+      const workouts = await ctx.db.workout.findMany({
+        where: { userId: { in: athleteIds }, startedAt: { gte: since } },
+        select: { userId: true, startedAt: true },
+      });
+
+      const dates: string[] = [];
+      for (let i = 0; i < input.days; i++) {
+        const d = new Date(since);
+        d.setUTCDate(d.getUTCDate() + i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+
+      const counts = new Map<string, number>();
+      for (const w of workouts) {
+        const date = w.startedAt.toISOString().slice(0, 10);
+        const key = `${w.userId}|${date}`;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+
+      function toIntensity(n: number): "none" | "low" | "medium" | "high" {
+        if (n === 0) return "none";
+        if (n === 1) return "low";
+        if (n === 2) return "medium";
+        return "high";
+      }
+
+      return assignments.map((a) => ({
+        athleteId: a.athleteId,
+        athleteName: a.athlete.name,
+        cells: dates.map((date) => {
+          const workoutCount = counts.get(`${a.athleteId}|${date}`) ?? 0;
+          return { date, intensity: toIntensity(workoutCount), workoutCount };
+        }),
+      }));
     }),
 
   listPublicCoaches: rateLimitedProcedure

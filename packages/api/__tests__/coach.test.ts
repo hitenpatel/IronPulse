@@ -138,3 +138,95 @@ describe("coach.removeClient", () => {
     ).rejects.toThrow("No assignments found");
   });
 });
+
+describe("coach.attendanceHeatmap", () => {
+  beforeEach(async () => {
+    await db.programAssignment.create({
+      data: { coachId: coachUser.id, athleteId: athleteUser.id, status: "active" },
+    });
+  });
+
+  it("returns a row per active athlete with cells for each day", async () => {
+    const caller = coachCaller({ user: coachUser });
+    const result = await caller.attendanceHeatmap({ days: 14 });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.athleteId).toBe(athleteUser.id);
+    expect(result[0]!.cells).toHaveLength(14);
+    expect(result[0]!.cells[0]).toMatchObject({
+      date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      intensity: "none",
+      workoutCount: 0,
+    });
+  });
+
+  it("reflects workout count as intensity — single workout → low", async () => {
+    await db.workout.create({
+      data: {
+        userId: athleteUser.id,
+        startedAt: new Date(),
+        completedAt: new Date(),
+      },
+    });
+
+    const caller = coachCaller({ user: coachUser });
+    const result = await caller.attendanceHeatmap({ days: 14 });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCell = result[0]!.cells.find((c: { date: string }) => c.date === today);
+    expect(todayCell?.intensity).toBe("low");
+    expect(todayCell?.workoutCount).toBe(1);
+  });
+
+  it("reflects workout count as intensity — 3+ workouts → high", async () => {
+    const now = new Date();
+    for (let i = 0; i < 3; i++) {
+      await db.workout.create({
+        data: { userId: athleteUser.id, startedAt: now, completedAt: now },
+      });
+    }
+
+    const caller = coachCaller({ user: coachUser });
+    const result = await caller.attendanceHeatmap({ days: 14 });
+
+    const today = now.toISOString().slice(0, 10);
+    const todayCell = result[0]!.cells.find((c: { date: string }) => c.date === today);
+    expect(todayCell?.intensity).toBe("high");
+    expect(todayCell?.workoutCount).toBe(3);
+  });
+
+  it("does not include inactive assignments", async () => {
+    const inactiveAthlete = await db.user.create({
+      data: { email: "inactive@test.com", name: "Inactive Athlete" },
+    });
+    await db.programAssignment.create({
+      data: { coachId: coachUser.id, athleteId: inactiveAthlete.id, status: "cancelled" },
+    });
+
+    const caller = coachCaller({ user: coachUser });
+    const result = await caller.attendanceHeatmap({ days: 14 });
+
+    const ids = result.map((r: { athleteId: string }) => r.athleteId);
+    expect(ids).not.toContain(inactiveAthlete.id);
+    expect(ids).toContain(athleteUser.id);
+  });
+
+  it("returns empty array when coach has no active clients", async () => {
+    await db.programAssignment.deleteMany({ where: { coachId: coachUser.id } });
+
+    const caller = coachCaller({ user: coachUser });
+    const result = await caller.attendanceHeatmap({ days: 14 });
+    expect(result).toEqual([]);
+  });
+
+  it("returns 30 cells when days=30", async () => {
+    const caller = coachCaller({ user: coachUser });
+    const result = await caller.attendanceHeatmap({ days: 30 });
+    expect(result[0]!.cells).toHaveLength(30);
+  });
+
+  it("rejects non-coach tier", async () => {
+    const caller = coachCaller({ user: athleteUser });
+    await expect(caller.attendanceHeatmap({ days: 14 })).rejects.toThrow("Coach tier required");
+  });
+});

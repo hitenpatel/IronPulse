@@ -13,3 +13,7 @@ export const updateCoachProfileSchema = z.object({
 export const uploadCoachProfileImageSchema = z.object({
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
+
+export const attendanceHeatmapSchema = z.object({
+  days: z.union([z.literal(14), z.literal(30)]).default(14),
+});
