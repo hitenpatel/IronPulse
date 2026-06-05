@@ -7,6 +7,23 @@ import { Button } from "@/components/ui/button";
 import { uuid } from "@/lib/uuid";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
+import { HYROX_CARDIO_TYPES } from "@ironpulse/shared";
+
+// HYROX exercises where the primary distance metric is meters (not km)
+const HYROX_DISTANCE_TYPES = new Set<string>(["ski_erg", "sled_push", "sled_pull", "sandbag_carry"]);
+// HYROX exercises where the primary metric is rep count
+const HYROX_REP_TYPES = new Set<string>(["burpee_broad_jump", "wall_ball"]);
+const HYROX_TYPES = new Set<string>(HYROX_CARDIO_TYPES);
+
+function getDistanceConfig(type: string): { label: string; placeholder: string; toMeters: (v: number) => number } {
+  if (HYROX_DISTANCE_TYPES.has(type)) {
+    return { label: "Distance (m)", placeholder: "e.g. 25", toMeters: (v) => v };
+  }
+  if (HYROX_REP_TYPES.has(type)) {
+    return { label: "Reps", placeholder: "e.g. 100", toMeters: (v) => v };
+  }
+  return { label: "Distance (km)", placeholder: "—", toMeters: (v) => v * 1000 };
+}
 
 interface ManualCardioFormProps {
   type: string;
@@ -26,7 +43,7 @@ export function ManualCardioForm({
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
-  const [distanceKm, setDistanceKm] = useState("");
+  const [distanceInput, setDistanceInput] = useState("");
   const [showMore, setShowMore] = useState(false);
   const [elevationM, setElevationM] = useState("");
   const [avgHr, setAvgHr] = useState("");
@@ -36,6 +53,9 @@ export function ManualCardioForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const distanceConfig = getDistanceConfig(type);
+  const isHyrox = HYROX_TYPES.has(type);
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
@@ -49,10 +69,10 @@ export function ManualCardioForm({
       newErrors.duration = "Duration must be greater than 0";
     }
 
-    if (distanceKm) {
-      const dist = parseFloat(distanceKm);
+    if (distanceInput) {
+      const dist = parseFloat(distanceInput);
       if (isNaN(dist) || dist <= 0) {
-        newErrors.distance = "Distance must be greater than 0";
+        newErrors.distance = `${distanceConfig.label} must be greater than 0`;
       }
     }
 
@@ -95,8 +115,9 @@ export function ManualCardioForm({
 
     const id = uuid();
     const now = new Date();
-    const distanceMeters = distanceKm ? parseFloat(distanceKm) * 1000 : null;
-    const elevGain = elevationM ? parseFloat(elevationM) : null;
+    const rawDist = distanceInput ? parseFloat(distanceInput) : null;
+    const distanceMeters = rawDist != null ? distanceConfig.toMeters(rawDist) : null;
+    const elevGain = !isHyrox && elevationM ? parseFloat(elevationM) : null;
     const avgHeartRate = avgHr ? parseInt(avgHr, 10) : null;
     const maxHeartRate = maxHr ? parseInt(maxHr, 10) : null;
     const cals = calories ? parseInt(calories, 10) : null;
@@ -130,14 +151,14 @@ export function ManualCardioForm({
           durationSeconds,
           distanceMeters,
           elevationGainM: elevGain,
-          avgHeartRate: avgHeartRate,
-          maxHeartRate: maxHeartRate,
+          avgHeartRate,
+          maxHeartRate,
           calories: cals,
           notes: notesTrimmed,
         });
       } else {
         const result = await createCardio.mutateAsync({
-          type: type as "run" | "cycle" | "swim" | "hike" | "walk" | "row" | "elliptical" | "other",
+          type: type as Parameters<typeof createCardio.mutateAsync>[0]["type"],
           startedAt: now,
           durationSeconds,
           ...(distanceMeters != null && { distanceMeters }),
@@ -172,7 +193,7 @@ export function ManualCardioForm({
   return (
     <div>
       <p className="mb-4 text-sm font-medium capitalize text-primary">
-        {type}
+        {type.replace(/_/g, " ")}
       </p>
 
       {/* Duration */}
@@ -220,17 +241,17 @@ export function ManualCardioForm({
         )}
       </div>
 
-      {/* Distance */}
+      {/* Distance / Reps */}
       <div className="mb-4">
         <label className="mb-1.5 block text-sm text-muted-foreground">
-          Distance (km)
+          {distanceConfig.label}
         </label>
         <input
           type="text"
           inputMode="decimal"
-          value={distanceKm}
-          onChange={(e) => setDistanceKm(e.target.value)}
-          placeholder="—"
+          value={distanceInput}
+          onChange={(e) => setDistanceInput(e.target.value)}
+          placeholder={distanceConfig.placeholder}
           className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
         {errors.distance && (
@@ -238,91 +259,113 @@ export function ManualCardioForm({
         )}
       </div>
 
-      {/* More details toggle */}
-      <button
-        onClick={() => setShowMore(!showMore)}
-        className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        More details
-        {showMore ? (
-          <ChevronUp className="h-4 w-4" />
-        ) : (
-          <ChevronDown className="h-4 w-4" />
-        )}
-      </button>
+      {/* More details toggle (hidden for HYROX rep-based) */}
+      {!HYROX_REP_TYPES.has(type) && (
+        <>
+          <button
+            onClick={() => setShowMore(!showMore)}
+            className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            More details
+            {showMore ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
 
-      {showMore && (
-        <div className="mb-4 space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm text-muted-foreground">
-              Elevation Gain (m)
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={elevationM}
-              onChange={(e) => setElevationM(e.target.value)}
-              placeholder="—"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-muted-foreground">
-              Avg Heart Rate (bpm)
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={avgHr}
-              onChange={(e) => setAvgHr(e.target.value)}
-              placeholder="—"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {errors.avgHr && (
-              <p className="mt-1 text-xs text-destructive">{errors.avgHr}</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-muted-foreground">
-              Max Heart Rate (bpm)
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={maxHr}
-              onChange={(e) => setMaxHr(e.target.value)}
-              placeholder="—"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {errors.maxHr && (
-              <p className="mt-1 text-xs text-destructive">{errors.maxHr}</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-muted-foreground">
-              Calories
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={calories}
-              onChange={(e) => setCalories(e.target.value)}
-              placeholder="—"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-muted-foreground">
-              Notes
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="How did it feel?"
-              className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          {showMore && (
+            <div className="mb-4 space-y-4">
+              {!isHyrox && (
+                <div>
+                  <label className="mb-1.5 block text-sm text-muted-foreground">
+                    Elevation Gain (m)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={elevationM}
+                    onChange={(e) => setElevationM(e.target.value)}
+                    placeholder="—"
+                    className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="mb-1.5 block text-sm text-muted-foreground">
+                  Avg Heart Rate (bpm)
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={avgHr}
+                  onChange={(e) => setAvgHr(e.target.value)}
+                  placeholder="—"
+                  className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                {errors.avgHr && (
+                  <p className="mt-1 text-xs text-destructive">{errors.avgHr}</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm text-muted-foreground">
+                  Max Heart Rate (bpm)
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={maxHr}
+                  onChange={(e) => setMaxHr(e.target.value)}
+                  placeholder="—"
+                  className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                {errors.maxHr && (
+                  <p className="mt-1 text-xs text-destructive">{errors.maxHr}</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm text-muted-foreground">
+                  Calories
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={calories}
+                  onChange={(e) => setCalories(e.target.value)}
+                  placeholder="—"
+                  className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm text-muted-foreground">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="How did it feel?"
+                  className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* For rep-based HYROX: always show notes */}
+      {HYROX_REP_TYPES.has(type) && (
+        <div className="mb-4">
+          <label className="mb-1.5 block text-sm text-muted-foreground">
+            Notes
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="How did it feel?"
+            className="w-full rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
         </div>
       )}
 

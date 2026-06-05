@@ -4,18 +4,21 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Bike, Footprints, Heart, Mountain } from "lucide-react-native";
+import { Bike, Footprints, Heart, Mountain, Dumbbell } from "lucide-react-native";
 import { useCardioSessions, type CardioSessionRow } from "@ironpulse/sync";
+import { HYROX_CARDIO_TYPES } from "@ironpulse/shared";
 import { formatElapsed } from "@/lib/workout-utils";
 import { metersToKm } from "@/lib/geo-utils";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 
+const HYROX_TYPE_SET = new Set<string>(HYROX_CARDIO_TYPES);
+
 // Per-activity icon tint — sticks with v2 palette slots.
 const typeIconColors: Record<string, string> = {
-  run: colors.green, // cobalt
+  run: colors.green,
   walk: colors.cyan,
   hike: colors.amber,
-  cycle: colors.blue, // lime
+  cycle: colors.blue,
 };
 
 const typeIcons: Record<string, React.ComponentType<{ size: number; color: string }>> = {
@@ -26,10 +29,12 @@ const typeIcons: Record<string, React.ComponentType<{ size: number; color: strin
 };
 
 function getTypeIcon(type: string) {
+  if (HYROX_TYPE_SET.has(type)) return Dumbbell;
   return typeIcons[type] ?? Heart;
 }
 
 function getTypeIconColor(type: string): string {
+  if (HYROX_TYPE_SET.has(type)) return "#F97316"; // orange-500
   return typeIconColors[type] ?? colors.text3;
 }
 
@@ -42,8 +47,8 @@ function formatDate(iso: string): string {
   });
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function formatTypeLabel(type: string): string {
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function CardioCard({
@@ -94,7 +99,7 @@ function CardioCard({
               fontWeight: "600",
             }}
           >
-            {capitalize(item.type)}
+            {formatTypeLabel(item.type)}
           </Text>
           <Text
             style={{

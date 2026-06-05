@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Activity, Bike, Mountain, Footprints } from "lucide-react";
+import { Activity, Bike, Mountain, Footprints, Dumbbell } from "lucide-react";
 import { useCardioSessions, type CardioSessionRow } from "@ironpulse/sync";
+import { HYROX_CARDIO_TYPES, type CardioType } from "@ironpulse/shared";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   formatDuration,
   formatDistance,
@@ -13,8 +16,11 @@ import {
   formatRelativeDate,
 } from "@/lib/format";
 
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+const HYROX_TYPE_SET = new Set<string>(HYROX_CARDIO_TYPES);
+const HYROX_REP_TYPES = new Set<string>(["burpee_broad_jump", "wall_ball"]);
+
+function formatTypeLabel(type: string) {
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function getTypeIcon(type: string) {
@@ -26,9 +32,22 @@ function getTypeIcon(type: string) {
     case "hike":
       return { Icon: Mountain, className: "text-warning" };
     default:
+      if (HYROX_TYPE_SET.has(type)) {
+        return { Icon: Dumbbell, className: "text-orange-500" };
+      }
       return { Icon: Activity, className: "text-muted-foreground" };
   }
 }
+
+const TYPE_FILTERS = [
+  { value: undefined, label: "All" },
+  { value: "run" as CardioType, label: "Run" },
+  { value: "cycle" as CardioType, label: "Cycle" },
+  { value: "swim" as CardioType, label: "Swim" },
+  { value: "hike" as CardioType, label: "Hike" },
+  { value: "row" as CardioType, label: "Row" },
+  ...HYROX_CARDIO_TYPES.map((t) => ({ value: t as CardioType, label: formatTypeLabel(t) })),
+] as const;
 
 function TableSkeleton() {
   return (
@@ -36,7 +55,7 @@ function TableSkeleton() {
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            {["DATE", "TYPE", "DISTANCE", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
+            {["DATE", "TYPE", "DISTANCE / REPS", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
               <th key={col} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {col}
               </th>
@@ -61,16 +80,18 @@ function TableSkeleton() {
 
 export default function CardioHistoryPage() {
   const mode = useDataMode();
+  const [activeType, setActiveType] = useState<CardioType | undefined>(undefined);
 
   const { data: psSessions, isLoading: psLoading } = useCardioSessions();
   const trpcQuery = trpc.cardio.list.useQuery(
-    { limit: 100 },
+    { limit: 100, ...(activeType && { type: activeType }) },
     { enabled: mode === "trpc" },
   );
 
-  const sessions: CardioSessionRow[] =
+  const allSessions: CardioSessionRow[] =
     mode === "trpc"
-      ? (trpcQuery.data?.data ?? []).map((s) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (trpcQuery.data?.data ?? []).map((s: any) => ({
           id: s.id,
           user_id: "",
           type: s.type,
@@ -86,6 +107,13 @@ export default function CardioHistoryPage() {
           created_at: "",
         }))
       : psSessions ?? [];
+
+  // PowerSync doesn't support server-side type filtering; filter client-side
+  const sessions =
+    mode === "trpc" || !activeType
+      ? allSessions
+      : allSessions.filter((s) => s.type === activeType);
+
   const isLoading = mode === "trpc" ? trpcQuery.isLoading : psLoading;
 
   return (
@@ -97,11 +125,31 @@ export default function CardioHistoryPage() {
         </Link>
       </div>
 
+      {/* Type filter chips */}
+      <div className="flex flex-wrap gap-2">
+        {TYPE_FILTERS.map(({ value, label }) => (
+          <button
+            key={label}
+            onClick={() => setActiveType(value)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              activeType === value
+                ? "border-foreground bg-foreground text-background"
+                : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {isLoading && <TableSkeleton />}
 
       {!isLoading && sessions.length === 0 && (
         <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
-          <p className="text-muted-foreground">No cardio sessions yet</p>
+          <p className="text-muted-foreground">
+            {activeType ? `No ${formatTypeLabel(activeType)} sessions yet` : "No cardio sessions yet"}
+          </p>
           <Link href="/cardio/new">
             <Button variant="link" className="mt-2">
               Log your first session
@@ -115,7 +163,7 @@ export default function CardioHistoryPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                {["DATE", "TYPE", "DISTANCE", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
+                {["DATE", "TYPE", "DISTANCE / REPS", "DURATION", "AVG PACE", "ELEVATION"].map((col) => (
                   <th key={col} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {col}
                   </th>
@@ -125,13 +173,19 @@ export default function CardioHistoryPage() {
             <tbody>
               {sessions.map((session) => {
                 const { Icon, className: iconClass } = getTypeIcon(session.type);
-                const distance =
+                const isHyroxRep = HYROX_REP_TYPES.has(session.type);
+                const distanceRaw =
                   session.distance_meters != null && Number(session.distance_meters) > 0
                     ? Number(session.distance_meters)
                     : null;
+                const distanceCell = isHyroxRep && distanceRaw != null
+                  ? `${Math.round(distanceRaw)} reps`
+                  : distanceRaw != null
+                    ? formatDistance(distanceRaw)
+                    : null;
                 const pace =
-                  distance != null && session.duration_seconds > 0
-                    ? formatPace(distance, session.duration_seconds)
+                  !isHyroxRep && distanceRaw != null && session.duration_seconds > 0
+                    ? formatPace(distanceRaw, session.duration_seconds)
                     : null;
                 return (
                   <tr
@@ -146,11 +200,11 @@ export default function CardioHistoryPage() {
                     <td className="px-4 py-3">
                       <Link href={`/cardio/${session.id}`} className="inline-flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
                         <Icon className={`h-4 w-4 ${iconClass}`} />
-                        {capitalize(session.type)}
+                        {formatTypeLabel(session.type)}
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-sm text-foreground">
-                      {distance != null ? formatDistance(distance) : <span className="text-muted-foreground">—</span>}
+                      {distanceCell ?? <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 text-sm text-foreground">
                       {formatDuration(session.duration_seconds)}

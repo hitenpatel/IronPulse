@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CardioType } from "../enums";
 
-const cardioTypeEnum = z.enum([
+export const cardioTypeEnum = z.enum([
   CardioType.RUN,
   CardioType.CYCLE,
   CardioType.SWIM,
@@ -10,6 +10,12 @@ const cardioTypeEnum = z.enum([
   CardioType.ROW,
   CardioType.ELLIPTICAL,
   CardioType.OTHER,
+  CardioType.SKI_ERG,
+  CardioType.SLED_PUSH,
+  CardioType.SLED_PULL,
+  CardioType.SANDBAG_CARRY,
+  CardioType.BURPEE_BROAD_JUMP,
+  CardioType.WALL_BALL,
 ]);
 
 export const createCardioSchema = z.object({
@@ -63,3 +69,10 @@ export const importFitSchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 export type ImportFitInput = z.infer<typeof importFitSchema>;
+
+export const listCardioSchema = z.object({
+  limit: z.number().int().positive().max(200).default(50),
+  cursor: z.string().uuid().optional(),
+  type: cardioTypeEnum.optional(),
+});
+export type ListCardioInput = z.infer<typeof listCardioSchema>;
