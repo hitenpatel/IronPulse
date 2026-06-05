@@ -49,3 +49,17 @@ export const deleteTemplateSchema = z.object({
   templateId: z.string().uuid(),
 });
 export type DeleteTemplateInput = z.infer<typeof deleteTemplateSchema>;
+
+export const setShareableSchema = z.object({
+  templateId: z.string().uuid(),
+  isShareable: z.boolean(),
+});
+export type SetShareableInput = z.infer<typeof setShareableSchema>;
+
+export const copyToClientSchema = z.object({
+  templateId: z.string().uuid(),
+  athleteId: z.string().uuid(),
+  programName: z.string().min(1).max(100),
+  durationWeeks: z.number().int().min(1).max(52),
+});
+export type CopyToClientInput = z.infer<typeof copyToClientSchema>;

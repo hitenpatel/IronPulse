@@ -296,10 +296,11 @@ model Lap {
 // ─── Templates ───────────────────────────────────────────
 
 model WorkoutTemplate {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String
+  isShareable Boolean  @default(false) @map("is_shareable")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   templateExercises TemplateExercise[]

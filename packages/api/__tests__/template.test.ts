@@ -10,8 +10,10 @@ function makeDb(overrides: Partial<{
   workoutTemplate: Partial<PrismaClient["workoutTemplate"]>;
   templateExercise: Partial<PrismaClient["templateExercise"]>;
   workout: Partial<PrismaClient["workout"]>;
+  programAssignment: Partial<PrismaClient["programAssignment"]>;
+  program: Partial<PrismaClient["program"]>;
 }> = {}) {
-  return {
+  const db: any = {
     workoutTemplate: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -29,7 +31,18 @@ function makeDb(overrides: Partial<{
       findFirst: vi.fn(),
       ...overrides.workout,
     },
-  } as unknown as PrismaClient;
+    programAssignment: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      ...overrides.programAssignment,
+    },
+    program: {
+      create: vi.fn(),
+      ...overrides.program,
+    },
+  };
+  db.$transaction = vi.fn().mockImplementation((cb: (tx: any) => Promise<any>) => cb(db));
+  return db as unknown as PrismaClient;
 }
 
 function templateCaller(
@@ -414,6 +427,175 @@ describe("template.delete", () => {
     const db = makeDb();
     await expect(
       templateCaller(db, null).delete({ templateId })
+    ).rejects.toThrow("UNAUTHORIZED");
+  });
+});
+
+// ---------- setShareable ----------
+
+const coachUser = createTestUser({ email: "coach@test.com", tier: "coach" });
+
+describe("template.setShareable", () => {
+  const templateId = "aaaaaaaa-0000-0000-0000-000000000005";
+
+  it("sets isShareable to true", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue({ id: templateId } as any);
+    vi.mocked(db.workoutTemplate.update).mockResolvedValue({ id: templateId, isShareable: true } as any);
+
+    const result = await templateCaller(db, { user: coachUser }).setShareable({ templateId, isShareable: true });
+
+    expect(result.template.isShareable).toBe(true);
+    expect(db.workoutTemplate.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: templateId }, data: { isShareable: true } })
+    );
+  });
+
+  it("sets isShareable to false", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue({ id: templateId } as any);
+    vi.mocked(db.workoutTemplate.update).mockResolvedValue({ id: templateId, isShareable: false } as any);
+
+    const result = await templateCaller(db, { user: coachUser }).setShareable({ templateId, isShareable: false });
+
+    expect(result.template.isShareable).toBe(false);
+  });
+
+  it("throws NOT_FOUND when template does not exist", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue(null);
+
+    await expect(
+      templateCaller(db, { user: coachUser }).setShareable({ templateId, isShareable: true })
+    ).rejects.toThrow("Template not found");
+  });
+
+  it("rejects non-coach users", async () => {
+    const db = makeDb();
+    await expect(
+      templateCaller(db, { user: testUser }).setShareable({ templateId, isShareable: true })
+    ).rejects.toThrow("Coach tier required");
+  });
+
+  it("rejects unauthenticated calls", async () => {
+    const db = makeDb();
+    await expect(
+      templateCaller(db, null).setShareable({ templateId, isShareable: true })
+    ).rejects.toThrow("UNAUTHORIZED");
+  });
+});
+
+// ---------- copyToClient ----------
+
+describe("template.copyToClient", () => {
+  const templateId = "aaaaaaaa-0000-0000-0000-000000000006";
+  const athleteId = "bbbbbbbb-0000-0000-0000-000000000001";
+  const exId = "cccccccc-0000-0000-0000-000000000001";
+
+  const sourceTemplate = {
+    id: templateId,
+    userId: coachUser.id,
+    name: "Push Day",
+    isShareable: true,
+    templateExercises: [
+      {
+        id: "te1",
+        exerciseId: exId,
+        order: 0,
+        notes: "Keep back straight",
+        templateSets: [
+          { id: "ts1", setNumber: 1, targetReps: 5, targetWeightKg: 100, type: "working" },
+        ],
+      },
+    ],
+  };
+
+  it("copies template to athlete, creates program and pending assignment", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue(sourceTemplate as any);
+    vi.mocked((db as any).programAssignment.findFirst).mockResolvedValue({ id: "assign-1" } as any);
+    vi.mocked(db.workoutTemplate.create).mockResolvedValue({ id: "new-template-id" } as any);
+    vi.mocked((db as any).program.create).mockResolvedValue({ id: "new-program-id" } as any);
+    vi.mocked((db as any).programAssignment.create).mockResolvedValue({ id: "new-assign-id" } as any);
+
+    const result = await templateCaller(db, { user: coachUser }).copyToClient({
+      templateId,
+      athleteId,
+      programName: "Push Day — 4 weeks",
+      durationWeeks: 4,
+    });
+
+    expect(result.programId).toBe("new-program-id");
+    expect(result.assignmentId).toBe("new-assign-id");
+
+    expect(db.workoutTemplate.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: athleteId, name: "Push Day" }) })
+    );
+    expect((db as any).program.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ coachId: coachUser.id, name: "Push Day — 4 weeks", durationWeeks: 4 }),
+      })
+    );
+    expect((db as any).programAssignment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ athleteId, coachId: coachUser.id, status: "pending" }),
+      })
+    );
+  });
+
+  it("throws NOT_FOUND when template does not belong to coach", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue(null);
+
+    await expect(
+      templateCaller(db, { user: coachUser }).copyToClient({ templateId, athleteId, programName: "P", durationWeeks: 4 })
+    ).rejects.toThrow("Template not found");
+  });
+
+  it("throws FORBIDDEN when athlete is not a client of this coach", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue(sourceTemplate as any);
+    vi.mocked((db as any).programAssignment.findFirst).mockResolvedValue(null);
+
+    await expect(
+      templateCaller(db, { user: coachUser }).copyToClient({ templateId, athleteId, programName: "P", durationWeeks: 4 })
+    ).rejects.toThrow("Athlete is not your client");
+  });
+
+  it("copies all exercises and sets into the athlete's template", async () => {
+    const db = makeDb();
+    vi.mocked(db.workoutTemplate.findFirst).mockResolvedValue(sourceTemplate as any);
+    vi.mocked((db as any).programAssignment.findFirst).mockResolvedValue({ id: "assign-1" } as any);
+    vi.mocked(db.workoutTemplate.create).mockResolvedValue({ id: "new-template-id" } as any);
+    vi.mocked((db as any).program.create).mockResolvedValue({ id: "new-program-id" } as any);
+    vi.mocked((db as any).programAssignment.create).mockResolvedValue({ id: "new-assign-id" } as any);
+
+    await templateCaller(db, { user: coachUser }).copyToClient({
+      templateId,
+      athleteId,
+      programName: "P",
+      durationWeeks: 4,
+    });
+
+    const createCall = vi.mocked(db.workoutTemplate.create).mock.calls[0]![0] as any;
+    const createdExercise = createCall.data.templateExercises.create[0];
+    expect(createdExercise.exerciseId).toBe(exId);
+    expect(createdExercise.notes).toBe("Keep back straight");
+    expect(createdExercise.templateSets.create[0].targetReps).toBe(5);
+    expect(createdExercise.templateSets.create[0].targetWeightKg).toBe(100);
+  });
+
+  it("rejects non-coach users", async () => {
+    const db = makeDb();
+    await expect(
+      templateCaller(db, { user: testUser }).copyToClient({ templateId, athleteId, programName: "P", durationWeeks: 4 })
+    ).rejects.toThrow("Coach tier required");
+  });
+
+  it("rejects unauthenticated calls", async () => {
+    const db = makeDb();
+    await expect(
+      templateCaller(db, null).copyToClient({ templateId, athleteId, programName: "P", durationWeeks: 4 })
     ).rejects.toThrow("UNAUTHORIZED");
   });
 });

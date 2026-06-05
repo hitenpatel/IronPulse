@@ -28,6 +28,9 @@ import {
   Search,
   X,
   Dumbbell,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { Card } from "@/components/ui/card";
@@ -309,6 +312,8 @@ export default function TemplateEditPage() {
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isShareable, setIsShareable] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
 
   // ── Load template ──────────────────────────────────────────────────────────
 
@@ -316,10 +321,13 @@ export default function TemplateEditPage() {
     { templateId },
     { staleTime: 30_000 }
   );
+  const { data: meData } = trpc.user.me.useQuery();
+  const isCoach = meData?.user?.tier === "coach";
 
   useEffect(() => {
     if (!data) return;
     setName(data.template.name);
+    setIsShareable(data.template.isShareable);
     setExercises(
       data.template.templateExercises.map((te) => ({
         _key: newKey(),
@@ -350,6 +358,17 @@ export default function TemplateEditPage() {
       setSaveError(err.message);
     },
   });
+
+  const setShareableMutation = trpc.template.setShareable.useMutation({
+    onSuccess: ({ template }) => {
+      setIsShareable(template.isShareable);
+      utils.template.getById.invalidate({ templateId });
+    },
+  });
+
+  const handleToggleShareable = () => {
+    setShareableMutation.mutate({ templateId, isShareable: !isShareable });
+  };
 
   // ── DnD sensors ───────────────────────────────────────────────────────────
 
@@ -504,6 +523,35 @@ export default function TemplateEditPage() {
         />
       </div>
 
+      {/* Coach-only controls */}
+      {isCoach && (
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant={isShareable ? "default" : "outline"}
+            size="sm"
+            onClick={handleToggleShareable}
+            disabled={setShareableMutation.isPending}
+            className="gap-2"
+          >
+            {isShareable ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+            {isShareable ? "Shareable" : "Mark shareable"}
+          </Button>
+          {isShareable && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCopyModal(true)}
+              className="gap-2"
+            >
+              <Copy className="h-4 w-4" />
+              Copy to client
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Exercise list */}
       <div className="space-y-3">
         <p className="text-sm font-medium">Exercises</p>
@@ -583,6 +631,126 @@ export default function TemplateEditPage() {
           onClose={() => setShowPicker(false)}
         />
       )}
+
+      {/* Copy to client modal */}
+      {showCopyModal && (
+        <CopyToClientModal
+          templateId={templateId}
+          templateName={name}
+          onClose={() => setShowCopyModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── CopyToClientModal ────────────────────────────────────────────────────────
+
+interface CopyToClientModalProps {
+  templateId: string;
+  templateName: string;
+  onClose: () => void;
+}
+
+function CopyToClientModal({ templateId, templateName, onClose }: CopyToClientModalProps) {
+  const { data: clients } = trpc.coach.clients.useQuery();
+  const [selectedAthleteId, setSelectedAthleteId] = useState("");
+  const [programName, setProgramName] = useState(templateName);
+  const [durationWeeks, setDurationWeeks] = useState(4);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const copyMutation = trpc.template.copyToClient.useMutation({
+    onSuccess: () => {
+      setSuccess(true);
+      setTimeout(onClose, 1500);
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!selectedAthleteId) return;
+    setError(null);
+    copyMutation.mutate({
+      templateId,
+      athleteId: selectedAthleteId,
+      programName: programName.trim() || templateName,
+      durationWeeks,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-xl bg-card border border-border p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Copy template to client</h2>
+          <button onClick={onClose} className="rounded-md p-1 hover:bg-accent">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {success ? (
+          <div className="flex items-center gap-2 text-sm text-green-600">
+            <Check className="h-4 w-4" />
+            Program created and assigned!
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Select client</label>
+              <select
+                className="flex w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                value={selectedAthleteId}
+                onChange={(e) => setSelectedAthleteId(e.target.value)}
+              >
+                <option value="">Choose a client…</option>
+                {clients?.map((c) => (
+                  <option key={c.athleteId} value={c.athleteId}>
+                    {c.athleteName} ({c.athleteEmail})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Program name</label>
+              <Input
+                value={programName}
+                onChange={(e) => setProgramName(e.target.value)}
+                placeholder="e.g. Push Day A — 4 weeks"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Duration (weeks)</label>
+              <Input
+                type="number"
+                min={1}
+                max={52}
+                value={durationWeeks}
+                onChange={(e) => setDurationWeeks(Math.max(1, Math.min(52, Number(e.target.value))))}
+              />
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" className="flex-1" onClick={onClose} disabled={copyMutation.isPending}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSubmit}
+                disabled={!selectedAthleteId || copyMutation.isPending}
+              >
+                {copyMutation.isPending ? "Copying…" : "Copy to client"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
