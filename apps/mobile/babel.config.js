@@ -1,10 +1,9 @@
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: ["module:@react-native/babel-preset"],
-    plugins: [
-      // Must be listed LAST — fixes "_toString" ReferenceError with Hermes
-      "react-native-reanimated/plugin",
-    ],
+    // babel-preset-expo pairs with @expo/metro-config and auto-includes the
+    // reanimated/worklets plugin — do not add it manually (double-application
+    // breaks Hermes).
+    presets: ["babel-preset-expo"],
   };
 };
