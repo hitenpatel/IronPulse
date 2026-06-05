@@ -7,6 +7,9 @@ import { Check, Minus, Trash2 } from "lucide-react-native";
 import { colors, fonts, radii } from "@/lib/theme";
 import { SetTypeSheet } from "./set-type-sheet";
 import { SET_TYPE_LABEL, normalizeSetType, type SetType } from "@/lib/set-type";
+import { calculatePlates } from "@ironpulse/shared";
+
+const STANDARD_BAR_KG = 20;
 
 const SET_TYPE_BADGE: Record<Exclude<SetType, "working">, { letter: string; bg: string; fg: string }> = {
   warmup: { letter: "W", bg: colors.amberSoft, fg: colors.amber },
@@ -29,6 +32,8 @@ interface SetRowProps {
   completed: 0 | 1;
   /** Working / warmup / dropset / failure. Defaults to working for legacy rows. */
   type?: SetType | string;
+  /** When true, a plate-breakdown toggle is shown for barbell exercises. */
+  isBarbell?: boolean;
   exerciseIndex: number;
   setIndex: number;
   previousSet?: PreviousSet;
@@ -52,6 +57,7 @@ export function SetRow({
   rpe,
   completed,
   type,
+  isBarbell = false,
   exerciseIndex,
   setIndex,
   previousSet,
@@ -88,6 +94,13 @@ export function SetRow({
   );
   const [localReps, setLocalReps] = useState(reps != null ? String(reps) : "");
   const [isCompleted, setIsCompleted] = useState(completed === 1);
+  const [showPlates, setShowPlates] = useState(false);
+
+  const parsedWeight = parseFloat(localWeight);
+  const plateResult =
+    isBarbell && showPlates && !isNaN(parsedWeight)
+      ? calculatePlates(parsedWeight, STANDARD_BAR_KG)
+      : null;
 
   const weightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,6 +237,7 @@ export function SetRow({
   };
 
   return (
+    <View>
     <Swipeable
       ref={swipeableRef}
       renderRightActions={renderRightActions}
@@ -235,8 +249,6 @@ export function SetRow({
           handleDelete();
         }
       }}
-      // Active-row margins moved to the Swipeable wrapper so the red reveal
-      // panel slots flush against the row's rounded edge.
       containerStyle={{
         marginHorizontal: isActive ? 8 : 0,
         marginVertical: isActive ? 3 : 0,
@@ -330,17 +342,48 @@ export function SetRow({
         {prevLabel}
       </Text>
 
-      {/* KG */}
-      <TextInput
-        testID={`weight-input-${exerciseIndex}-${setIndex}`}
-        value={localWeight}
-        onChangeText={handleWeightChange}
-        keyboardType="decimal-pad"
-        placeholder={EMPTY_PLACEHOLDER}
-        placeholderTextColor={placeholderColor}
-        underlineColorAndroid="transparent"
-        style={textInputStyle}
-      />
+      {/* KG — column so the plate toggle chip can sit below the input */}
+      <View style={{ flex: 1, alignItems: "center" }}>
+        <TextInput
+          testID={`weight-input-${exerciseIndex}-${setIndex}`}
+          value={localWeight}
+          onChangeText={handleWeightChange}
+          keyboardType="decimal-pad"
+          placeholder={EMPTY_PLACEHOLDER}
+          placeholderTextColor={placeholderColor}
+          underlineColorAndroid="transparent"
+          style={{ ...textInputStyle, flex: undefined, width: "100%" }}
+        />
+        {isBarbell && localWeight !== "" && (
+          <Pressable
+            testID={`plate-toggle-${exerciseIndex}-${setIndex}`}
+            onPress={() => setShowPlates((v) => !v)}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={showPlates ? "Hide plate breakdown" : "Show plate breakdown"}
+            style={{
+              marginTop: 1,
+              paddingHorizontal: 4,
+              paddingVertical: 1,
+              borderRadius: 3,
+              backgroundColor: showPlates
+                ? (isActive ? "rgba(15,21,8,0.18)" : colors.bg3)
+                : "transparent",
+            }}
+          >
+            <Text
+              style={{
+                color: isActive ? colors.blueInk : colors.text4,
+                fontSize: 9,
+                fontFamily: fonts.monoRegular,
+                letterSpacing: 0.5,
+              }}
+            >
+              plates
+            </Text>
+          </Pressable>
+        )}
+      </View>
 
       {/* REPS */}
       <TextInput
@@ -436,5 +479,34 @@ export function SetRow({
       />
     </View>
     </Swipeable>
+    {plateResult && (
+      <View
+        testID={`plate-breakdown-${exerciseIndex}-${setIndex}`}
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 3,
+          backgroundColor: colors.bg1,
+        }}
+      >
+        <Text
+          style={{
+            color: colors.text3,
+            fontSize: 10,
+            fontFamily: fonts.monoRegular,
+            letterSpacing: 0.3,
+          }}
+        >
+          {`each side: ${
+            plateResult.platesPerSide.length > 0
+              ? plateResult.platesPerSide
+                  .map((p) => `${p.size}kg×${p.count}`)
+                  .join(" · ") +
+                (plateResult.remainder > 0 ? ` + ${plateResult.remainder}kg` : "")
+              : "bar only"
+          }`}
+        </Text>
+      </View>
+    )}
+    </View>
   );
 }

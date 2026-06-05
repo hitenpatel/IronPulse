@@ -44,6 +44,7 @@ interface ExerciseCardProps {
   exerciseId: string;
   workoutExerciseId: string;
   exerciseName: string;
+  equipment?: string | null;
   sets: SetData[];
   previousSets?: PreviousSet[];
   exerciseIndex: number;
@@ -65,6 +66,7 @@ export function ExerciseCard({
   exerciseId,
   workoutExerciseId,
   exerciseName,
+  equipment,
   sets,
   previousSets,
   exerciseIndex,
@@ -337,6 +339,7 @@ export function ExerciseCard({
             rpe={set.rpe}
             completed={set.completed}
             type={set.type}
+            isBarbell={equipment === "barbell"}
             exerciseIndex={exerciseIndex}
             setIndex={idx}
             previousSet={previousSets?.[idx]}

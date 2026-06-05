@@ -6,6 +6,9 @@ import { PowerSyncContext } from "@powersync/react";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
+import { calculatePlates } from "@ironpulse/shared";
+
+const STANDARD_BAR_KG = 20;
 
 interface SetRowProps {
   setId: string;
@@ -14,6 +17,8 @@ interface SetRowProps {
   reps: number | null;
   rpe: number | null;
   completed: boolean;
+  /** When true, a per-side plate breakdown toggle appears next to the weight input. */
+  isBarbell?: boolean;
   onCompleted: () => void;
   onMutationSuccess: () => void;
 }
@@ -25,6 +30,7 @@ export function SetRow({
   reps,
   rpe,
   completed,
+  isBarbell = false,
   onCompleted,
   onMutationSuccess,
 }: SetRowProps) {
@@ -43,6 +49,13 @@ export function SetRow({
   const [localCompleted, setLocalCompleted] = useState(completed);
   const [localRpe, setLocalRpe] = useState(rpe);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showPlates, setShowPlates] = useState(false);
+
+  const parsedWeight = parseFloat(localWeight);
+  const plateResult =
+    isBarbell && showPlates && !isNaN(parsedWeight)
+      ? calculatePlates(parsedWeight, STANDARD_BAR_KG)
+      : null;
 
   // Sync local state when server data arrives (props change)
   useEffect(() => { setLocalCompleted(completed); }, [completed]);
@@ -135,27 +148,43 @@ export function SetRow({
     }
   }
 
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-1 py-2 border-b border-border",
-        localCompleted && "opacity-60"
-      )}
-    >
-      <div className="w-8 text-center text-sm text-muted-foreground">
-        {setNumber}
-      </div>
+  const platesLabel = plateResult
+    ? plateResult.platesPerSide.length > 0
+      ? plateResult.platesPerSide.map((p) => `${p.size}kg×${p.count}`).join(" · ") +
+        (plateResult.remainder > 0 ? ` +${plateResult.remainder}kg` : "")
+      : "bar only"
+    : null;
 
-      <div className="flex-1">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={localWeight}
-          onChange={(e) => handleWeightChange(e.target.value)}
-          placeholder="-"
-          className="w-full rounded-md bg-muted px-3 py-1.5 text-center text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
+  return (
+    <div className={cn("border-b border-border", localCompleted && "opacity-60")}>
+      <div className="flex items-center gap-1 py-2">
+        <div className="w-8 text-center text-sm text-muted-foreground">
+          {setNumber}
+        </div>
+
+        <div className="flex-1 flex flex-col items-stretch gap-0.5">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={localWeight}
+            onChange={(e) => handleWeightChange(e.target.value)}
+            placeholder="-"
+            className="w-full rounded-md bg-muted px-3 py-1.5 text-center text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          {isBarbell && localWeight !== "" && (
+            <button
+              type="button"
+              aria-label={showPlates ? "Hide plate breakdown" : "Show plate breakdown"}
+              onClick={() => setShowPlates((v) => !v)}
+              className={cn(
+                "text-[10px] text-muted-foreground hover:text-foreground leading-none py-0.5 rounded transition-colors",
+                showPlates && "text-foreground"
+              )}
+            >
+              plates
+            </button>
+          )}
+        </div>
 
       <div className="flex-1">
         <input
@@ -187,6 +216,15 @@ export function SetRow({
           <Circle className="h-5 w-5 text-muted-foreground" />
         )}
       </button>
+      </div>
+      {platesLabel && (
+        <p
+          data-testid={`plate-breakdown-${setNumber}`}
+          className="pb-1 pl-9 text-[11px] text-muted-foreground font-mono"
+        >
+          each side: {platesLabel}
+        </p>
+      )}
     </div>
   );
 }

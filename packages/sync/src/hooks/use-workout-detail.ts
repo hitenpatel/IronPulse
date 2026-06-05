@@ -8,6 +8,7 @@ export interface WorkoutExerciseRow {
   notes: string | null;
   superset_group: number | null;
   exercise_name: string;
+  exercise_equipment: string | null;
 }
 
 export interface SetRow {
@@ -24,7 +25,7 @@ export interface SetRow {
 
 export function useWorkoutExercises(workoutId: string | undefined) {
   return useQuery<WorkoutExerciseRow>(
-    `SELECT we.*, e.name as exercise_name
+    `SELECT we.*, e.name as exercise_name, e.equipment as exercise_equipment
      FROM workout_exercises we
      LEFT JOIN exercises e ON we.exercise_id = e.id
      WHERE we.workout_id = ?

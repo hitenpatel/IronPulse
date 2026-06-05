@@ -317,6 +317,7 @@ export function ExerciseCard({
           reps={set.reps}
           rpe={set.rpe != null ? Number(set.rpe) : null}
           completed={set.completed}
+          isBarbell={workoutExercise.exercise.equipment === "barbell"}
           onCompleted={onSetCompleted}
           onMutationSuccess={onMutationSuccess}
         />
