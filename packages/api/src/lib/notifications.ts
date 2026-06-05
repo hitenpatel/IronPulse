@@ -19,7 +19,8 @@ type NotificationKind =
   | "coach_activity"
   | "streak_recovery"
   | "reengagement"
-  | "deload_suggestion";
+  | "deload_suggestion"
+  | "challenge_expiry";
 
 /**
  * Persist an in-app notification AND fire a push notification to all of

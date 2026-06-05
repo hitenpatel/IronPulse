@@ -24,3 +24,8 @@ export {
   sendRetentionNudge,
   type RetentionUser,
 } from "./lib/retention";
+export {
+  findExpiringChallengeMembers,
+  sendChallengeExpiryReminder,
+  type ChallengeExpiryCandidate,
+} from "./lib/challenge-expiry";
