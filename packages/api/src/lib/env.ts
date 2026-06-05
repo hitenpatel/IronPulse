@@ -125,4 +125,9 @@ export const env = {
   get WEBAUTHN_RP_ORIGIN() {
     return optional("WEBAUTHN_RP_ORIGIN", "http://localhost:3000")!;
   },
+
+  // Meal scan (Clarifai vision API)
+  get MEAL_SCAN_API_KEY() {
+    return optional("MEAL_SCAN_API_KEY");
+  },
 } as const;

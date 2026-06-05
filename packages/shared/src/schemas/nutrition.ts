@@ -29,3 +29,13 @@ export const dailySummarySchema = z.object({
   date: z.date(),
 });
 export type DailySummaryInput = z.infer<typeof dailySummarySchema>;
+
+export const getMealScanUploadUrlSchema = z.object({
+  contentType: z.string().regex(/^image\//),
+});
+export type GetMealScanUploadUrlInput = z.infer<typeof getMealScanUploadUrlSchema>;
+
+export const analyzeMealPhotoSchema = z.object({
+  photoKey: z.string().min(1),
+});
+export type AnalyzeMealPhotoInput = z.infer<typeof analyzeMealPhotoSchema>;
