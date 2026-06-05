@@ -18,7 +18,9 @@ if (process.env.E2E === "1" && typeof ErrorUtils !== "undefined") {
   });
 }
 
-import { AppRegistry } from "react-native";
+import { registerRootComponent } from "expo";
 import App from "./App";
 
-AppRegistry.registerComponent("IronPulse", () => App);
+// Expo's generated MainActivity runs the "main" component; registerRootComponent
+// registers under that name (and sets up the Expo root view).
+registerRootComponent(App);
