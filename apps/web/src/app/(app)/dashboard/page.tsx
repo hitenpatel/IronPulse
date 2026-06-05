@@ -6,12 +6,14 @@ import { WeeklyStats } from "@/components/dashboard/weekly-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { StreakBadge } from "@/components/dashboard/streak-badge";
 import { FirstWorkoutTutorial } from "@/components/dashboard/first-workout-tutorial";
+import { DeloadBanner } from "@/components/dashboard/deload-banner";
 
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <Greeting />
       <FirstWorkoutTutorial />
+      <DeloadBanner />
       <StreakBadge />
       <QuickStart />
       <Link
