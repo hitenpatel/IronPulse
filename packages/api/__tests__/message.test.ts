@@ -185,6 +185,64 @@ describe("message.history", () => {
   });
 });
 
+describe("message.sendBulk", () => {
+  it("sends a message to each selected athlete", async () => {
+    const athlete2 = createTestUser({ email: "msg-athlete2@test.com", tier: "athlete" });
+    await db.user.create({ data: { id: athlete2.id, email: athlete2.email, name: "Msg Athlete 2" } });
+    await db.programAssignment.create({
+      data: { coachId: coachUser.id, athleteId: athlete2.id, status: "active" },
+    });
+
+    const caller = messageCaller({ user: coachUser });
+    const result = await caller.sendBulk({
+      athleteIds: [athleteUser.id, athlete2.id],
+      content: "Team deload week incoming!",
+    });
+
+    expect(result.messageCount).toBe(2);
+
+    const msgs = await db.message.findMany({
+      where: { senderId: coachUser.id, content: "Team deload week incoming!" },
+    });
+    expect(msgs).toHaveLength(2);
+    const receivers = msgs.map((m) => m.receiverId).sort();
+    expect(receivers).toEqual([athleteUser.id, athlete2.id].sort());
+  });
+
+  it("rejects non-coaches", async () => {
+    const caller = messageCaller({ user: athleteUser });
+    await expect(
+      caller.sendBulk({ athleteIds: [coachUser.id], content: "Hello" })
+    ).rejects.toThrow("Only coaches can send bulk messages");
+  });
+
+  it("rejects athletes not assigned to the coach", async () => {
+    const stranger = createTestUser({ email: "msg-stranger@test.com", tier: "athlete" });
+    await db.user.create({ data: { id: stranger.id, email: stranger.email, name: "Stranger" } });
+
+    const caller = messageCaller({ user: coachUser });
+    await expect(
+      caller.sendBulk({ athleteIds: [stranger.id], content: "Hello" })
+    ).rejects.toThrow("not your assigned athletes");
+  });
+
+  it("sends to a single athlete", async () => {
+    const caller = messageCaller({ user: coachUser });
+    const result = await caller.sendBulk({
+      athleteIds: [athleteUser.id],
+      content: "Just you!",
+    });
+    expect(result.messageCount).toBe(1);
+  });
+
+  it("rejects duplicate athlete IDs", async () => {
+    const caller = messageCaller({ user: coachUser });
+    await expect(
+      caller.sendBulk({ athleteIds: [athleteUser.id, athleteUser.id], content: "Dup test" })
+    ).rejects.toThrow("Duplicate athlete IDs not allowed");
+  });
+});
+
 describe("message.markRead", () => {
   it("marks unread messages from partner as read", async () => {
     const msg1 = await db.message.create({

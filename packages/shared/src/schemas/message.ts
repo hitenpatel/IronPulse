@@ -12,3 +12,15 @@ export const messageHistorySchema = z.object({
 });
 
 export const markReadSchema = z.object({ partnerId: z.string().uuid() });
+
+export const sendBulkMessageSchema = z
+  .object({
+    athleteIds: z
+      .array(z.string().uuid())
+      .min(1)
+      .max(25)
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: "Duplicate athlete IDs not allowed",
+      }),
+    content: z.string().min(1).max(2000),
+  });
