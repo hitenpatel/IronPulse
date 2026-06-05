@@ -15,6 +15,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "IronPulse reads your workouts and body weight from Apple Health to show them in your activity feed.",
       NSHealthUpdateUsageDescription:
         "IronPulse saves your logged workouts and weight to Apple Health.",
+      NSLocationWhenInUseUsageDescription:
+        "IronPulse needs your location to track runs, rides, and hikes.",
+      NSLocationAlwaysAndWhenInUseUsageDescription:
+        "IronPulse needs your location to track runs, rides, and hikes.",
     },
   },
   android: {
@@ -23,6 +27,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/icon.png",
       backgroundColor: "#000000",
     },
+    permissions: [
+      "ACCESS_FINE_LOCATION",
+      "ACCESS_COARSE_LOCATION",
+      "ACCESS_BACKGROUND_LOCATION",
+    ],
     config: {
       googleMaps: {
         apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
@@ -42,17 +51,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "./plugins/android-cleartext",
     "./plugins/android-gradle-memory",
     "./plugins/android-release-signing",
-    "expo-secure-store",
-    [
-      "expo-location",
-      {
-        locationAlwaysAndWhenInUsePermission:
-          "IronPulse needs your location to track runs, rides, and hikes.",
-        isIosBackgroundLocationEnabled: true,
-        isAndroidBackgroundLocationEnabled: true,
-      },
-    ],
-    "expo-task-manager",
     "expo-notifications",
   ],
 });
