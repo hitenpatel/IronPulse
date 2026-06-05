@@ -247,7 +247,7 @@ export const templateRouter = createTRPCRouter({
       }
 
       const clientAssignment = await ctx.db.programAssignment.findFirst({
-        where: { athleteId: input.athleteId, coachId: ctx.user.id },
+        where: { athleteId: input.athleteId, coachId: ctx.user.id, status: "active" },
         select: { id: true },
       });
 
