@@ -1,27 +1,21 @@
-const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
+const { getDefaultConfig } = require("@expo/metro-config");
+const { mergeConfig } = require("metro");
 const path = require("path");
 
 const projectRoot = __dirname;
-const monorepoRoot = path.resolve(projectRoot, "../..");
 
+// @expo/metro-config already resolves the workspace root (monorepoRoot) and
+// configures watchFolders + nodeModulesPaths for pnpm monorepos automatically.
 const defaultConfig = getDefaultConfig(projectRoot);
 
 const config = {
-  watchFolders: [monorepoRoot],
   resolver: {
-    nodeModulesPaths: [
-      path.resolve(projectRoot, "node_modules"),
-      path.resolve(monorepoRoot, "node_modules"),
-    ],
     disableHierarchicalLookup: true,
-    // Resolve @/ path alias to the project root
     extraNodeModules: {
       "@": projectRoot,
     },
   },
   serializer: {
-    // Inject SharedArrayBuffer polyfill at the very start of the bundle
-    // This runs before ANY module evaluation, including native module init
     getPolyfills: () => {
       const defaultPolyfills = require("react-native/rn-get-polyfills")();
       return [
