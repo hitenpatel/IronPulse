@@ -96,6 +96,17 @@ export const env = {
     return optional("STRIPE_SECRET_KEY");
   },
 
+  // OpenAI — AI workout generation
+  get OPENAI_API_KEY() {
+    return optional("OPENAI_API_KEY");
+  },
+  get OPENAI_MODEL() {
+    return optional("OPENAI_MODEL", "gpt-4o-mini")!;
+  },
+  get AI_WORKOUT_PROMPT_TEMPLATE() {
+    return optional("AI_WORKOUT_PROMPT_TEMPLATE");
+  },
+
   // PowerSync
   get POWERSYNC_PRIVATE_KEY() {
     return optional("POWERSYNC_PRIVATE_KEY");

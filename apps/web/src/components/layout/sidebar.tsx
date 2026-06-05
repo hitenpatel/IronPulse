@@ -28,6 +28,7 @@ import {
   ChevronRight,
   LogOut,
   User,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./notification-bell";
@@ -89,6 +90,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { icon: Calculator, label: "1RM Calculator", href: "/tools/1rm" },
       { icon: CircleDot, label: "Plate Calculator", href: "/tools/plates" },
+      { icon: Sparkles, label: "AI Workout", href: "/tools/ai-workout" },
     ],
   },
 ];
@@ -206,8 +208,8 @@ export function Sidebar({
   }));
 
   function isItemActive(item: NavItem): boolean {
-    if (item.href === "/tools/1rm" || item.href === "/tools/plates") {
-      return pathname.startsWith("/tools");
+    if (item.href === "/tools/1rm" || item.href === "/tools/plates" || item.href === "/tools/ai-workout") {
+      return pathname === item.href;
     }
     if (item.href === "/stats/body") {
       return pathname === "/stats/body";
