@@ -77,6 +77,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Wait for PostgreSQL to accept connections
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h postgres -U ironpulse -d ironpulse_test -t 2; then
+              echo "PostgreSQL ready after ${i} probes"
+              break
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+          pg_isready -h postgres -U ironpulse -d ironpulse_test -t 5 || { echo "PostgreSQL never became ready"; exit 1; }
       - name: Push database schema
         run: |
           for attempt in 1 2 3 4 5; do
