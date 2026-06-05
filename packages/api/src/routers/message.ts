@@ -17,6 +17,7 @@ async function hasCoachAthleteRelationship(
 ): Promise<boolean> {
   const assignment = await db.programAssignment.findFirst({
     where: {
+      status: "active",
       OR: [
         { coachId: userA, athleteId: userB },
         { coachId: userB, athleteId: userA },
@@ -180,7 +181,7 @@ export const messageRouter = createTRPCRouter({
       }
 
       const assignments = await ctx.db.programAssignment.findMany({
-        where: { coachId: ctx.user.id },
+        where: { coachId: ctx.user.id, status: "active" },
         select: { athleteId: true },
       });
       const assignedIds = new Set(assignments.map((a: { athleteId: string }) => a.athleteId));
