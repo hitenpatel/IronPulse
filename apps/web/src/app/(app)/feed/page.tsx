@@ -238,7 +238,7 @@ export default function FeedPage() {
 
   return (
     <div className="max-w-[640px] mx-auto space-y-6">
-      <h1 className="font-display font-semibold text-[28px] text-foreground">Feed</h1>
+      <h1 className="font-display font-semibold text-[28px] text-foreground">Activity Feed</h1>
 
       {isLoading ? (
         <div className="space-y-3">
