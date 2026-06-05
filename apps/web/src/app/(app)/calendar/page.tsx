@@ -176,11 +176,11 @@ export default function CalendarPage() {
       <Card className="bg-card border border-border p-4">
         {/* Month navigation */}
         <div className="mb-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={prevMonth}>
+          <Button variant="ghost" size="sm" onClick={prevMonth} aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="font-display font-semibold text-[28px] text-foreground">{formatMonth(year, month)}</span>
-          <Button variant="ghost" size="sm" onClick={nextMonth}>
+          <Button variant="ghost" size="sm" onClick={nextMonth} aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
