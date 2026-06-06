@@ -116,6 +116,7 @@ import { PulseTabBar } from "./components/layout/pulse-tab-bar";
 // ─── Type definitions ────────────────────────────────────────────
 export type RootStackParamList = {
   Auth: undefined;
+  Onboarding: undefined;
   MainTabs: undefined;
   // Workout
   WorkoutActive: { workoutId: string };
@@ -351,8 +352,13 @@ function RootNavigator() {
     <NavigationContainer>
       <NotificationHandler />
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {needsAuth || needsOnboarding ? (
+        {needsAuth ? (
           <RootStack.Screen name="Auth" component={AuthNavigator} />
+        ) : needsOnboarding ? (
+          // Authenticated but onboarding not finished. Render Onboarding as its
+          // own root screen — routing it through AuthNavigator left the user
+          // stranded on the Login screen after a successful sign-in.
+          <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
         ) : (
           <>
         {/* Main tabs */}
