@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 
-import { NutritionEmptyState, TYPICAL_BREAKFAST } from "../page";
+import { NutritionEmptyState, TYPICAL_BREAKFAST } from "../nutrition-empty-state";
 
 describe("NutritionEmptyState (AC2 — empty Nutrition screen)", () => {
   it("renders the log-your-first-meal heading", () => {

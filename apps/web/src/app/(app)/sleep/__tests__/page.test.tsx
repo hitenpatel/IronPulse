@@ -8,7 +8,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { SleepEmptyCta } from "../page";
+import { SleepEmptyCta } from "../sleep-empty-cta";
 
 describe("SleepEmptyCta (AC1 — empty Sleep screen)", () => {
   it("renders the value prop sentence", () => {
