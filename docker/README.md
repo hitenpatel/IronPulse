@@ -78,6 +78,33 @@ sign-up flow.
 
 ---
 
+## Stack size — pick what you need
+
+The default `docker compose up -d` runs a **lite** 5-service core. Heavier,
+optional pieces are gated behind compose profiles so you only run what you use.
+
+| You run | Adds | Use it when |
+|---|---|---|
+| `docker compose up -d` | web, Postgres, Redis, MinIO | The default. Web app with all features except offline sync. |
+| `… --profile sync` | Mongo + PowerSync | You use the **native mobile app** or want offline web sync. |
+| `… --profile backup` | nightly `pg_dump` | **Recommended** for any real deployment. |
+| `… --profile monitoring` | uptime-kuma | You want a status dashboard. |
+
+Combine profiles as needed — the full stack is:
+
+```bash
+docker compose --profile sync --profile backup --profile monitoring up -d --build
+```
+
+Notes:
+- The web app runs fine without the `sync` profile; the client falls back to
+  direct API calls when PowerSync isn't reachable. The **native mobile app
+  requires** `--profile sync`.
+- Profiles you don't enable are never created, so they cost nothing. To stop a
+  profile's services later, run `docker compose --profile <name> down`.
+
+---
+
 ## Configuration
 
 Everything is driven by `docker/.env` (copied from `.env.example`). Only
@@ -106,19 +133,20 @@ docker compose up -d
 
 ## Services
 
-| Service | Image | Role | Host port |
-|---|---|---|---|
-| `ironpulse` | built locally | Next.js web app + tRPC API | 3000 |
-| `postgres` | postgis/postgis:16-3.4 | Primary database | — (internal) |
-| `redis` | redis:7 | Cache / rate-limit store | — (internal) |
-| `minio` | minio/minio | S3-compatible file storage | 9001 (console) |
-| `mongo` | mongo:7 | PowerSync bucket storage | — (internal) |
-| `powersync` | journeyapps/powersync-service | Offline sync backend | 8080 |
-| `backup` | postgis (cron) | Nightly `pg_dump` to a volume | — |
-| `uptime-kuma` | louislam/uptime-kuma | Optional status dashboard | 3001 |
+| Service | Image | Role | Host port | Profile |
+|---|---|---|---|---|
+| `ironpulse` | built locally | Next.js web app + tRPC API | 3000 | core |
+| `postgres` | postgis/postgis:16-3.4 | Primary database | — (internal) | core |
+| `redis` | redis:7 | Cache / rate-limit store | — (internal) | core |
+| `minio` | minio/minio | S3-compatible file storage | 9001 (console) | core |
+| `mongo` | mongo:7 | PowerSync bucket storage | — (internal) | `sync` |
+| `powersync` | journeyapps/powersync-service | Offline sync backend | 8080 | `sync` |
+| `backup` | postgis (cron) | Nightly `pg_dump` to a volume | — | `backup` |
+| `uptime-kuma` | louislam/uptime-kuma | Optional status dashboard | 3001 | `monitoring` |
 
-Only `ironpulse` (3000) needs to be reachable by users. Keep the rest on the
-internal network or firewalled.
+"core" services always start; the rest only with their `--profile` flag (see
+[Stack size](#stack-size--pick-what-you-need)). Only `ironpulse` (3000) needs to
+be reachable by users — keep the rest on the internal network or firewalled.
 
 ---
 

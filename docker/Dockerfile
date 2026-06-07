@@ -10,6 +10,9 @@ COPY packages/db/prisma packages/db/prisma
 COPY packages/shared/package.json packages/shared/
 COPY packages/api/package.json packages/api/
 COPY apps/web/package.json apps/web/
+# apps/web's postinstall runs `node scripts/patch-powersync-wasm.mjs`, so the
+# scripts dir must exist during install or pnpm fails with MODULE_NOT_FOUND.
+COPY apps/web/scripts apps/web/scripts
 RUN pnpm install --frozen-lockfile
 
 # Build
@@ -23,6 +26,10 @@ COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY . .
 RUN pnpm --filter @ironpulse/db db:generate
+# Regenerate the PowerSync web worker assets into apps/web/public. They are
+# gitignored, so `COPY . .` above didn't bring them in; without this the
+# Next.js build ships without the offline-sync worker.
+RUN pnpm --filter @ironpulse/web run postinstall
 RUN pnpm --filter @ironpulse/web build
 
 # Runtime

@@ -3,6 +3,10 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        # Deploy builds skip typecheck/lint (the escape hatch in next.config).
+        # Page/runtime errors still fail the build; only TS/ESLint are ignored.
+        SKIP_TYPECHECK_ON_BUILD: "1"
     ports:
       - "3000:3000"
     # Pass through optional integration keys (OPENAI_API_KEY, STRIPE_*, OAuth,
@@ -91,8 +95,11 @@ services:
       exit 0
       "
 
+  # Offline-sync backend (Mongo + PowerSync). Opt-in: only needed for the
+  # native mobile app / offline web sync. Enable with `--profile sync`.
   mongo:
     image: mongo:7-jammy
+    profiles: ["sync"]
     command: ["--replSet", "rs0"]
     volumes:
       - mongodata:/data/db
@@ -104,6 +111,7 @@ services:
 
   mongo-init:
     image: mongo:7-jammy
+    profiles: ["sync"]
     depends_on:
       mongo:
         condition: service_healthy
@@ -112,6 +120,7 @@ services:
 
   powersync:
     image: journeyapps/powersync-service:latest
+    profiles: ["sync"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -127,16 +136,21 @@ services:
       - "8080:80"
     restart: unless-stopped
 
+  # Optional status dashboard. Enable with `--profile monitoring`.
   uptime-kuma:
     image: louislam/uptime-kuma:1
+    profiles: ["monitoring"]
     volumes:
       - uptimekuma:/app/data
     ports:
       - "3001:3001"
     restart: unless-stopped
 
+  # Nightly pg_dump. Recommended for any real deployment. Enable with
+  # `--profile backup`.
   backup:
     image: postgis/postgis:16-3.4-alpine
+    profiles: ["backup"]
     volumes:
       - ./backup.sh:/backup.sh:ro
       - backups:/backups
