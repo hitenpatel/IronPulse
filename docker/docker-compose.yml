@@ -5,6 +5,11 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "3000:3000"
+    # Pass through optional integration keys (OPENAI_API_KEY, STRIPE_*, OAuth,
+    # RESEND_API_KEY, MEAL_SCAN_API_KEY, …) from .env. Values in `environment:`
+    # below take precedence over anything in the env file.
+    env_file:
+      - .env
     environment:
       DATABASE_URL: "postgresql://ironpulse:ironpulse@postgres:5432/ironpulse"
       REDIS_URL: "redis://redis:6379"
