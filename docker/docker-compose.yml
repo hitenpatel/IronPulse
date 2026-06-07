@@ -33,7 +33,9 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      # 127.0.0.1, not localhost: busybox resolves localhost to IPv6 ::1 but the
+      # Next.js server listens on IPv4 0.0.0.0 only, so localhost is refused.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3

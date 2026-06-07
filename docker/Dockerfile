@@ -37,6 +37,10 @@ FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
+# postgresql-client provides pg_isready, used by entrypoint.sh to wait for the
+# database before running migrations (avoids the first-boot migration race).
+RUN apk add --no-cache postgresql-client
+
 # Prisma CLI + tsx are needed at runtime for migrations and dev seeding.
 # In the builder image they live in pnpm's .pnpm/ store with symlinks; the
 # minimal runtime copy below would dangle those symlinks. Install both
