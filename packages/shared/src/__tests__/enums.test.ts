@@ -188,8 +188,9 @@ describe("CardioType", () => {
     noDuplicateValues(CardioType);
   });
 
-  it("contains exactly eight entries", () => {
-    expect(Object.keys(CardioType)).toHaveLength(8);
+  it("contains exactly fourteen entries", () => {
+    // 8 base cardio types + 6 HYROX functional exercise types
+    expect(Object.keys(CardioType)).toHaveLength(14);
   });
 });
 

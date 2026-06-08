@@ -74,6 +74,7 @@ export default function WorkoutDetailPage() {
           notes: we.notes ?? null,
           superset_group: null,
           exercise_name: we.exercise.name,
+          exercise_equipment: we.exercise.equipment ?? null,
         }))
       : psExercises ?? [];
 
