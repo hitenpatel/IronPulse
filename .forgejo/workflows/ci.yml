@@ -78,16 +78,18 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Wait for PostgreSQL to accept connections
+        # The job runs in a node container with no postgresql-client, so
+        # pg_isready isn't available. Probe TCP with Node instead — a successful
+        # connect to 5432 means the real server is listening (the postgres
+        # image's first-boot temp server uses a unix socket only, not TCP).
         run: |
+          probe() { node -e "const s=require('net').connect(5432,'postgres');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));s.setTimeout(2000,()=>process.exit(1));"; }
           for i in $(seq 1 30); do
-            if pg_isready -h postgres -U ironpulse -d ironpulse_test -t 2; then
-              echo "PostgreSQL ready after ${i} probes"
-              break
-            fi
+            if probe; then echo "PostgreSQL ready after ${i} probes"; break; fi
             echo "Waiting for PostgreSQL... ($i/30)"
             sleep 2
           done
-          pg_isready -h postgres -U ironpulse -d ironpulse_test -t 5 || { echo "PostgreSQL never became ready"; exit 1; }
+          probe || { echo "PostgreSQL never became ready"; exit 1; }
       - name: Push database schema
         run: |
           for attempt in 1 2 3 4 5; do
