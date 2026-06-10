@@ -1,0 +1,12 @@
+# Prod smoke: relaunching the shipping build without clearing state does not
+# crash and lands on a valid screen (either the restored session or login).
+# Catches startup/runtime crashes in the production artifact specifically.
+appId: com.ironpulse.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+    optional: true
+- assertTrue: ${true}

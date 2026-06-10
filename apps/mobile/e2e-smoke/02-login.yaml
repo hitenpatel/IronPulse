@@ -1,0 +1,27 @@
+# Prod smoke: the shipping build authenticates against the real production
+# backend with a dedicated smoke account, and navigates away from the login
+# screen. Read-only — creates no data. Asserting the login screen disappears
+# (rather than a specific dashboard/onboarding element) keeps it robust
+# regardless of the account's onboarding state.
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "smoke-e2e@ironpulse.app"
+- tapOn:
+    id: "password-input"
+- inputText: "SmokeTest123!"
+- tapOn:
+    id: "login-button"
+# Auth succeeded if we leave the login screen (email field gone) within 60s.
+- extendedWaitUntil:
+    notVisible:
+      id: "email-input"
+    timeout: 60000
