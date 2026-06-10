@@ -178,7 +178,7 @@ export default function SignupScreen() {
             placeholder="••••••••"
           />
 
-          <Button onPress={handleSignUp} disabled={loading}>
+          <Button testID="create-account-button" onPress={handleSignUp} disabled={loading}>
             {loading ? "Creating account..." : "Create Account"}
           </Button>
 

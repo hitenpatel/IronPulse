@@ -18,7 +18,7 @@ export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-arm64}"
 
 DEVICE="${E2E_DEVICE:-100.69.203.52:5555}"
 REPO=/home/ubuntu/dev/IronPulse
-E2E_APK="${E2E_APK:-/tmp/ironpulse-e2e.apk}"
+E2E_APK="${E2E_APK:-/home/ubuntu/dev/IronPulse/apps/mobile/.e2e-build/ironpulse-e2e.apk}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="/tmp/e2e-reports/$STAMP"
 mkdir -p "$OUT"
