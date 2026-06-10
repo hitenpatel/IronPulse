@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgis/postgis:16-3.4-alpine
+    image: imresamu/postgis:16-3.4-alpine  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
     command: ["postgres", "-c", "wal_level=logical"]
     environment:
       POSTGRES_USER: ironpulse
@@ -151,7 +151,7 @@ services:
   # Nightly pg_dump. Recommended for any real deployment. Enable with
   # `--profile backup`.
   backup:
-    image: postgis/postgis:16-3.4-alpine
+    image: imresamu/postgis:16-3.4-alpine  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
     profiles: ["backup"]
     volumes:
       - ./backup.sh:/backup.sh:ro

@@ -16,6 +16,14 @@ async function seedDev() {
   // ── Test Users ──
   const users = [
     {
+      // Primary e2e user — the mobile Maestro flows sign in as this account.
+      email: "test@example.com",
+      name: "Test Athlete",
+      tier: "athlete",
+      onboardingComplete: true,
+      unitSystem: "metric",
+    },
+    {
       email: "athlete@test.com",
       name: "Alex Athlete",
       tier: "athlete",
@@ -71,7 +79,9 @@ async function seedDev() {
     console.log(`  User: ${u.email} (${u.tier})`);
   }
 
-  const athlete = createdUsers[0];
+  // Seed full sample data for both the mobile e2e user (test@example.com) and
+  // the web e2e user (athlete@test.com) so flows on either have history.
+  const dataUsers = [createdUsers[0], createdUsers[1]];
 
   // ── Sample Exercises (pick from seeded library) ──
   const exercises = await db.exercise.findMany({
@@ -98,6 +108,7 @@ async function seedDev() {
 
   // ── Sample Workouts (last 14 days) ──
   const now = new Date();
+  for (const athlete of dataUsers) {
   for (let daysAgo = 0; daysAgo < 14; daysAgo += 2) {
     const date = new Date(now);
     date.setDate(date.getDate() - daysAgo);
@@ -212,6 +223,7 @@ async function seedDev() {
     });
   }
   console.log("  Sleep logs: 14 entries created");
+  }
 
   console.log("\n✓ Dev seed complete!");
   console.log("\nTest accounts (all password: password123):");
