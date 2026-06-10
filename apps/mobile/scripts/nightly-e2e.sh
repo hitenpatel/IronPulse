@@ -49,14 +49,14 @@ cp "$REPO"/apps/mobile/e2e/*.yaml "$RUN"/
 # anchored to end-of-line so it never double-suffixes
 sed -i 's/^appId: com\.ironpulse\.app$/appId: com.ironpulse.app.e2e/' "$RUN"/*.yaml
 log "running main suite ($(ls "$RUN"/*.yaml | wc -l) flows) vs com.ironpulse.app.e2e"
-maestro --device "$DEVICE" test "$RUN" --format junit --output "$OUT/suite.xml" \
+maestro test --udid "$DEVICE" "$RUN" --format junit --output "$OUT/suite.xml" \
   > "$OUT/suite.log" 2>&1
 SUITE_RC=$?
 log "main suite exit=$SUITE_RC"
 
 # 5. Prod smoke vs shipping build
 log "running prod smoke vs com.ironpulse.app"
-maestro --device "$DEVICE" test "$REPO/apps/mobile/e2e-smoke" --format junit \
+maestro test --udid "$DEVICE" "$REPO/apps/mobile/e2e-smoke" --format junit \
   --output "$OUT/smoke.xml" > "$OUT/smoke.log" 2>&1
 SMOKE_RC=$?
 log "prod smoke exit=$SMOKE_RC"
