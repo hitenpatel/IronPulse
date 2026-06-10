@@ -14,8 +14,8 @@
       "extends": "preview",
       "android": { "buildType": "apk" },
       "env": {
+        "//": "EXPO_PUBLIC_E2E only sets the coexist applicationId (com.ironpulse.app.e2e) in app.config — Config.E2E is unused, so the app is byte-for-byte the production UI. Do NOT set bare E2E here: that triggers the App.e2e mock + PowerSync stub in metro.config, which would build a fake app.",
         "EXPO_PUBLIC_E2E": "1",
-        "E2E": "1",
         "EXPO_PUBLIC_API_URL": "http://100.113.79.51:3000"
       }
     },
