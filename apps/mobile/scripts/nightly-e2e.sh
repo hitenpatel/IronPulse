@@ -12,7 +12,8 @@
 # Maestro needs the device awake and UNLOCKED to drive the UI.
 set -u
 
-export PATH="$HOME/.maestro/bin:$PATH"
+# Explicit PATH so this works under cron's minimal environment.
+export PATH="$HOME/.maestro/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-arm64}"
 
 DEVICE="${E2E_DEVICE:-100.69.203.52:5555}"
