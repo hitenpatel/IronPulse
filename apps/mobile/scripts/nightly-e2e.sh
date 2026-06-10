@@ -26,13 +26,19 @@ log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$OUT/run.log"; }
 
 log "=== nightly e2e $STAMP ==="
 
-# 1. Device
+# 1. Device — connect, wake, keep awake, dismiss a non-secure keyguard.
+# With the phone charging and/or Android Smart Lock (trusted place = home) the
+# keyguard is non-secure and this is enough; for a fully secure lock, an
+# Automate flow on the phone must keep it awake + unlocked during the window.
 adb connect "$DEVICE" 2>&1 | tee -a "$OUT/run.log"
-adb -s "$DEVICE" shell input keyevent KEYCODE_WAKEUP 2>/dev/null
 if ! adb -s "$DEVICE" shell true 2>/dev/null; then
   log "FATAL: device $DEVICE not reachable over adb — aborting"
   exit 1
 fi
+adb -s "$DEVICE" shell input keyevent KEYCODE_WAKEUP 2>/dev/null
+adb -s "$DEVICE" shell svc power stayon true 2>/dev/null    # screen stays on while charging
+adb -s "$DEVICE" shell wm dismiss-keyguard 2>/dev/null       # works for non-secure keyguard
+sleep 2
 
 # 2. Test backend
 log "ensuring test backend is up"
@@ -70,4 +76,5 @@ log "---- RESULTS ----"
 log "main suite : $(summarize "$OUT/suite.xml")"
 log "prod smoke : $(summarize "$OUT/smoke.xml")"
 log "reports in : $OUT"
+adb -s "$DEVICE" shell svc power stayon false 2>/dev/null   # restore normal sleep
 log "=== done ==="
