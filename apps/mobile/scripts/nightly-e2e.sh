@@ -40,11 +40,23 @@ adb -s "$DEVICE" shell svc power stayon true 2>/dev/null    # screen stays on wh
 adb -s "$DEVICE" shell wm dismiss-keyguard 2>/dev/null       # works for non-secure keyguard
 sleep 2
 
-# 2. Test backend
-log "ensuring test backend is up"
-( cd "$REPO/docker" && docker compose up -d >/dev/null 2>&1 )
-curl -fsS --max-time 10 http://100.113.79.51:3000/api/health >/dev/null 2>&1 \
-  && log "test backend healthy" || log "WARN: test backend health check failed"
+# 2. Test backend — bring up just for this run, tear down after (volumes kept,
+# so the seeded test users persist; the entrypoint re-runs idempotent db push +
+# base seed on each boot, seed:dev data survives in the pgdata volume).
+cleanup_backend() {
+  log "stopping test backend (volumes preserved)"
+  ( cd "$REPO/docker" && docker compose down >/dev/null 2>&1 )
+  adb -s "$DEVICE" shell svc power stayon false 2>/dev/null
+}
+trap cleanup_backend EXIT
+
+log "starting test backend"
+( cd "$REPO/docker" && docker compose up -d --wait --wait-timeout 240 >/dev/null 2>&1 )
+for i in $(seq 1 20); do
+  curl -fsS --max-time 10 http://100.113.79.51:3000/api/health >/dev/null 2>&1 \
+    && { log "test backend healthy"; break; }
+  log "  waiting for backend... ($i/20)"; sleep 6
+done
 
 # 3. Install the e2e build (coexists with the prod app)
 log "installing e2e build"
@@ -76,5 +88,5 @@ log "---- RESULTS ----"
 log "main suite : $(summarize "$OUT/suite.xml")"
 log "prod smoke : $(summarize "$OUT/smoke.xml")"
 log "reports in : $OUT"
-adb -s "$DEVICE" shell svc power stayon false 2>/dev/null   # restore normal sleep
 log "=== done ==="
+# backend teardown + stayon restore handled by the EXIT trap (cleanup_backend)
