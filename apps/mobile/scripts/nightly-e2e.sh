@@ -38,7 +38,20 @@ fi
 adb -s "$DEVICE" shell input keyevent KEYCODE_WAKEUP 2>/dev/null
 adb -s "$DEVICE" shell svc power stayon true 2>/dev/null    # screen stays on while charging
 adb -s "$DEVICE" shell wm dismiss-keyguard 2>/dev/null       # works for non-secure keyguard
+# Swipe up — on a secure keyguard this at least exposes the PIN pad, surfacing
+# the lock-screen vs app-screen distinction in the diagnostic screenshot below.
+adb -s "$DEVICE" shell input swipe 540 1800 540 600 200 2>/dev/null
 sleep 2
+
+# Diagnostic: capture device state + screenshot so a "no email-input visible"
+# failure can be triaged without re-running. The two main wedge states are
+# (a) device locked behind a secure keyguard (screenshot shows lock screen) and
+# (b) Dreaming/screensaver (mDreamingLockscreen=true).
+adb -s "$DEVICE" shell dumpsys window 2>/dev/null \
+  | grep -E "mKeyguardOccluded|mShowingDream|mDreamingLockscreen|mCurrentFocus" \
+  | head -5 | tee -a "$OUT/run.log"
+adb -s "$DEVICE" shell screencap -p /sdcard/_e2e_pre.png 2>/dev/null
+adb -s "$DEVICE" pull /sdcard/_e2e_pre.png "$OUT/pre-suite.png" 2>/dev/null | tail -1 | tee -a "$OUT/run.log"
 
 # 2. Test backend — bring up just for this run, tear down after (volumes kept,
 # so the seeded test users persist; the entrypoint re-runs idempotent db push +
@@ -73,8 +86,12 @@ maestro test --udid "$DEVICE" "$RUN" --format junit --output "$OUT/suite.xml" \
 SUITE_RC=$?
 log "main suite exit=$SUITE_RC"
 
-# 5. Prod smoke vs shipping build
+# 5. Prod smoke vs shipping build. Capture a pre-smoke screenshot too — if a
+# flow fails on "email-input is visible" we want to see what was actually on
+# screen at the moment Maestro queried it.
 log "running prod smoke vs com.ironpulse.app"
+adb -s "$DEVICE" shell screencap -p /sdcard/_e2e_pre_smoke.png 2>/dev/null
+adb -s "$DEVICE" pull /sdcard/_e2e_pre_smoke.png "$OUT/pre-smoke.png" 2>/dev/null | tail -1 | tee -a "$OUT/run.log"
 maestro test --udid "$DEVICE" "$REPO/apps/mobile/e2e-smoke" --format junit \
   --output "$OUT/smoke.xml" > "$OUT/smoke.log" 2>&1
 SMOKE_RC=$?
