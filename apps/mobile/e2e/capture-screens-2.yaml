@@ -50,7 +50,15 @@ appId: com.ironpulse.app
 - back
 - waitForAnimationToEnd
 
-- tapOn: "Connected Apps"
+# Scroll Profile to reach App section (Connected apps lives near the bottom)
+- swipe:
+    direction: UP
+    duration: 500
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn: "Connected apps"
 - waitForAnimationToEnd
 - takeScreenshot: 14-integrations
 - swipe:

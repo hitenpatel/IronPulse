@@ -21,10 +21,16 @@ appId: com.ironpulse.app
     timeout: 60000
 - waitForAnimationToEnd
 - tapOn: "Profile"
-- extendedWaitUntil:
-    visible: "Connected Apps"
-    timeout: 10000
-- tapOn: "Connected Apps"
+- waitForAnimationToEnd
+# Scroll Profile to reach App section (Connected apps lives near the bottom)
+- swipe:
+    direction: UP
+    duration: 500
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn: "Connected apps"
 - extendedWaitUntil:
     visible: "Strava"
     timeout: 10000

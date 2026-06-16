@@ -27,9 +27,9 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - extendedWaitUntil:
-    visible: "Sign Out"
+    visible: "Sign out"
     timeout: 10000
-- tapOn: "Sign Out"
+- tapOn: "Sign out"
 - extendedWaitUntil:
     visible:
       id: "email-input"
