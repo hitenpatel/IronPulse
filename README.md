@@ -105,4 +105,13 @@ Production runs as a Docker Compose stack:
 
 ## License
 
-Private — All rights reserved.
+GNU Affero General Public License v3.0 — see [LICENSE](./LICENSE) and
+[NOTICE](./NOTICE).
+
+You can self-host, modify, and redistribute IronPulse under the terms
+of AGPL-3.0. If you run a modified version as a network service, you
+must make the modified source available to your users (AGPL § 13).
+
+"IronPulse" and the IronPulse logo are trademarks of the project
+author. Forks and derivative works must use a different name and
+brand.
