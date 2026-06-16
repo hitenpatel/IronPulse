@@ -96,8 +96,8 @@ appId: com.ironpulse.app
 - takeScreenshot: 13-templates
 - back
 
-# Connected Apps
-- tapOn: "Connected Apps"
+# Connected apps
+- tapOn: "Connected apps"
 - waitForAnimationToEnd
 - takeScreenshot: 14-integrations
 - swipe:

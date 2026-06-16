@@ -34,5 +34,5 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "metric"
 - waitForAnimationToEnd
-- assertVisible: "Connected Apps"
-- assertVisible: "Sign Out"
+- assertVisible: "Connected apps"
+- assertVisible: "Sign out"

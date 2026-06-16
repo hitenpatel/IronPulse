@@ -21,10 +21,20 @@ appId: com.ironpulse.app
     timeout: 60000
 - waitForAnimationToEnd
 - tapOn: "Profile"
+- waitForAnimationToEnd
+# Sign out lives below the Danger zone, past every menu section — scroll fully.
+- swipe:
+    direction: UP
+    duration: 500
+- swipe:
+    direction: UP
+    duration: 500
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn: "Sign out"
 - extendedWaitUntil:
-    visible: "Sign Out"
-    timeout: 10000
-- tapOn: "Sign Out"
-- extendedWaitUntil:
-    visible: "Log In"
+    visible:
+      id: "email-input"
     timeout: 10000
