@@ -37,11 +37,42 @@ if ! adb -s "$DEVICE" shell true 2>/dev/null; then
 fi
 adb -s "$DEVICE" shell input keyevent KEYCODE_WAKEUP 2>/dev/null
 adb -s "$DEVICE" shell svc power stayon true 2>/dev/null    # screen stays on while charging
-adb -s "$DEVICE" shell wm dismiss-keyguard 2>/dev/null       # works for non-secure keyguard
-# Swipe up — on a secure keyguard this at least exposes the PIN pad, surfacing
-# the lock-screen vs app-screen distinction in the diagnostic screenshot below.
+adb -s "$DEVICE" shell wm dismiss-keyguard 2>/dev/null       # non-secure keyguard only
+# Swipe up to expose the bouncer (PIN pad) on a secure keyguard.
 adb -s "$DEVICE" shell input swipe 540 1800 540 600 200 2>/dev/null
 sleep 2
+
+# If the device is still locked behind a secure keyguard (modern Android killed
+# Smart Lock's trusted-place / trusted-Wi-Fi options, so a Pixel left idle
+# overnight WILL be locked at 01:05 UTC), unlock by typing the PIN from a
+# local 0600 file. No-op if the file is absent or the device is already
+# unlocked.
+PIN_FILE="${E2E_PIN_FILE:-/home/ubuntu/stack/.e2e-device-pin}"
+is_locked() {
+  adb -s "$DEVICE" shell dumpsys window 2>/dev/null \
+    | grep -qE "AlternateBouncerView|KeyguardScrim|Bouncer"
+}
+if is_locked && [ -r "$PIN_FILE" ]; then
+  log "device locked — entering PIN"
+  PIN=$(tr -d '\r\n\t ' < "$PIN_FILE")
+  # Type digits as keyevents (KEYCODE_0..9 = 7..16). More reliable than
+  # `input text` on the bouncer's PIN field.
+  KEYS=""
+  for (( i=0; i<${#PIN}; i++ )); do
+    KEYS="$KEYS $((7 + ${PIN:$i:1}))"
+  done
+  adb -s "$DEVICE" shell input keyevent $KEYS 2>/dev/null
+  sleep 1
+  adb -s "$DEVICE" shell input keyevent KEYCODE_ENTER 2>/dev/null
+  sleep 2
+  if is_locked; then
+    log "WARNING: still locked after PIN entry — diagnostic screenshot will show state"
+  else
+    log "unlock succeeded"
+  fi
+elif is_locked; then
+  log "WARNING: device locked and no readable PIN file at $PIN_FILE"
+fi
 
 # Diagnostic: capture device state + screenshot so a "no email-input visible"
 # failure can be triaged without re-running. The two main wedge states are
