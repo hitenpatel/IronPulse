@@ -10,7 +10,7 @@ import { startRegistration, startAuthentication } from "@simplewebauthn/browser"
 
 describe("registerPasskey", () => {
   it("delegates to startRegistration with optionsJSON", async () => {
-    const options = { rp: { name: "IronPulse" } } as any;
+    const options = { rp: { name: "Mettle Lift" } } as any;
     const result = await registerPasskey(options);
 
     expect(startRegistration).toHaveBeenCalledWith({ optionsJSON: options });

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 import {
   ensureWithingsFreshToken,
   fetchWithingsApi,
   importWithingsMeasures,
-} from "@ironpulse/api/src/lib/withings";
-import { captureError } from "@ironpulse/api/src/lib/capture-error";
+} from "@mettlelift/api/src/lib/withings";
+import { captureError } from "@mettlelift/api/src/lib/capture-error";
 
 /**
  * Withings webhook notification payload.

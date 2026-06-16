@@ -1,6 +1,6 @@
 # Mobile Workout Logging UI — Design Specification
 
-Redesigned mobile-first workout logging UI for the IronPulse Expo app. Single-screen layout with swipe gestures, haptic feedback, keyboard-aware scrolling, and template support. This is sub-project 2 of 4 for the mobile app.
+Redesigned mobile-first workout logging UI for the Mettle Lift Expo app. Single-screen layout with swipe gestures, haptic feedback, keyboard-aware scrolling, and template support. This is sub-project 2 of 4 for the mobile app.
 
 ## Scope
 
@@ -161,7 +161,7 @@ All writes via `usePowerSync()` → `db.execute()`, identical to web:
 | Update name | `UPDATE workouts SET name = ? WHERE id = ?` |
 | Finish workout | `UPDATE workouts SET completed_at = ?, duration_seconds = ? WHERE id = ?` |
 
-Reads use shared hooks from `@ironpulse/sync`: `useWorkoutExercises(workoutId)`, `useWorkoutSets(workoutId)`, `useExercises({ search })`, `useTemplates()`.
+Reads use shared hooks from `@mettlelift/sync`: `useWorkoutExercises(workoutId)`, `useWorkoutSets(workoutId)`, `useExercises({ search })`, `useTemplates()`.
 
 Server call: `trpc.workout.complete.mutate({ id })` for PR detection (via mobile tRPC client with bearer auth).
 
@@ -184,7 +184,7 @@ The template picker needs to read `template_exercises` and `template_sets` to hy
 - `useTemplateExercises(templateId)` — `SELECT te.*, e.name as exercise_name FROM template_exercises te LEFT JOIN exercises e ON te.exercise_id = e.id WHERE te.template_id = ? ORDER BY te."order"`
 - `useTemplateSets(templateExerciseId)` — `SELECT * FROM template_sets WHERE template_exercise_id = ? ORDER BY set_number`
 
-These are added to `packages/sync/src/hooks/` and exported from `@ironpulse/sync`.
+These are added to `packages/sync/src/hooks/` and exported from `@mettlelift/sync`.
 
 ## Sync Timing on Completion
 
@@ -244,7 +244,7 @@ apps/mobile/
 
 **workout-empty.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 # Sign in first
@@ -280,7 +280,7 @@ appId: com.ironpulse.app
 
 **workout-template.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -297,7 +297,7 @@ appId: com.ironpulse.app
 
 **workout-cancel.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"

@@ -28,7 +28,7 @@ import {
   getHRZoneName,
   getHRZoneColor,
   getZoneBoundaries,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 
 const colors = {
   bg: "hsl(224, 71%, 4%)",

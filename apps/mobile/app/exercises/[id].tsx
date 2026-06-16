@@ -13,7 +13,7 @@ import type { RouteProp } from "@react-navigation/native";
 import { useQuery } from "@powersync/react";
 import { Dumbbell, Target, Trophy } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
-import type { ExerciseRow } from "@ironpulse/sync";
+import type { ExerciseRow } from "@mettlelift/sync";
 import type { RootStackParamList } from "../../App";
 
 import { colors as theme } from "@/lib/theme";

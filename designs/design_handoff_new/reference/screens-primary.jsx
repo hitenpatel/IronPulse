@@ -77,7 +77,7 @@ const Dashboard = () => (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0 14px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icons.Logo size={20} />
-          <span className="display" style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>IronPulse</span>
+          <span className="display" style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>Mettle Lift</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Icons.Bell />

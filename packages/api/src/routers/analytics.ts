@@ -6,7 +6,7 @@ import {
   trainingLoadSchema,
   muscleVolumeSchema,
   calculateStreak,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import {
   calculateCardioLoad,

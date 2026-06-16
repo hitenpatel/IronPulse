@@ -1,6 +1,6 @@
 import "server-only";
-import { createTRPCContext, createCallerFactory, appRouter } from "@ironpulse/api";
-import { db } from "@ironpulse/db";
+import { createTRPCContext, createCallerFactory, appRouter } from "@mettlelift/api";
+import { db } from "@mettlelift/db";
 import { auth } from "@/lib/auth";
 
 const createCaller = createCallerFactory(appRouter);

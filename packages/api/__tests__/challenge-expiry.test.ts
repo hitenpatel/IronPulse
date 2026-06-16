@@ -271,7 +271,7 @@ describe("sendChallengeExpiryReminder", () => {
     });
     expect(resendSend).toHaveBeenCalledWith(
       expect.objectContaining({
-        text: expect.stringContaining("ironpulse.app/challenges/challenge-1"),
+        text: expect.stringContaining("mettlelift.app/challenges/challenge-1"),
       }),
     );
   });

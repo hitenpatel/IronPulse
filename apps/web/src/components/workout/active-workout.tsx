@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { PowerSyncContext } from "@powersync/react";
-import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets } from "@mettlelift/sync";
 import { useQuery } from "@powersync/react";
 import {
   DndContext,

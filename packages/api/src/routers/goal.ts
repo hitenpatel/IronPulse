@@ -4,7 +4,7 @@ import {
   updateGoalSchema,
   deleteGoalSchema,
   listGoalsSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { computeGoalProgress, computeProgressPct } from "../lib/goal-progress";
 import { captureError } from "../lib/capture-error";

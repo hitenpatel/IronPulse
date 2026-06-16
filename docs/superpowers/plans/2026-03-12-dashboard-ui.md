@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement the app shell (bottom tab bar, dark theme) and dashboard page (greeting, quick-start, weekly stats, activity feed) as the first UI surface for IronPulse.
+**Goal:** Implement the app shell (bottom tab bar, dark theme) and dashboard page (greeting, quick-start, weekly stats, activity feed) as the first UI surface for Mettle Lift.
 
 **Architecture:** Mobile-first responsive layout using shadcn/ui with dark theme CSS variables. Bottom tab bar on mobile, sidebar on desktop. Dashboard fetches real data via tRPC React Query hooks with client-side filtering for weekly counts.
 
@@ -87,9 +87,9 @@ Expected: JSON with `"style": "new-york"` and `"aliases"` config.
 Run: `cat apps/web/src/lib/utils.ts`
 Expected: File with `cn()` function using `clsx` and `tailwind-merge`.
 
-- [ ] **Step 3: Override globals.css with IronPulse dark theme**
+- [ ] **Step 3: Override globals.css with Mettle Lift dark theme**
 
-Replace the entire contents of `apps/web/src/styles/globals.css` with the dark theme from the spec. The shadcn init may have written its own CSS variables — we override all of them with IronPulse's design tokens.
+Replace the entire contents of `apps/web/src/styles/globals.css` with the dark theme from the spec. The shadcn init may have written its own CSS variables — we override all of them with Mettle Lift's design tokens.
 
 ```css
 @tailwind base;
@@ -211,7 +211,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "IronPulse",
+  title: "Mettle Lift",
   description: "The ultimate fitness tracker — strength and cardio, unified.",
 };
 
@@ -1326,7 +1326,7 @@ Expected: No errors.
 
 - [ ] **Step 3: Verify build succeeds**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build completes successfully. If there are build errors, fix them before committing.
 
 - [ ] **Step 4: Commit**
@@ -1467,7 +1467,7 @@ Expected: No errors.
 
 - [ ] **Step 3: Run full build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds.
 
 - [ ] **Step 4: Verify all files exist**

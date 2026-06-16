@@ -7,7 +7,7 @@ import { Check, Minus, Trash2 } from "lucide-react-native";
 import { colors, fonts, radii } from "@/lib/theme";
 import { SetTypeSheet } from "./set-type-sheet";
 import { SET_TYPE_LABEL, normalizeSetType, type SetType } from "@/lib/set-type";
-import { calculatePlates } from "@ironpulse/shared";
+import { calculatePlates } from "@mettlelift/shared";
 
 const STANDARD_BAR_KG = 20;
 

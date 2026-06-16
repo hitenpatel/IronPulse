@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import {
   findInactiveUsers,
   sendRetentionNudge,
   type RetentionUser,
-} from "@ironpulse/api";
+} from "@mettlelift/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
@@ -41,9 +41,9 @@ function day7Body(u: RetentionUser): string {
     achievements,
     "",
     "Even a quick 15-minute session can get the momentum back. Open the app when you're ready:",
-    "https://ironpulse.app/dashboard",
+    "https://mettlelift.app/dashboard",
     "",
-    "— IronPulse",
+    "— Mettle Lift",
   ].join("\n");
 }
 
@@ -63,9 +63,9 @@ function day21Body(u: RetentionUser): string {
       ? `Your previous best streak was ${u.currentStreak} days. Let's rebuild it.`
       : "Pick a day this week. Block 20 minutes. Open the app.",
     "",
-    "https://ironpulse.app/dashboard",
+    "https://mettlelift.app/dashboard",
     "",
-    "— IronPulse",
+    "— Mettle Lift",
   ].join("\n");
 }
 
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "IronPulse <noreply@ironpulse.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
 
   const [day7Users, day21Users] = await Promise.all([
     findInactiveUsers(db, 7),
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
           : "Three weeks out. Let's get you back on the platform.",
       subject:
         windowDays === 7
-          ? "We miss you — your IronPulse progress is still here"
+          ? "We miss you — your Mettle Lift progress is still here"
           : "Three weeks. Let's start again.",
       body: windowDays === 7 ? day7Body(user) : day21Body(user),
       linkPath: "/dashboard",

@@ -9,7 +9,7 @@ storage:
   uri: !env PS_MONGO_URI
 
 client_auth:
-  jwks_uri: http://ironpulse:3000/api/auth/powersync/keys
+  jwks_uri: http://mettlelift:3000/api/auth/powersync/keys
   audience: ["powersync"]
 
 sync_config:

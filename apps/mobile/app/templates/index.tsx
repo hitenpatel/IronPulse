@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { usePowerSync } from "@powersync/react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useTemplates, type TemplateRow } from "@ironpulse/sync";
+import { useTemplates, type TemplateRow } from "@mettlelift/sync";
 import { ClipboardList, Play, Plus, Trash2 } from "lucide-react-native";
 
 import { randomUUID } from "@/lib/uuid";

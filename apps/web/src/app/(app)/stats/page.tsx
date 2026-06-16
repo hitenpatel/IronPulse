@@ -3,7 +3,7 @@
 import { useState, useContext } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { PowerSyncContext } from "@powersync/react";
-import { useBodyMetrics } from "@ironpulse/sync";
+import { useBodyMetrics } from "@mettlelift/sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { MuscleHeatmap } from "@/components/analytics/muscle-heatmap";
 import { uuid } from "@/lib/uuid";
 import { ProgressPhotos } from "@/components/analytics/progress-photos";
 import { useDataMode } from "@/hooks/use-data-mode";
-import type { BodyMetricRow } from "@ironpulse/sync";
+import type { BodyMetricRow } from "@mettlelift/sync";
 
 const MUSCLE_GROUP_COLORS: Record<string, string> = {
   chest: "bg-primary",

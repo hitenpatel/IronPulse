@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Small, append-only notes capturing the _why_ behind significant architectural choices in IronPulse. Each ADR is a frozen snapshot of the context and trade-offs at the time of the decision — if the decision later changes, write a new ADR that supersedes the old one rather than editing the old one.
+Small, append-only notes capturing the _why_ behind significant architectural choices in Mettle Lift. Each ADR is a frozen snapshot of the context and trade-offs at the time of the decision — if the decision later changes, write a new ADR that supersedes the old one rather than editing the old one.
 
 ## Index
 

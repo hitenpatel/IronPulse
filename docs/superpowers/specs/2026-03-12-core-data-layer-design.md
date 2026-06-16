@@ -109,7 +109,7 @@ Triggered by `workout.complete`:
 
 ## GPX Import
 
-**Dependency:** `fast-xml-parser` added to `@ironpulse/api`.
+**Dependency:** `fast-xml-parser` added to `@mettlelift/api`.
 
 **Flow:**
 1. `cardio.importGpx` receives a GPX XML string (web app reads file client-side, sends content as string — no multipart upload)
@@ -132,7 +132,7 @@ Triggered by `workout.complete`:
 
 ## Zod Schemas
 
-New schemas in `@ironpulse/shared`:
+New schemas in `@mettlelift/shared`:
 
 **Exercise:**
 - `createExerciseSchema` — name, category, muscles, equipment, instructions
@@ -186,9 +186,9 @@ TDD against real PostgreSQL, same approach as foundation.
 ## Dependencies
 
 **New packages:**
-- `fast-xml-parser` — GPX parsing in `@ironpulse/api`
-- `tsx` — running seed script in `@ironpulse/db`
+- `fast-xml-parser` — GPX parsing in `@mettlelift/api`
+- `tsx` — running seed script in `@mettlelift/db`
 
-**Shared package change:** Add `GPX: "gpx"` to the `CardioSource` enum in `@ironpulse/shared` to support the `cardio.importGpx` source value.
+**Shared package change:** Add `GPX: "gpx"` to the `CardioSource` enum in `@mettlelift/shared` to support the `cardio.importGpx` source value.
 
 **No Prisma schema changes needed** — the Prisma schema from foundation already covers all models used here.

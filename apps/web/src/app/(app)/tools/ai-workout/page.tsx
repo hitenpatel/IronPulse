@@ -6,7 +6,7 @@ import { Sparkles, ChevronRight, Save, Trash2, AlertCircle } from "lucide-react"
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import type { AiWorkoutResult } from "@ironpulse/shared";
+import type { AiWorkoutResult } from "@mettlelift/shared";
 
 const GOALS = [
   { value: "strength", label: "Strength", description: "Low reps, heavy weight, max force output" },

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@ironpulse/db";
-import { getRedis } from "@ironpulse/api/src/lib/redis";
-import { encryptToken } from "@ironpulse/api/src/lib/encryption";
-import { runGarminBackfill } from "@ironpulse/api/src/lib/garmin";
+import { db } from "@mettlelift/db";
+import { getRedis } from "@mettlelift/api/src/lib/redis";
+import { encryptToken } from "@mettlelift/api/src/lib/encryption";
+import { runGarminBackfill } from "@mettlelift/api/src/lib/garmin";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

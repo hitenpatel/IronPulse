@@ -4,7 +4,7 @@ set -euo pipefail
 if [ -z "${1:-}" ]; then
   echo "Usage: $0 <backup-file.sql.gz>"
   echo "Available backups:"
-  ls -lh /backups/ironpulse_*.sql.gz 2>/dev/null || echo "  No backups found"
+  ls -lh /backups/mettlelift_*.sql.gz 2>/dev/null || echo "  No backups found"
   exit 1
 fi
 

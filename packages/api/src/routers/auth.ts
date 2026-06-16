@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 import {
   signUpSchema,
   signInSchema,
@@ -10,7 +10,7 @@ import {
   resetPasswordSchema,
   changePasswordSchema,
   mobileOAuthSignInSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { sendMagicLinkEmail, sendPasswordResetEmail } from "../lib/email";
 import { signMobileToken } from "../lib/mobile-auth";
 import { createTRPCRouter, publicProcedure, rateLimitedProcedure } from "../trpc";

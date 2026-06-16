@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from "@ironpulse/db";
+import type { PrismaClient, Prisma } from "@mettlelift/db";
 
 interface CompletedSet {
   id: string;

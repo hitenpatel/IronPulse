@@ -185,8 +185,8 @@ Commit: "add training status, muscle volume, and progress photos to mobile stats
 
 ### Task 11: Verification
 
-- Run: `pnpm --filter @ironpulse/api test`
-- Run: `pnpm --filter @ironpulse/web build`
+- Run: `pnpm --filter @mettlelift/api test`
+- Run: `pnpm --filter @mettlelift/web build`
 - Fix any issues
 
 Commit if needed: "fix Phase 3 analytics issues"

@@ -1,12 +1,12 @@
 # Expo Mobile App Foundation — Design Specification
 
-Scaffold the IronPulse Expo mobile app with navigation, authentication, PowerSync offline-first sync, dark theme, placeholder screens with real synced data, and Maestro E2E tests. This is sub-project 1 of 4 for the mobile app.
+Scaffold the Mettle Lift Expo mobile app with navigation, authentication, PowerSync offline-first sync, dark theme, placeholder screens with real synced data, and Maestro E2E tests. This is sub-project 1 of 4 for the mobile app.
 
 ## Scope
 
 - Expo app at `apps/mobile/` in the existing Turborepo monorepo
 - Auth via tRPC endpoints + `expo-secure-store` (email/password only, OAuth deferred)
-- PowerSync via `@powersync/react-native` reusing `@ironpulse/sync` schema + connector
+- PowerSync via `@powersync/react-native` reusing `@mettlelift/sync` schema + connector
 - 4-tab navigation + center FAB, matching web app structure
 - NativeWind dark theme matching web app CSS variables
 - Placeholder screens with real synced data
@@ -22,14 +22,14 @@ Scaffold the IronPulse Expo mobile app with navigation, authentication, PowerSyn
 
 ### Monorepo Integration
 
-The mobile app consumes shared packages but does NOT depend on `@ironpulse/db` (Prisma is server-only):
+The mobile app consumes shared packages but does NOT depend on `@mettlelift/db` (Prisma is server-only):
 
 ```
 apps/mobile/
   depends on:
-    @ironpulse/sync    → PowerSync schema + connector
-    @ironpulse/shared  → Zod schemas, enums, types
-    @ironpulse/api     → AppRouter type (for tRPC client typing)
+    @mettlelift/sync    → PowerSync schema + connector
+    @mettlelift/shared  → Zod schemas, enums, types
+    @mettlelift/api     → AppRouter type (for tRPC client typing)
 ```
 
 ### Metro Configuration
@@ -37,7 +37,7 @@ apps/mobile/
 Metro requires explicit configuration for Turborepo monorepo resolution. `metro.config.js` must set:
 - `watchFolders`: point to root `node_modules/` and shared `packages/` directories
 - `nodeModulesPaths`: include root `node_modules/` for hoisted dependencies
-- `extraNodeModules`: alias `@ironpulse/*` packages for Metro resolution
+- `extraNodeModules`: alias `@mettlelift/*` packages for Metro resolution
 
 This is a known pain point with Expo in monorepos — the config prevents "module not found" errors for workspace dependencies.
 
@@ -136,7 +136,7 @@ Web passes nothing (relative URL, cookie auth). Mobile passes `{ baseUrl: EXPO_P
 
 The PowerSync hooks (`useWorkouts`, `useCardioSessions`, `useExercises`, etc.) currently live in `apps/web/src/hooks/`. Since they are just SQL queries over the PowerSync database using `useQuery` from `@powersync/react` (which is platform-agnostic), they should be moved to `packages/sync/src/hooks/` so both web and mobile can import them.
 
-The hooks files move from `apps/web/src/hooks/use-workouts.ts` etc. to `packages/sync/src/hooks/use-workouts.ts` etc. The web app updates its imports from `@/hooks/use-workouts` to `@ironpulse/sync`.
+The hooks files move from `apps/web/src/hooks/use-workouts.ts` etc. to `packages/sync/src/hooks/use-workouts.ts` etc. The web app updates its imports from `@/hooks/use-workouts` to `@mettlelift/sync`.
 
 ## Authentication
 
@@ -204,11 +204,11 @@ Uses `@powersync/react-native` instead of `@powersync/web`. Native SQLite, not W
 
 ```typescript
 import { PowerSyncDatabase } from "@powersync/react-native";
-import { AppSchema } from "@ironpulse/sync";
+import { AppSchema } from "@mettlelift/sync";
 
 const db = new PowerSyncDatabase({
   schema: AppSchema,
-  database: { dbFilename: "ironpulse.db" },
+  database: { dbFilename: "mettlelift.db" },
 });
 ```
 
@@ -284,7 +284,7 @@ These mirror the web app's shadcn/ui components in API shape but use RN primitiv
 Functional placeholder proving sync works:
 - Greeting: "Good morning, {name}" (from auth context)
 - Quick-start cards: "Start Workout" / "Log Cardio" (navigate to placeholder)
-- Recent activity list: last 5 workouts + last 5 cardio sessions from PowerSync hooks (`useWorkouts()`, `useCardioSessions()` from `@ironpulse/sync`)
+- Recent activity list: last 5 workouts + last 5 cardio sessions from PowerSync hooks (`useWorkouts()`, `useCardioSessions()` from `@mettlelift/sync`)
 - Shows real synced data, validating the full stack
 
 ### Stats (`(tabs)/stats.tsx`)
@@ -333,7 +333,7 @@ apps/mobile/e2e/
 
 #### auth-signup.yaml
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Sign Up"
@@ -349,7 +349,7 @@ appId: com.ironpulse.app
 
 #### auth-signin.yaml
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -362,7 +362,7 @@ appId: com.ironpulse.app
 
 #### auth-signout.yaml
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Profile"
@@ -372,7 +372,7 @@ appId: com.ironpulse.app
 
 #### navigation-tabs.yaml
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -393,7 +393,7 @@ appId: com.ironpulse.app
 
 #### sync-offline.yaml
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -411,7 +411,7 @@ appId: com.ironpulse.app
 
 E2E tests require a running backend with seeded data. For local testing:
 1. Run `docker compose up` (starts PostgreSQL, Redis, MinIO, PowerSync)
-2. Run `pnpm --filter @ironpulse/web dev` (starts the API server)
+2. Run `pnpm --filter @mettlelift/web dev` (starts the API server)
 3. Seed a test user via `prisma db seed` or a setup script
 4. Run `maestro test apps/mobile/e2e/`
 

@@ -4,7 +4,7 @@ import { Alert, Pressable, Text, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { usePowerSync } from "@powersync/react";
 import { Flame, Link2, Link2Off, Plus, Trash2 } from "lucide-react-native";
-import type { WarmupScheme, WarmupSet } from "@ironpulse/shared";
+import type { WarmupScheme, WarmupSet } from "@mettlelift/shared";
 import { SetRow } from "./set-row";
 import { WarmupSheet } from "./warmup-sheet";
 import { colors as t, fonts, radii, tracking } from "@/lib/theme";

@@ -1,5 +1,5 @@
 services:
-  ironpulse:
+  mettlelift:
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -15,12 +15,12 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: "postgresql://ironpulse:ironpulse@postgres:5432/ironpulse"
+      DATABASE_URL: "postgresql://mettlelift:mettlelift@postgres:5432/mettlelift"
       REDIS_URL: "redis://redis:6379"
       S3_ENDPOINT: "http://minio:9000"
       S3_ACCESS_KEY: "minioadmin"
       S3_SECRET_KEY: "minioadmin"
-      S3_BUCKET: "ironpulse"
+      S3_BUCKET: "mettlelift"
       NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
       NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
       DEPLOYMENT_MODE: "self-hosted"
@@ -45,13 +45,13 @@ services:
     image: imresamu/postgis:16-3.4-alpine  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
     command: ["postgres", "-c", "wal_level=logical"]
     environment:
-      POSTGRES_USER: ironpulse
-      POSTGRES_PASSWORD: ironpulse
-      POSTGRES_DB: ironpulse
+      POSTGRES_USER: mettlelift
+      POSTGRES_PASSWORD: mettlelift
+      POSTGRES_DB: mettlelift
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ironpulse"]
+      test: ["CMD-SHELL", "pg_isready -U mettlelift"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -93,7 +93,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 minioadmin minioadmin &&
-      mc mb --ignore-existing local/ironpulse &&
+      mc mb --ignore-existing local/mettlelift &&
       exit 0
       "
 
@@ -132,7 +132,7 @@ services:
       - ./powersync.yaml:/app/config/powersync.yaml
       - ./sync-rules.yaml:/app/config/sync-rules.yaml
     environment:
-      PS_DATA_SOURCE_URI: "postgresql://ironpulse:ironpulse@postgres:5432/ironpulse"
+      PS_DATA_SOURCE_URI: "postgresql://mettlelift:mettlelift@postgres:5432/mettlelift"
       PS_MONGO_URI: "mongodb://mongo:27017/powersync"
     ports:
       - "8080:80"

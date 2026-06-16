@@ -77,7 +77,7 @@ model ChallengeParticipant {
 
 Add relations to User model: `followers Follow[] @relation("Following")`, `following Follow[] @relation("Followers")`, `activityFeedItems ActivityFeedItem[]`, `challenges Challenge[]`, `challengeParticipants ChallengeParticipant[]`
 
-Run: `pnpm --filter @ironpulse/db exec prisma generate`
+Run: `pnpm --filter @mettlelift/db exec prisma generate`
 
 Commit: "add Follow, ActivityFeedItem, Challenge, and ChallengeParticipant models"
 
@@ -227,7 +227,7 @@ Commit: "add challenges page on mobile"
 ### Task 11: Navigation + Verification
 
 - Add "Feed" and "Challenges" links to dashboard (web + mobile)
-- Run: `pnpm --filter @ironpulse/web build`
+- Run: `pnpm --filter @mettlelift/web build`
 - Fix any issues
 
 Commit: "wire social navigation and verify builds"

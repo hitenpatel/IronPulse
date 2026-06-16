@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import bcrypt from "bcryptjs";
 import { createTRPCContext, createCallerFactory } from "../src/trpc";
 import { passkeyRouter } from "../src/routers/passkey";
@@ -9,7 +9,7 @@ import { createTestUser } from "./helpers";
 vi.mock("@simplewebauthn/server", () => ({
   generateRegistrationOptions: vi.fn().mockResolvedValue({
     challenge: "test-challenge-registration",
-    rp: { name: "IronPulse", id: "localhost" },
+    rp: { name: "Mettle Lift", id: "localhost" },
     user: { id: "dXNlci1pZA", name: "test@example.com", displayName: "Test" },
     pubKeyCredParams: [],
     timeout: 60000,

@@ -13,7 +13,7 @@ let useSyncStatusHook: () => {
 };
 
 try {
-  const sync = require("@ironpulse/sync");
+  const sync = require("@mettlelift/sync");
   useSyncStatusHook = sync.useSyncStatus;
 } catch {
   useSyncStatusHook = () => ({ connected: true, uploading: false, downloading: false });

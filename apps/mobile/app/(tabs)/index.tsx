@@ -15,7 +15,7 @@ import { usePowerSync, useQuery } from "@powersync/react";
 
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
-import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { useWorkouts, useCardioSessions } from "@mettlelift/sync";
 import { randomUUID } from "@/lib/uuid";
 import { formatElapsed } from "@/lib/workout-utils";
 import {
@@ -316,7 +316,7 @@ export default function DashboardScreen() {
                 letterSpacing: -0.3,
               }}
             >
-              IronPulse
+              Mettle Lift
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

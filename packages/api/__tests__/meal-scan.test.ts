@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser } from "./helpers";
 import { nutritionRouter } from "../src/routers/nutrition";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 import type { ScanResult } from "../src/lib/meal-scan";
 
 vi.mock("../src/lib/s3", () => ({

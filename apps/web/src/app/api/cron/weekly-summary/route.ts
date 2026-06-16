@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@ironpulse/db";
-import { sendWeeklySummaryForUser } from "@ironpulse/api";
+import { PrismaClient } from "@mettlelift/db";
+import { sendWeeklySummaryForUser } from "@mettlelift/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "IronPulse <noreply@ironpulse.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
 
   // Find users opted in who haven't been sent a summary in 6+ days (or ever)
   const cutoff = new Date();

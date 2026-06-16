@@ -33,7 +33,7 @@ describe("sendMagicLinkEmail", () => {
     await sendMagicLinkEmail("user@example.com", "tok");
 
     const args = mockSend.mock.calls[0][0];
-    expect(args.from).toBe("IronPulse <noreply@ironpulse.app>");
+    expect(args.from).toBe("Mettle Lift <noreply@mettlelift.app>");
   });
 });
 
@@ -44,7 +44,7 @@ describe("sendPasswordResetEmail", () => {
     expect(mockSend).toHaveBeenCalledTimes(1);
     const args = mockSend.mock.calls[0][0];
     expect(args.to).toBe("user@example.com");
-    expect(args.subject).toBe("Reset your IronPulse password");
+    expect(args.subject).toBe("Reset your Mettle Lift password");
     expect(args.text).toContain("/reset-password?token=reset-tok-456");
   });
 });

@@ -18,13 +18,13 @@ const displayFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "IronPulse",
+  title: "Mettle Lift",
   description: "Fitness tracking for athletes and coaches",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "IronPulse",
+    title: "Mettle Lift",
   },
 };
 

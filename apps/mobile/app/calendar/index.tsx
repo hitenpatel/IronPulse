@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, Dumbbell, Activity } from "lucide-react-native";
-import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { useWorkouts, useCardioSessions } from "@mettlelift/sync";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { formatElapsed } from "@/lib/workout-utils";
 

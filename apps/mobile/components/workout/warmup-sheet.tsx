@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { X } from "lucide-react-native";
-import type { WarmupScheme, WarmupSet } from "@ironpulse/shared";
-import { generateWarmupSets } from "@ironpulse/shared";
+import type { WarmupScheme, WarmupSet } from "@mettlelift/shared";
+import { generateWarmupSets } from "@mettlelift/shared";
 import { colors, fonts, radii } from "@/lib/theme";
 
 interface WarmupSheetProps {

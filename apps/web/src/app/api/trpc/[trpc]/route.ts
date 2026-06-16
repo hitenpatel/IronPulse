@@ -1,7 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter, createTRPCContext } from "@ironpulse/api";
-import { RateLimitError } from "@ironpulse/api/src/lib/rate-limit";
-import { db } from "@ironpulse/db";
+import { appRouter, createTRPCContext } from "@mettlelift/api";
+import { RateLimitError } from "@mettlelift/api/src/lib/rate-limit";
+import { db } from "@mettlelift/db";
 import { auth } from "@/lib/auth";
 
 const handler = async (req: Request) => {

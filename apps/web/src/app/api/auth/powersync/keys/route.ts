@@ -1,4 +1,4 @@
-import { getPowerSyncJWKS } from "@ironpulse/api";
+import { getPowerSyncJWKS } from "@mettlelift/api";
 
 export async function GET() {
   const jwks = getPowerSyncJWKS();

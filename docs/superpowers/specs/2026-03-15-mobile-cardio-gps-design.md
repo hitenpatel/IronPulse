@@ -1,6 +1,6 @@
 # Mobile Cardio + GPS Live Tracking — Design Specification
 
-Manual cardio logging and GPS live tracking for the IronPulse Expo mobile app. Includes foreground + background GPS tracking, live route map, manual cardio form, and session summary. This is sub-project 3 of 4 for the mobile app.
+Manual cardio logging and GPS live tracking for the Mettle Lift Expo mobile app. Includes foreground + background GPS tracking, live route map, manual cardio form, and session summary. This is sub-project 3 of 4 for the mobile app.
 
 ## Scope
 
@@ -122,7 +122,7 @@ Location.startLocationUpdatesAsync(TASK_NAME, {
   distanceInterval: 5,
   showsBackgroundLocationIndicator: true, // iOS blue bar
   foregroundService: {
-    notificationTitle: "IronPulse",
+    notificationTitle: "Mettle Lift",
     notificationBody: "Tracking your activity",
   },
 });
@@ -133,7 +133,7 @@ Location.startLocationUpdatesAsync(TASK_NAME, {
 Add to `app.json` plugins:
 ```json
 ["expo-location", {
-  "locationAlwaysAndWhenInUsePermission": "IronPulse needs your location to track runs, rides, and hikes.",
+  "locationAlwaysAndWhenInUsePermission": "Mettle Lift needs your location to track runs, rides, and hikes.",
   "isIosBackgroundLocationEnabled": true,
   "isAndroidBackgroundLocationEnabled": true
 }],
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS _gps_buffer (
 )
 ```
 
-Created on app startup via `PowerSyncDatabase.execute()` (the same SQLite database PowerSync manages — the `_gps_buffer` prefix avoids collision with PowerSync's internal `ps_` tables). In foreground, use the PowerSync db instance. In the background task (after app kill), use `expo-sqlite` directly to open the same database file (`ironpulse.db`), since the PowerSync singleton may not be initialized.
+Created on app startup via `PowerSyncDatabase.execute()` (the same SQLite database PowerSync manages — the `_gps_buffer` prefix avoids collision with PowerSync's internal `ps_` tables). In foreground, use the PowerSync db instance. In the background task (after app kill), use `expo-sqlite` directly to open the same database file (`mettlelift.db`), since the PowerSync singleton may not be initialized.
 
 ### Buffer Operations (`lib/gps-buffer.ts`)
 
@@ -342,7 +342,7 @@ apps/mobile/
 
 **cardio-manual.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -370,7 +370,7 @@ appId: com.ironpulse.app
 
 **cardio-gps-start.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -391,7 +391,7 @@ appId: com.ironpulse.app
 
 **cardio-cancel.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"

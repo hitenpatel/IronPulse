@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 import type { Metadata } from "next";
 
 interface Props {
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pr = await getPersonalRecord(id);
   if (!pr) return { title: "PR Not Found" };
 
-  const title = `New PR! ${pr.exercise.name} — ${Number(pr.value)}kg ${formatPrType(pr.type)} | IronPulse`;
+  const title = `New PR! ${pr.exercise.name} — ${Number(pr.value)}kg ${formatPrType(pr.type)} | Mettle Lift`;
   const description = `${pr.user.name ?? "Someone"} hit a new personal record on ${pr.exercise.name}!`;
 
   return {
@@ -116,7 +116,7 @@ export default async function SharePrPage({ params }: Props) {
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
-          Shared from IronPulse
+          Shared from Mettle Lift
         </div>
       </div>
     </div>

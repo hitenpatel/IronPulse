@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createTRPCContext, createCallerFactory } from "../src/trpc";
 import { createTestUser } from "./helpers";
 import { userRouter } from "../src/routers/user";

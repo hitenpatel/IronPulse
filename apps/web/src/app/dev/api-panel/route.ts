@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { renderTrpcPanel } from "trpc-ui";
-import { appRouter } from "@ironpulse/api";
+import { appRouter } from "@mettlelift/api";
 
 /**
  * Interactive tRPC API documentation. Lists every procedure with its Zod
@@ -18,9 +18,9 @@ export function GET() {
     url: "/api/trpc",
     transformer: "superjson",
     meta: {
-      title: "IronPulse API",
+      title: "Mettle Lift API",
       description:
-        "All tRPC procedures exposed by the IronPulse API. Procedures built with `protectedProcedure` require an authenticated session (web cookie) or a Bearer token in the `Authorization` header (mobile). Procedures built with `rateLimitedProcedure` are additionally subject to the configured rate limit.",
+        "All tRPC procedures exposed by the Mettle Lift API. Procedures built with `protectedProcedure` require an authenticated session (web cookie) or a Bearer token in the `Authorization` header (mobile). Procedures built with `rateLimitedProcedure` are additionally subject to the configured rate limit.",
     },
   });
 

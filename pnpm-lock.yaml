@@ -61,10 +61,10 @@ importers:
       '@gorhom/bottom-sheet':
         specifier: ^5.2.8
         version: 5.2.8(@types/react@19.1.17)(react-native-gesture-handler@2.30.0(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.1.3(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.1.3(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.1.3(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      '@ironpulse/shared':
+      '@mettlelift/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@ironpulse/sync':
+      '@mettlelift/sync':
         specifier: workspace:*
         version: link:../../packages/sync
       '@journeyapps/react-native-quick-sqlite':
@@ -152,7 +152,7 @@ importers:
         specifier: ^2.2
         version: 2.2.6
     devDependencies:
-      '@ironpulse/api':
+      '@mettlelift/api':
         specifier: workspace:^
         version: link:../../packages/api
       '@react-native-community/cli':
@@ -194,16 +194,16 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.1.0)
-      '@ironpulse/api':
+      '@mettlelift/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@ironpulse/db':
+      '@mettlelift/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@ironpulse/shared':
+      '@mettlelift/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@ironpulse/sync':
+      '@mettlelift/sync':
         specifier: workspace:*
         version: link:../../packages/sync
       '@powersync/react':
@@ -366,10 +366,10 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1009.0
         version: 3.1009.0
-      '@ironpulse/db':
+      '@mettlelift/db':
         specifier: workspace:*
         version: link:../db
-      '@ironpulse/shared':
+      '@mettlelift/shared':
         specifier: workspace:*
         version: link:../shared
       '@simplewebauthn/server':
@@ -474,7 +474,7 @@ importers:
 
   packages/sync:
     dependencies:
-      '@ironpulse/api':
+      '@mettlelift/api':
         specifier: workspace:*
         version: link:../api
       '@powersync/common':

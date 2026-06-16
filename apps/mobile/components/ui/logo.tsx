@@ -17,7 +17,7 @@ export function Logo({ size = 32, style }: LogoProps) {
   return (
     <View
       accessibilityRole="image"
-      accessibilityLabel="IronPulse"
+      accessibilityLabel="Mettle Lift"
       style={[{ width, height: size }, style]}
     >
       <SvgXml xml={LOGO_XML} width={width} height={size} />

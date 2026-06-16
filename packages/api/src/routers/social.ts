@@ -6,9 +6,9 @@ import {
   getUserProfileSchema,
   feedSchema,
   toggleReactionSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 
 /**
  * Visibility gate for feed items. A user can see the item when:

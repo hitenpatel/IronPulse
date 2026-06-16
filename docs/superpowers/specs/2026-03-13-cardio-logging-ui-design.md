@@ -7,7 +7,7 @@
 **Tech Stack:** Next.js 15 (App Router), React 19, Tailwind CSS 3.4, shadcn/ui (new-york), lucide-react, tRPC React Query hooks, react-leaflet + leaflet.
 
 **Related specs:**
-- Master design: `docs/superpowers/specs/2026-03-12-ironpulse-design.md`
+- Master design: `docs/superpowers/specs/2026-03-12-mettlelift-design.md`
 - Core data layer: `docs/superpowers/specs/2026-03-12-core-data-layer-design.md`
 
 ---

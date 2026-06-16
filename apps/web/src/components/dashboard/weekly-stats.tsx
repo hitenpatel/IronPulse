@@ -3,7 +3,7 @@
 import { Dumbbell, Activity, Weight, Trophy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc/client";
-import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { useWorkouts, useCardioSessions } from "@mettlelift/sync";
 import { formatVolume } from "@/lib/format";
 
 function getISOWeekBounds(): { start: Date; end: Date } {

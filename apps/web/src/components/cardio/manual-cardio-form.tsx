@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { uuid } from "@/lib/uuid";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
-import { HYROX_CARDIO_TYPES } from "@ironpulse/shared";
+import { HYROX_CARDIO_TYPES } from "@mettlelift/shared";
 
 // HYROX exercises where the primary distance metric is meters (not km)
 const HYROX_DISTANCE_TYPES = new Set<string>(["ski_erg", "sled_push", "sled_pull", "sandbag_carry"]);

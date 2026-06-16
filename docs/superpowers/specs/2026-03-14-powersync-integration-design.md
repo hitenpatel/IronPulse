@@ -1,6 +1,6 @@
 # PowerSync Integration — Design Specification
 
-Integrate PowerSync into the IronPulse web app for offline-first data sync. Clients read and write to a local SQLite database (IndexedDB/OPFS). PowerSync syncs changes bidirectionally with PostgreSQL via logical replication and an upload queue.
+Integrate PowerSync into the Mettle Lift web app for offline-first data sync. Clients read and write to a local SQLite database (IndexedDB/OPFS). PowerSync syncs changes bidirectionally with PostgreSQL via logical replication and an upload queue.
 
 ## Scope
 
@@ -410,7 +410,7 @@ Upload endpoints return 2xx for successful persistence. Validation errors throw 
 
 ### Conflict Resolution
 
-Conflict resolution uses **last-write-wins at the row level**. When two devices modify the same row offline and both upload, the second upload's `sync.update` overwrites the first. This is acceptable for IronPulse because:
+Conflict resolution uses **last-write-wins at the row level**. When two devices modify the same row offline and both upload, the second upload's `sync.update` overwrites the first. This is acceptable for Mettle Lift because:
 
 - Workouts are typically edited on one device at a time
 - Sets are individual rows — editing different sets in the same workout does not conflict
@@ -489,7 +489,7 @@ apps/web/src/lib/powersync/
 └── provider.tsx      # PowerSyncContext.Provider wrapper ('use client')
 ```
 
-`system.ts` creates the `PowerSyncDatabase` instance with the schema from `@ironpulse/sync` and a `WASQLiteOpenFactory`. The provider calls `connect(connector)` when the user session exists and `disconnect()` on sign-out.
+`system.ts` creates the `PowerSyncDatabase` instance with the schema from `@mettlelift/sync` and a `WASQLiteOpenFactory`. The provider calls `connect(connector)` when the user session exists and `disconnect()` on sign-out.
 
 ### Next.js Configuration
 
@@ -550,7 +550,7 @@ powersync:
     - ./powersync.yaml:/app/config/powersync.yaml
     - ./sync-rules.yaml:/app/config/sync-rules.yaml
   environment:
-    PS_DATA_SOURCE_URI: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse
+    PS_DATA_SOURCE_URI: postgresql://mettlelift:mettlelift@postgres:5432/mettlelift
     PS_MONGO_URI: mongodb://mongo:27017/powersync
   ports:
     - "8080:80"
@@ -571,7 +571,7 @@ storage:
   uri: !env PS_MONGO_URI
 
 client_auth:
-  jwks_uri: http://ironpulse:3000/api/auth/powersync/keys
+  jwks_uri: http://mettlelift:3000/api/auth/powersync/keys
   audience: ["powersync"]
 
 sync_config:

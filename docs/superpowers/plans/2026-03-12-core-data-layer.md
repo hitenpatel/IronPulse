@@ -4,7 +4,7 @@
 
 **Goal:** Implement exercise seed data, five tRPC routers (exercise, workout, cardio, bodyMetric, analytics), PR detection, GPX import, and supporting Zod schemas — the full API layer needed before UI development.
 
-**Architecture:** New Zod schemas in `@ironpulse/shared`, new routers in `@ironpulse/api`, seed infrastructure in `@ironpulse/db`. All routers follow existing patterns (publicProcedure/protectedProcedure, Zod input validation, explicit select fields). TDD against real PostgreSQL.
+**Architecture:** New Zod schemas in `@mettlelift/shared`, new routers in `@mettlelift/api`, seed infrastructure in `@mettlelift/db`. All routers follow existing patterns (publicProcedure/protectedProcedure, Zod input validation, explicit select fields). TDD against real PostgreSQL.
 
 **Tech Stack:** tRPC v11, Prisma, Zod, Vitest, fast-xml-parser (GPX), tsx (seed script)
 
@@ -327,7 +327,7 @@ export * from "./schemas/analytics";
 
 - [ ] **Step 9: Verify TypeScript compiles**
 
-Run: `pnpm --filter @ironpulse/shared lint`
+Run: `pnpm --filter @mettlelift/shared lint`
 Expected: No errors
 
 - [ ] **Step 10: Commit**
@@ -350,8 +350,8 @@ git commit -m "add core data layer Zod schemas and GPX CardioSource enum"
 - [ ] **Step 1: Install tsx and add prisma.seed config**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/db add -D tsx
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/db add -D tsx
 ```
 
 Then add the `prisma.seed` config to `packages/db/package.json`:
@@ -497,7 +497,7 @@ download();
 - [ ] **Step 3: Run download script**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse/packages/db
+cd /Users/hitenpatel/dev/personal/Mettle Lift/packages/db
 npx tsx seeds/download-exercises.ts
 ```
 
@@ -581,8 +581,8 @@ seed()
 - [ ] **Step 5: Run seed**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/db db:seed
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/db db:seed
 ```
 
 Expected: `Seed complete: N created, 0 updated`
@@ -590,7 +590,7 @@ Expected: `Seed complete: N created, 0 updated`
 Re-run to verify idempotency:
 
 ```bash
-pnpm --filter @ironpulse/db db:seed
+pnpm --filter @mettlelift/db db:seed
 ```
 
 Expected: `Seed complete: 0 created, N updated`
@@ -613,8 +613,8 @@ git commit -m "add exercise seed data from wrkout/exercises.json"
 - [ ] **Step 1: Install fast-xml-parser**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/api add fast-xml-parser
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/api add fast-xml-parser
 ```
 
 - [ ] **Step 2: Add cleanupTestData helper**
@@ -657,7 +657,7 @@ Create `packages/api/__tests__/exercise.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { exerciseRouter } from "../src/routers/exercise";
@@ -848,7 +848,7 @@ describe("exercise.create", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/exercise.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/exercise.test.ts`
 Expected: FAIL — module `../src/routers/exercise` not found
 
 - [ ] **Step 3: Implement exercise router**
@@ -860,7 +860,7 @@ import { z } from "zod";
 import {
   createExerciseSchema,
   listExercisesSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -961,7 +961,7 @@ export const exerciseRouter = createTRPCRouter({
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/exercise.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/exercise.test.ts`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -985,7 +985,7 @@ git commit -m "add exercise router with list, getById, and create"
 Create `packages/api/src/lib/pr-detection.ts`:
 
 ```typescript
-import type { PrismaClient, Prisma } from "@ironpulse/db";
+import type { PrismaClient, Prisma } from "@mettlelift/db";
 
 interface CompletedSet {
   id: string;
@@ -1129,7 +1129,7 @@ Create `packages/api/__tests__/workout.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { workoutRouter } from "../src/routers/workout";
@@ -1491,7 +1491,7 @@ describe("workout.complete", () => {
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/workout.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/workout.test.ts`
 Expected: FAIL — module `../src/routers/workout` not found
 
 - [ ] **Step 4: Implement workout router**
@@ -1510,7 +1510,7 @@ import {
   deleteSetSchema,
   completeWorkoutSchema,
   cursorPaginationSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
 
@@ -1804,7 +1804,7 @@ export const workoutRouter = createTRPCRouter({
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/workout.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/workout.test.ts`
 Expected: All tests PASS
 
 - [ ] **Step 6: Commit**
@@ -1964,7 +1964,7 @@ Create `packages/api/__tests__/cardio.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { cardioRouter } from "../src/routers/cardio";
@@ -2242,7 +2242,7 @@ describe("cardio.importGpx", () => {
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/cardio.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/cardio.test.ts`
 Expected: FAIL — module not found
 
 - [ ] **Step 4: Implement cardio router**
@@ -2257,7 +2257,7 @@ import {
   completeGpsSessionSchema,
   importGpxSchema,
   cursorPaginationSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { parseGpx, haversineDistance } from "../lib/gpx";
 
@@ -2453,7 +2453,7 @@ export const cardioRouter = createTRPCRouter({
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/cardio.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/cardio.test.ts`
 Expected: All tests PASS
 
 - [ ] **Step 6: Commit**
@@ -2477,7 +2477,7 @@ Create `packages/api/__tests__/body-metric.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { bodyMetricRouter } from "../src/routers/body-metric";
@@ -2604,7 +2604,7 @@ describe("bodyMetric.list", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/body-metric.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/body-metric.test.ts`
 Expected: FAIL — module not found
 
 - [ ] **Step 3: Implement body metric router**
@@ -2615,7 +2615,7 @@ Create `packages/api/src/routers/body-metric.ts`:
 import {
   createBodyMetricSchema,
   listBodyMetricsSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const bodyMetricRouter = createTRPCRouter({
@@ -2664,7 +2664,7 @@ export const bodyMetricRouter = createTRPCRouter({
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/body-metric.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/body-metric.test.ts`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -2690,7 +2690,7 @@ Create `packages/api/__tests__/analytics.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { analyticsRouter } from "../src/routers/analytics";
@@ -2868,7 +2868,7 @@ describe("analytics.bodyWeightTrend", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/analytics.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/analytics.test.ts`
 Expected: FAIL — module not found
 
 - [ ] **Step 3: Implement analytics router**
@@ -2880,7 +2880,7 @@ import {
   weeklyVolumeSchema,
   personalRecordsSchema,
   bodyWeightTrendSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const analyticsRouter = createTRPCRouter({
@@ -2998,7 +2998,7 @@ export const analyticsRouter = createTRPCRouter({
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- __tests__/analytics.test.ts`
+Run: `pnpm --filter @mettlelift/api test -- __tests__/analytics.test.ts`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -3044,17 +3044,17 @@ export type AppRouter = typeof appRouter;
 
 - [ ] **Step 2: Run the full test suite**
 
-Run: `pnpm --filter @ironpulse/api test`
+Run: `pnpm --filter @mettlelift/api test`
 Expected: All tests PASS across all test files (auth, user, exercise, workout, cardio, body-metric, analytics)
 
 - [ ] **Step 3: Verify TypeScript compiles**
 
-Run: `pnpm --filter @ironpulse/api lint && pnpm --filter @ironpulse/shared lint`
+Run: `pnpm --filter @mettlelift/api lint && pnpm --filter @mettlelift/shared lint`
 Expected: No errors
 
 - [ ] **Step 4: Verify web app builds**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds (new routers are available via AppRouter type)
 
 - [ ] **Step 5: Commit**

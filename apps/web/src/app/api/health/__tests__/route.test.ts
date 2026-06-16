@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Dynamic imports inside the route are also intercepted by vi.mock.
-vi.mock("@ironpulse/db", () => ({
+vi.mock("@mettlelift/db", () => ({
   db: { $queryRaw: vi.fn().mockResolvedValue([{ "?column?": 1 }]) },
 }));
-vi.mock("@ironpulse/api/src/lib/redis", () => ({
+vi.mock("@mettlelift/api/src/lib/redis", () => ({
   getRedis: vi.fn(() => ({ ping: vi.fn().mockResolvedValue("PONG") })),
 }));
 
@@ -54,7 +54,7 @@ describe("GET /api/health", () => {
 
   it("returns 503 when the database is unavailable", async () => {
     vi.mocked(
-      (await import("@ironpulse/db")).db.$queryRaw as ReturnType<typeof vi.fn>,
+      (await import("@mettlelift/db")).db.$queryRaw as ReturnType<typeof vi.fn>,
     ).mockRejectedValueOnce(new Error("Connection refused"));
     vi.stubGlobal(
       "fetch",
@@ -71,7 +71,7 @@ describe("GET /api/health", () => {
 
   it("returns 503 when redis is unavailable", async () => {
     vi.mocked(
-      (await import("@ironpulse/api/src/lib/redis")).getRedis as ReturnType<typeof vi.fn>,
+      (await import("@mettlelift/api/src/lib/redis")).getRedis as ReturnType<typeof vi.fn>,
     ).mockReturnValueOnce({
       ping: vi.fn().mockRejectedValue(new Error("Redis down")),
     });

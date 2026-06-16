@@ -1,28 +1,28 @@
 http:
   middlewares:
-    sablier-ironpulse:
+    sablier-mettlelift:
       plugin:
         sablier:
-          sablierUrl: http://ironpulse-sablier:10000
-          group: ironpulse-dev
+          sablierUrl: http://mettlelift-sablier:10000
+          group: mettlelift-dev
           sessionDuration: 10m
           dynamic:
-            displayName: IronPulse Dev
+            displayName: Mettle Lift Dev
             theme: ghost
             refreshFrequency: 5s
             showDetails: true
 
   routers:
-    ironpulse:
+    mettlelift:
       rule: "PathPrefix(`/`)"
       entryPoints:
         - web
       middlewares:
-        - sablier-ironpulse
-      service: ironpulse-app
+        - sablier-mettlelift
+      service: mettlelift-app
 
   services:
-    ironpulse-app:
+    mettlelift-app:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:3000"

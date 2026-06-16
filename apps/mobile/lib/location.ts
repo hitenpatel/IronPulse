@@ -71,7 +71,7 @@ export async function requestForegroundPermissionsAsync(): Promise<PermissionRes
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: "Location Permission",
-          message: "IronPulse needs location access to track your cardio sessions.",
+          message: "Mettle Lift needs location access to track your cardio sessions.",
           buttonPositive: "Allow",
           buttonNegative: "Deny",
         }

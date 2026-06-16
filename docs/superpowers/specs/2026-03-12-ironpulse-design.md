@@ -1,4 +1,4 @@
-# IronPulse — Design Specification
+# Mettle Lift — Design Specification
 
 The ultimate self-hosted fitness tracker that unifies strength training and cardio tracking in a single platform. Cloud-first with an open-core model: self-hosted is free with all features, cloud charges for hosting convenience.
 
@@ -53,7 +53,7 @@ Costs include Stripe fees (2.9% + 20p) and app store fees (15% Small Business Pr
 ### Monorepo Structure
 
 ```
-ironpulse/
+mettlelift/
   ├── apps/
   │   ├── web/              # Next.js web app + API
   │   └── mobile/           # Expo React Native app
@@ -311,7 +311,7 @@ Single Docker Compose deployment with all services:
 
 ```yaml
 services:
-  ironpulse:        # Next.js app + API
+  mettlelift:        # Next.js app + API
   postgres:         # PostgreSQL + PostGIS
   powersync:        # PowerSync service (self-hosted)
   redis:            # Sessions, cache, queues

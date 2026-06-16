@@ -1,7 +1,7 @@
 import {
   detectStagnantVolume,
   type WeeklyExerciseVolume,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { captureError } from "./capture-error";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

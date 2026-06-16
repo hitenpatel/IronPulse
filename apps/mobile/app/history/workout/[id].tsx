@@ -10,7 +10,7 @@ import {
   useWorkoutSets,
   type WorkoutExerciseRow,
   type SetRow,
-} from "@ironpulse/sync";
+} from "@mettlelift/sync";
 import { calculateVolume, formatElapsed } from "@/lib/workout-utils";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 

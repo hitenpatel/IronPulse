@@ -1,4 +1,4 @@
-// IronPulse — mobile gallery app
+// Mettle Lift — mobile gallery app
 const { useState: uS, useEffect: uE } = React;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -50,7 +50,7 @@ const App = () => {
           <div>
             <div className="brand-mark" style={{ marginBottom: 14 }}>
               <Icons.Logo size={18} />
-              <span>IronPulse · Android · v4.0</span>
+              <span>Mettle Lift · Android · v4.0</span>
             </div>
             <h1>A fitness app that <span style={{ color: "var(--blue-2)" }}>moves with you</span> — not against you.</h1>
             <div className="sub">

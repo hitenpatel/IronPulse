@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Import Garmin Connect activities into IronPulse as cardio sessions via OAuth 2.0 + push notifications — same architecture as Strava integration.
+**Goal:** Import Garmin Connect activities into Mettle Lift as cardio sessions via OAuth 2.0 + push notifications — same architecture as Strava integration.
 
 **Architecture:** Mirrors Strava: OAuth 2.0 (PKCE) connects user's Garmin account, push notifications trigger activity imports, Garmin API client fetches activity details + GPX files for route data. Uses existing DeviceConnection model, encryption, and Connected Apps UI pattern.
 
@@ -293,7 +293,7 @@ export async function runGarminBackfill(connectionId: string, db: any) {
 
 - [ ] **Step 3: Run tests**
 
-Run: `pnpm --filter @ironpulse/api test -- garmin`
+Run: `pnpm --filter @mettlelift/api test -- garmin`
 Expected: PASS
 
 - [ ] **Step 4: Commit**
@@ -399,8 +399,8 @@ GARMIN_CLIENT_SECRET=""
 
 - [ ] **Step 4: Verify**
 
-Run: `pnpm --filter @ironpulse/api test -- garmin`
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/api test -- garmin`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: All pass
 
 - [ ] **Step 5: Commit**

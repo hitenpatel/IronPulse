@@ -1,6 +1,6 @@
 import { sendPushNotification } from "./push";
 import { captureError } from "./capture-error";
-import type { AchievementBadge } from "@ironpulse/shared";
+import type { AchievementBadge } from "@mettlelift/shared";
 
 // Intentionally loose: callers pass the PrismaClient but tests pass a partial mock.
 // We use `any` here because Prisma's generated types are nominal and don't structurally

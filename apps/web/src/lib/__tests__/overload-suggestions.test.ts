@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateOverloadSuggestion } from "@ironpulse/api/src/lib/overload-suggestions";
+import { calculateOverloadSuggestion } from "@mettlelift/api/src/lib/overload-suggestions";
 
 describe("calculateOverloadSuggestion", () => {
   it("returns null for empty sets", () => {

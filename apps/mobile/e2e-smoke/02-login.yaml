@@ -3,7 +3,7 @@
 # screen. Read-only — creates no data. Asserting the login screen disappears
 # (rather than a specific dashboard/onboarding element) keeps it robust
 # regardless of the account's onboarding state.
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp:
     clearKeychain: true
@@ -14,7 +14,7 @@ appId: com.ironpulse.app
     timeout: 60000
 - tapOn:
     id: "email-input"
-- inputText: "smoke-e2e@ironpulse.app"
+- inputText: "smoke-e2e@mettlelift.app"
 - tapOn:
     id: "password-input"
 - inputText: "SmokeTest123!"

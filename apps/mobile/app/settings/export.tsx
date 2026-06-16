@@ -52,7 +52,7 @@ const EXPORTS: { key: ExportType; label: string; description: string; supportsCs
   {
     key: "allData",
     label: "All Data",
-    description: "Complete export of all your IronPulse data",
+    description: "Complete export of all your Mettle Lift data",
     supportsCsv: false,
   },
 ];
@@ -82,7 +82,7 @@ export default function ExportScreen() {
       }
 
       const ext = format === "json" || type === "allData" ? "json" : "csv";
-      const filename = `ironpulse-${type}-${new Date().toISOString().split("T")[0]}.${ext}`;
+      const filename = `mettlelift-${type}-${new Date().toISOString().split("T")[0]}.${ext}`;
 
       await Share.share({
         message: result.data,

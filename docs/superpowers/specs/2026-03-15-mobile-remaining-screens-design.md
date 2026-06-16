@@ -76,7 +76,7 @@ FlatList from `useWorkouts()`:
 Read-only view of a completed workout:
 - Header: workout name, date, total duration, total volume
 - Exercise list: for each exercise, name + sets table (set#, weight, reps, RPE, completed checkmark)
-- Uses `useWorkoutExercises(id)` and `useWorkoutSets(id)` from `@ironpulse/sync`
+- Uses `useWorkoutExercises(id)` and `useWorkoutSets(id)` from `@mettlelift/sync`
 
 ## Cardio History + Detail
 
@@ -146,7 +146,7 @@ Upgrade existing `app/(tabs)/profile.tsx`:
 
 ## Data Layer
 
-All reads from existing `@ironpulse/sync` hooks. No new hooks needed.
+All reads from existing `@mettlelift/sync` hooks. No new hooks needed.
 
 Writes:
 - Weight log: `db.execute('INSERT INTO body_metrics (id, user_id, date, weight_kg, created_at) VALUES (?, ?, ?, ?, ?)')`
@@ -188,7 +188,7 @@ apps/mobile/
 
 **history-navigation.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -203,7 +203,7 @@ appId: com.ironpulse.app
 
 **weight-log.yaml:**
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"

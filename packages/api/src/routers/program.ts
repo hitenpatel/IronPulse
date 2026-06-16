@@ -6,7 +6,7 @@ import {
   updateScheduleSchema,
   assignProgramSchema,
   unassignProgramSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 
 const coachProcedure = protectedProcedure.use(({ ctx, next }) => {

@@ -1,12 +1,12 @@
-# IronPulse — Design Brief for Claude Design
+# Mettle Lift — Design Brief for Claude Design
 
-**Use this brief at claude.ai/design.** Paste the text below as the initial prompt, point its web-capture tool at the URLs listed, and upload `designs/IronPulse-logo.png`.
+**Use this brief at claude.ai/design.** Paste the text below as the initial prompt, point its web-capture tool at the URLs listed, and upload `designs/Mettle Lift-logo.png`.
 
 ---
 
 ## Product
 
-IronPulse is a fitness tracker for strength athletes and their coaches. Think Strong + Hevy for strength logging, Strava for cardio + social, plus a coaching tier that lets trainers manage up to 25 clients with structured programs.
+Mettle Lift is a fitness tracker for strength athletes and their coaches. Think Strong + Hevy for strength logging, Strava for cardio + social, plus a coaching tier that lets trainers manage up to 25 clients with structured programs.
 
 - **Who**: two user types
   - **Athletes** (default tier, £15/mo) — log workouts + cardio, track PRs, follow friends, chase goals
@@ -20,8 +20,8 @@ IronPulse is a fitness tracker for strength athletes and their coaches. Think St
 
 ## Brand
 
-- **Name**: IronPulse (one word, capitalised I and P)
-- **Logo**: `designs/IronPulse-logo.png` — dumbbell with a blue/green pulse wave on pure black. Upload this.
+- **Name**: Mettle Lift (one word, capitalised I and P)
+- **Logo**: `designs/Mettle Lift-logo.png` — dumbbell with a blue/green pulse wave on pure black. Upload this.
 - **Primary colour**: `#0077FF` (strong blue)
 - **Accent green** (used in the pulse wave): roughly `#22C55E`
 - **Background**: `#060B14` (near-black navy) for dark mode — we ship dark-first
@@ -31,7 +31,7 @@ IronPulse is a fitness tracker for strength athletes and their coaches. Think St
 
 ## Live URLs to capture
 
-Point Claude Design's web-capture tool at these. All require login first with `athlete@test.com` / `password123` on `https://ironpulse.hiten-patel.co.uk`, then navigate to:
+Point Claude Design's web-capture tool at these. All require login first with `athlete@test.com` / `password123` on `https://mettlelift.hiten-patel.co.uk`, then navigate to:
 
 | Screen | URL | Why it matters |
 |---|---|---|
@@ -101,4 +101,4 @@ For whatever screens it redesigns:
 
 ## Prompt to paste
 
-> Redesign the web app of IronPulse, a dark-mode fitness tracker for strength athletes and coaches. Keep the blue (#0077FF) + black (#060B14) palette, the dumbbell+pulse logo, and the dark-first dense-data aesthetic. Prioritise the active workout screen, stats page, and dashboard — they're where users spend most time. Produce high-fidelity desktop mockups plus mobile breakpoints for those three, in the style of Linear/Vercel/Strava. Tech stack is Next.js 15 + Tailwind + Radix + Lucide; code-powered prototypes preferred.
+> Redesign the web app of Mettle Lift, a dark-mode fitness tracker for strength athletes and coaches. Keep the blue (#0077FF) + black (#060B14) palette, the dumbbell+pulse logo, and the dark-first dense-data aesthetic. Prioritise the active workout screen, stats page, and dashboard — they're where users spend most time. Produce high-fidelity desktop mockups plus mobile breakpoints for those three, in the style of Linear/Vercel/Strava. Tech stack is Next.js 15 + Tailwind + Radix + Lucide; code-powered prototypes preferred.

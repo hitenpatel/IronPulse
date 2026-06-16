@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { encode } from "next-auth/jwt";
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");

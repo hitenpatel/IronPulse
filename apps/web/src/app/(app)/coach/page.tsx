@@ -21,7 +21,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 
-const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/ironpulse";
+const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/mettlelift";
 
 export default function CoachDashboardPage() {
   const { data, isLoading } = trpc.user.me.useQuery();

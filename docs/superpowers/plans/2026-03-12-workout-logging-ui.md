@@ -1441,7 +1441,7 @@ Expected: No errors.
 
 - [ ] **Step 3: Run full build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds. The `/workouts/new` route should appear in the build output.
 
 - [ ] **Step 4: Verify all files exist**

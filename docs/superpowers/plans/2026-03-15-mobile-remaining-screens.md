@@ -4,9 +4,9 @@
 
 **Goal:** Polish the dashboard, add workout/cardio history + detail views, calendar, stats chart + weight logging, template management, and profile editing — completing the MVP mobile app.
 
-**Architecture:** New stack screens under `app/history/` and `app/calendar/` for list/detail views. Dashboard, stats, exercises, and profile tabs upgraded in-place. All reads from existing `@ironpulse/sync` hooks. SVG weight chart via `react-native-svg`. Route map reuses existing `RouteMap` component.
+**Architecture:** New stack screens under `app/history/` and `app/calendar/` for list/detail views. Dashboard, stats, exercises, and profile tabs upgraded in-place. All reads from existing `@mettlelift/sync` hooks. SVG weight chart via `react-native-svg`. Route map reuses existing `RouteMap` component.
 
-**Tech Stack:** Expo Router, `@powersync/react`, `react-native-svg`, `@ironpulse/sync` hooks, tRPC
+**Tech Stack:** Expo Router, `@powersync/react`, `react-native-svg`, `@mettlelift/sync` hooks, tRPC
 
 **Spec:** `docs/superpowers/specs/2026-03-15-mobile-remaining-screens-design.md`
 
@@ -80,7 +80,7 @@ Create `apps/mobile/app/history/workouts.tsx`:
 ```typescript
 import { View, Text, FlatList, Pressable } from "react-native";
 import { useRouter, Stack } from "expo-router";
-import { useWorkouts } from "@ironpulse/sync";
+import { useWorkouts } from "@mettlelift/sync";
 import { Card } from "@/components/ui/card";
 import { Dumbbell, Clock } from "lucide-react-native";
 import { formatElapsed } from "@/lib/workout-utils";
@@ -156,7 +156,7 @@ Create `apps/mobile/app/history/workout/[id].tsx`:
 import { View, Text, ScrollView } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useQuery } from "@powersync/react";
-import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets } from "@mettlelift/sync";
 import { Card } from "@/components/ui/card";
 import { formatElapsed } from "@/lib/workout-utils";
 import { calculateVolume } from "@/lib/workout-utils";
@@ -261,7 +261,7 @@ Create `apps/mobile/app/history/cardio.tsx`:
 ```typescript
 import { View, Text, FlatList, Pressable } from "react-native";
 import { useRouter, Stack } from "expo-router";
-import { useCardioSessions } from "@ironpulse/sync";
+import { useCardioSessions } from "@mettlelift/sync";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { Activity } from "lucide-react-native";
@@ -495,7 +495,7 @@ git commit -m "polish dashboard with quick-start cards, weekly summary, and acti
 
 Create `apps/mobile/components/stats/weight-chart.tsx` — SVG line chart using `react-native-svg` (`Svg`, `Polyline`, `Circle`, `Text`). Props: `data: { date: string, weight_kg: number }[]`. Renders last 30 data points as a line chart with dots. Simple — no axes labels, just the line with min/max labels.
 
-Note: `react-native-svg` is already installed as a transitive dependency of `react-native-maps`. If not available, install it: `pnpm --filter @ironpulse/mobile add react-native-svg`.
+Note: `react-native-svg` is already installed as a transitive dependency of `react-native-maps`. If not available, install it: `pnpm --filter @mettlelift/mobile add react-native-svg`.
 
 - [ ] **Step 2: Upgrade stats screen**
 
@@ -552,7 +552,7 @@ git commit -m "add templates management and profile editing"
 
 Create `apps/mobile/e2e/history-navigation.yaml`:
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -567,7 +567,7 @@ appId: com.ironpulse.app
 
 Create `apps/mobile/e2e/weight-log.yaml`:
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -586,7 +586,7 @@ appId: com.ironpulse.app
 
 - [ ] **Step 2: Run all tests**
 
-Run: `cd /Users/hitenpatel/dev/personal/IronPulse && pnpm --filter @ironpulse/sync test && pnpm --filter @ironpulse/web build`
+Run: `cd /Users/hitenpatel/dev/personal/Mettle Lift && pnpm --filter @mettlelift/sync test && pnpm --filter @mettlelift/web build`
 Expected: All pass
 
 - [ ] **Step 3: Commit**

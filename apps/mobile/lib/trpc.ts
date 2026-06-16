@@ -1,7 +1,7 @@
 import { createTRPCClient, httpBatchLink, TRPCClientError } from "@trpc/client";
 import superjson from "superjson";
 import * as SecureStore from "@/lib/secure-store";
-import type { AppRouter } from "@ironpulse/api";
+import type { AppRouter } from "@mettlelift/api";
 
 import { Config } from "./config";
 

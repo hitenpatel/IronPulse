@@ -1,5 +1,5 @@
 {
-  "name": "@ironpulse/web",
+  "name": "@mettlelift/web",
   "version": "1.1.0",
   "private": true,
   "scripts": {
@@ -17,10 +17,10 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@ironpulse/api": "workspace:*",
-    "@ironpulse/db": "workspace:*",
-    "@ironpulse/shared": "workspace:*",
-    "@ironpulse/sync": "workspace:*",
+    "@mettlelift/api": "workspace:*",
+    "@mettlelift/db": "workspace:*",
+    "@mettlelift/shared": "workspace:*",
+    "@mettlelift/sync": "workspace:*",
     "@powersync/react": "^1.9.0",
     "@powersync/web": "^1.0.0",
     "@radix-ui/react-avatar": "^1.1.11",

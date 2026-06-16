@@ -27,7 +27,7 @@ FAILED=0
 
 if [ "$FIRST_LOAD" -gt "$BUDGET_FIRST_LOAD_KB" ]; then
   echo "[WARN] First Load JS exceeds budget by $((FIRST_LOAD - BUDGET_FIRST_LOAD_KB))KB"
-  echo "  Run 'pnpm --filter @ironpulse/web analyze' to identify large modules"
+  echo "  Run 'pnpm --filter @mettlelift/web analyze' to identify large modules"
   FAILED=1
 else
   echo "[PASS] First Load JS within budget"
@@ -52,7 +52,7 @@ echo ""
 if [ "$FAILED" -eq 0 ]; then
   echo "[PASS] All bundle sizes within budget"
 else
-  echo "[WARN] Some bundles exceed budget — review with 'pnpm --filter @ironpulse/web analyze'"
+  echo "[WARN] Some bundles exceed budget — review with 'pnpm --filter @mettlelift/web analyze'"
   # Warn but don't fail CI — budgets are advisory for now
 fi
 exit 0

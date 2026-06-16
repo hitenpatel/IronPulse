@@ -8,7 +8,7 @@ set -euo pipefail
 # ──────────────────────────────────────────────────────────
 
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
-CONTAINER_NAME="ironpulse-backup-verify-$$"
+CONTAINER_NAME="mettlelift-backup-verify-$$"
 PG_IMAGE="postgis/postgis:16-3.4-alpine"
 PG_USER="verify"
 PG_PASS="verify"
@@ -16,7 +16,7 @@ PG_DB="verify"
 
 # ─── Find latest backup ──────────────────────────────────
 
-LATEST=$(ls -t "$BACKUP_DIR"/ironpulse_*.sql.gz 2>/dev/null | head -1)
+LATEST=$(ls -t "$BACKUP_DIR"/mettlelift_*.sql.gz 2>/dev/null | head -1)
 
 if [ -z "$LATEST" ]; then
   echo "[FAIL] No backup files found in $BACKUP_DIR"

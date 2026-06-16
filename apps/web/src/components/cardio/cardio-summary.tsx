@@ -20,7 +20,7 @@ import {
   getHRZoneName,
   getHRZoneColor,
   getZoneBoundaries,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 
 const RouteMap = dynamic(() => import("./route-map"), { ssr: false });
 

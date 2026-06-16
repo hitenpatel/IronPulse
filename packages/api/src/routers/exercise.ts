@@ -3,7 +3,7 @@ import {
   createExerciseSchema,
   listExercisesSchema,
   uploadExerciseMediaSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { getPresignedUploadUrl } from "../lib/s3";
 import {
   createTRPCRouter,

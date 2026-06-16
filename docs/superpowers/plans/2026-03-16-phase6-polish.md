@@ -56,7 +56,7 @@ Commit: "add push notification triggers for PRs, messages, and challenges"
 
 ### Task 3: Mobile Push Registration
 
-Install: `pnpm --filter @ironpulse/mobile add expo-notifications expo-device`
+Install: `pnpm --filter @mettlelift/mobile add expo-notifications expo-device`
 
 In `apps/mobile/app/_layout.tsx`, after auth + PowerSync connect:
 - Request notification permissions
@@ -82,7 +82,7 @@ Create `packages/api/src/routers/export.ts`:
 
 Each returns the generated content as a string. The web client triggers a download; mobile saves to device.
 
-Install: `pnpm --filter @ironpulse/api add csv-stringify`
+Install: `pnpm --filter @mettlelift/api add csv-stringify`
 
 Register in root: `export: exportRouter`
 
@@ -142,7 +142,7 @@ Commit: "add streak display on web and mobile dashboards"
 
 ### Task 8: IAP Setup
 
-Install: `pnpm --filter @ironpulse/mobile add expo-in-app-purchases`
+Install: `pnpm --filter @mettlelift/mobile add expo-in-app-purchases`
 
 Create `apps/mobile/lib/iap.ts`:
 - Configure product IDs matching App Store Connect products
@@ -174,9 +174,9 @@ Commit: "add IAP paywall and subscription management on mobile"
 
 ### Task 10: Final Build Verification
 
-- Run: `pnpm --filter @ironpulse/api test`
-- Run: `pnpm --filter @ironpulse/shared test`
-- Run: `pnpm --filter @ironpulse/web build`
+- Run: `pnpm --filter @mettlelift/api test`
+- Run: `pnpm --filter @mettlelift/shared test`
+- Run: `pnpm --filter @mettlelift/web build`
 - Run: `cd apps/mobile && npx vitest run`
 
 Fix any issues.

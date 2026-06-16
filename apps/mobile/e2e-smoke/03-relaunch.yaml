@@ -1,7 +1,7 @@
 # Prod smoke: relaunching the shipping build without clearing state does not
 # crash and lands on a valid screen (either the restored session or login).
 # Catches startup/runtime crashes in the production artifact specifically.
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - extendedWaitUntil:

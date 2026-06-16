@@ -5,7 +5,7 @@ import {
   PLATE_SIZES_KG,
   calculatePlates,
   validatePlateCalcInput,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { Button } from "@/components/ui";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 

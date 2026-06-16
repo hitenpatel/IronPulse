@@ -1,7 +1,7 @@
-# IronPulse Critical Test Paths
+# Mettle Lift Critical Test Paths
 
-This file is read by the **IronPulse QA** agent (Paperclip skill `ironpulse-qa`)
-on its weekly Sunday 06:00 UTC sweep against `https://staging.ironpulse.hiten-patel.co.uk`.
+This file is read by the **Mettle Lift QA** agent (Paperclip skill `mettlelift-qa`)
+on its weekly Sunday 06:00 UTC sweep against `https://staging.mettlelift.hiten-patel.co.uk`.
 
 The agent does **not** invent flows. It runs only the Playwright specs listed below,
 in this order, and files Forgejo issues with `regression` + `agent-suggested` labels
@@ -10,10 +10,10 @@ for any failure that reproduces twice in a row.
 ## How the agent runs
 
 ```bash
-git clone https://claude-agent:$FORGEJO_CLAUDE_AGENT_TOKEN@git.hiten-patel.co.uk/hiten/IronPulse.git ./repo
+git clone https://claude-agent:$FORGEJO_CLAUDE_AGENT_TOKEN@git.hiten-patel.co.uk/hiten/mettlelift.git ./repo
 cd repo && pnpm install --frozen-lockfile
-BASE_URL=https://staging.ironpulse.hiten-patel.co.uk \
-  pnpm --filter @ironpulse/web exec playwright test \
+BASE_URL=https://staging.mettlelift.hiten-patel.co.uk \
+  pnpm --filter @mettlelift/web exec playwright test \
   apps/web/e2e/{auth,auth-login,auth-signup,onboarding,navigation,sidebar-nav,workouts,exercise-detail,cardio,goals,settings,csrf,trpc-fallback}.spec.ts \
   --reporter=line,json --output=/tmp/playwright-results
 ```
@@ -34,7 +34,7 @@ Test accounts (pre-seeded into staging DB via `db:seed:dev`):
 | 4 | `e2e/onboarding.spec.ts` | First-time user gets to dashboard |
 | 5 | `e2e/navigation.spec.ts` | App-shell loads, all nav links resolve |
 | 6 | `e2e/sidebar-nav.spec.ts` | Sidebar present + accurate per route |
-| 7 | `e2e/workouts.spec.ts` | Log a strength workout — core IronPulse use case |
+| 7 | `e2e/workouts.spec.ts` | Log a strength workout — core Mettle Lift use case |
 | 8 | `e2e/exercise-detail.spec.ts` | Exercise library renders + selectable |
 | 9 | `e2e/cardio.spec.ts` | GPS cardio track view loads |
 | 10 | `e2e/goals.spec.ts` | Set + view a goal |
@@ -77,7 +77,7 @@ These are intentionally **not** run in the weekly QA sweep.
 
 1. **Retry once.** Real-network flake is real; one retry filters most noise.
 2. **If it still fails:** capture the Playwright screenshot + console log + last network request + the seed account used.
-3. **File a Forgejo issue** in `hiten/IronPulse` with:
+3. **File a Forgejo issue** in `hiten/Mettle Lift` with:
    - Title: `regression: <spec> failing on staging — <one-line cause>`
    - Labels: `regression`, `agent-suggested`, plus `tier-1` or `tier-2`
    - Body: failing test name, Playwright error, screenshot URL (uploaded to Paperclip ticket), suspected since-commit (last commit on staging branch before failure first observed)

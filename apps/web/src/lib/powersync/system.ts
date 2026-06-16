@@ -1,5 +1,5 @@
 import { PowerSyncDatabase, WASQLiteOpenFactory } from "@powersync/web";
-import { AppSchema } from "@ironpulse/sync";
+import { AppSchema } from "@mettlelift/sync";
 
 let dbInstance: PowerSyncDatabase | null = null;
 
@@ -7,7 +7,7 @@ export function getPowerSyncDatabase(): PowerSyncDatabase {
   if (dbInstance) return dbInstance;
 
   const factory = new WASQLiteOpenFactory({
-    dbFilename: "ironpulse.db",
+    dbFilename: "mettlelift.db",
     worker: "/@powersync/worker/WASQLiteDB.umd.js",
     flags: {
       enableMultiTabs: typeof SharedWorker !== "undefined",

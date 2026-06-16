@@ -1,14 +1,14 @@
-# Handoff: IronPulse Mobile Redesign
+# Handoff: Mettle Lift Mobile Redesign
 
 ## Overview
-IronPulse is a strength + conditioning tracker for Android. This handoff covers a full v4 redesign of the mobile app: **13 screens spanning the whole user loop** — from onboarding through daily workout execution, tracking, nutrition/sleep, and program management.
+Mettle Lift is a strength + conditioning tracker for Android. This handoff covers a full v4 redesign of the mobile app: **13 screens spanning the whole user loop** — from onboarding through daily workout execution, tracking, nutrition/sleep, and program management.
 
 The direction is **"acid sport"** — ink surfaces, electric-lime primary, cobalt accents, warm white (not pure white) type. It is visually distinct from Strava, Nike, Whoop, and similar fitness apps; do not pull cues from them during implementation.
 
 ## About the Design Files
 The files in `reference/` are **design references created in HTML+React+Babel**. They are a static prototype meant to show intended look, behavior, hierarchy, and motion cues. They are **not production code to copy** — React is loaded via a Babel script tag in the browser, there is no build pipeline, and all "screens" are rendered side-by-side inside a scaled gallery for review.
 
-Your task is to **recreate these designs inside the target codebase's existing environment** (React Native, Jetpack Compose, Flutter — whatever the IronPulse mobile app actually uses) using its established patterns, component library, navigation, and state management. If no mobile environment exists yet, pick the most appropriate framework for the product and scaffold there.
+Your task is to **recreate these designs inside the target codebase's existing environment** (React Native, Jetpack Compose, Flutter — whatever the Mettle Lift mobile app actually uses) using its established patterns, component library, navigation, and state management. If no mobile environment exists yet, pick the most appropriate framework for the product and scaffold there.
 
 The HTML reference is most useful as:
 - A visual spec (pixel positions, color, type, spacing)
@@ -41,7 +41,7 @@ The 13 screens split into three groups:
 
 Each screen is a tall vertical mobile layout, rendered at two widths (Pixel 7 @ 360×780, Pixel 7 Pro @ 412×892).
 
-For exact structure, typography size, spacing, and content — open `reference/IronPulse Redesign.html` in a browser and inspect the corresponding JSX file.
+For exact structure, typography size, spacing, and content — open `reference/Mettle Lift Redesign.html` in a browser and inspect the corresponding JSX file.
 
 ## Interactions & Behavior
 Most interactions are implicit in the static mocks; implementers should infer these:
@@ -170,7 +170,7 @@ Border-radius scale: 6 (small chips) · 10 (small cards/rows) · 14 (input, chip
 No bitmap assets. All icons are inline SVGs in `reference/icons.jsx` — substitute with equivalents from the target codebase's icon library (Material Symbols, Phosphor, Lucide, etc.), choosing the closest visual weight (1.5–1.75px stroke, rounded caps).
 
 ## Files in `reference/`
-- `IronPulse Redesign.html` — the gallery page. Open in a browser to see all 13 screens side-by-side.
+- `Mettle Lift Redesign.html` — the gallery page. Open in a browser to see all 13 screens side-by-side.
 - `mobile.css` — every design token + component base styles (tabs, cards, rows, chips, inputs, btn).
 - `icons.jsx` — all inline SVG icons used throughout.
 - `shell.jsx` — Android phone frame (Pixel 7 bezel, status bar, tab bar).

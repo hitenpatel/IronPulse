@@ -1,4 +1,4 @@
-// Stub module for E2E builds — replaces @powersync/* and @ironpulse/sync
+// Stub module for E2E builds — replaces @powersync/* and @mettlelift/sync
 // to avoid SharedArrayBuffer crash on Hermes Android debug builds.
 //
 // The key fix: usePowerSync() returns a safe mock db object (not null).
@@ -46,7 +46,7 @@ module.exports = {
   useAllSyncStreamsHaveSynced: () => true,
   useSyncStream: () => null,
 
-  // @powersync/common exports (used by @ironpulse/sync schema/connector)
+  // @powersync/common exports (used by @mettlelift/sync schema/connector)
   column: { text: { type: "TEXT" }, integer: { type: "INTEGER" }, real: { type: "REAL" } },
   Schema: function() { return { types: {} }; },
   Table: function() { return {}; },
@@ -59,7 +59,7 @@ module.exports = {
   LockType: { CRUD: "CRUD", SYNC: "SYNC" },
   DEFAULT_REMOTE_LOGGER: {},
 
-  // @ironpulse/sync hook exports
+  // @mettlelift/sync hook exports
   useWorkouts: () => EMPTY_QUERY,
   useWorkoutExercises: () => EMPTY_QUERY,
   useWorkoutSets: () => EMPTY_QUERY,
@@ -74,7 +74,7 @@ module.exports = {
   usePersonalRecords: () => EMPTY_QUERY,
   useSyncStatus: () => ({ connected: false, lastSyncedAt: undefined, hasSynced: false, uploading: false, downloading: false }),
 
-  // @ironpulse/sync schema/connector exports
+  // @mettlelift/sync schema/connector exports
   AppSchema: { types: {} },
   BackendConnector: function() { return { fetchCredentials: NOOP_ASYNC, uploadData: NOOP_ASYNC }; },
 

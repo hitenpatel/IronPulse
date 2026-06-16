@@ -1,14 +1,14 @@
-# IronPulse UI Redesign — Stitch Implementation Plan
+# Mettle Lift UI Redesign — Stitch Implementation Plan
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Create a complete UI redesign of IronPulse in Stitch covering all mobile and web screens with the "Pulse" dark-mode-first design system.
+**Goal:** Create a complete UI redesign of Mettle Lift in Stitch covering all mobile and web screens with the "Pulse" dark-mode-first design system.
 
 **Architecture:** A single Stitch project containing ~70 screens organized by platform (mobile/web) and feature area. Each screen is generated via `mcp__stitch__generate_screen_from_text` with detailed prompts that embed the design system tokens for consistency. Mobile screens use `MOBILE` device type, web screens use `DESKTOP`.
 
 **Tech Stack:** Stitch MCP (generate_screen_from_text, edit_screens), GEMINI_3_1_PRO model
 
-**Spec:** `docs/superpowers/specs/2026-03-20-ironpulse-redesign-design.md`
+**Spec:** `docs/superpowers/specs/2026-03-20-mettlelift-redesign-design.md`
 
 ---
 
@@ -17,7 +17,7 @@
 Every screen generation prompt MUST begin with this prefix to ensure visual consistency. This is referenced as `{DSP}` in all tasks below.
 
 ```
-IronPulse fitness app redesign — "Pulse" design system.
+Mettle Lift fitness app redesign — "Pulse" design system.
 
 DARK MODE (hero theme):
 - Background: #060B14 (app bg), #0F1629 (cards/surfaces), #1A2340 (elevated cards/modals), #243052 (hover/muted)
@@ -54,7 +54,7 @@ Style: Bold, energetic, premium. Dark-mode-first with layered surface depth (no 
 
 ```
 Tool: mcp__stitch__create_project
-title: "IronPulse Redesign — Pulse"
+title: "Mettle Lift Redesign — Pulse"
 ```
 
 - [ ] **Step 2: Record the project ID**
@@ -75,11 +75,11 @@ modelId: GEMINI_3_1_PRO
 prompt: |
   {DSP}
 
-  Screen: Mobile Login — "IronPulse" fitness app
+  Screen: Mobile Login — "Mettle Lift" fitness app
 
   Layout (top to bottom):
   - Dark background (#060B14) with a subtle radial gradient of #0077FF at 8% opacity emanating from top center, creating an atmospheric glow
-  - IronPulse logo (stylized "IP" mark) + wordmark "IronPulse" in Clash Display Bold, centered, white text, near top with generous spacing
+  - Mettle Lift logo (stylized "IP" mark) + wordmark "Mettle Lift" in Clash Display Bold, centered, white text, near top with generous spacing
   - Tagline below logo: "Strength + Cardio. One Tracker." in Inter Regular 14px, #8899B4
 
   Form section (centered, full width with 24px horizontal padding):
@@ -126,11 +126,11 @@ modelId: GEMINI_3_1_PRO
 prompt: |
   {DSP}
 
-  Screen: Mobile Signup — "IronPulse" fitness app
+  Screen: Mobile Signup — "Mettle Lift" fitness app
 
   Layout (top to bottom):
   - Dark background (#060B14) with subtle radial #0077FF glow at top (same as login)
-  - IronPulse logo + wordmark centered at top (same as login)
+  - Mettle Lift logo + wordmark centered at top (same as login)
   - "Create your account" in Clash Display Semibold 22px, #F0F4F8, centered, below logo
 
   Form section (full width, 24px horizontal padding):
@@ -1385,11 +1385,11 @@ modelId: GEMINI_3_1_PRO
 prompt: |
   {DSP}
 
-  Screen: Web Landing Page — IronPulse marketing homepage (full page, 1440px wide)
+  Screen: Web Landing Page — Mettle Lift marketing homepage (full page, 1440px wide)
 
   Hero section (full width, #060B14 bg):
   - Subtle animated gradient mesh: #0077FF at 8% opacity, organic blobs in the background
-  - Navigation bar: IronPulse logo + wordmark left, nav links center ("Features", "Pricing", "Self-Host" in Inter Medium 14px #8899B4, hover: #F0F4F8), "Log In" ghost link + "Get Started" #0077FF button right. 80px horizontal padding.
+  - Navigation bar: Mettle Lift logo + wordmark left, nav links center ("Features", "Pricing", "Self-Host" in Inter Medium 14px #8899B4, hover: #F0F4F8), "Log In" ghost link + "Get Started" #0077FF button right. 80px horizontal padding.
   - Hero content (centered, max-width 800px, generous vertical padding ~120px):
     - "Strength + Cardio." line 1, "One Tracker." line 2 — Clash Display Bold 64px #F0F4F8
     - "The open-source fitness platform that unifies your strength training and cardio in one powerful app. Offline-first. Self-hostable. Free forever." Inter Regular 18px #8899B4, max-width 600px, centered
@@ -1419,7 +1419,7 @@ prompt: |
 
   Footer (#0A0F1A, 60px padding, #152035 top border):
   - 4 columns: Product (features, pricing, self-host), Resources (docs, API, status), Legal (privacy, terms), Community (GitHub, Discord)
-  - Bottom row: "© 2026 IronPulse" left, social icons right
+  - Bottom row: "© 2026 Mettle Lift" left, social icons right
   - All links Inter Regular 14px #4E6180, hover #8899B4
 ```
 
@@ -1442,7 +1442,7 @@ prompt: |
   Full page dark background #060B14 with subtle #0077FF radial gradient from center.
 
   Centered card (max-width 420px, #0F1629 bg, 12px radius, 32px padding):
-  - IronPulse logo + wordmark centered at top, 24px below card top
+  - Mettle Lift logo + wordmark centered at top, 24px below card top
   - "Welcome back" Clash Display Semibold 22px #F0F4F8, centered, 24px below logo
   - "Sign in to your account" Inter Regular 14px #8899B4, centered
 
@@ -1580,7 +1580,7 @@ prompt: |
   Background: #060B14
 
   Centered container (max-width 600px):
-  - IronPulse logo at top, small
+  - Mettle Lift logo at top, small
   - Progress bar: 3 segments, first filled #0077FF, others #1E2B47, full width, 4px height, 8px radius
   - Step indicator: "Step 1 of 3" Inter Medium 12px #8899B4, right-aligned above bar
 
@@ -1617,7 +1617,7 @@ prompt: |
   Screen: Web Dashboard — authenticated app with sidebar (1440px viewport)
 
   Sidebar (260px, #0A0F1A bg, left side, full height):
-  - Top: IronPulse logo mark + "IronPulse" wordmark in Clash Display, 24px padding, 16px from top
+  - Top: Mettle Lift logo mark + "Mettle Lift" wordmark in Clash Display, 24px padding, 16px from top
   - Nav groups (16px horizontal padding, 8px gap between items):
 
   "TRAINING" section label (Inter Medium 10px #4E6180 uppercase, 24px top margin):
@@ -2657,7 +2657,7 @@ prompt: |
 
   Centered card (max-width 640px, #0F1629, 12px radius, 32px padding):
 
-  - IronPulse logo + wordmark at top, small, centered, #8899B4
+  - Mettle Lift logo + wordmark at top, small, centered, #8899B4
 
   - User: avatar 48px + "Hiten Patel" Inter Semibold 16px #F0F4F8, 16px below logo
 
@@ -2675,7 +2675,7 @@ prompt: |
   - Mini PR cards: "Bench Press 1RM: 85 kg" + "Overhead Press 3RM: 50 kg" — #FFD700 left border
 
   CTA section (24px below, centered):
-  - "Track your workouts with IronPulse" Inter Regular 16px #8899B4
+  - "Track your workouts with Mettle Lift" Inter Regular 16px #8899B4
   - "Get Started Free" #0077FF button, 44px
 ```
 
@@ -2714,8 +2714,8 @@ prompt: |
   - User row centered: avatar 40px + "Hiten Patel" Inter Semibold 14px #F0F4F8
   - "20 March 2026" Inter Regular 12px #4E6180
 
-  - IronPulse logo small at bottom, 24px below
-  - "Track your PRs with IronPulse" Inter Regular 14px #8899B4
+  - Mettle Lift logo small at bottom, 24px below
+  - "Track your PRs with Mettle Lift" Inter Regular 14px #8899B4
   - "Get Started" #0077FF button
 ```
 
@@ -2853,12 +2853,12 @@ prompt: |
   - Active step label bold, others #4E6180
 
   Content (max-width 900px):
-  - "Map your CSV columns to IronPulse fields" Inter Regular 14px #8899B4
+  - "Map your CSV columns to Mettle Lift fields" Inter Regular 14px #8899B4
   - "workouts.csv — 48 rows detected" Inter Medium 12px #4E6180
 
   Preview table (#0F1629, 12px radius, 20px padding):
   - Shows first 3 rows of CSV with column headers
-  - Above each column: dropdown selector to map to IronPulse field
+  - Above each column: dropdown selector to map to Mettle Lift field
     - Column "Date" → dropdown showing "Date" ✓ (auto-matched, green)
     - Column "Exercise" → "Exercise Name" ✓
     - Column "Weight" → "Weight (kg)" ✓
@@ -2923,7 +2923,7 @@ prompt: |
   Dark background #060B14, no sidebar.
 
   Centered card (max-width 640px, #0F1629, 12px radius, 32px padding):
-  - IronPulse logo + wordmark small, centered, #8899B4
+  - Mettle Lift logo + wordmark small, centered, #8899B4
   - User: avatar 48px + "Hiten Patel" Inter Semibold 16px, 16px below
 
   - Running icon 24px #10B981 + "Morning Run" Clash Display Semibold 22px #F0F4F8
@@ -2937,7 +2937,7 @@ prompt: |
   - Numbers Inter Semibold 20px #F0F4F8, labels Inter Medium 12px #8899B4
 
   CTA (24px below, centered):
-  - "Track your runs with IronPulse" Inter Regular 16px #8899B4
+  - "Track your runs with Mettle Lift" Inter Regular 16px #8899B4
   - "Get Started Free" #0077FF button, 44px
 ```
 
@@ -2957,7 +2957,7 @@ prompt: |
 
   Screen: Web Privacy Policy — legal page (1440px)
 
-  No sidebar. Navigation bar at top: IronPulse logo left, nav links, login/signup buttons right (same as landing page nav).
+  No sidebar. Navigation bar at top: Mettle Lift logo left, nav links, login/signup buttons right (same as landing page nav).
 
   Content (centered, max-width 720px, 80px top padding):
   - "Privacy Policy" Clash Display Semibold 36px #F0F4F8

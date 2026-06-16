@@ -60,7 +60,7 @@ export function makeRedirectUri(options?: {
   scheme?: string;
   path?: string;
 }): string {
-  const scheme = options?.scheme ?? "ironpulse";
+  const scheme = options?.scheme ?? "mettlelift";
   const path = options?.path ?? "redirect";
   return `${scheme}://${path}`;
 }

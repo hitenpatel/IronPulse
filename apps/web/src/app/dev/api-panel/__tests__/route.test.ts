@@ -10,7 +10,7 @@ vi.mock("trpc-ui", () => ({
   renderTrpcPanel: vi.fn(() => "<html>panel</html>"),
 }));
 
-vi.mock("@ironpulse/api", () => ({
+vi.mock("@mettlelift/api", () => ({
   appRouter: {},
 }));
 

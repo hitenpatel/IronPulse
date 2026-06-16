@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser } from "./helpers";
 import { notificationRouter } from "../src/routers/notification";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 
 const createCaller = createCallerFactory(notificationRouter);
 

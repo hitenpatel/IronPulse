@@ -1,10 +1,10 @@
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { notifyAchievement } from "../lib/notifications";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 import {
   ACHIEVEMENT_CATALOG,
   type AchievementBadge,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 
 type AchievementType = string;
 

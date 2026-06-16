@@ -51,7 +51,7 @@ export function useNotificationDeepLink() {
 
           // Check for parameterized paths like /workout/active?workoutId=xxx
           if (path.startsWith("/workout/active")) {
-            const url = new URL(`ironpulse://${path}`);
+            const url = new URL(`mettlelift://${path}`);
             const workoutId = url.searchParams.get("workoutId") ?? "";
             navigation.navigate("WorkoutActive", { workoutId });
             return;

@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { useQuery } from "@powersync/react";
-import { useExercises } from "@ironpulse/sync";
+import { useExercises } from "@mettlelift/sync";
 
 import { colors, fonts, radii, spacing } from "@/lib/theme";
 import { Pills, TopBar, UppercaseLabel } from "@/components/ui";

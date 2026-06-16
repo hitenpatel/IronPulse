@@ -1,12 +1,12 @@
 import { TRPCError } from "@trpc/server";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { signPowerSyncToken } from "../lib/powersync-auth";
 import {
   syncApplySchema,
   syncUpdateSchema,
   syncDeleteSchema,
-} from "@ironpulse/shared/src/schemas/sync";
+} from "@mettlelift/shared/src/schemas/sync";
 
 // Narrow delegate shape used for dynamic model access in this router. Prisma's
 // generated delegate types differ per model (the `where`/`data` shapes vary);

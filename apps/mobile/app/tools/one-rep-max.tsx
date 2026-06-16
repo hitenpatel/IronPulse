@@ -6,7 +6,7 @@ import {
   calculateOneRepMax,
   percentageOfMax,
   validateOneRepMaxInput,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { Button } from "@/components/ui";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 

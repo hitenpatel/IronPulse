@@ -37,10 +37,10 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["@simplewebauthn/server"],
   transpilePackages: [
-    "@ironpulse/api",
-    "@ironpulse/db",
-    "@ironpulse/shared",
-    "@ironpulse/sync",
+    "@mettlelift/api",
+    "@mettlelift/db",
+    "@mettlelift/shared",
+    "@mettlelift/sync",
   ],
   images: {
     remotePatterns: [

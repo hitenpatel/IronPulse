@@ -2,7 +2,7 @@ module.exports = {
   project: {
     android: {
       sourceDir: './android',
-      packageName: 'com.ironpulse.app',
+      packageName: 'com.mettlelift.app',
     },
     ios: {
       sourceDir: './ios',

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { searchRouter } from "../src/routers/search";
@@ -113,21 +113,21 @@ describe("search.global", () => {
   it("returns results across all categories simultaneously", async () => {
     await db.exercise.create({
       data: {
-        name: "IronPulse Curl",
+        name: "Mettle Lift Curl",
         category: "isolation",
         primaryMuscles: ["biceps"],
         isCustom: false,
       },
     });
     await db.user.create({
-      data: { email: "ironpulse-user@test.com", name: "IronPulse User" },
+      data: { email: "mettlelift-user@test.com", name: "Mettle Lift User" },
     });
     await db.workout.create({
-      data: { userId: testUser.id, name: "IronPulse Workout", startedAt: new Date() },
+      data: { userId: testUser.id, name: "Mettle Lift Workout", startedAt: new Date() },
     });
 
     const caller = searchCaller({ user: testUser });
-    const result = await caller.global({ query: "IronPulse" });
+    const result = await caller.global({ query: "Mettle Lift" });
 
     expect(result.exercises.length).toBeGreaterThan(0);
     expect(result.users.length).toBeGreaterThan(0);

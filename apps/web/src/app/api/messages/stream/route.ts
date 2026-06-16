@@ -1,5 +1,5 @@
-import { db } from "@ironpulse/db";
-import { subscribeToMessages } from "@ironpulse/api/src/lib/message-pubsub";
+import { db } from "@mettlelift/db";
+import { subscribeToMessages } from "@mettlelift/api/src/lib/message-pubsub";
 import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

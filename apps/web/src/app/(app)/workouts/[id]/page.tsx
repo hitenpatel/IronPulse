@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Dumbbell, BarChart3, Target, ClipboardList, Check, Share2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { useWorkoutExercises, useWorkoutSets, type WorkoutExerciseRow, type SetRow } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets, type WorkoutExerciseRow, type SetRow } from "@mettlelift/sync";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { formatDuration, formatVolume } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -196,7 +196,7 @@ export default function WorkoutDetailPage() {
                   const url = `${window.location.origin}/share/workout/${id}`;
                   const shareData = {
                     title: workout.name || "Workout",
-                    text: `Check out my workout on IronPulse!`,
+                    text: `Check out my workout on Mettle Lift!`,
                     url,
                   };
                   if (typeof navigator.share === "function" && navigator.canShare?.(shareData)) {

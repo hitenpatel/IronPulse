@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 
 // CI smoke test: confirms PostgreSQL is reachable and responsive before the
 // full integration suite runs. This test fails when the DB service is not yet

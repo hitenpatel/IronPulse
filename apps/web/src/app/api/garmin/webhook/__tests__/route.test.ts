@@ -2,11 +2,11 @@ import crypto from "crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Keep the route from hitting the real DB or firing captureError.
-vi.mock("@ironpulse/db", () => ({ db: {} }));
-vi.mock("@ironpulse/api/src/lib/garmin", () => ({
+vi.mock("@mettlelift/db", () => ({ db: {} }));
+vi.mock("@mettlelift/api/src/lib/garmin", () => ({
   importGarminActivity: vi.fn(),
 }));
-vi.mock("@ironpulse/api/src/lib/capture-error", () => ({
+vi.mock("@mettlelift/api/src/lib/capture-error", () => ({
   captureError: vi.fn(),
 }));
 

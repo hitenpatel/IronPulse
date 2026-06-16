@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build manual cardio logging and GPS live tracking for the IronPulse Expo mobile app — type picker, manual form, live tracking screen with map, background GPS, route point buffering, app-kill recovery, and cardio summary.
+**Goal:** Build manual cardio logging and GPS live tracking for the Mettle Lift Expo mobile app — type picker, manual form, live tracking screen with map, background GPS, route point buffering, app-kill recovery, and cardio summary.
 
 **Architecture:** Cardio screens under `app/cardio/` (fullscreen stack outside tabs). GPS tracking via `expo-location` foreground watch + `TaskManager` background updates. Route points buffered in a local `_gps_buffer` SQLite table, uploaded to server on completion via tRPC. Manual cardio writes directly to PowerSync `cardio_sessions`. Shared summary screen for both flows.
 
@@ -57,7 +57,7 @@ apps/mobile/
 
 Run:
 ```bash
-pnpm --filter @ironpulse/mobile add react-native-maps expo-location expo-task-manager expo-battery expo-sqlite
+pnpm --filter @mettlelift/mobile add react-native-maps expo-location expo-task-manager expo-battery expo-sqlite
 ```
 
 - [ ] **Step 2: Update app.json plugins and Android maps config**
@@ -65,7 +65,7 @@ pnpm --filter @ironpulse/mobile add react-native-maps expo-location expo-task-ma
 In `apps/mobile/app.json`, add to the `plugins` array:
 ```json
 ["expo-location", {
-  "locationAlwaysAndWhenInUsePermission": "IronPulse needs your location to track runs, rides, and hikes.",
+  "locationAlwaysAndWhenInUsePermission": "Mettle Lift needs your location to track runs, rides, and hikes.",
   "isIosBackgroundLocationEnabled": true,
   "isAndroidBackgroundLocationEnabled": true
 }],
@@ -183,7 +183,7 @@ describe("unit conversion", () => {
 
 - [ ] **Step 2: Run tests to verify failure**
 
-Run: `pnpm --filter @ironpulse/mobile test -- geo-utils`
+Run: `pnpm --filter @mettlelift/mobile test -- geo-utils`
 Expected: FAIL — module not found
 
 - [ ] **Step 3: Implement geo utilities**
@@ -245,7 +245,7 @@ export function metersToMiles(meters: number): number {
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @ironpulse/mobile test -- geo-utils`
+Run: `pnpm --filter @mettlelift/mobile test -- geo-utils`
 Expected: PASS — all tests pass
 
 - [ ] **Step 5: Commit**
@@ -357,7 +357,7 @@ import * as Location from "expo-location";
 import * as SQLite from "expo-sqlite";
 import { insertBufferPoint, initGpsBuffer } from "./gps-buffer";
 
-export const GPS_TASK_NAME = "ironpulse-gps-tracking";
+export const GPS_TASK_NAME = "mettlelift-gps-tracking";
 
 let bgDb: SQLite.SQLiteDatabase | null = null;
 let activeSessionId: string | null = null;
@@ -368,7 +368,7 @@ export function setActiveSessionId(id: string | null) {
 
 function getBackgroundDb(): SQLite.SQLiteDatabase {
   if (!bgDb) {
-    bgDb = SQLite.openDatabaseSync("ironpulse.db");
+    bgDb = SQLite.openDatabaseSync("mettlelift.db");
   }
   return bgDb;
 }
@@ -418,7 +418,7 @@ export async function startGpsTracking(sessionId: string): Promise<Location.Loca
       distanceInterval: 5,
       showsBackgroundLocationIndicator: true,
       foregroundService: {
-        notificationTitle: "IronPulse",
+        notificationTitle: "Mettle Lift",
         notificationBody: "Tracking your activity",
       },
     });
@@ -1443,7 +1443,7 @@ git commit -m "add cardio summary screen for GPS and manual sessions"
 
 Create `apps/mobile/e2e/cardio-manual.yaml`:
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1472,7 +1472,7 @@ appId: com.ironpulse.app
 
 Create `apps/mobile/e2e/cardio-gps-start.yaml`:
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1493,7 +1493,7 @@ appId: com.ironpulse.app
 
 Create `apps/mobile/e2e/cardio-cancel.yaml`:
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1521,17 +1521,17 @@ git commit -m "add Maestro E2E flows for cardio manual, GPS start, and cancel"
 
 - [ ] **Step 1: Run geo utility tests**
 
-Run: `pnpm --filter @ironpulse/mobile test -- geo-utils`
+Run: `pnpm --filter @mettlelift/mobile test -- geo-utils`
 Expected: All tests pass
 
 - [ ] **Step 2: Run sync package tests**
 
-Run: `pnpm --filter @ironpulse/sync test`
+Run: `pnpm --filter @mettlelift/sync test`
 Expected: All tests pass
 
 - [ ] **Step 3: Verify web build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds
 
 - [ ] **Step 4: Verify Expo config**

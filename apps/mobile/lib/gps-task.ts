@@ -3,7 +3,7 @@ import * as Location from "@/lib/location";
 import * as SQLite from "@/lib/sqlite";
 import { insertBufferPoint, initGpsBuffer } from "./gps-buffer";
 
-export const GPS_TASK_NAME = "ironpulse-gps-tracking";
+export const GPS_TASK_NAME = "mettlelift-gps-tracking";
 
 let bgDb: ReturnType<typeof SQLite.openDatabaseSync> | null = null;
 let activeSessionId: string | null = null;
@@ -30,7 +30,7 @@ function wrapDb(db: ReturnType<typeof SQLite.openDatabaseSync>) {
 }
 
 function getBackgroundDb() {
-  if (!bgDb) { bgDb = SQLite.openDatabaseSync("ironpulse.db"); }
+  if (!bgDb) { bgDb = SQLite.openDatabaseSync("mettlelift.db"); }
   return wrapDb(bgDb);
 }
 
@@ -55,7 +55,7 @@ export async function startGpsTracking(sessionId: string): Promise<Location.Loca
     await Location.startLocationUpdatesAsync(GPS_TASK_NAME, {
       accuracy: Location.Accuracy.High, distanceInterval: 5,
       showsBackgroundLocationIndicator: true,
-      foregroundService: { notificationTitle: "IronPulse", notificationBody: "Tracking your activity" },
+      foregroundService: { notificationTitle: "Mettle Lift", notificationBody: "Tracking your activity" },
     });
   }
   return await Location.watchPositionAsync(

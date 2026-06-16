@@ -10,10 +10,10 @@ import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
 } from "@simplewebauthn/types";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 import crypto from "crypto";
 
-const RP_NAME = "IronPulse";
+const RP_NAME = "Mettle Lift";
 
 function getRpId(): string {
   return process.env.WEBAUTHN_RP_ID ?? "localhost";

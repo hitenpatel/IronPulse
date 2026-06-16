@@ -7,7 +7,7 @@ import {
   updateCoachProfileSchema,
   uploadCoachProfileImageSchema,
   attendanceHeatmapSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 

@@ -10,7 +10,7 @@ import { signOut } from "next-auth/react";
 import { User, Settings, LogOut, Check, Link2, Users, Download, Shield, Camera } from "lucide-react";
 import Link from "next/link";
 
-const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/ironpulse";
+const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/mettlelift";
 
 export default function ProfilePage() {
   const utils = trpc.useUtils();
@@ -427,7 +427,7 @@ function ExportButton({
         const a = document.createElement("a");
         a.href = url;
         const ext = format === "csv" ? "csv" : "json";
-        a.download = `ironpulse-${mutationKey}-${new Date().toISOString().split("T")[0]}.${ext}`;
+        a.download = `mettlelift-${mutationKey}-${new Date().toISOString().split("T")[0]}.${ext}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

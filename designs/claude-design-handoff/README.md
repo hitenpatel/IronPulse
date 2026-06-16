@@ -1,8 +1,8 @@
-# Handoff: IronPulse — Mobile Redesign (Android)
+# Handoff: Mettle Lift — Mobile Redesign (Android)
 
 ## Overview
 
-Full redesign of **IronPulse**, a fitness tracking app targeting Android. Covers the complete daily loop — login, home, live workout, stats, nutrition, sleep, goals — across **13 screens**. The design is deliberately unified: one visual system, one typographic voice, consistent chrome. It replaces a fragmented prior app that felt like "six apps glued together."
+Full redesign of **Mettle Lift**, a fitness tracking app targeting Android. Covers the complete daily loop — login, home, live workout, stats, nutrition, sleep, goals — across **13 screens**. The design is deliberately unified: one visual system, one typographic voice, consistent chrome. It replaces a fragmented prior app that felt like "six apps glued together."
 
 Primary device target: **Pixel 7** (412×892 logical @ 2.625× DPR, shown at 300×636 in the gallery) and **Pixel 7 Pro** (360×780 logical shown at 360×780). The design should scale cleanly from ~360dp up to 412dp width; no tablet layout needed in this pass.
 
@@ -30,16 +30,16 @@ See the `screenshots/` folder for rendered overviews of each section:
 
 | File | What it is |
 |---|---|
-| `IronPulse Redesign.html` | Entry point. Composes the gallery of all 13 screens. |
+| `Mettle Lift Redesign.html` | Entry point. Composes the gallery of all 13 screens. |
 | `mobile.css` | All design tokens + shared primitive styles (chips, cards, rows, buttons, input, bignum, phone frame). |
-| `icons.jsx` | Icon set (Lucide-style line icons) + IronPulse logo mark. |
+| `icons.jsx` | Icon set (Lucide-style line icons) + Mettle Lift logo mark. |
 | `shell.jsx` | Phone frame, Android status bar, bottom tab bar, sparkline, top-bar primitives. |
 | `app.jsx` | Gallery composition + Tweaks panel. |
 | `screens-primary.jsx` | Login, Dashboard, Active Workout, Stats. |
 | `screens-secondary.jsx` | Exercises, Profile, Nutrition, Sleep. |
 | `screens-tertiary.jsx` | Goals, Progress Photos, Connected Apps, Templates, My Program. |
 
-To run the prototype locally: open `IronPulse Redesign.html` in any modern browser. No build step.
+To run the prototype locally: open `Mettle Lift Redesign.html` in any modern browser. No build step.
 
 ---
 
@@ -177,7 +177,7 @@ The design uses authentic Android chrome, not iOS.
 
 **Purpose:** Authenticate. First impression of brand.
 
-**Layout (top → bottom):** 56px top padding → centered logo block (56px icon tile + "IronPulse" wordmark + tagline) → 40px gap → Email input with uppercase label → Password input with eye toggle and "Forgot?" link → Primary "Log in" button → "OR CONTINUE WITH" divider → 2-column Google/Apple button row → pushed to bottom: "Don't have an account? Sign up" link.
+**Layout (top → bottom):** 56px top padding → centered logo block (56px icon tile + "Mettle Lift" wordmark + tagline) → 40px gap → Email input with uppercase label → Password input with eye toggle and "Forgot?" link → Primary "Log in" button → "OR CONTINUE WITH" divider → 2-column Google/Apple button row → pushed to bottom: "Don't have an account? Sign up" link.
 
 **Key details:**
 - Logo tile is `56×56`, `border-radius: 16px`, gradient background `linear-gradient(135deg, #0B121D, #0B121D 70%, #0A1E34)`, 1px border `--line-2`, blue accent glow shadow.
@@ -336,7 +336,7 @@ Use your codebase's established state layer (Compose `viewModel`+`StateFlow`, Re
 
 ## Assets
 
-Icons are inline SVG (Lucide line-icon style) with a few custom ones (IronPulse logo, silhouettes, device icons). **Do not copy the inline SVGs directly** — use your codebase's icon system (Lucide React Native, Material Symbols, SF Symbols mapped, whatever's standard). The logo SVG in `icons.jsx` (`Icons.Logo`) is the brand mark and should be vendored as an asset.
+Icons are inline SVG (Lucide line-icon style) with a few custom ones (Mettle Lift logo, silhouettes, device icons). **Do not copy the inline SVGs directly** — use your codebase's icon system (Lucide React Native, Material Symbols, SF Symbols mapped, whatever's standard). The logo SVG in `icons.jsx` (`Icons.Logo`) is the brand mark and should be vendored as an asset.
 
 No photography, no illustration system beyond the placeholder silhouettes (replace with user-uploaded content).
 

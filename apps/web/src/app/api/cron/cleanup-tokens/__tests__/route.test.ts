@@ -8,11 +8,11 @@ const mockPrismaInstance = {
   passkeyChallenge: { deleteMany: mockDeleteMany },
 };
 
-vi.mock("@ironpulse/db", () => ({
+vi.mock("@mettlelift/db", () => ({
   PrismaClient: vi.fn(() => mockPrismaInstance),
 }));
 
-vi.mock("@ironpulse/api/src/lib/capture-error", () => ({
+vi.mock("@mettlelift/api/src/lib/capture-error", () => ({
   captureError: vi.fn(),
 }));
 
@@ -133,7 +133,7 @@ describe("POST /api/cron/cleanup-tokens", () => {
 
   it("calls captureError for each failed table", async () => {
     const { captureError } = await import(
-      "@ironpulse/api/src/lib/capture-error"
+      "@mettlelift/api/src/lib/capture-error"
     );
     mockDeleteMany.mockRejectedValue(new Error("timeout"));
 

@@ -79,7 +79,7 @@ No new DB model needed for mobile biometric — purely client-side.
 
 ### Why tRPC instead of NextAuth's built-in WebAuthn provider
 
-NextAuth's WebAuthn provider requires `@auth/prisma-adapter` which expects a different schema shape (NextAuth's `User`/`Account`/`Session` tables). IronPulse uses a custom Prisma schema with manual JWT callbacks. Using `@simplewebauthn` directly via tRPC keeps it consistent with how all other auth flows work (credentials, OAuth sign-in callback) — no adapter migration needed.
+NextAuth's WebAuthn provider requires `@auth/prisma-adapter` which expects a different schema shape (NextAuth's `User`/`Account`/`Session` tables). Mettle Lift uses a custom Prisma schema with manual JWT callbacks. Using `@simplewebauthn` directly via tRPC keeps it consistent with how all other auth flows work (credentials, OAuth sign-in callback) — no adapter migration needed.
 
 ### Management
 
@@ -127,9 +127,9 @@ NextAuth's WebAuthn provider requires `@auth/prisma-adapter` which expects a dif
 
 ## Relying Party Configuration
 
-- `rpID`: domain-based (`ironpulse.app` in prod, `localhost` in dev)
-- `rpName`: "IronPulse"
-- `origin`: `https://ironpulse.app` (prod), `http://localhost:3000` (dev)
+- `rpID`: domain-based (`mettlelift.app` in prod, `localhost` in dev)
+- `rpName`: "Mettle Lift"
+- `origin`: `https://mettlelift.app` (prod), `http://localhost:3000` (dev)
 - Configured via env vars: `WEBAUTHN_RP_ID`, `WEBAUTHN_RP_ORIGIN`
 
 ## tRPC Endpoints

@@ -8,7 +8,7 @@ function getResend() {
   return _resend;
 }
 
-const FROM = process.env.EMAIL_FROM ?? "IronPulse <noreply@ironpulse.app>";
+const FROM = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
 
 export async function sendMagicLinkEmail(email: string, token: string) {
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
@@ -17,8 +17,8 @@ export async function sendMagicLinkEmail(email: string, token: string) {
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: "Sign in to IronPulse",
-    text: `Click this link to sign in to IronPulse:\n\n${link}\n\nThis link expires in 15 minutes.\n\nIf you didn't request this, you can safely ignore this email.`,
+    subject: "Sign in to Mettle Lift",
+    text: `Click this link to sign in to Mettle Lift:\n\n${link}\n\nThis link expires in 15 minutes.\n\nIf you didn't request this, you can safely ignore this email.`,
   });
 }
 
@@ -29,7 +29,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: "Reset your IronPulse password",
+    subject: "Reset your Mettle Lift password",
     text: `Click this link to reset your password:\n\n${link}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, you can safely ignore this email.`,
   });
 }
@@ -41,7 +41,7 @@ export async function sendEmailChangeVerificationEmail(email: string, token: str
   await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: "Confirm your new email address for IronPulse",
+    subject: "Confirm your new email address for Mettle Lift",
     text: `Click this link to confirm your new email address:\n\n${link}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, you can safely ignore this email.`,
   });
 }

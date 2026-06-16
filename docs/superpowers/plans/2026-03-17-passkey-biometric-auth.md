@@ -48,26 +48,26 @@
 - [ ] **Step 1: Install server-side WebAuthn packages**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/api add @simplewebauthn/server @simplewebauthn/types
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/api add @simplewebauthn/server @simplewebauthn/types
 ```
 
 - [ ] **Step 2: Install browser-side WebAuthn package**
 
 ```bash
-pnpm --filter @ironpulse/web add @simplewebauthn/browser @simplewebauthn/types
+pnpm --filter @mettlelift/web add @simplewebauthn/browser @simplewebauthn/types
 ```
 
 - [ ] **Step 3: Install shared types package**
 
 ```bash
-pnpm --filter @ironpulse/shared add @simplewebauthn/types
+pnpm --filter @mettlelift/shared add @simplewebauthn/types
 ```
 
 - [ ] **Step 4: Install mobile biometric package**
 
 ```bash
-pnpm --filter @ironpulse/mobile add expo-local-authentication
+pnpm --filter @mettlelift/mobile add expo-local-authentication
 ```
 
 - [ ] **Step 5: Commit**
@@ -122,8 +122,8 @@ Add `passkeys Passkey[]` to the User model's relation fields (after the `pushTok
 - [ ] **Step 2: Generate Prisma client and create migration**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/db exec prisma migrate dev --name add-passkey-tables
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/db exec prisma migrate dev --name add-passkey-tables
 ```
 
 Expected: Migration created, client generated successfully.
@@ -131,7 +131,7 @@ Expected: Migration created, client generated successfully.
 - [ ] **Step 3: Verify migration**
 
 ```bash
-pnpm --filter @ironpulse/db exec prisma migrate status
+pnpm --filter @mettlelift/db exec prisma migrate status
 ```
 
 Expected: All migrations applied, no pending.
@@ -193,8 +193,8 @@ export type RemovePasswordInput = z.infer<typeof removePasswordSchema>;
 The schemas are already re-exported via `export * from "./schemas/auth"` in `packages/shared/src/index.ts` — no changes needed. Verify the new exports are accessible:
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/shared exec tsc --noEmit
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/shared exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -256,10 +256,10 @@ import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
 } from "@simplewebauthn/types";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 import crypto from "crypto";
 
-const RP_NAME = "IronPulse";
+const RP_NAME = "Mettle Lift";
 
 function getRpId(): string {
   return process.env.WEBAUTHN_RP_ID ?? "localhost";
@@ -587,7 +587,7 @@ import {
   passkeyRenameSchema,
   passkeyDeleteSchema,
   removePasswordSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import {
   createRegistrationOptions,
   verifyAndSaveRegistration,
@@ -833,8 +833,8 @@ passkey: passkeyRouter,
 - [ ] **Step 3: Verify types compile**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/api exec tsc --noEmit
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/api exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -857,7 +857,7 @@ Create `packages/api/__tests__/passkey.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import bcrypt from "bcryptjs";
 import { createTRPCContext, createCallerFactory } from "../src/trpc";
 import { passkeyRouter } from "../src/routers/passkey";
@@ -867,7 +867,7 @@ import { createTestUser } from "./helpers";
 vi.mock("@simplewebauthn/server", () => ({
   generateRegistrationOptions: vi.fn().mockResolvedValue({
     challenge: "test-challenge-registration",
-    rp: { name: "IronPulse", id: "localhost" },
+    rp: { name: "Mettle Lift", id: "localhost" },
     user: { id: "dXNlci1pZA", name: "test@example.com", displayName: "Test" },
     pubKeyCredParams: [],
     timeout: 60000,
@@ -1237,8 +1237,8 @@ describe("passkey.removePassword", () => {
 - [ ] **Step 2: Run the tests**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
-pnpm --filter @ironpulse/api test -- passkey
+cd /Users/hitenpatel/dev/personal/Mettle Lift
+pnpm --filter @mettlelift/api test -- passkey
 ```
 
 Expected: All tests pass.
@@ -1264,7 +1264,7 @@ git commit -m "add passkey router integration tests"
 In `apps/web/src/lib/auth.ts`, add a second Credentials provider for passkey login. Import the token verifier:
 
 ```typescript
-import { verifyPasskeyLoginToken } from "@ironpulse/api/src/lib/passkey";
+import { verifyPasskeyLoginToken } from "@mettlelift/api/src/lib/passkey";
 ```
 
 Add after the existing `Credentials({...})` provider in the `providers` array:
@@ -1305,7 +1305,7 @@ Credentials({
 - [ ] **Step 2: Verify types compile**
 
 ```bash
-pnpm --filter @ironpulse/web exec tsc --noEmit
+pnpm --filter @mettlelift/web exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1832,7 +1832,7 @@ Add a new card before the "Connected Apps" card (before `{/* Connected Apps */}`
 - [ ] **Step 3: Verify types compile**
 
 ```bash
-pnpm --filter @ironpulse/web exec tsc --noEmit
+pnpm --filter @mettlelift/web exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1915,7 +1915,7 @@ export async function disableBiometric(): Promise<void> {
 
 export async function authenticateWithBiometric(): Promise<boolean> {
   const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: "Unlock IronPulse",
+    promptMessage: "Unlock Mettle Lift",
     fallbackLabel: "Use Passcode",
     cancelLabel: "Sign In Instead",
   });
@@ -2258,7 +2258,7 @@ git commit -m "add biometric unlock toggle to mobile profile screen"
 - [ ] **Step 1: Type-check shared**
 
 ```bash
-pnpm --filter @ironpulse/shared exec tsc --noEmit
+pnpm --filter @mettlelift/shared exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -2266,7 +2266,7 @@ Expected: No errors.
 - [ ] **Step 2: Type-check API**
 
 ```bash
-pnpm --filter @ironpulse/api exec tsc --noEmit
+pnpm --filter @mettlelift/api exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -2274,7 +2274,7 @@ Expected: No errors.
 - [ ] **Step 3: Type-check web**
 
 ```bash
-pnpm --filter @ironpulse/web exec tsc --noEmit
+pnpm --filter @mettlelift/web exec tsc --noEmit
 ```
 
 Expected: No errors.
@@ -2282,7 +2282,7 @@ Expected: No errors.
 - [ ] **Step 4: Run passkey tests**
 
 ```bash
-pnpm --filter @ironpulse/api test -- passkey
+pnpm --filter @mettlelift/api test -- passkey
 ```
 
 Expected: All tests pass.
@@ -2290,7 +2290,7 @@ Expected: All tests pass.
 - [ ] **Step 5: Run all API tests**
 
 ```bash
-pnpm --filter @ironpulse/api test
+pnpm --filter @mettlelift/api test
 ```
 
 Expected: All tests pass (no regressions).
@@ -2298,7 +2298,7 @@ Expected: All tests pass (no regressions).
 - [ ] **Step 6: Build web app**
 
 ```bash
-pnpm --filter @ironpulse/web build
+pnpm --filter @mettlelift/web build
 ```
 
 Expected: Build succeeds.

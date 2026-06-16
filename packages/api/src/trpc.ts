@@ -1,7 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import type { PrismaClient } from "@ironpulse/db";
-import type { SessionUser } from "@ironpulse/shared";
+import type { PrismaClient } from "@mettlelift/db";
+import type { SessionUser } from "@mettlelift/shared";
 import { checkRateLimit, RATE_LIMITS } from "./lib/rate-limit";
 import { verifyMobileToken } from "./lib/mobile-auth";
 

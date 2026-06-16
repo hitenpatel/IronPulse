@@ -9,18 +9,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Logo */}
         <div className="mb-8 flex items-center justify-center gap-2.5">
           <img
-            src="/ironpulse-logo-light.svg"
-            alt="IronPulse"
+            src="/mettlelift-logo-light.svg"
+            alt="Mettle Lift"
             className="h-10 w-auto block dark:hidden"
           />
           <img
-            src="/ironpulse-logo-dark.svg"
+            src="/mettlelift-logo-dark.svg"
             alt=""
             aria-hidden="true"
             className="h-10 w-auto hidden dark:block"
           />
           <span className="font-display font-bold text-xl tracking-tight">
-            IronPulse
+            Mettle Lift
           </span>
         </div>
 

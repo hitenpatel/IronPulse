@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncStatus } from "@ironpulse/sync";
+import { useSyncStatus } from "@mettlelift/sync";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { Wifi, WifiOff, RefreshCw, Cloud } from "lucide-react";
 

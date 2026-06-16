@@ -28,9 +28,9 @@ import { ExpoConfig, ConfigContext } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "IronPulse",
-  slug: "ironpulse",
-  scheme: "ironpulse",
+  name: "Mettle Lift",
+  slug: "mettlelift",
+  scheme: "mettlelift",
   // ... keep all existing config ...
   android: {
     ...config.android,
@@ -332,8 +332,8 @@ deploy:
     - uses: actions/checkout@v4
     - name: Build and push Docker image
       run: |
-        docker build -t ironpulse:latest -f docker/Dockerfile .
-        docker save ironpulse:latest | gzip > ironpulse.tar.gz
+        docker build -t mettlelift:latest -f docker/Dockerfile .
+        docker save mettlelift:latest | gzip > mettlelift.tar.gz
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v1
       with:
@@ -341,10 +341,10 @@ deploy:
         username: ${{ secrets.DEPLOY_USER }}
         key: ${{ secrets.DEPLOY_SSH_KEY }}
         script: |
-          cd /opt/ironpulse
+          cd /opt/mettlelift
           docker compose pull
           docker compose up -d --build
-          docker exec ironpulse npx prisma migrate deploy
+          docker exec mettlelift npx prisma migrate deploy
 ```
 
 - [ ] **Step 2: Document required GitHub secrets**
@@ -352,7 +352,7 @@ deploy:
 
 Create `apps/web/src/app/api/health/route.ts`:
 ```typescript
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -408,7 +408,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 // ... existing config ...
 export default withSentryConfig(nextConfig, {
   silent: true,
-  org: "ironpulse",
+  org: "mettlelift",
   project: "web",
 });
 ```
@@ -441,12 +441,12 @@ export default withSentryConfig(nextConfig, {
 set -euo pipefail
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/backups"
-BACKUP_FILE="$BACKUP_DIR/ironpulse_$TIMESTAMP.sql.gz"
+BACKUP_FILE="$BACKUP_DIR/mettlelift_$TIMESTAMP.sql.gz"
 
 pg_dump -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc | gzip > "$BACKUP_FILE"
 
 # Keep last 30 daily backups
-find "$BACKUP_DIR" -name "ironpulse_*.sql.gz" -mtime +30 -delete
+find "$BACKUP_DIR" -name "mettlelift_*.sql.gz" -mtime +30 -delete
 
 echo "Backup complete: $BACKUP_FILE"
 ```

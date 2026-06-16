@@ -1,6 +1,6 @@
 /**
  * Development seed — creates test users and sample workout/health data
- * Run after the main seed (exercises): pnpm --filter @ironpulse/db db:seed:dev
+ * Run after the main seed (exercises): pnpm --filter @mettlelift/db db:seed:dev
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";

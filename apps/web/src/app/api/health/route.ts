@@ -28,11 +28,11 @@ async function checkService(
 export async function GET() {
   const checks = await Promise.all([
     checkService("db", async () => {
-      const { db } = await import("@ironpulse/db");
+      const { db } = await import("@mettlelift/db");
       await db.$queryRaw`SELECT 1`;
     }),
     checkService("redis", async () => {
-      const { getRedis } = await import("@ironpulse/api/src/lib/redis");
+      const { getRedis } = await import("@mettlelift/api/src/lib/redis");
       const redis = getRedis();
       await redis.ping();
     }),

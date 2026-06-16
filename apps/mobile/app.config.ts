@@ -4,28 +4,28 @@ import { ExpoConfig, ConfigContext } from "expo/config";
 // applicationId and backend URL differ, so it installs alongside the real app
 // and exercises the same code paths. Driven by the `e2e` EAS profile.
 const IS_E2E = process.env.EXPO_PUBLIC_E2E === "1";
-const ANDROID_PACKAGE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
-const IOS_BUNDLE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
+const ANDROID_PACKAGE = IS_E2E ? "com.mettlelift.app.e2e" : "com.mettlelift.app";
+const IOS_BUNDLE = IS_E2E ? "com.mettlelift.app.e2e" : "com.mettlelift.app";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: IS_E2E ? "IronPulse E2E" : "IronPulse",
-  slug: "ironpulse",
+  name: IS_E2E ? "Mettle Lift E2E" : "Mettle Lift",
+  slug: "mettlelift",
   version: "1.0.0",
-  scheme: "ironpulse",
+  scheme: "mettlelift",
   userInterfaceStyle: "dark",
   ios: {
     bundleIdentifier: IOS_BUNDLE,
     supportsTablet: true,
     infoPlist: {
       NSHealthShareUsageDescription:
-        "IronPulse reads your workouts and body weight from Apple Health to show them in your activity feed.",
+        "Mettle Lift reads your workouts and body weight from Apple Health to show them in your activity feed.",
       NSHealthUpdateUsageDescription:
-        "IronPulse saves your logged workouts and weight to Apple Health.",
+        "Mettle Lift saves your logged workouts and weight to Apple Health.",
       NSLocationWhenInUseUsageDescription:
-        "IronPulse needs your location to track runs, rides, and hikes.",
+        "Mettle Lift needs your location to track runs, rides, and hikes.",
       NSLocationAlwaysAndWhenInUseUsageDescription:
-        "IronPulse needs your location to track runs, rides, and hikes.",
+        "Mettle Lift needs your location to track runs, rides, and hikes.",
     },
   },
   android: {

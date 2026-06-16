@@ -151,7 +151,7 @@ export default function ImportPage() {
         <p className="text-sm text-muted-foreground mb-4">
           Import workouts from Strong, Hevy, or FitNotes. Export a CSV from
           your app and upload it here — your workout history will be added to
-          IronPulse automatically.
+          Mettle Lift automatically.
         </p>
         <div className="space-y-4">
           {/* Drop zone */}

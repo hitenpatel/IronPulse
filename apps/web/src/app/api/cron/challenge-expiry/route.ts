@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import {
   findExpiringChallengeMembers,
   sendChallengeExpiryReminder,
-} from "@ironpulse/api";
+} from "@mettlelift/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "IronPulse <noreply@ironpulse.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
 
   const candidates = await findExpiringChallengeMembers(db);
 

@@ -60,7 +60,7 @@ Check `packages/shared/src/index.ts` and add `previewGpxSchema` to the cardio sc
 
 - [ ] **Step 3: Add previewGpx mutation to cardio router**
 
-Add to `packages/api/src/routers/cardio.ts`. Add `previewGpxSchema` to the import from `@ironpulse/shared`, then add the procedure after `importGpx`:
+Add to `packages/api/src/routers/cardio.ts`. Add `previewGpxSchema` to the import from `@mettlelift/shared`, then add the procedure after `importGpx`:
 
 ```typescript
   previewGpx: protectedProcedure
@@ -97,8 +97,8 @@ git commit -m "add previewGpx mutation for GPX preview without persisting"
 
 Run from project root:
 ```bash
-pnpm --filter @ironpulse/web add leaflet
-pnpm --filter @ironpulse/web add -D @types/leaflet
+pnpm --filter @mettlelift/web add leaflet
+pnpm --filter @mettlelift/web add -D @types/leaflet
 ```
 
 - [ ] **Step 2: Verify installation**
@@ -1324,7 +1324,7 @@ Expected: All tests PASS.
 
 - [ ] **Step 2: Run full build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds. The `/cardio/new` route should appear in the build output.
 
 - [ ] **Step 3: Verify all files exist**

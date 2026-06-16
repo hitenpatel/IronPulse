@@ -1,4 +1,4 @@
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 # QA for #221 — Profile redesign. Asserts the hero + grouped nav
 # sections + danger zone are all reachable.

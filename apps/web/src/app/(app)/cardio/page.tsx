@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Activity, Bike, Mountain, Footprints, Dumbbell } from "lucide-react";
-import { useCardioSessions, type CardioSessionRow } from "@ironpulse/sync";
-import { HYROX_CARDIO_TYPES, type CardioType } from "@ironpulse/shared";
+import { useCardioSessions, type CardioSessionRow } from "@mettlelift/sync";
+import { HYROX_CARDIO_TYPES, type CardioType } from "@mettlelift/shared";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { Button } from "@/components/ui/button";

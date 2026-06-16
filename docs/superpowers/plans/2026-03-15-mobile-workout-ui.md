@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the mobile-first workout logging UI for the IronPulse Expo app — fullscreen active workout screen with swipe gestures, haptic feedback, rest timer, template picker, and completion summary.
+**Goal:** Build the mobile-first workout logging UI for the Mettle Lift Expo app — fullscreen active workout screen with swipe gestures, haptic feedback, rest timer, template picker, and completion summary.
 
-**Architecture:** Workout screens live under `app/workout/` (outside tabs, fullscreen stack). Components in `components/workout/` handle individual UI pieces. All data reads use shared PowerSync hooks from `@ironpulse/sync`. All writes use `usePowerSync()` → `db.execute()`. Template hydration uses two new shared hooks. `trpc.workout.complete` handles server-side PR detection.
+**Architecture:** Workout screens live under `app/workout/` (outside tabs, fullscreen stack). Components in `components/workout/` handle individual UI pieces. All data reads use shared PowerSync hooks from `@mettlelift/sync`. All writes use `usePowerSync()` → `db.execute()`. Template hydration uses two new shared hooks. `trpc.workout.complete` handles server-side PR detection.
 
 **Tech Stack:** Expo Router, React Native, `@powersync/react`, `expo-haptics`, `react-native-gesture-handler` (Swipeable), `@gorhom/bottom-sheet`, `lucide-react-native`
 
@@ -113,7 +113,7 @@ export { useTemplateExercises, useTemplateSets, type TemplateExerciseRow, type T
 
 - [ ] **Step 3: Run sync package tests**
 
-Run: `pnpm --filter @ironpulse/sync test`
+Run: `pnpm --filter @mettlelift/sync test`
 Expected: All tests pass (existing tests unaffected)
 
 - [ ] **Step 4: Commit**
@@ -130,7 +130,7 @@ git commit -m "add template detail hooks for workout template hydration"
 
 - [ ] **Step 1: Install expo-haptics**
 
-Run: `pnpm --filter @ironpulse/mobile add expo-haptics`
+Run: `pnpm --filter @mettlelift/mobile add expo-haptics`
 
 - [ ] **Step 2: Create workout utilities**
 
@@ -493,7 +493,7 @@ import { View, Text, Pressable } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { usePowerSync } from "@powersync/react";
 import { Trash2, Plus } from "lucide-react-native";
-import type { SetRow as SetRowType } from "@ironpulse/sync";
+import type { SetRow as SetRowType } from "@mettlelift/sync";
 import { SetRow } from "./set-row";
 
 interface Props {
@@ -737,7 +737,7 @@ import { View, Text, Pressable, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { usePowerSync } from "@powersync/react";
-import { useTemplates, useTemplateExercises, useTemplateSets } from "@ironpulse/sync";
+import { useTemplates, useTemplateExercises, useTemplateSets } from "@mettlelift/sync";
 import { Dumbbell } from "lucide-react-native";
 import { getWorkoutName } from "@/lib/workout-utils";
 import { useAuth } from "@/lib/auth";
@@ -969,7 +969,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { View, FlatList, Pressable, Text, Keyboard } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePowerSync, useQuery } from "@powersync/react";
-import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets } from "@mettlelift/sync";
 import { Plus } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { WorkoutHeader } from "@/components/workout/workout-header";
@@ -1155,7 +1155,7 @@ import { View, Text, FlatList, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePowerSync } from "@powersync/react";
-import { useExercises } from "@ironpulse/sync";
+import { useExercises } from "@mettlelift/sync";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react-native";
 
@@ -1260,7 +1260,7 @@ import { View, Text, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@powersync/react";
-import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets } from "@mettlelift/sync";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trophy } from "lucide-react-native";
@@ -1372,7 +1372,7 @@ git commit -m "add workout completion summary with PR callouts"
 Create `apps/mobile/e2e/workout-empty.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1408,7 +1408,7 @@ appId: com.ironpulse.app
 Create `apps/mobile/e2e/workout-template.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1426,7 +1426,7 @@ appId: com.ironpulse.app
 Create `apps/mobile/e2e/workout-cancel.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1456,17 +1456,17 @@ git commit -m "add Maestro E2E flows for workout empty, template, and cancel"
 
 - [ ] **Step 1: Run sync package tests**
 
-Run: `pnpm --filter @ironpulse/sync test`
+Run: `pnpm --filter @mettlelift/sync test`
 Expected: All tests pass
 
 - [ ] **Step 2: Run API tests**
 
-Run: `pnpm --filter @ironpulse/api test`
+Run: `pnpm --filter @mettlelift/api test`
 Expected: All tests pass
 
 - [ ] **Step 3: Verify web build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds
 
 - [ ] **Step 4: Verify Expo config**

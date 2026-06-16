@@ -1,11 +1,11 @@
 # Strava Integration — Design Specification
 
-Import Strava activities into IronPulse as cardio sessions with route data. Webhook-driven, server-side sync with OAuth connection. First integration in Phase 2.
+Import Strava activities into Mettle Lift as cardio sessions with route data. Webhook-driven, server-side sync with OAuth connection. First integration in Phase 2.
 
 ## Scope
 
 - Strava OAuth connection flow (web + mobile)
-- Webhook-driven activity import (Strava → IronPulse)
+- Webhook-driven activity import (Strava → Mettle Lift)
 - Activity metadata + route stream import
 - Initial backfill of last 30 activities on first connection
 - Token encryption at rest
@@ -15,7 +15,7 @@ Import Strava activities into IronPulse as cardio sessions with route data. Webh
 
 ## Out of Scope
 
-- Export to Strava (IronPulse → Strava)
+- Export to Strava (Mettle Lift → Strava)
 - Strava social data (kudos, comments, segments)
 - Real-time activity tracking via Strava
 - Other integrations (Garmin, HealthKit, Google Fit — separate specs)
@@ -49,23 +49,23 @@ Strava access tokens expire every 6 hours. Before each Strava API call:
 
 ### Disconnection
 
-User taps "Disconnect" → server calls `POST https://www.strava.com/oauth/deauthorize` with the access token → deletes `DeviceConnection` row. Previously imported activities remain in IronPulse.
+User taps "Disconnect" → server calls `POST https://www.strava.com/oauth/deauthorize` with the access token → deletes `DeviceConnection` row. Previously imported activities remain in Mettle Lift.
 
 ### Mobile OAuth
 
-Mobile uses `expo-web-browser` (`WebBrowser.openAuthSessionAsync()`) to open the Strava OAuth URL. The redirect URI uses the app's deep link scheme: `ironpulse://strava/callback`. The app intercepts the redirect via Expo Router linking, extracts the auth code, and sends it to the server via a tRPC mutation: `integration.completeStravaAuth.mutate({ code })`.
+Mobile uses `expo-web-browser` (`WebBrowser.openAuthSessionAsync()`) to open the Strava OAuth URL. The redirect URI uses the app's deep link scheme: `mettlelift://strava/callback`. The app intercepts the redirect via Expo Router linking, extracts the auth code, and sends it to the server via a tRPC mutation: `integration.completeStravaAuth.mutate({ code })`.
 
 ## Webhook
 
 ### Subscription Setup
 
-Strava webhooks are per-app, not per-user. A single subscription covers all IronPulse users. Registered via Strava API during deployment (one-time setup, documented in the spec):
+Strava webhooks are per-app, not per-user. A single subscription covers all Mettle Lift users. Registered via Strava API during deployment (one-time setup, documented in the spec):
 
 ```bash
 curl -X POST https://www.strava.com/api/v3/push_subscriptions \
   -d client_id=YOUR_ID \
   -d client_secret=YOUR_SECRET \
-  -d callback_url=https://app.ironpulse.com/api/strava/webhook \
+  -d callback_url=https://app.mettlelift.com/api/strava/webhook \
   -d verify_token=YOUR_VERIFY_TOKEN
 ```
 
@@ -112,7 +112,7 @@ Strava allows 100 requests per 15 minutes, 1000 per day per app. Each activity i
 
 ### Type Mapping
 
-| Strava Type | IronPulse Type |
+| Strava Type | Mettle Lift Type |
 |-------------|----------------|
 | Run | run |
 | Ride | cycle |
@@ -183,7 +183,7 @@ Implementation: use a simple `Promise` fire-and-forget in the callback handler (
 
 ### Known Limitations
 
-- **Activity updates and deletes** are ignored for v1. Strava sends `aspect_type: "update"` and `aspect_type: "delete"` webhook events, but these are acknowledged with 200 and silently dropped. If a user edits or deletes an activity on Strava, IronPulse data becomes stale. A follow-up can handle updates (re-fetch and overwrite) and deletes (mark as deleted or remove).
+- **Activity updates and deletes** are ignored for v1. Strava sends `aspect_type: "update"` and `aspect_type: "delete"` webhook events, but these are acknowledged with 200 and silently dropped. If a user edits or deletes an activity on Strava, Mettle Lift data becomes stale. A follow-up can handle updates (re-fetch and overwrite) and deletes (mark as deleted or remove).
 
 ## Data Model
 

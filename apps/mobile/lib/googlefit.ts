@@ -61,11 +61,11 @@ const IP_TO_GF: Record<string, number> = {
   walk: GF_ACTIVITY_WALKING,
 };
 
-export function mapGoogleFitTypeToIronPulse(type: number): string {
+export function mapGoogleFitTypeToMettleLift(type: number): string {
   return GF_TO_IP[type] ?? "other";
 }
 
-export function mapIronPulseTypeToGoogleFit(type: string): number {
+export function mapMettleLiftTypeToGoogleFit(type: string): number {
   return IP_TO_GF[type] ?? 4; // 4 = "Unknown activity"
 }
 
@@ -76,7 +76,7 @@ export function makeGoogleFitExternalId(dataSourceId: string): string {
 export function shouldSkipGoogleFitImport(
   appPackage: string | undefined
 ): boolean {
-  return appPackage === "com.ironpulse.app";
+  return appPackage === "com.mettlelift.app";
 }
 
 // ---------------------------------------------------------------------------
@@ -205,7 +205,7 @@ export async function saveWorkoutToGoogleFit(session: {
 
   const GoogleFit = getGoogleFit();
 
-  const activityType = mapIronPulseTypeToGoogleFit(session.type);
+  const activityType = mapMettleLiftTypeToGoogleFit(session.type);
 
   await GoogleFit.startRecording(
     (callback: any) => {},
@@ -276,7 +276,7 @@ export async function syncFromGoogleFit(
     if (existing.rows?.length > 0) continue;
 
     const id = randomUUID();
-    const ipType = mapGoogleFitTypeToIronPulse(w.activityType);
+    const ipType = mapGoogleFitTypeToMettleLift(w.activityType);
     const startMs = new Date(w.startDate).getTime();
     const endMs = new Date(w.endDate).getTime();
     const durationSeconds = Math.round((endMs - startMs) / 1000);

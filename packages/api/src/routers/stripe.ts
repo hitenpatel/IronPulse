@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import {
   createCheckoutSessionSchema,
   createPortalSessionSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { getStripe } from "../lib/stripe";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 

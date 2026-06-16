@@ -63,11 +63,11 @@ const IP_TO_HK: Record<string, string> = {
   walk: "Walking",
 };
 
-export function mapHealthKitTypeToIronPulse(hkType: string): string {
+export function mapHealthKitTypeToMettleLift(hkType: string): string {
   return HK_TO_IP[hkType] ?? "other";
 }
 
-export function mapIronPulseTypeToHealthKit(ipType: string): string {
+export function mapMettleLiftTypeToHealthKit(ipType: string): string {
   return IP_TO_HK[ipType] ?? "Other";
 }
 
@@ -76,7 +76,7 @@ export function makeExternalId(uuid: string): string {
 }
 
 export function shouldSkipImport(sourceBundle: string | undefined): boolean {
-  return sourceBundle === "com.ironpulse.app";
+  return sourceBundle === "com.mettlelift.app";
 }
 
 // ---------------------------------------------------------------------------
@@ -212,7 +212,7 @@ export function saveWorkout(opts: SaveWorkoutOpts): Promise<void> {
 
   const HK = getHealthKit();
   const sample = {
-    type: mapIronPulseTypeToHealthKit(opts.type),
+    type: mapMettleLiftTypeToHealthKit(opts.type),
     startDate: opts.startDate.toISOString(),
     endDate: opts.endDate.toISOString(),
     duration: opts.durationMinutes * 60,
@@ -277,7 +277,7 @@ export async function syncFromHealthKit(
     if (existing.rows?.length > 0) continue;
 
     const id = randomUUID();
-    const ipType = mapHealthKitTypeToIronPulse(w.activityName);
+    const ipType = mapHealthKitTypeToMettleLift(w.activityName);
     const durationSeconds = Math.round(w.duration * 60);
 
     await db.execute(

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import {
   findStreakAtRiskUsers,
   sendRetentionNudge,
-} from "@ironpulse/api";
+} from "@mettlelift/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "IronPulse <noreply@ironpulse.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
 
   const users = await findStreakAtRiskUsers(db);
 
@@ -64,9 +64,9 @@ export async function POST(req: Request) {
           "",
           "A 10-minute session is enough to keep the flame going. Your future self will thank you.",
           "",
-          "Open IronPulse and start your workout: https://ironpulse.app/dashboard",
+          "Open Mettle Lift and start your workout: https://mettlelift.app/dashboard",
           "",
-          "— IronPulse",
+          "— Mettle Lift",
         ].join("\n"),
         linkPath: "/dashboard",
         resendSend: resend

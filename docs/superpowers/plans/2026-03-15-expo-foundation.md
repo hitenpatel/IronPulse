@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Scaffold the IronPulse Expo mobile app with navigation, auth, PowerSync sync, dark theme, placeholder screens with real data, and Maestro E2E tests.
+**Goal:** Scaffold the Mettle Lift Expo mobile app with navigation, auth, PowerSync sync, dark theme, placeholder screens with real data, and Maestro E2E tests.
 
 **Architecture:** Migrate `packages/sync` to platform-agnostic imports (`@powersync/common`), add bearer token auth to the API, scaffold an Expo Router app at `apps/mobile/` with 4-tab navigation, connect PowerSync via the shared connector, and write Maestro E2E flows.
 
@@ -145,7 +145,7 @@ import {
 } from "@powersync/common";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
-import type { AppRouter } from "@ironpulse/api";
+import type { AppRouter } from "@mettlelift/api";
 
 export interface BackendConnectorOptions {
   baseUrl?: string;
@@ -233,7 +233,7 @@ export { BackendConnector, type BackendConnectorOptions } from "./connector";
 
 - [ ] **Step 5: Run pnpm install and tests**
 
-Run: `pnpm install && pnpm --filter @ironpulse/sync test`
+Run: `pnpm install && pnpm --filter @mettlelift/sync test`
 Expected: All tests pass. If the import from `@powersync/common` differs (e.g., the types are in a different subpath), adjust accordingly.
 
 - [ ] **Step 6: Commit**
@@ -305,7 +305,7 @@ export { useSyncStatus } from "./hooks/use-sync-status";
 
 - [ ] **Step 4: Update all web app imports**
 
-Find and replace all imports of `@/hooks/use-workouts` (and similar) in `apps/web/src/` with `@ironpulse/sync`. Do a codebase-wide search for `from "@/hooks/use-` and replace with `from "@ironpulse/sync"`.
+Find and replace all imports of `@/hooks/use-workouts` (and similar) in `apps/web/src/` with `@mettlelift/sync`. Do a codebase-wide search for `from "@/hooks/use-` and replace with `from "@mettlelift/sync"`.
 
 Files to update (search for the pattern):
 - `apps/web/src/app/(app)/workouts/page.tsx`
@@ -316,7 +316,7 @@ Files to update (search for the pattern):
 - `apps/web/src/app/(app)/stats/page.tsx`
 - `apps/web/src/app/(app)/exercises/page.tsx`
 - `apps/web/src/app/(app)/templates/page.tsx`
-- `apps/web/src/components/layout/app-shell.tsx` (imports `SyncStatus` → update to `useSyncStatus` from `@ironpulse/sync` if applicable, or update `sync-status.tsx`)
+- `apps/web/src/components/layout/app-shell.tsx` (imports `SyncStatus` → update to `useSyncStatus` from `@mettlelift/sync` if applicable, or update `sync-status.tsx`)
 - `apps/web/src/components/layout/sync-status.tsx`
 - `apps/web/src/components/workout/active-workout.tsx`
 - `apps/web/src/components/workout/add-exercise-sheet.tsx`
@@ -328,7 +328,7 @@ Example change in each file:
 // Before:
 import { useWorkouts } from "@/hooks/use-workouts";
 // After:
-import { useWorkouts } from "@ironpulse/sync";
+import { useWorkouts } from "@mettlelift/sync";
 ```
 
 - [ ] **Step 5: Update web PowerSync provider**
@@ -343,7 +343,7 @@ This should already work since the constructor options are all optional.
 
 - [ ] **Step 6: Verify web app still builds**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds with no TypeScript errors.
 
 - [ ] **Step 7: Commit**
@@ -370,7 +370,7 @@ Create `packages/api/__tests__/mobile-auth.test.ts`:
 ```typescript
 import { describe, it, expect } from "vitest";
 import { signMobileToken, verifyMobileToken } from "../src/lib/mobile-auth";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 
 const testUser: SessionUser = {
   id: "user-123",
@@ -418,7 +418,7 @@ describe("verifyMobileToken", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- mobile-auth`
+Run: `pnpm --filter @mettlelift/api test -- mobile-auth`
 Expected: FAIL — module not found
 
 - [ ] **Step 3: Implement mobile-auth.ts**
@@ -427,7 +427,7 @@ Create `packages/api/src/lib/mobile-auth.ts`:
 
 ```typescript
 import jwt from "jsonwebtoken";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 
 function getSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -455,7 +455,7 @@ export function verifyMobileToken(token: string): SessionUser | null {
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @ironpulse/api test -- mobile-auth`
+Run: `pnpm --filter @mettlelift/api test -- mobile-auth`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -657,12 +657,12 @@ mobileSignUp: publicProcedure
 
 - [ ] **Step 5: Verify existing tests still pass**
 
-Run: `pnpm --filter @ironpulse/api test`
+Run: `pnpm --filter @mettlelift/api test`
 Expected: All tests pass (existing + new)
 
 - [ ] **Step 6: Verify web app still builds**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds
 
 - [ ] **Step 7: Commit**
@@ -696,7 +696,7 @@ Run: `cd apps && npx create-expo-app@latest mobile --template blank-typescript &
 
 Run:
 ```bash
-pnpm --filter @ironpulse/mobile add expo-router expo-secure-store expo-linking expo-constants expo-status-bar @powersync/react-native @powersync/react @gorhom/bottom-sheet react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-screens @ironpulse/sync @ironpulse/shared @trpc/client superjson nativewind tailwindcss lucide-react-native
+pnpm --filter @mettlelift/mobile add expo-router expo-secure-store expo-linking expo-constants expo-status-bar @powersync/react-native @powersync/react @gorhom/bottom-sheet react-native-reanimated react-native-gesture-handler react-native-safe-area-context react-native-screens @mettlelift/sync @mettlelift/shared @trpc/client superjson nativewind tailwindcss lucide-react-native
 ```
 
 - [ ] **Step 3: Update app.json**
@@ -706,17 +706,17 @@ Update `apps/mobile/app.json` to include Expo Router scheme, dark mode, and bund
 ```json
 {
   "expo": {
-    "name": "IronPulse",
-    "slug": "ironpulse",
+    "name": "Mettle Lift",
+    "slug": "mettlelift",
     "version": "1.0.0",
-    "scheme": "ironpulse",
+    "scheme": "mettlelift",
     "userInterfaceStyle": "dark",
     "ios": {
-      "bundleIdentifier": "com.ironpulse.app",
+      "bundleIdentifier": "com.mettlelift.app",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.ironpulse.app",
+      "package": "com.mettlelift.app",
       "adaptiveIcon": {
         "backgroundColor": "#0a0e1a"
       }
@@ -990,7 +990,7 @@ Create `apps/mobile/lib/trpc.ts`:
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import * as SecureStore from "expo-secure-store";
-import type { AppRouter } from "@ironpulse/api";
+import type { AppRouter } from "@mettlelift/api";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -1042,7 +1042,7 @@ Create `apps/mobile/lib/auth.tsx`:
 ```typescript
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 import { trpc } from "./trpc";
 
 interface AuthContextValue {
@@ -1133,7 +1133,7 @@ Create `apps/mobile/lib/powersync.ts`:
 
 ```typescript
 import { PowerSyncDatabase } from "@powersync/react-native";
-import { AppSchema, BackendConnector } from "@ironpulse/sync";
+import { AppSchema, BackendConnector } from "@mettlelift/sync";
 import * as SecureStore from "expo-secure-store";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -1145,7 +1145,7 @@ export function getPowerSyncDatabase(): PowerSyncDatabase {
 
   dbInstance = new PowerSyncDatabase({
     schema: AppSchema,
-    database: { dbFilename: "ironpulse.db" },
+    database: { dbFilename: "mettlelift.db" },
   });
 
   return dbInstance;
@@ -1288,7 +1288,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 justify-center px-6">
-        <Text className="text-3xl font-bold text-foreground mb-2">IronPulse</Text>
+        <Text className="text-3xl font-bold text-foreground mb-2">Mettle Lift</Text>
         <Text className="text-muted-foreground mb-8">Sign in to your account</Text>
 
         <View className="gap-4">
@@ -1592,7 +1592,7 @@ Create `apps/mobile/app/(tabs)/index.tsx`:
 import { View, Text, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
-import { useWorkouts, useCardioSessions } from "@ironpulse/sync";
+import { useWorkouts, useCardioSessions } from "@mettlelift/sync";
 import { Card } from "@/components/ui/card";
 import { Dumbbell, Activity } from "lucide-react-native";
 
@@ -1664,7 +1664,7 @@ Create `apps/mobile/app/(tabs)/stats.tsx`:
 ```typescript
 import { View, Text, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useBodyMetrics } from "@ironpulse/sync";
+import { useBodyMetrics } from "@mettlelift/sync";
 import { Card } from "@/components/ui/card";
 
 export default function StatsScreen() {
@@ -1710,7 +1710,7 @@ Create `apps/mobile/app/(tabs)/exercises.tsx`:
 import { useState } from "react";
 import { View, Text, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useExercises } from "@ironpulse/sync";
+import { useExercises } from "@mettlelift/sync";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -1831,7 +1831,7 @@ git commit -m "add placeholder tab screens: dashboard, stats, exercises, profile
 Create `apps/mobile/e2e/auth-signup.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Sign Up"
@@ -1848,7 +1848,7 @@ appId: com.ironpulse.app
 Create `apps/mobile/e2e/auth-signin.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1862,7 +1862,7 @@ appId: com.ironpulse.app
 Create `apps/mobile/e2e/auth-signout.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1879,7 +1879,7 @@ appId: com.ironpulse.app
 Create `apps/mobile/e2e/navigation-tabs.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1901,7 +1901,7 @@ appId: com.ironpulse.app
 Create `apps/mobile/e2e/sync-offline.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1926,17 +1926,17 @@ git commit -m "add Maestro E2E test flows for auth, navigation, and offline sync
 
 - [ ] **Step 1: Verify sync package tests pass**
 
-Run: `pnpm --filter @ironpulse/sync test`
+Run: `pnpm --filter @mettlelift/sync test`
 Expected: All tests pass
 
 - [ ] **Step 2: Verify API tests pass**
 
-Run: `pnpm --filter @ironpulse/api test`
+Run: `pnpm --filter @mettlelift/api test`
 Expected: All tests pass (existing + mobile auth)
 
 - [ ] **Step 3: Verify web app builds**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds (import paths updated correctly)
 
 - [ ] **Step 4: Verify mobile app starts**

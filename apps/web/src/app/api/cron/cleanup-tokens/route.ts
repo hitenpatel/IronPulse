@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@ironpulse/db";
-import { captureError } from "@ironpulse/api/src/lib/capture-error";
+import { PrismaClient } from "@mettlelift/db";
+import { captureError } from "@mettlelift/api/src/lib/capture-error";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

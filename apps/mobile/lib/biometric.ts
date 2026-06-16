@@ -55,7 +55,7 @@ export async function disableBiometric(): Promise<void> {
 
 export async function authenticateWithBiometric(): Promise<boolean> {
   const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: "Unlock IronPulse",
+    promptMessage: "Unlock Mettle Lift",
     fallbackLabel: "Use Passcode",
     cancelLabel: "Sign In Instead",
   });

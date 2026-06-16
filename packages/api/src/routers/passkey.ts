@@ -6,7 +6,7 @@ import {
   passkeyRenameSchema,
   passkeyDeleteSchema,
   removePasswordSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import {
   createRegistrationOptions,
   verifyAndSaveRegistration,

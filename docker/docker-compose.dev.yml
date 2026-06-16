@@ -5,7 +5,7 @@
 services:
   traefik:
     image: traefik:v2.11
-    container_name: ironpulse-traefik
+    container_name: mettlelift-traefik
     restart: unless-stopped
     command:
       - --api.insecure=true
@@ -33,7 +33,7 @@ services:
 
   sablier:
     image: sablierapp/sablier:1.11.1
-    container_name: ironpulse-sablier
+    container_name: mettlelift-sablier
     restart: unless-stopped
     command:
       - start
@@ -57,7 +57,7 @@ services:
           memory: 1g
     labels:
       - sablier.enable=true
-      - sablier.group=ironpulse-dev
+      - sablier.group=mettlelift-dev
 
   redis:
     ports:
@@ -68,7 +68,7 @@ services:
           memory: 256m
     labels:
       - sablier.enable=true
-      - sablier.group=ironpulse-dev
+      - sablier.group=mettlelift-dev
 
   minio:
     ports:
@@ -79,7 +79,7 @@ services:
           memory: 512m
     labels:
       - sablier.enable=true
-      - sablier.group=ironpulse-dev
+      - sablier.group=mettlelift-dev
 
   mongo:
     deploy:
@@ -88,7 +88,7 @@ services:
           memory: 512m
     labels:
       - sablier.enable=true
-      - sablier.group=ironpulse-dev
+      - sablier.group=mettlelift-dev
 
   powersync:
     deploy:
@@ -97,7 +97,7 @@ services:
           memory: 512m
     labels:
       - sablier.enable=true
-      - sablier.group=ironpulse-dev
+      - sablier.group=mettlelift-dev
     volumes:
       - ./powersync.yaml:/app/powersync.yaml
       - ./sync-rules.yaml:/app/sync_rules.yaml

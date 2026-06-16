@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 
 export async function createFeedItem(
   db: PrismaClient,

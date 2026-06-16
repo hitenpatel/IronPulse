@@ -1,5 +1,5 @@
 {
-  "name": "@ironpulse/mobile",
+  "name": "@mettlelift/mobile",
   "version": "1.1.0",
   "main": "index.js",
   "scripts": {
@@ -12,8 +12,8 @@
   "dependencies": {
     "@babel/runtime": "^7.29.2",
     "@gorhom/bottom-sheet": "^5.2.8",
-    "@ironpulse/shared": "workspace:*",
-    "@ironpulse/sync": "workspace:*",
+    "@mettlelift/shared": "workspace:*",
+    "@mettlelift/sync": "workspace:*",
     "@journeyapps/react-native-quick-sqlite": "^2.5.2",
     "@powersync/react": "^1.9.0",
     "@powersync/react-native": "^1.32.0",
@@ -44,7 +44,7 @@
     "superjson": "^2.2"
   },
   "devDependencies": {
-    "@ironpulse/api": "workspace:^",
+    "@mettlelift/api": "workspace:^",
     "@react-native-community/cli": "^20.1.3",
     "@react-native-community/cli-platform-android": "^20.1.3",
     "@react-native/babel-preset": "^0.81.0",

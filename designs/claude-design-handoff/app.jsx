@@ -1,4 +1,4 @@
-// IronPulse — mobile gallery app
+// Mettle Lift — mobile gallery app
 const { useState: uS, useEffect: uE } = React;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{

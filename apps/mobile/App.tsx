@@ -340,7 +340,7 @@ function RootNavigator() {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#060B14" }}>
         <ActivityIndicator color="#F0F4F8" size="large" />
-        <Text style={{ color: "#F0F4F8", marginTop: 16, fontSize: 16 }} testID="loading-text">Loading IronPulse...</Text>
+        <Text style={{ color: "#F0F4F8", marginTop: 16, fontSize: 16 }} testID="loading-text">Loading Mettle Lift...</Text>
       </View>
     );
   }

@@ -70,7 +70,7 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
     if (!db) return;
     const psUrl = process.env.NEXT_PUBLIC_POWERSYNC_URL;
     if (psUrl && status === "authenticated") {
-      import("@ironpulse/sync")
+      import("@mettlelift/sync")
         .then(({ BackendConnector }) => db.connect(new BackendConnector()))
         .catch(() => console.warn("[PowerSync] Sync server unavailable"));
     } else if (status === "unauthenticated") {

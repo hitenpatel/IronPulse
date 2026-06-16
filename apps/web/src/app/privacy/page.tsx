@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy — IronPulse",
-  description: "How IronPulse collects, uses, and protects your personal data.",
+  title: "Privacy Policy — Mettle Lift",
+  description: "How Mettle Lift collects, uses, and protects your personal data.",
 };
 
 export default function PrivacyPage() {
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
             <p>
-              IronPulse (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) is committed to protecting
+              Mettle Lift (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) is committed to protecting
               your personal data. This Privacy Policy explains what information we collect, how we use it,
               who we share it with, and your rights under applicable data protection laws.
             </p>
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">3. How We Use Your Data</h2>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-              <li>To provide, maintain, and improve the IronPulse service.</li>
+              <li>To provide, maintain, and improve the Mettle Lift service.</li>
               <li>To authenticate you and keep your account secure.</li>
               <li>To process payments and manage your subscription.</li>
               <li>To sync your data across devices.</li>
@@ -178,8 +178,8 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-3 text-muted-foreground">
               To exercise any of these rights, contact us at{" "}
-              <a href="mailto:privacy@ironpulse.app" className="text-primary hover:underline">
-                privacy@ironpulse.app
+              <a href="mailto:privacy@mettlelift.app" className="text-primary hover:underline">
+                privacy@mettlelift.app
               </a>.
             </p>
           </section>
@@ -197,7 +197,7 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold mb-3">8. Changes to This Policy</h2>
             <p className="text-muted-foreground">
               We may update this policy from time to time. We will notify you of material changes by
-              email or by a prominent notice in the app. Continued use of IronPulse after the effective
+              email or by a prominent notice in the app. Continued use of Mettle Lift after the effective
               date constitutes acceptance of the updated policy.
             </p>
           </section>
@@ -206,8 +206,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold mb-3">9. Contact</h2>
             <p className="text-muted-foreground">
               If you have questions about this Privacy Policy or your data, contact us at{" "}
-              <a href="mailto:privacy@ironpulse.app" className="text-primary hover:underline">
-                privacy@ironpulse.app
+              <a href="mailto:privacy@mettlelift.app" className="text-primary hover:underline">
+                privacy@mettlelift.app
               </a>.
             </p>
           </section>

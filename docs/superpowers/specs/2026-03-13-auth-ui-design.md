@@ -7,7 +7,7 @@
 **Tech Stack:** Next.js 15 (App Router), React 19, Tailwind CSS 3.4, shadcn/ui (new-york), lucide-react, NextAuth v5, Resend (email).
 
 **Related specs:**
-- Master design: `docs/superpowers/specs/2026-03-12-ironpulse-design.md`
+- Master design: `docs/superpowers/specs/2026-03-12-mettlelift-design.md`
 - Core data layer: `docs/superpowers/specs/2026-03-12-core-data-layer-design.md`
 
 ---
@@ -123,11 +123,11 @@ Shared layout for all auth pages.
 
 **Desktop:** `flex` row — brand panel (40% width, `hidden lg:flex`) + form panel (60%, centered content, `max-w-sm`).
 
-**Mobile:** Brand panel hidden. Form fills screen with padding. Small logo + "IronPulse" wordmark shown inline above the form heading.
+**Mobile:** Brand panel hidden. Form fills screen with padding. Small logo + "Mettle Lift" wordmark shown inline above the form heading.
 
 **Brand panel:**
 - Full height, gradient background in purple/dark tones matching app primary color
-- Centered vertically: app logo/icon (56px rounded square, primary color), "IronPulse" wordmark, tagline "Track your strength. Own your progress."
+- Centered vertically: app logo/icon (56px rounded square, primary color), "Mettle Lift" wordmark, tagline "Track your strength. Own your progress."
 - Static — same on all auth pages
 
 **Form panel:**
@@ -353,7 +353,7 @@ Uses NextAuth's middleware wrapper. Defines route protection rules:
 
 **Environment variables:**
 - `RESEND_API_KEY` — Resend API key
-- `EMAIL_FROM` — sender email address (e.g., `noreply@ironpulse.app`)
+- `EMAIL_FROM` — sender email address (e.g., `noreply@mettlelift.app`)
 
 ---
 

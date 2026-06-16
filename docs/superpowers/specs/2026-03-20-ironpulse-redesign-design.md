@@ -1,4 +1,4 @@
-# IronPulse UI Redesign — "Pulse" Design Spec
+# Mettle Lift UI Redesign — "Pulse" Design Spec
 
 **Date:** 2026-03-20
 **Status:** Approved
@@ -6,7 +6,7 @@
 
 ## Overview
 
-A full visual redesign of IronPulse covering every screen across web (Next.js) and mobile (Expo/React Native). The redesign targets a **bold and energetic** aesthetic with a dark-mode-first approach ("Pulse"), electric blue primary color, and platform-native navigation patterns with a shared brand identity.
+A full visual redesign of Mettle Lift covering every screen across web (Next.js) and mobile (Expo/React Native). The redesign targets a **bold and energetic** aesthetic with a dark-mode-first approach ("Pulse"), electric blue primary color, and platform-native navigation patterns with a shared brand identity.
 
 The redesign will be created in **Stitch** as a separate project with both web and app screen variants.
 
@@ -148,7 +148,7 @@ Used for: FAB menu, exercise picker, RPE picker, rest timer settings, filters. 2
 ### 3.1 Login
 
 - Dark background with subtle radial gradient of `primary` blue at top
-- IronPulse logo + wordmark centered (Clash Display)
+- Mettle Lift logo + wordmark centered (Clash Display)
 - Email + password inputs (8px radius, `bg-surface` fill, `border-default`)
 - "Log In" full-width `primary` button, 48px height
 - Divider: "or continue with"
@@ -350,7 +350,7 @@ Scrollable layout:
 
 ### 9.2 Sidebar
 
-Top: IronPulse logo + wordmark (Clash Display), collapses to logo mark.
+Top: Mettle Lift logo + wordmark (Clash Display), collapses to logo mark.
 
 **Navigation groups** (section labels in `text-tertiary` uppercase caption):
 
@@ -589,21 +589,21 @@ Full analytics dashboard, 2-column responsive grid:
 ### 15.1 Shared Workout (`/share/workout/[id]`)
 
 - Dark background, centered card (max 640px)
-- IronPulse branding, workout summary, compact exercise list, PR highlights in gold
-- CTA: "Track your workouts with IronPulse"
+- Mettle Lift branding, workout summary, compact exercise list, PR highlights in gold
+- CTA: "Track your workouts with Mettle Lift"
 
 ### 15.2 Shared Cardio (`/share/cardio/[id]`)
 
 - Dark background, centered card (max 640px)
-- IronPulse branding, activity type icon + name
+- Mettle Lift branding, activity type icon + name
 - Route map (dark tiles, compact)
 - Stats: distance, duration, avg pace, elevation
-- CTA: "Track your runs with IronPulse"
+- CTA: "Track your runs with Mettle Lift"
 
 ### 15.3 Shared PR (`/share/pr/[id]`)
 
 - Dark background, celebratory card: exercise name Display, "New Personal Record" headline, record in Display `pr-gold`, user avatar + name, date
-- IronPulse branding + CTA
+- Mettle Lift branding + CTA
 
 ### 15.4 Legal Pages
 

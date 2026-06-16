@@ -1,6 +1,6 @@
 {
-  "name": "IronPulse",
-  "short_name": "IronPulse",
+  "name": "Mettle Lift",
+  "short_name": "Mettle Lift",
   "description": "Fitness tracking for athletes and coaches",
   "start_url": "/dashboard",
   "display": "standalone",

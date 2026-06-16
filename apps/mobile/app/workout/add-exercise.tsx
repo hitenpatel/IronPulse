@@ -12,7 +12,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { usePowerSync } from "@powersync/react";
-import { useExercises } from "@ironpulse/sync";
+import { useExercises } from "@mettlelift/sync";
 import { X } from "lucide-react-native";
 
 const colors = {

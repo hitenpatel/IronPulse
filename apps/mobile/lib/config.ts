@@ -11,7 +11,7 @@ export const Config = {
   API_URL:
     process.env.API_URL ??
     process.env.EXPO_PUBLIC_API_URL ??
-    "https://ironpulse.hiten-patel.co.uk",
+    "https://mettlelift.hiten-patel.co.uk",
 
   GOOGLE_CLIENT_ID:
     process.env.GOOGLE_CLIENT_ID ??

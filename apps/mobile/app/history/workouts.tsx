@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Dumbbell, Star } from "lucide-react-native";
-import { useWorkouts, type WorkoutRow } from "@ironpulse/sync";
+import { useWorkouts, type WorkoutRow } from "@mettlelift/sync";
 import { formatElapsed } from "@/lib/workout-utils";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 import Animated, { FadeInDown } from "react-native-reanimated";

@@ -232,7 +232,7 @@ Commit: "add coach dashboard and messaging on mobile"
 
 ### Task 11: Verification
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Fix any issues.
 
 Commit: "wire coaching navigation and verify builds"

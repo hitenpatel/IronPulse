@@ -1,6 +1,6 @@
 # Dashboard UI Design Spec
 
-**Goal:** Implement the app shell (bottom tab bar, dark theme) and dashboard page (greeting, quick-start actions, weekly stats, recent activity feed) as the first UI surface for IronPulse.
+**Goal:** Implement the app shell (bottom tab bar, dark theme) and dashboard page (greeting, quick-start actions, weekly stats, recent activity feed) as the first UI surface for Mettle Lift.
 
 **Prerequisite:** Core data layer (exercise, workout, cardio, bodyMetric, analytics routers) — completed.
 
@@ -271,4 +271,4 @@ This duplicates the quick-start cards intentionally — the FAB is accessible fr
 
 - **Component tests (Vitest + React Testing Library):** Test each dashboard component renders correctly with mock tRPC data. Test empty states render when data is empty.
 - **No E2E tests** for this phase — visual verification is sufficient for a dashboard layout.
-- **TypeScript compilation:** Verify `pnpm --filter @ironpulse/web build` succeeds.
+- **TypeScript compilation:** Verify `pnpm --filter @mettlelift/web build` succeeds.

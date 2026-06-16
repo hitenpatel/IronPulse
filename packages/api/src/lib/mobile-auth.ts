@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 
 function getSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;

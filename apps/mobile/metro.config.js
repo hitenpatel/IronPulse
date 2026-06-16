@@ -44,7 +44,7 @@ merged.resolver.resolveRequest = (context, moduleName, platform) => {
       moduleName === "@powersync/react-native" ||
       moduleName === "@powersync/common" ||
       moduleName.startsWith("@powersync/") ||
-      moduleName === "@ironpulse/sync" ||
+      moduleName === "@mettlelift/sync" ||
       moduleName.startsWith("@journeyapps/react-native-quick-sqlite")
     ) {
       return { filePath: stubPath, type: "sourceFile" };

@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms of Service — IronPulse",
-  description: "Terms governing your use of the IronPulse fitness tracking platform.",
+  title: "Terms of Service — Mettle Lift",
+  description: "Terms governing your use of the Mettle Lift fitness tracking platform.",
 };
 
 export default function TermsPage() {
@@ -41,15 +41,15 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground">
-              By creating an account or using IronPulse (&ldquo;the Service&rdquo;), you agree to be
+              By creating an account or using Mettle Lift (&ldquo;the Service&rdquo;), you agree to be
               bound by these Terms of Service. If you do not agree, do not use the Service. These terms
-              form a binding agreement between you and IronPulse.
+              form a binding agreement between you and Mettle Lift.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-3">2. Acceptable Use</h2>
-            <p className="text-muted-foreground mb-3">You agree to use IronPulse only for lawful purposes. You must not:</p>
+            <p className="text-muted-foreground mb-3">You agree to use Mettle Lift only for lawful purposes. You must not:</p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
               <li>Upload content that is illegal, harmful, abusive, or infringes third-party rights.</li>
               <li>Attempt to gain unauthorised access to other users&rsquo; accounts or data.</li>
@@ -66,8 +66,8 @@ export default function TermsPage() {
             <p className="text-muted-foreground">
               You are responsible for maintaining the confidentiality of your login credentials and for
               all activity that occurs under your account. Notify us immediately at{" "}
-              <a href="mailto:support@ironpulse.app" className="text-primary hover:underline">
-                support@ironpulse.app
+              <a href="mailto:support@mettlelift.app" className="text-primary hover:underline">
+                support@mettlelift.app
               </a>{" "}
               if you suspect unauthorised access. You must be at least 16 years old (or the age of
               digital consent in your jurisdiction) to create an account.
@@ -78,7 +78,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold mb-3">4. Data Ownership</h2>
             <p className="text-muted-foreground">
               You retain full ownership of the fitness data, photos, and other content you upload to
-              IronPulse. By using the Service, you grant us a limited, non-exclusive licence to store,
+              Mettle Lift. By using the Service, you grant us a limited, non-exclusive licence to store,
               process, and display your content solely to provide the Service to you. We will not use
               your content for any other purpose without your explicit consent.
             </p>
@@ -92,9 +92,9 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">5. Coach Responsibilities</h2>
             <p className="text-muted-foreground">
-              If you use IronPulse as a coach, you are responsible for ensuring that any training
+              If you use Mettle Lift as a coach, you are responsible for ensuring that any training
               programmes you create are appropriate for your clients&rsquo; fitness levels and health
-              conditions. IronPulse does not verify coaching qualifications. You agree to comply with
+              conditions. Mettle Lift does not verify coaching qualifications. You agree to comply with
               all applicable professional standards and regulations in your jurisdiction. You must not
               share clients&rsquo; personal data with unauthorised third parties.
             </p>
@@ -113,7 +113,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">7. Health Disclaimer</h2>
             <p className="text-muted-foreground">
-              IronPulse is a fitness tracking tool and is not a medical device or healthcare provider.
+              Mettle Lift is a fitness tracking tool and is not a medical device or healthcare provider.
               Information provided by the Service is for informational purposes only and is not a
               substitute for professional medical advice, diagnosis, or treatment. Always consult a
               qualified healthcare professional before starting any exercise programme, particularly if
@@ -124,7 +124,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">8. Limitation of Liability</h2>
             <p className="text-muted-foreground">
-              To the fullest extent permitted by law, IronPulse shall not be liable for any indirect,
+              To the fullest extent permitted by law, Mettle Lift shall not be liable for any indirect,
               incidental, special, consequential, or punitive damages arising from your use of, or
               inability to use, the Service. Our total liability to you for any claim shall not exceed
               the amount you paid us in the 12 months preceding the claim. Nothing in these terms limits
@@ -172,8 +172,8 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold mb-3">13. Contact</h2>
             <p className="text-muted-foreground">
               For questions about these Terms, contact us at{" "}
-              <a href="mailto:legal@ironpulse.app" className="text-primary hover:underline">
-                legal@ironpulse.app
+              <a href="mailto:legal@mettlelift.app" className="text-primary hover:underline">
+                legal@mettlelift.app
               </a>.
             </p>
           </section>

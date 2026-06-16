@@ -1,12 +1,12 @@
 // IAP module - lazy loaded. When ready to enable IAP:
-// 1. pnpm --filter @ironpulse/mobile add react-native-iap
+// 1. pnpm --filter @mettlelift/mobile add react-native-iap
 // 2. Replace lazy require with direct import
 
 const PRODUCTS = {
-  athleteMonthly: "com.ironpulse.athlete.monthly",
-  athleteYearly: "com.ironpulse.athlete.yearly",
-  coachMonthly: "com.ironpulse.coach.monthly",
-  coachYearly: "com.ironpulse.coach.yearly",
+  athleteMonthly: "com.mettlelift.athlete.monthly",
+  athleteYearly: "com.mettlelift.athlete.yearly",
+  coachMonthly: "com.mettlelift.coach.monthly",
+  coachYearly: "com.mettlelift.coach.yearly",
 };
 
 function getIAP(): any {

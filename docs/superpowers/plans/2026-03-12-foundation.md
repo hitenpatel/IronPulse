@@ -13,7 +13,7 @@
 ## File Structure
 
 ```
-ironpulse/
+mettlelift/
 ├── turbo.json
 ├── package.json                          # Root workspace config
 ├── pnpm-workspace.yaml
@@ -98,24 +98,24 @@ ironpulse/
 - [ ] **Step 1: Initialise the monorepo**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 pnpm init
 ```
 
 Edit `package.json`:
 ```json
 {
-  "name": "ironpulse",
+  "name": "mettlelift",
   "private": true,
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "turbo test",
-    "db:push": "pnpm --filter @ironpulse/db db:push",
-    "db:migrate": "pnpm --filter @ironpulse/db db:migrate",
-    "db:seed": "pnpm --filter @ironpulse/db db:seed",
-    "db:studio": "pnpm --filter @ironpulse/db db:studio"
+    "db:push": "pnpm --filter @mettlelift/db db:push",
+    "db:migrate": "pnpm --filter @mettlelift/db db:migrate",
+    "db:seed": "pnpm --filter @mettlelift/db db:seed",
+    "db:studio": "pnpm --filter @mettlelift/db db:studio"
   },
   "packageManager": "pnpm@9.15.4"
 }
@@ -193,7 +193,7 @@ dist/
 
 ```bash
 # Database
-DATABASE_URL="postgresql://ironpulse:ironpulse@localhost:5432/ironpulse"
+DATABASE_URL="postgresql://mettlelift:mettlelift@localhost:5432/mettlelift"
 
 # Auth
 NEXTAUTH_URL="http://localhost:3000"
@@ -207,7 +207,7 @@ APPLE_SECRET=""
 S3_ENDPOINT="http://localhost:9000"
 S3_ACCESS_KEY="minioadmin"
 S3_SECRET_KEY="minioadmin"
-S3_BUCKET="ironpulse"
+S3_BUCKET="mettlelift"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
@@ -246,7 +246,7 @@ git commit -m "init turborepo monorepo scaffolding"
 
 ```json
 {
-  "name": "@ironpulse/shared",
+  "name": "@mettlelift/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -451,7 +451,7 @@ export * from "./schemas/user.js";
 - [ ] **Step 8: Install dependencies and commit**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 pnpm install
 git add packages/shared/
 git commit -m "add shared package with enums, types, and Zod schemas"
@@ -470,7 +470,7 @@ git commit -m "add shared package with enums, types, and Zod schemas"
 
 ```json
 {
-  "name": "@ironpulse/db",
+  "name": "@mettlelift/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -801,15 +801,15 @@ export * from "@prisma/client";
 - [ ] **Step 5: Install dependencies and generate Prisma client**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 pnpm install
-pnpm --filter @ironpulse/db db:generate
+pnpm --filter @mettlelift/db db:generate
 ```
 
 - [ ] **Step 6: Validate schema**
 
 ```bash
-pnpm --filter @ironpulse/db exec prisma validate
+pnpm --filter @mettlelift/db exec prisma validate
 ```
 
 Expected: `The schema at packages/db/prisma/schema.prisma is valid.`
@@ -831,10 +831,10 @@ git commit -m "add database package with full MVP Prisma schema"
 
 ```bash
 docker run -d \
-  --name ironpulse-postgres \
-  -e POSTGRES_USER=ironpulse \
-  -e POSTGRES_PASSWORD=ironpulse \
-  -e POSTGRES_DB=ironpulse \
+  --name mettlelift-postgres \
+  -e POSTGRES_USER=mettlelift \
+  -e POSTGRES_PASSWORD=mettlelift \
+  -e POSTGRES_DB=mettlelift \
   -p 5432:5432 \
   postgis/postgis:16-3.4
 ```
@@ -842,7 +842,7 @@ docker run -d \
 - [ ] **Step 2: Create .env from example**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 cp .env.example .env
 sed -i '' 's/generate-with-openssl-rand-base64-32/'"$(openssl rand -base64 32)"'/' .env
 ```
@@ -858,7 +858,7 @@ Expected: All tables created successfully.
 - [ ] **Step 4: Verify database connection**
 
 ```bash
-pnpm --filter @ironpulse/db exec prisma db pull --print | head -5
+pnpm --filter @mettlelift/db exec prisma db pull --print | head -5
 ```
 
 Expected: Shows the datasource block, confirming connectivity.
@@ -876,7 +876,7 @@ Expected: Shows the datasource block, confirming connectivity.
 
 ```json
 {
-  "name": "@ironpulse/api",
+  "name": "@mettlelift/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -887,8 +887,8 @@ Expected: Shows the datasource block, confirming connectivity.
     "test": "vitest run"
   },
   "dependencies": {
-    "@ironpulse/db": "workspace:*",
-    "@ironpulse/shared": "workspace:*",
+    "@mettlelift/db": "workspace:*",
+    "@mettlelift/shared": "workspace:*",
     "@trpc/server": "^11.0",
     "superjson": "^2.2",
     "bcryptjs": "^2.4",
@@ -936,8 +936,8 @@ export default defineConfig({
 ```typescript
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import type { PrismaClient } from "@ironpulse/db";
-import type { SessionUser } from "@ironpulse/shared";
+import type { PrismaClient } from "@mettlelift/db";
+import type { SessionUser } from "@mettlelift/shared";
 
 export interface CreateContextOptions {
   db: PrismaClient;
@@ -998,7 +998,7 @@ export type { CreateContextOptions } from "./trpc.js";
 - [ ] **Step 7: Install dependencies**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 pnpm install
 ```
 
@@ -1020,10 +1020,10 @@ git commit -m "add tRPC API package with context, middleware, and empty root rou
 
 `packages/api/__tests__/helpers.ts`:
 ```typescript
-import { type PrismaClient } from "@ironpulse/db";
+import { type PrismaClient } from "@mettlelift/db";
 import { createTRPCContext, createCallerFactory } from "../src/trpc.js";
 import { createTRPCRouter } from "../src/trpc.js";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 
 // Uses a real DB — DATABASE_URL must point to a test database.
 // Callers are responsible for cleanup.
@@ -1053,7 +1053,7 @@ export function createTestUser(overrides?: Partial<SessionUser>): SessionUser {
 `packages/api/__tests__/auth.test.ts`:
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createTRPCContext, createCallerFactory } from "../src/trpc.js";
 import { createTestUser } from "./helpers.js";
 
@@ -1194,7 +1194,7 @@ describe("auth.getSession", () => {
 - [ ] **Step 3: Run tests to verify they fail**
 
 ```bash
-pnpm --filter @ironpulse/api test
+pnpm --filter @mettlelift/api test
 ```
 
 Expected: FAIL — `routers/auth.js` does not exist.
@@ -1205,7 +1205,7 @@ Expected: FAIL — `routers/auth.js` does not exist.
 ```typescript
 import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
-import { signUpSchema, signInSchema } from "@ironpulse/shared";
+import { signUpSchema, signInSchema } from "@mettlelift/shared";
 import { createTRPCRouter, publicProcedure } from "../trpc.js";
 
 export const authRouter = createTRPCRouter({
@@ -1289,7 +1289,7 @@ export const authRouter = createTRPCRouter({
 - [ ] **Step 5: Run tests to verify they pass**
 
 ```bash
-pnpm --filter @ironpulse/api test
+pnpm --filter @mettlelift/api test
 ```
 
 Expected: All 7 tests PASS.
@@ -1327,7 +1327,7 @@ git commit -m "add auth router with signUp, signIn, getSession (TDD)"
 `packages/api/__tests__/user.test.ts`:
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createTRPCContext, createCallerFactory } from "../src/trpc.js";
 import { createTestUser } from "./helpers.js";
 import { userRouter } from "../src/routers/user.js";
@@ -1409,7 +1409,7 @@ describe("user.me", () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-pnpm --filter @ironpulse/api test
+pnpm --filter @mettlelift/api test
 ```
 
 Expected: FAIL — `routers/user.js` does not exist.
@@ -1418,7 +1418,7 @@ Expected: FAIL — `routers/user.js` does not exist.
 
 `packages/api/src/routers/user.ts`:
 ```typescript
-import { updateProfileSchema } from "@ironpulse/shared";
+import { updateProfileSchema } from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc.js";
 
 export const userRouter = createTRPCRouter({
@@ -1468,7 +1468,7 @@ export const userRouter = createTRPCRouter({
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-pnpm --filter @ironpulse/api test
+pnpm --filter @mettlelift/api test
 ```
 
 Expected: All tests PASS (auth + user).
@@ -1509,7 +1509,7 @@ git commit -m "add user router with me and updateProfile (TDD)"
 
 ```json
 {
-  "name": "@ironpulse/web",
+  "name": "@mettlelift/web",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -1520,9 +1520,9 @@ git commit -m "add user router with me and updateProfile (TDD)"
     "test": "vitest run"
   },
   "dependencies": {
-    "@ironpulse/api": "workspace:*",
-    "@ironpulse/db": "workspace:*",
-    "@ironpulse/shared": "workspace:*",
+    "@mettlelift/api": "workspace:*",
+    "@mettlelift/db": "workspace:*",
+    "@mettlelift/shared": "workspace:*",
     "@trpc/client": "^11.0",
     "@trpc/react-query": "^11.0",
     "@trpc/server": "^11.0",
@@ -1573,7 +1573,7 @@ git commit -m "add user router with me and updateProfile (TDD)"
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@ironpulse/api", "@ironpulse/db", "@ironpulse/shared"],
+  transpilePackages: ["@mettlelift/api", "@mettlelift/db", "@mettlelift/shared"],
 };
 
 export default nextConfig;
@@ -1622,7 +1622,7 @@ module.exports = {
 export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">IronPulse</h1>
+      <h1 className="text-4xl font-bold">Mettle Lift</h1>
       <p className="mt-4 text-lg text-gray-600">
         The ultimate fitness tracker — strength and cardio, unified.
       </p>
@@ -1654,8 +1654,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
-import { db } from "@ironpulse/db";
-import { signInSchema } from "@ironpulse/shared";
+import { db } from "@mettlelift/db";
+import { signInSchema } from "@mettlelift/shared";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -1807,7 +1807,7 @@ export const { GET, POST } = handlers;
 `apps/web/src/lib/trpc/client.ts`:
 ```typescript
 import { createTRPCReact } from "@trpc/react-query";
-import type { AppRouter } from "@ironpulse/api";
+import type { AppRouter } from "@mettlelift/api";
 
 export const trpc = createTRPCReact<AppRouter>();
 ```
@@ -1817,8 +1817,8 @@ export const trpc = createTRPCReact<AppRouter>();
 `apps/web/src/lib/trpc/server.ts`:
 ```typescript
 import "server-only";
-import { createTRPCContext, createCallerFactory, appRouter } from "@ironpulse/api";
-import { db } from "@ironpulse/db";
+import { createTRPCContext, createCallerFactory, appRouter } from "@mettlelift/api";
+import { db } from "@mettlelift/db";
 import { auth } from "@/lib/auth";
 
 const createCaller = createCallerFactory(appRouter);
@@ -1907,7 +1907,7 @@ import "@/styles/globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "IronPulse",
+  title: "Mettle Lift",
   description: "The ultimate fitness tracker — strength and cardio, unified.",
 };
 
@@ -1945,8 +1945,8 @@ git commit -m "add NextAuth.js, tRPC client/server, and providers"
 `apps/web/src/app/api/trpc/[trpc]/route.ts`:
 ```typescript
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter, createTRPCContext } from "@ironpulse/api";
-import { db } from "@ironpulse/db";
+import { appRouter, createTRPCContext } from "@mettlelift/api";
+import { db } from "@mettlelift/db";
 import { auth } from "@/lib/auth";
 
 const handler = async (req: Request) => {
@@ -1983,7 +1983,7 @@ export { handler as GET, handler as POST };
 
 `apps/web/src/app/api/health/route.ts`:
 ```typescript
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 
 export async function GET() {
   const checks: Record<string, string> = {};
@@ -2024,7 +2024,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="border-b bg-white px-6 py-4">
-        <span className="text-xl font-bold">IronPulse</span>
+        <span className="text-xl font-bold">Mettle Lift</span>
       </nav>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
     </div>
@@ -2040,7 +2040,7 @@ export default function DashboardPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold">Dashboard</h1>
-      <p className="mt-2 text-gray-600">Welcome to IronPulse.</p>
+      <p className="mt-2 text-gray-600">Welcome to Mettle Lift.</p>
     </div>
   );
 }
@@ -2049,7 +2049,7 @@ export default function DashboardPage() {
 - [ ] **Step 5: Install all dependencies**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 pnpm install
 ```
 
@@ -2069,7 +2069,7 @@ git commit -m "add tRPC route handler, health endpoint, and app layout"
 - [ ] **Step 1: Verify the app builds**
 
 ```bash
-cd /Users/hitenpatel/dev/personal/IronPulse
+cd /Users/hitenpatel/dev/personal/Mettle Lift
 pnpm build
 ```
 
@@ -2093,7 +2093,7 @@ Expected: `{"status":"healthy","checks":{"database":"ok"}}`
 
 - [ ] **Step 4: Verify landing page**
 
-Open `http://localhost:3000` in a browser — should show "IronPulse" heading.
+Open `http://localhost:3000` in a browser — should show "Mettle Lift" heading.
 
 - [ ] **Step 5: Run all tests**
 

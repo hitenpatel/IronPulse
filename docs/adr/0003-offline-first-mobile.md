@@ -6,7 +6,7 @@
 
 ## Context
 
-Core IronPulse use cases happen in gyms, on runs, in fields — places with unreliable or no internet:
+Core Mettle Lift use cases happen in gyms, on runs, in fields — places with unreliable or no internet:
 
 - Logging a set mid-workout must never wait for a round-trip.
 - GPS cardio must record a full session with zero signal and sync it hours later.

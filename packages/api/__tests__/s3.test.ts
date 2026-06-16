@@ -43,7 +43,7 @@ describe("uploadFile", () => {
     expect(key).toBe("photos/avatar.png");
     expect(PutObjectCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        Bucket: "ironpulse",
+        Bucket: "mettlelift",
         Key: "photos/avatar.png",
         Body: Buffer.from("image-data"),
         ContentType: "image/png",
@@ -70,7 +70,7 @@ describe("getPresignedDownloadUrl", () => {
     expect(url).toBe("https://signed-url.example.com/file");
     expect(GetObjectCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        Bucket: "ironpulse",
+        Bucket: "mettlelift",
         Key: "photos/avatar.png",
       }),
     );
@@ -99,7 +99,7 @@ describe("getPresignedUploadUrl", () => {
     expect(url).toBe("https://signed-url.example.com/file");
     expect(PutObjectCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        Bucket: "ironpulse",
+        Bucket: "mettlelift",
         Key: "uploads/file.jpg",
         ContentType: "image/jpeg",
       }),

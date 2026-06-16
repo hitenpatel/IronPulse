@@ -18,7 +18,7 @@ import {
   getHRZoneName,
   getHRZoneColor,
   getZoneBoundaries,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 

@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { useQuery } from "@powersync/react";
-import { useWorkoutExercises, useWorkoutSets } from "@ironpulse/sync";
+import { useWorkoutExercises, useWorkoutSets } from "@mettlelift/sync";
 import { Trophy } from "lucide-react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
 import * as Haptics from "@/lib/haptics";

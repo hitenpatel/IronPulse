@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 import type { Metadata } from "next";
 
 interface Props {
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const workout = await getWorkout(id);
   if (!workout) return { title: "Workout Not Found" };
 
-  const title = `${workout.user.name ?? "Someone"} — ${workout.name ?? "Workout"} | IronPulse`;
+  const title = `${workout.user.name ?? "Someone"} — ${workout.name ?? "Workout"} | Mettle Lift`;
   const exerciseCount = workout.workoutExercises.length;
   const description = `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""} logged on ${new Date(workout.startedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
@@ -156,7 +156,7 @@ export default async function ShareWorkoutPage({ params }: Props) {
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
-          Shared from IronPulse
+          Shared from Mettle Lift
         </div>
       </div>
     </div>

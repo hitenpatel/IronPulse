@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Integrate PowerSync offline-first sync into the IronPulse web app — local SQLite reads/writes, upload queue to tRPC, JWT auth, sync rules, dual-layer hooks, and Docker infrastructure.
+**Goal:** Integrate PowerSync offline-first sync into the Mettle Lift web app — local SQLite reads/writes, upload queue to tRPC, JWT auth, sync rules, dual-layer hooks, and Docker infrastructure.
 
 **Architecture:** New `packages/sync` package defines the PowerSync client-side schema and backend connector. A `sync` tRPC router handles upload queue persistence. Dual-layer hooks in the web app abstract PowerSync local reads. Pages migrate from tRPC queries to PowerSync hooks and local writes. Docker Compose adds MongoDB + PowerSync service for self-hosted deployments.
 
@@ -114,7 +114,7 @@ Create `packages/sync/package.json`:
 
 ```json
 {
-  "name": "@ironpulse/sync",
+  "name": "@mettlelift/sync",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -125,7 +125,7 @@ Create `packages/sync/package.json`:
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ironpulse/api": "workspace:*",
+    "@mettlelift/api": "workspace:*",
     "@powersync/web": "^1.0.0",
     "@trpc/client": "^11.0",
     "superjson": "^2.2"
@@ -257,7 +257,7 @@ describe("PowerSync schema", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/sync test`
+Run: `pnpm --filter @mettlelift/sync test`
 Expected: FAIL — `schema` module not found
 
 - [ ] **Step 3: Create the schema**
@@ -424,7 +424,7 @@ export type Database = (typeof AppSchema)["types"];
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/sync test`
+Run: `pnpm --filter @mettlelift/sync test`
 Expected: PASS — all 4 tests pass
 
 - [ ] **Step 5: Commit**
@@ -447,7 +447,7 @@ git commit -m "add PowerSync client-side schema with tests"
 
 - [ ] **Step 1: Add jsonwebtoken dependency**
 
-Run: `pnpm --filter @ironpulse/api add jsonwebtoken && pnpm --filter @ironpulse/api add -D @types/jsonwebtoken`
+Run: `pnpm --filter @mettlelift/api add jsonwebtoken && pnpm --filter @mettlelift/api add -D @types/jsonwebtoken`
 
 - [ ] **Step 2: Write JWT auth tests**
 
@@ -527,7 +527,7 @@ describe("getPowerSyncJWKS", () => {
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- powersync-auth`
+Run: `pnpm --filter @mettlelift/api test -- powersync-auth`
 Expected: FAIL — module not found
 
 - [ ] **Step 4: Implement JWT auth utilities**
@@ -618,7 +618,7 @@ export function getPowerSyncJWKS(): JWKS {
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- powersync-auth`
+Run: `pnpm --filter @mettlelift/api test -- powersync-auth`
 Expected: PASS — all tests pass
 
 - [ ] **Step 6: Commit**
@@ -704,7 +704,7 @@ Create `packages/api/__tests__/sync.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { syncRouter } from "../src/routers/sync";
@@ -905,7 +905,7 @@ describe("sync.delete", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ironpulse/api test -- sync.test`
+Run: `pnpm --filter @mettlelift/api test -- sync.test`
 Expected: FAIL — `sync` router not found
 
 - [ ] **Step 3: Implement the sync router**
@@ -918,7 +918,7 @@ import {
   syncApplySchema,
   syncUpdateSchema,
   syncDeleteSchema,
-} from "@ironpulse/shared";
+} from "@mettlelift/shared";
 import { signPowerSyncToken } from "../lib/powersync-auth";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -1186,7 +1186,7 @@ Add `sync: syncRouter` to the `createTRPCRouter` call.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @ironpulse/api test -- sync.test`
+Run: `pnpm --filter @mettlelift/api test -- sync.test`
 Expected: PASS — all tests pass
 
 - [ ] **Step 6: Commit**
@@ -1212,7 +1212,7 @@ export { getPowerSyncJWKS } from "./lib/powersync-auth";
 Then create `apps/web/src/app/api/auth/powersync/keys/route.ts`:
 
 ```typescript
-import { getPowerSyncJWKS } from "@ironpulse/api";
+import { getPowerSyncJWKS } from "@mettlelift/api";
 
 export async function GET() {
   const jwks = getPowerSyncJWKS();
@@ -1238,7 +1238,7 @@ git commit -m "add JWKS endpoint for PowerSync JWT validation"
 
 - [ ] **Step 1: Create raw SQL migration**
 
-Run: `pnpm --filter @ironpulse/db exec prisma migrate dev --create-only --name powersync_publication`
+Run: `pnpm --filter @mettlelift/db exec prisma migrate dev --create-only --name powersync_publication`
 
 This creates an empty migration file. Edit the generated `migration.sql`:
 
@@ -1272,7 +1272,7 @@ git commit -m "add Prisma migration for PowerSync publication"
 
 - [ ] **Step 1: Install PowerSync packages**
 
-Run: `pnpm --filter @ironpulse/web add @powersync/web @powersync/react @ironpulse/sync`
+Run: `pnpm --filter @mettlelift/web add @powersync/web @powersync/react @mettlelift/sync`
 
 - [ ] **Step 2: Add postinstall script**
 
@@ -1305,10 +1305,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: [
-    "@ironpulse/api",
-    "@ironpulse/db",
-    "@ironpulse/shared",
-    "@ironpulse/sync",
+    "@mettlelift/api",
+    "@mettlelift/db",
+    "@mettlelift/shared",
+    "@mettlelift/sync",
   ],
   webpack: (config) => {
     config.experiments = {
@@ -1342,7 +1342,7 @@ Create `apps/web/src/lib/powersync/system.ts`:
 
 ```typescript
 import { PowerSyncDatabase, WASQLiteOpenFactory } from "@powersync/web";
-import { AppSchema } from "@ironpulse/sync";
+import { AppSchema } from "@mettlelift/sync";
 
 let dbInstance: PowerSyncDatabase | null = null;
 
@@ -1350,7 +1350,7 @@ export function getPowerSyncDatabase(): PowerSyncDatabase {
   if (dbInstance) return dbInstance;
 
   const factory = new WASQLiteOpenFactory({
-    dbFilename: "ironpulse.db",
+    dbFilename: "mettlelift.db",
     flags: {
       enableMultiTabs: typeof SharedWorker !== "undefined",
     },
@@ -1389,7 +1389,7 @@ export function PowerSyncProvider({ children }: { children: React.ReactNode }) {
 
     async function init() {
       const { getPowerSyncDatabase } = await import("./system");
-      const { BackendConnector } = await import("@ironpulse/sync");
+      const { BackendConnector } = await import("@mettlelift/sync");
       const database = getPowerSyncDatabase();
 
       if (!mounted) return;
@@ -1467,7 +1467,7 @@ import {
 } from "@powersync/web";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
-import type { AppRouter } from "@ironpulse/api";
+import type { AppRouter } from "@mettlelift/api";
 
 function createSyncTRPCClient() {
   return createTRPCClient<AppRouter>({
@@ -2040,7 +2040,7 @@ await db.execute(
 
 - [ ] **Step 4: Verify the app builds**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds
 
 - [ ] **Step 5: Commit**
@@ -2107,7 +2107,7 @@ Replace tRPC `template.list` with `useTemplates()`. Replace template delete with
 
 - [ ] **Step 6: Verify full build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds
 
 - [ ] **Step 7: Commit**
@@ -2145,7 +2145,7 @@ storage:
   uri: !env PS_MONGO_URI
 
 client_auth:
-  jwks_uri: http://ironpulse:3000/api/auth/powersync/keys
+  jwks_uri: http://mettlelift:3000/api/auth/powersync/keys
   audience: ["powersync"]
 
 sync_config:
@@ -2236,7 +2236,7 @@ Add to `docker/docker-compose.yml` after the existing services:
 - Add `command: ["postgres", "-c", "wal_level=logical"]` to the `postgres` service.
 - Add `mongo`, `mongo-init`, and `powersync` services (as specified in the spec).
 - Add `mongodata` to the `volumes` section.
-- Add `NEXT_PUBLIC_POWERSYNC_URL: "http://powersync:80"` to the `ironpulse` service environment.
+- Add `NEXT_PUBLIC_POWERSYNC_URL: "http://powersync:80"` to the `mettlelift` service environment.
 
 - [ ] **Step 4: Update docker env example**
 

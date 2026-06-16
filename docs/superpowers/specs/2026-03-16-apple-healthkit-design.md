@@ -1,13 +1,13 @@
 # Apple HealthKit Integration — Design Specification
 
-Bidirectional sync between IronPulse and Apple HealthKit on iOS. Reads workouts and body weight from HealthKit, writes IronPulse cardio sessions and weight logs to HealthKit. On-device only — no backend changes.
+Bidirectional sync between Mettle Lift and Apple HealthKit on iOS. Reads workouts and body weight from HealthKit, writes Mettle Lift cardio sessions and weight logs to HealthKit. On-device only — no backend changes.
 
 ## Scope
 
 - HealthKit permission request and connection management
 - Read HKWorkout samples → create CardioSession rows via PowerSync
 - Read body mass samples → create BodyMetric rows via PowerSync
-- Write IronPulse cardio sessions to HealthKit on completion
+- Write Mettle Lift cardio sessions to HealthKit on completion
 - Write body weight logs to HealthKit on save
 - HKObserverQuery for near real-time sync when other apps write workouts
 - Dedup to prevent bidirectional import loops
@@ -17,7 +17,7 @@ Bidirectional sync between IronPulse and Apple HealthKit on iOS. Reads workouts 
 ## Out of Scope
 
 - Route data from HealthKit (HKWorkoutRoute queries are complex — defer)
-- Heart rate / steps / active energy reads (not in IronPulse's current data model)
+- Heart rate / steps / active energy reads (not in Mettle Lift's current data model)
 - Strength workout writes to HealthKit (HealthKit doesn't model sets/reps/weight)
 - Android (no HealthKit equivalent — Google Fit is a separate spec)
 
@@ -27,7 +27,7 @@ Entirely on-device. No backend changes, no new API routes, no new Prisma models.
 
 ```
 ┌──────────────────────────────────────────┐
-│  IronPulse iOS App                        │
+│  Mettle Lift iOS App                        │
 │                                           │
 │  HealthKitService                         │
 │  ┌───────────────────────────────────┐   │
@@ -51,7 +51,7 @@ Entirely on-device. No backend changes, no new API routes, no new Prisma models.
 
 Data flows:
 - **Read:** HealthKit → HealthKitService → `db.execute(INSERT INTO cardio_sessions/body_metrics)` → PowerSync syncs to server
-- **Write:** IronPulse completion → HealthKitService → HealthKit API
+- **Write:** Mettle Lift completion → HealthKitService → HealthKit API
 - **Observer:** HealthKit notifies app → trigger `syncFromHealthKit()`
 
 ## Permissions
@@ -63,7 +63,7 @@ Requested when user taps "Connect" on Connected Apps screen:
 - `HKQuantityType.bodyMass` — body weight
 
 **Write permissions:**
-- `HKWorkoutType` — write IronPulse cardio sessions
+- `HKWorkoutType` — write Mettle Lift cardio sessions
 - `HKQuantityType.bodyMass` — write weight logs
 - `HKQuantityType.activeEnergyBurned` — calories burned (written as part of workout)
 
@@ -88,7 +88,7 @@ async function syncFromHealthKit(db, userId):
   workouts = await queryHealthKitWorkouts(since: lastSync)
   for workout in workouts:
     // Skip our own writes
-    if workout.sourceBundle === "com.ironpulse.app": continue
+    if workout.sourceBundle === "com.mettlelift.app": continue
 
     // Dedup
     externalId = "healthkit:" + workout.uuid
@@ -105,7 +105,7 @@ async function syncFromHealthKit(db, userId):
   // 2. Read body weight
   weights = await queryHealthKitBodyMass(since: lastSync)
   for sample in weights:
-    if sample.sourceBundle === "com.ironpulse.app": continue
+    if sample.sourceBundle === "com.mettlelift.app": continue
     date = sample.startDate.toISOString().split("T")[0]
     // body_metrics has @@unique([userId, date]) — use upsert-like logic
     existing = await db.execute("SELECT id FROM body_metrics WHERE user_id = ? AND date = ?", [userId, date])
@@ -121,7 +121,7 @@ async function syncFromHealthKit(db, userId):
 
 ### Activity Type Mapping
 
-| HealthKit `workoutActivityType` | IronPulse `type` |
+| HealthKit `workoutActivityType` | Mettle Lift `type` |
 |--------------------------------|------------------|
 | `.running` | run |
 | `.cycling` | cycle |
@@ -147,7 +147,7 @@ async function writeWorkoutToHealthKit(session):
     duration: session.duration_seconds,
     totalDistance: session.distance_meters ? HKQuantity(meters) : undefined,
     totalEnergyBurned: session.calories ? HKQuantity(kilocalories) : undefined,
-    metadata: { ironpulse_session_id: session.id }
+    metadata: { mettlelift_session_id: session.id }
   )
 
   await saveToHealthKit(workout)
@@ -166,15 +166,15 @@ async function writeWeightToHealthKit(weightKg, date):
     quantity: HKQuantity(kg: weightKg),
     startDate: date,
     endDate: date,
-    metadata: { source: "ironpulse" }
+    metadata: { source: "mettlelift" }
   )
 
   await saveToHealthKit(sample)
 ```
 
-### IronPulse Type → HealthKit Mapping
+### Mettle Lift Type → HealthKit Mapping
 
-| IronPulse `type` | HealthKit `workoutActivityType` |
+| Mettle Lift `type` | HealthKit `workoutActivityType` |
 |-----------------|-------------------------------|
 | run | `.running` |
 | cycle | `.cycling` |
@@ -187,9 +187,9 @@ async function writeWeightToHealthKit(weightKg, date):
 
 Three layers of dedup:
 
-1. **Source bundle check:** When reading from HealthKit, skip samples where `sourceBundle === "com.ironpulse.app"` (our own writes).
+1. **Source bundle check:** When reading from HealthKit, skip samples where `sourceBundle === "com.mettlelift.app"` (our own writes).
 2. **External ID check:** Each imported workout gets `externalId = "healthkit:{UUID}"`. Before importing, check if this externalId already exists in `cardio_sessions`.
-3. **Metadata tag:** When writing to HealthKit, include `metadata.ironpulse_session_id` so the write is identifiable.
+3. **Metadata tag:** When writing to HealthKit, include `metadata.mettlelift_session_id` so the write is identifiable.
 
 ## Connection State
 
@@ -255,8 +255,8 @@ Requires Expo custom dev client (not Expo Go) since `react-native-health` uses n
 
 Add to `app.json` `ios.infoPlist`:
 ```json
-"NSHealthShareUsageDescription": "IronPulse reads your workouts and body weight from Apple Health to show them in your activity feed.",
-"NSHealthUpdateUsageDescription": "IronPulse saves your logged workouts and weight to Apple Health."
+"NSHealthShareUsageDescription": "Mettle Lift reads your workouts and body weight from Apple Health to show them in your activity feed.",
+"NSHealthUpdateUsageDescription": "Mettle Lift saves your logged workouts and weight to Apple Health."
 ```
 
 ## File Structure
@@ -291,9 +291,9 @@ apps/mobile/
 
 HealthKit cannot be tested in simulator with mock data easily. Manual test on real device:
 1. Connect HealthKit → verify permissions sheet appears
-2. Log a run on Apple Watch → verify it appears in IronPulse dashboard
-3. Log a cardio session in IronPulse → verify it appears in Apple Health
-4. Log weight in IronPulse → verify it appears in Apple Health
+2. Log a run on Apple Watch → verify it appears in Mettle Lift dashboard
+3. Log a cardio session in Mettle Lift → verify it appears in Apple Health
+4. Log weight in Mettle Lift → verify it appears in Apple Health
 5. Disconnect → verify no more syncing
 
 ### Maestro E2E
@@ -301,7 +301,7 @@ HealthKit cannot be tested in simulator with mock data easily. Manual test on re
 Limited — can verify the HealthKit card renders on iOS:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"

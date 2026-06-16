@@ -1,7 +1,7 @@
-import { type PrismaClient } from "@ironpulse/db";
+import { type PrismaClient } from "@mettlelift/db";
 import { createTRPCContext, createCallerFactory } from "../src/trpc";
 import { createTRPCRouter } from "../src/trpc";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 
 // Uses a real DB — DATABASE_URL must point to a test database.
 // Callers are responsible for cleanup.

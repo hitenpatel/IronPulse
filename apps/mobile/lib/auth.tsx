@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 import * as SecureStore from "@/lib/secure-store";
-import type { SessionUser } from "@ironpulse/shared";
+import type { SessionUser } from "@mettlelift/shared";
 
 import { trpc } from "./trpc";
 import { isBiometricEnabled, isBiometricAvailable, authenticateWithBiometric, disableBiometric } from "./biometric";

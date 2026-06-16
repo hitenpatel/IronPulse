@@ -223,13 +223,13 @@ export default function SettingsScreen() {
           setNotificationsEnabled(false);
           Alert.alert(
             "Permission Denied",
-            "Enable notifications in your device Settings for IronPulse.",
+            "Enable notifications in your device Settings for Mettle Lift.",
           );
         }
       } else {
         Alert.alert(
           "Disable Notifications",
-          "To disable notifications, go to your device Settings and turn off notifications for IronPulse.",
+          "To disable notifications, go to your device Settings and turn off notifications for Mettle Lift.",
         );
       }
     } catch {

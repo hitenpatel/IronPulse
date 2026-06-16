@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bidirectional sync between IronPulse and Apple HealthKit on iOS — read workouts and body weight from HealthKit, write IronPulse cardio sessions and weight logs to HealthKit.
+**Goal:** Bidirectional sync between Mettle Lift and Apple HealthKit on iOS — read workouts and body weight from HealthKit, write Mettle Lift cardio sessions and weight logs to HealthKit.
 
 **Architecture:** On-device only, no backend changes. A `HealthKitService` module in `apps/mobile/lib/healthkit.ts` handles all HealthKit interactions. Reads write to PowerSync local SQLite. Writes push to HealthKit on session completion. Dedup via source bundle check + external ID. Connected Apps screen shows HealthKit card on iOS only.
 
@@ -46,7 +46,7 @@ apps/mobile/
 
 - [ ] **Step 1: Install dependency**
 
-Run: `pnpm --filter @ironpulse/mobile add react-native-health`
+Run: `pnpm --filter @mettlelift/mobile add react-native-health`
 
 - [ ] **Step 2: Update app.json**
 
@@ -54,8 +54,8 @@ Add to `apps/mobile/app.json` in the `ios` section:
 
 ```json
 "infoPlist": {
-  "NSHealthShareUsageDescription": "IronPulse reads your workouts and body weight from Apple Health to show them in your activity feed.",
-  "NSHealthUpdateUsageDescription": "IronPulse saves your logged workouts and weight to Apple Health."
+  "NSHealthShareUsageDescription": "Mettle Lift reads your workouts and body weight from Apple Health to show them in your activity feed.",
+  "NSHealthUpdateUsageDescription": "Mettle Lift saves your logged workouts and weight to Apple Health."
 }
 ```
 
@@ -81,25 +81,25 @@ Create `apps/mobile/lib/__tests__/healthkit.test.ts`:
 ```typescript
 import { describe, it, expect } from "vitest";
 import {
-  mapHealthKitTypeToIronPulse,
-  mapIronPulseTypeToHealthKit,
+  mapHealthKitTypeToMettleLift,
+  mapMettleLiftTypeToHealthKit,
   makeExternalId,
   shouldSkipImport,
 } from "../healthkit";
 
-describe("mapHealthKitTypeToIronPulse", () => {
-  it("maps Running to run", () => expect(mapHealthKitTypeToIronPulse("Running")).toBe("run"));
-  it("maps Cycling to cycle", () => expect(mapHealthKitTypeToIronPulse("Cycling")).toBe("cycle"));
-  it("maps Swimming to swim", () => expect(mapHealthKitTypeToIronPulse("Swimming")).toBe("swim"));
-  it("maps Hiking to hike", () => expect(mapHealthKitTypeToIronPulse("Hiking")).toBe("hike"));
-  it("maps Walking to walk", () => expect(mapHealthKitTypeToIronPulse("Walking")).toBe("walk"));
-  it("maps unknown to other", () => expect(mapHealthKitTypeToIronPulse("Yoga")).toBe("other"));
+describe("mapHealthKitTypeToMettleLift", () => {
+  it("maps Running to run", () => expect(mapHealthKitTypeToMettleLift("Running")).toBe("run"));
+  it("maps Cycling to cycle", () => expect(mapHealthKitTypeToMettleLift("Cycling")).toBe("cycle"));
+  it("maps Swimming to swim", () => expect(mapHealthKitTypeToMettleLift("Swimming")).toBe("swim"));
+  it("maps Hiking to hike", () => expect(mapHealthKitTypeToMettleLift("Hiking")).toBe("hike"));
+  it("maps Walking to walk", () => expect(mapHealthKitTypeToMettleLift("Walking")).toBe("walk"));
+  it("maps unknown to other", () => expect(mapHealthKitTypeToMettleLift("Yoga")).toBe("other"));
 });
 
-describe("mapIronPulseTypeToHealthKit", () => {
-  it("maps run to Running", () => expect(mapIronPulseTypeToHealthKit("run")).toBe("Running"));
-  it("maps cycle to Cycling", () => expect(mapIronPulseTypeToHealthKit("cycle")).toBe("Cycling"));
-  it("maps other to Other", () => expect(mapIronPulseTypeToHealthKit("other")).toBe("Other"));
+describe("mapMettleLiftTypeToHealthKit", () => {
+  it("maps run to Running", () => expect(mapMettleLiftTypeToHealthKit("run")).toBe("Running"));
+  it("maps cycle to Cycling", () => expect(mapMettleLiftTypeToHealthKit("cycle")).toBe("Cycling"));
+  it("maps other to Other", () => expect(mapMettleLiftTypeToHealthKit("other")).toBe("Other"));
 });
 
 describe("makeExternalId", () => {
@@ -110,7 +110,7 @@ describe("makeExternalId", () => {
 
 describe("shouldSkipImport", () => {
   it("skips our own bundle", () => {
-    expect(shouldSkipImport("com.ironpulse.app")).toBe(true);
+    expect(shouldSkipImport("com.mettlelift.app")).toBe(true);
   });
   it("does not skip other bundles", () => {
     expect(shouldSkipImport("com.apple.health")).toBe(false);
@@ -134,7 +134,7 @@ Create `apps/mobile/lib/healthkit.ts`:
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
-const APP_BUNDLE_ID = "com.ironpulse.app";
+const APP_BUNDLE_ID = "com.mettlelift.app";
 
 // Type mappings
 const HK_TO_IP: Record<string, string> = {
@@ -147,11 +147,11 @@ const IP_TO_HK: Record<string, string> = {
   hike: "Hiking", walk: "Walking", other: "Other",
 };
 
-export function mapHealthKitTypeToIronPulse(hkType: string): string {
+export function mapHealthKitTypeToMettleLift(hkType: string): string {
   return HK_TO_IP[hkType] ?? "other";
 }
 
-export function mapIronPulseTypeToHealthKit(ipType: string): string {
+export function mapMettleLiftTypeToHealthKit(ipType: string): string {
   return IP_TO_HK[ipType] ?? "Other";
 }
 
@@ -276,7 +276,7 @@ export async function saveWorkout(opts: {
   return new Promise((resolve, reject) => {
     hk.saveWorkout(
       {
-        type: mapIronPulseTypeToHealthKit(opts.type),
+        type: mapMettleLiftTypeToHealthKit(opts.type),
         startDate: opts.startDate,
         endDate: opts.endDate,
         duration: opts.duration,
@@ -328,7 +328,7 @@ export async function syncFromHealthKit(
     );
     if (existing.rows?._array?.length > 0) continue;
 
-    const type = mapHealthKitTypeToIronPulse(workout.activityName ?? "Other");
+    const type = mapHealthKitTypeToMettleLift(workout.activityName ?? "Other");
     const durationSeconds = Math.round(
       (new Date(workout.end).getTime() - new Date(workout.start).getTime()) / 1000
     );
@@ -566,7 +566,7 @@ git commit -m "write weight to HealthKit and trigger sync on app launch"
 Create `apps/mobile/e2e/healthkit.yaml`:
 
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -587,7 +587,7 @@ Expected: All tests pass (healthkit + geo-utils)
 
 - [ ] **Step 3: Verify web build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds (no web changes, just verify nothing broke)
 
 - [ ] **Step 4: Commit**

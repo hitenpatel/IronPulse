@@ -43,7 +43,7 @@ apps/web/src/components/cardio/
 
 - [ ] **Step 1: Install fit-file-parser**
 
-Run: `pnpm --filter @ironpulse/api add fit-file-parser`
+Run: `pnpm --filter @mettlelift/api add fit-file-parser`
 
 - [ ] **Step 2: Write FIT parser tests**
 
@@ -184,7 +184,7 @@ export async function parseFitFile(buffer: Buffer): Promise<any> {
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @ironpulse/api test -- fit`
+Run: `pnpm --filter @mettlelift/api test -- fit`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -266,7 +266,7 @@ Update the file drop zone to accept both `.gpx` and `.fit` files. Detect by exte
 
 - [ ] **Step 3: Verify web build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 
 - [ ] **Step 4: Commit**
 
@@ -283,8 +283,8 @@ Check `packages/shared/src/enums.ts` — if `FIT` is not already in the `CardioS
 
 - [ ] **Step 2: Run all tests**
 
-Run: `pnpm --filter @ironpulse/api test`
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/api test`
+Run: `pnpm --filter @mettlelift/web build`
 
 - [ ] **Step 3: Commit if needed**
 

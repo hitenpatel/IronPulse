@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Import Strava activities into IronPulse as cardio sessions with route data via OAuth + webhook-driven sync.
+**Goal:** Import Strava activities into Mettle Lift as cardio sessions with route data via OAuth + webhook-driven sync.
 
 **Architecture:** Server-side integration — OAuth connects user's Strava account, webhooks trigger activity imports, Strava API client fetches activity details + route streams, data stored as CardioSession + RoutePoint rows. Tokens encrypted at rest with AES-256-GCM. Connected Apps UI on web + mobile.
 
@@ -97,7 +97,7 @@ In the `CardioSession` model, add: `@@index([externalId])` (after the existing `
 
 - [ ] **Step 4: Push schema changes**
 
-Run: `pnpm --filter @ironpulse/db exec prisma db push`
+Run: `pnpm --filter @mettlelift/db exec prisma db push`
 
 - [ ] **Step 5: Commit**
 
@@ -181,7 +181,7 @@ export function decryptToken(ciphertext: string): string {
 
 - [ ] **Step 3: Run tests**
 
-Run: `pnpm --filter @ironpulse/api test -- encryption`
+Run: `pnpm --filter @mettlelift/api test -- encryption`
 Expected: PASS
 
 - [ ] **Step 4: Commit**
@@ -392,7 +392,7 @@ export async function revokeToken(accessToken: string) {
 
 - [ ] **Step 3: Run tests**
 
-Run: `pnpm --filter @ironpulse/api test -- strava.test`
+Run: `pnpm --filter @mettlelift/api test -- strava.test`
 Expected: PASS
 
 - [ ] **Step 4: Commit**
@@ -459,7 +459,7 @@ Create `packages/api/__tests__/integration.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@ironpulse/db";
+import { PrismaClient } from "@mettlelift/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { integrationRouter } from "../src/routers/integration";
@@ -538,7 +538,7 @@ Create `packages/api/src/routers/integration.ts`:
 
 ```typescript
 import { TRPCError } from "@trpc/server";
-import { disconnectProviderSchema, completeStravaAuthSchema, syncNowSchema } from "@ironpulse/shared";
+import { disconnectProviderSchema, completeStravaAuthSchema, syncNowSchema } from "@mettlelift/shared";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
@@ -649,7 +649,7 @@ import { integrationRouter } from "./routers/integration";
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @ironpulse/api test -- integration`
+Run: `pnpm --filter @mettlelift/api test -- integration`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -676,7 +676,7 @@ Create `apps/web/src/app/api/strava/connect/route.ts`:
 ```typescript
 import crypto from "crypto";
 import { auth } from "@/lib/auth";
-import { getRedis } from "@ironpulse/api/src/lib/redis";
+import { getRedis } from "@mettlelift/api/src/lib/redis";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -706,10 +706,10 @@ export async function GET(request: Request) {
 Create `apps/web/src/app/api/strava/callback/route.ts`:
 
 ```typescript
-import { db } from "@ironpulse/db";
-import { encryptToken } from "@ironpulse/api/src/lib/encryption";
-import { getRedis } from "@ironpulse/api/src/lib/redis";
-import { runStravaBackfill } from "@ironpulse/api/src/lib/strava";
+import { db } from "@mettlelift/db";
+import { encryptToken } from "@mettlelift/api/src/lib/encryption";
+import { getRedis } from "@mettlelift/api/src/lib/redis";
+import { runStravaBackfill } from "@mettlelift/api/src/lib/strava";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -786,7 +786,7 @@ Add to `packages/api/src/lib/strava.ts`:
 
 ```typescript
 import { encryptToken, decryptToken } from "./encryption";
-import type { PrismaClient } from "@ironpulse/db";
+import type { PrismaClient } from "@mettlelift/db";
 
 export async function ensureFreshToken(connection: any, db: PrismaClient) {
   if (new Date(connection.tokenExpiresAt) > new Date()) {
@@ -896,8 +896,8 @@ git commit -m "add Strava OAuth connect, callback, and backfill"
 Create `apps/web/src/app/api/strava/webhook/route.ts`:
 
 ```typescript
-import { db } from "@ironpulse/db";
-import { importStravaActivity } from "@ironpulse/api/src/lib/strava";
+import { db } from "@mettlelift/db";
+import { importStravaActivity } from "@mettlelift/api/src/lib/strava";
 
 // Subscription validation
 export async function GET(request: Request) {
@@ -1028,7 +1028,7 @@ Add same to `docker/.env.example`.
 
 Create `apps/mobile/e2e/integrations.yaml`:
 ```yaml
-appId: com.ironpulse.app
+appId: com.mettlelift.app
 ---
 - launchApp
 - tapOn: "Email"
@@ -1053,12 +1053,12 @@ git commit -m "add Strava env vars and Connected Apps E2E flow"
 
 - [ ] **Step 1: Run all API tests**
 
-Run: `pnpm --filter @ironpulse/api test`
+Run: `pnpm --filter @mettlelift/api test`
 Expected: All tests pass (existing + encryption + strava + integration)
 
 - [ ] **Step 2: Verify web build**
 
-Run: `pnpm --filter @ironpulse/web build`
+Run: `pnpm --filter @mettlelift/web build`
 Expected: Build succeeds
 
 - [ ] **Step 3: Fix any issues and commit**

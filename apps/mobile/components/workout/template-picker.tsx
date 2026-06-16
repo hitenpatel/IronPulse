@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 import { Play, FileText } from "lucide-react-native";
-import { useTemplates, type TemplateRow } from "@ironpulse/sync";
+import { useTemplates, type TemplateRow } from "@mettlelift/sync";
 import { useAuth } from "@/lib/auth";
 import { getWorkoutName } from "@/lib/workout-utils";
 import { randomUUID } from "@/lib/uuid";

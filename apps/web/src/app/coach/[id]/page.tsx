@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { db } from "@ironpulse/db";
+import { db } from "@mettlelift/db";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,10 +25,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Coach Not Found" };
   }
 
-  const title = `${profile.user.name ?? "Coach"} | IronPulse Coach`;
+  const title = `${profile.user.name ?? "Coach"} | Mettle Lift Coach`;
   const description = profile.bio
     ? profile.bio.slice(0, 160)
-    : `${profile.user.name ?? "Coach"} on IronPulse`;
+    : `${profile.user.name ?? "Coach"} on Mettle Lift`;
 
   return {
     title,
@@ -75,7 +75,7 @@ export default async function PublicCoachProfilePage({ params }: Props) {
             <h1 className="text-2xl font-bold">
               {profile.user.name ?? "Coach"}
             </h1>
-            <p className="text-sm text-muted-foreground">IronPulse Coach</p>
+            <p className="text-sm text-muted-foreground">Mettle Lift Coach</p>
           </div>
         </div>
 
@@ -104,7 +104,7 @@ export default async function PublicCoachProfilePage({ params }: Props) {
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
-          Coach profile on IronPulse
+          Coach profile on Mettle Lift
         </div>
       </div>
     </div>

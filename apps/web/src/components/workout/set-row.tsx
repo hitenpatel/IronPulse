@@ -6,7 +6,7 @@ import { PowerSyncContext } from "@powersync/react";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
-import { calculatePlates } from "@ironpulse/shared";
+import { calculatePlates } from "@mettlelift/shared";
 
 const STANDARD_BAR_KG = 20;
 
