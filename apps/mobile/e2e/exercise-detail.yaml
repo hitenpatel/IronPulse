@@ -27,7 +27,6 @@ appId: com.ironpulse.app
 - tapOn:
     index: 0
     text: ".*"
-    isRegex: true
 - extendedWaitUntil:
     visible:
       text: "Personal Records"
