@@ -20,7 +20,9 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - waitForAnimationToEnd
-- tapOn: "Calendar"
+# Calendar is reached by tapping the streak card on the Home tab — that card
+# renders "{N}-day streak" rather than a literal "Calendar" label.
+- tapOn: ".*-day streak"
 - extendedWaitUntil:
     visible: "Calendar"
     timeout: 10000

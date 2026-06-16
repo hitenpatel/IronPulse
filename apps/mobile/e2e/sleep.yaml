@@ -21,6 +21,11 @@ appId: com.ironpulse.app
     timeout: 60000
 - waitForAnimationToEnd
 - tapOn: "Profile"
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
 - tapOn: "Sleep"
 - extendedWaitUntil:
     visible:

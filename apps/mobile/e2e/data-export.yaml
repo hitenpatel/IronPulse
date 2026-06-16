@@ -21,7 +21,15 @@ appId: com.ironpulse.app
     timeout: 60000
 - waitForAnimationToEnd
 - tapOn: "Profile"
-- tapOn: "Export Data"
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 500
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn: "Export data"
 - extendedWaitUntil:
     visible:
       text: "Export Data"
