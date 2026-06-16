@@ -20,9 +20,16 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - waitForAnimationToEnd
+# Profile menu item is "Progress photos" (sentence case); screen header
+# now reads "Upload progress photos" (sentence case too).
 - tapOn: "Profile"
-- tapOn: "Progress Photos"
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- tapOn: "Progress photos"
 - extendedWaitUntil:
     visible:
-      text: "Upload Progress Photos"
+      text: "Upload progress photos"
     timeout: 10000

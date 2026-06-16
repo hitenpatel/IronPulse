@@ -20,6 +20,13 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - waitForAnimationToEnd
+# Feed lives in the Social section of the Profile menu — scroll to reach it.
+- tapOn: "Profile"
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
 - tapOn: "Feed"
 - extendedWaitUntil:
     visible: "Feed"

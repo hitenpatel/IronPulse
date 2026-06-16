@@ -21,9 +21,12 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - tapOn: "Profile"
-- extendedWaitUntil:
-    visible: "Achievements"
-    timeout: 10000
+- waitForAnimationToEnd
+# Achievements is in the Training section — scroll to reveal reliably.
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
 - tapOn: "Achievements"
 - extendedWaitUntil:
     visible:

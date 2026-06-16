@@ -20,6 +20,9 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - waitForAnimationToEnd
+# Messages lives in the Communication section of the Profile menu.
+- tapOn: "Profile"
+- waitForAnimationToEnd
 - tapOn: "Messages"
 - extendedWaitUntil:
     visible: "Messages"
