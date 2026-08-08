@@ -20,7 +20,7 @@ The repository remains at its existing Forgejo and GitHub path, `hiten/IronPulse
 
 ### Brand character and palette
 
-Zor is sharp, fast, premium, and training-focused. Its mark derives from the approved second reference: a geometric, forward-leaning `Z` with a dual diagonal cut. It must remain recognizable at launcher-icon and favicon sizes without depending on texture, shadows, gradients, or a font.
+Zor is sharp, fast, premium, and training-focused. Its mark follows the approved reference: a compact, connected geometric `Z` with a solid outer silhouette (top rail, diagonal body, and bottom rail) and a narrow parallel transparent cut inside the diagonal. The cut must not extend beyond the Z or turn the mark into detached rails. It must remain recognizable at launcher-icon and favicon sizes without depending on texture, shadows, gradients, or a font.
 
 Canonical product tokens are:
 
