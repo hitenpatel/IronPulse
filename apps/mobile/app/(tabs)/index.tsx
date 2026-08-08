@@ -306,18 +306,8 @@ export default function DashboardScreen() {
             paddingBottom: 14,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Logo size={24} />
-            <Text
-              style={{
-                fontFamily: fonts.displaySemi,
-                fontSize: 20,
-                color: colors.text,
-                letterSpacing: -0.3,
-              }}
-            >
-              Zor
-            </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Logo size={28} />
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <SyncIndicator />
