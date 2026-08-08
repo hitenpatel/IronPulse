@@ -200,19 +200,6 @@ export default function LoginScreen() {
           {/* Hero logo — gently floats on a 3s cycle so it reads as a
               confident, breathing brand mark rather than a static PNG. */}
           <FloatingLogo />
-
-
-          <Text
-            style={{
-              fontFamily: fonts.displayBold,
-              fontSize: 38,
-              letterSpacing: -1.3,
-              lineHeight: 40,
-              color: colors.text,
-            }}
-          >
-            Iron<Text style={{ color: colors.blue }}>Pulse</Text>
-          </Text>
           <Text
             style={{
               color: colors.text3,
