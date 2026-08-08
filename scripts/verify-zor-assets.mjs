@@ -25,10 +25,22 @@ for (const source of REQUIRED_SOURCES) {
 for (const source of REQUIRED_SOURCES.slice(0, 2)) {
   assert.match(readFileSync(source, "utf8"), /viewBox="0 0 64 64"/u, source + " must use the 64-unit grid");
 }
-assert.notEqual(
-  readFileSync(REQUIRED_SOURCES[0], "utf8"),
-  readFileSync(REQUIRED_SOURCES[1], "utf8"),
-  "small mark must differ from display mark",
+const displayMark = readFileSync(REQUIRED_SOURCES[0], "utf8");
+assert.equal(
+  (displayMark.match(/<path\b/gu) ?? []).length,
+  1,
+  "display mark must be one path containing the reference's two interlocking components",
+);
+const displayPath = displayMark.match(/d="([^"]+)"/u)?.[1] ?? "";
+assert.equal(
+  (displayPath.match(/M/gu) ?? []).length,
+  2,
+  "display mark must contain exactly two closed reference components",
+);
+assert.equal(
+  readFileSync(REQUIRED_SOURCES[0], "utf8").match(/d="([^"]+)"/u)?.[1],
+  readFileSync(REQUIRED_SOURCES[1], "utf8").match(/d="([^"]+)"/u)?.[1],
+  "small mark must preserve the traced reference geometry",
 );
 
 const EXPECTED = {
