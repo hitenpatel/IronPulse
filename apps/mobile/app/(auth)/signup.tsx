@@ -121,7 +121,7 @@ export default function SignupScreen() {
               fontFamily: "SpaceGrotesk-Bold",
             }}
           >
-            Mettle Lift
+            Zor
           </Text>
         </View>
 
@@ -228,7 +228,7 @@ export default function SignupScreen() {
                 if (!googleDiscovery) return;
                 setLoading(true);
                 try {
-                  const redirectUri = AuthSession.makeRedirectUri({ scheme: "mettlelift" });
+                  const redirectUri = AuthSession.makeRedirectUri({ scheme: "zor" });
                   const request = new AuthSession.AuthRequest({
                     clientId: GOOGLE_CLIENT_ID,
                     scopes: ["openid", "profile", "email"],

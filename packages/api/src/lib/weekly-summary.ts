@@ -149,7 +149,7 @@ export function formatWeeklySummaryText(data: WeeklySummaryData): string {
   const lines: string[] = [
     `Hi ${data.userName},`,
     "",
-    "Here's your Mettle Lift weekly summary:",
+    "Here's your Zor weekly summary:",
     "",
     `🏋️  Workouts completed: ${data.workoutsCompleted}`,
     `💪 Total volume lifted: ${data.totalVolumeKg.toLocaleString()} kg`,
@@ -178,7 +178,7 @@ export function formatWeeklySummaryText(data: WeeklySummaryData): string {
   lines.push("");
   lines.push("Keep pushing — see you next week.");
   lines.push("");
-  lines.push("— The Mettle Lift team");
+  lines.push("— The Zor team");
   lines.push("");
   lines.push(
     "You can disable weekly summaries in Settings → Notifications.",
@@ -251,7 +251,7 @@ export async function sendWeeklySummaryForUser(
     try {
       await opts.resendSend({
         to: opts.emailAddress,
-        subject: "Your Mettle Lift weekly summary",
+        subject: "Your Zor weekly summary",
         text: formatWeeklySummaryText(data),
       });
     } catch (err) {

@@ -3,10 +3,10 @@
 // 2. Replace lazy require with direct import
 
 const PRODUCTS = {
-  athleteMonthly: "com.mettlelift.athlete.monthly",
-  athleteYearly: "com.mettlelift.athlete.yearly",
-  coachMonthly: "com.mettlelift.coach.monthly",
-  coachYearly: "com.mettlelift.coach.yearly",
+  athleteMonthly: "com.ironpulse.athlete.monthly",
+  athleteYearly: "com.ironpulse.athlete.yearly",
+  coachMonthly: "com.ironpulse.coach.monthly",
+  coachYearly: "com.ironpulse.coach.yearly",
 };
 
 function getIAP(): any {

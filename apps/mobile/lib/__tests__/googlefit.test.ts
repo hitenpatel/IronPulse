@@ -42,7 +42,7 @@ describe("makeGoogleFitExternalId", () => {
 
 describe("shouldSkipGoogleFitImport", () => {
   it("skips our package", () =>
-    expect(shouldSkipGoogleFitImport("com.mettlelift.app")).toBe(true));
+    expect(shouldSkipGoogleFitImport("com.zor.app")).toBe(true));
   it("allows other packages", () =>
     expect(shouldSkipGoogleFitImport("com.google.android.gms")).toBe(false));
   it("allows undefined", () =>

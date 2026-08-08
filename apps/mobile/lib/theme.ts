@@ -1,4 +1,4 @@
-// Mettle Lift design tokens — mirrors designs/design_handoff_new/reference/mobile.css
+// Zor design tokens — mirrors designs/design_handoff_new/reference/mobile.css
 // v2 "acid sport" — electric lime primary, cobalt secondary, warm off-white text.
 //
 // Consume via:

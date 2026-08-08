@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # Opens the Achievements screen from Profile and verifies the catalog renders.
 - launchApp:

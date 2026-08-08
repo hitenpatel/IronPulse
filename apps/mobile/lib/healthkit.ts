@@ -76,7 +76,7 @@ export function makeExternalId(uuid: string): string {
 }
 
 export function shouldSkipImport(sourceBundle: string | undefined): boolean {
-  return sourceBundle === "com.mettlelift.app";
+  return sourceBundle === "com.zor.app";
 }
 
 // ---------------------------------------------------------------------------

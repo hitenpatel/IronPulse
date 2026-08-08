@@ -13,7 +13,7 @@ import type {
 import type { PrismaClient } from "@mettlelift/db";
 import crypto from "crypto";
 
-const RP_NAME = "Mettle Lift";
+const RP_NAME = "Zor";
 
 function getRpId(): string {
   return process.env.WEBAUTHN_RP_ID ?? "localhost";

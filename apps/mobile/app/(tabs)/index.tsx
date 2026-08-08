@@ -316,7 +316,7 @@ export default function DashboardScreen() {
                 letterSpacing: -0.3,
               }}
             >
-              Mettle Lift
+              Zor
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

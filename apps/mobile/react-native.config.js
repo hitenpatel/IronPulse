@@ -2,7 +2,7 @@ module.exports = {
   project: {
     android: {
       sourceDir: './android',
-      packageName: 'com.mettlelift.app',
+      packageName: 'com.zor.app',
     },
     ios: {
       sourceDir: './ios',

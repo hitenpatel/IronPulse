@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # Populate the active workout with a real exercise so the screenshot is useful
 # for design iteration (empty state isn't — this is the screen users live in).

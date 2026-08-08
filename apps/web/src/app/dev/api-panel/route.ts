@@ -18,9 +18,9 @@ export function GET() {
     url: "/api/trpc",
     transformer: "superjson",
     meta: {
-      title: "Mettle Lift API",
+      title: "Zor API",
       description:
-        "All tRPC procedures exposed by the Mettle Lift API. Procedures built with `protectedProcedure` require an authenticated session (web cookie) or a Bearer token in the `Authorization` header (mobile). Procedures built with `rateLimitedProcedure` are additionally subject to the configured rate limit.",
+        "All tRPC procedures exposed by the Zor API. Procedures built with `protectedProcedure` require an authenticated session (web cookie) or a Bearer token in the `Authorization` header (mobile). Procedures built with `rateLimitedProcedure` are additionally subject to the configured rate limit.",
     },
   });
 

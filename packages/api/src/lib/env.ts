@@ -70,7 +70,7 @@ export const env = {
     return optional("S3_SECRET_KEY", "minioadmin")!;
   },
   get S3_BUCKET() {
-    return optional("S3_BUCKET", "mettlelift")!;
+    return optional("S3_BUCKET", "ironpulse")!;
   },
 
   // Cache
@@ -83,7 +83,7 @@ export const env = {
     return optional("RESEND_API_KEY");
   },
   get EMAIL_FROM() {
-    return optional("EMAIL_FROM", "Mettle Lift <noreply@mettlelift.app>")!;
+    return optional("EMAIL_FROM", "Zor <noreply@zor.app>")!;
   },
 
   // Encryption

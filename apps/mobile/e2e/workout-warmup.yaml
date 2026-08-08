@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # Verifies the warm-up chip appears after entering a working weight,
 # opens the sheet, and inserts warm-up sets at the top of the list.

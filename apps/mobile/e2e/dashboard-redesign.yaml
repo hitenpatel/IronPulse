@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # QA for ticket #218 — Dashboard redesign.
 # Asserts the handoff landmarks are present: brand row, greeting, Next Up

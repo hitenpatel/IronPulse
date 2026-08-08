@@ -73,8 +73,8 @@ describe("stripe.createCheckoutSession", () => {
 
     const result = await caller.createCheckoutSession({
       priceId: "price_athlete_monthly",
-      successUrl: "https://app.mettlelift.com/success",
-      cancelUrl: "https://app.mettlelift.com/cancel",
+      successUrl: "https://app.zor.app/success",
+      cancelUrl: "https://app.zor.app/cancel",
       tier: "athlete",
     });
 
@@ -94,8 +94,8 @@ describe("stripe.createCheckoutSession", () => {
         customer: "cus_test123",
         mode: "subscription",
         line_items: [{ price: "price_athlete_monthly", quantity: 1 }],
-        success_url: "https://app.mettlelift.com/success",
-        cancel_url: "https://app.mettlelift.com/cancel",
+        success_url: "https://app.zor.app/success",
+        cancel_url: "https://app.zor.app/cancel",
       }),
     );
 
@@ -124,8 +124,8 @@ describe("stripe.createCheckoutSession", () => {
 
     await caller.createCheckoutSession({
       priceId: "price_coach_monthly",
-      successUrl: "https://app.mettlelift.com/success",
-      cancelUrl: "https://app.mettlelift.com/cancel",
+      successUrl: "https://app.zor.app/success",
+      cancelUrl: "https://app.zor.app/cancel",
       tier: "coach",
     });
 
@@ -157,8 +157,8 @@ describe("stripe.createCheckoutSession", () => {
     await expect(
       caller.createCheckoutSession({
         priceId: "price_test",
-        successUrl: "https://app.mettlelift.com/success",
-        cancelUrl: "https://app.mettlelift.com/cancel",
+        successUrl: "https://app.zor.app/success",
+        cancelUrl: "https://app.zor.app/cancel",
       }),
     ).rejects.toThrow("You already have an active subscription");
   });
@@ -168,8 +168,8 @@ describe("stripe.createCheckoutSession", () => {
     await expect(
       caller.createCheckoutSession({
         priceId: "price_test",
-        successUrl: "https://app.mettlelift.com/success",
-        cancelUrl: "https://app.mettlelift.com/cancel",
+        successUrl: "https://app.zor.app/success",
+        cancelUrl: "https://app.zor.app/cancel",
       }),
     ).rejects.toThrow("UNAUTHORIZED");
   });
@@ -196,13 +196,13 @@ describe("stripe.createPortalSession", () => {
     const caller = stripeCaller({ user: session });
 
     const result = await caller.createPortalSession({
-      returnUrl: "https://app.mettlelift.com/settings",
+      returnUrl: "https://app.zor.app/settings",
     });
 
     expect(result.url).toBe("https://billing.stripe.com/portal_abc");
     expect(mockBillingPortalSessionsCreate).toHaveBeenCalledWith({
       customer: "cus_portal",
-      return_url: "https://app.mettlelift.com/settings",
+      return_url: "https://app.zor.app/settings",
     });
   });
 
@@ -216,7 +216,7 @@ describe("stripe.createPortalSession", () => {
 
     await expect(
       caller.createPortalSession({
-        returnUrl: "https://app.mettlelift.com/settings",
+        returnUrl: "https://app.zor.app/settings",
       }),
     ).rejects.toThrow("No billing account found");
   });
@@ -243,7 +243,7 @@ describe("Stripe webhook handler", () => {
   });
 
   function webhookRequest(body: string, signature = "sig_valid") {
-    return new Request("https://app.mettlelift.com/api/stripe/webhook", {
+    return new Request("https://app.zor.app/api/stripe/webhook", {
       method: "POST",
       headers: { "stripe-signature": signature },
       body,
@@ -254,7 +254,7 @@ describe("Stripe webhook handler", () => {
 
   it("rejects requests without a stripe-signature header", async () => {
     const req = new Request(
-      "https://app.mettlelift.com/api/stripe/webhook",
+      "https://app.zor.app/api/stripe/webhook",
       { method: "POST", body: "{}" },
     );
     const res = await POST(req);

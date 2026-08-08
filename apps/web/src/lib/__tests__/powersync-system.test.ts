@@ -45,7 +45,7 @@ describe("getPowerSyncDatabase", () => {
     getPowerSyncDatabase();
     expect(MockWASQLiteOpenFactory).toHaveBeenCalledWith(
       expect.objectContaining({
-        dbFilename: "mettlelift.db",
+        dbFilename: "ironpulse.db",
         worker: "/@powersync/worker/WASQLiteDB.umd.js",
       })
     );

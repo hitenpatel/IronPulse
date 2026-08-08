@@ -9,7 +9,7 @@ import { createTestUser } from "./helpers";
 vi.mock("@simplewebauthn/server", () => ({
   generateRegistrationOptions: vi.fn().mockResolvedValue({
     challenge: "test-challenge-registration",
-    rp: { name: "Mettle Lift", id: "localhost" },
+    rp: { name: "Zor", id: "localhost" },
     user: { id: "dXNlci1pZA", name: "test@example.com", displayName: "Test" },
     pubKeyCredParams: [],
     timeout: 60000,

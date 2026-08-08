@@ -113,21 +113,21 @@ describe("search.global", () => {
   it("returns results across all categories simultaneously", async () => {
     await db.exercise.create({
       data: {
-        name: "Mettle Lift Curl",
+        name: "Zor Curl",
         category: "isolation",
         primaryMuscles: ["biceps"],
         isCustom: false,
       },
     });
     await db.user.create({
-      data: { email: "mettlelift-user@test.com", name: "Mettle Lift User" },
+      data: { email: "mettlelift-user@test.com", name: "Zor User" },
     });
     await db.workout.create({
-      data: { userId: testUser.id, name: "Mettle Lift Workout", startedAt: new Date() },
+      data: { userId: testUser.id, name: "Zor Workout", startedAt: new Date() },
     });
 
     const caller = searchCaller({ user: testUser });
-    const result = await caller.global({ query: "Mettle Lift" });
+    const result = await caller.global({ query: "Zor" });
 
     expect(result.exercises.length).toBeGreaterThan(0);
     expect(result.users.length).toBeGreaterThan(0);

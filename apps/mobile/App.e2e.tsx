@@ -77,7 +77,7 @@ function E2ELoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.authContainer}>
-      <Text style={styles.logo}>Mettle Lift</Text>
+      <Text style={styles.logo}>Zor</Text>
       <Text style={styles.subtext}>Strength + Cardio. One Tracker.</Text>
       <TextInput
         testID="email-input"
@@ -1055,7 +1055,7 @@ function RootNavigator() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#060B14" }}>
-        <Text style={{ color: "#F0F4F8", fontSize: 16 }}>Loading Mettle Lift...</Text>
+        <Text style={{ color: "#F0F4F8", fontSize: 16 }}>Loading Zor...</Text>
       </View>
     );
   }

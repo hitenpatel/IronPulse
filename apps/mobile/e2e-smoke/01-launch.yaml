@@ -1,7 +1,7 @@
-# Prod smoke: the SHIPPING build (com.mettlelift.app, pointed at production)
+# Prod smoke: the SHIPPING build (com.ironpulse.app, pointed at production)
 # launches and renders the login screen. Validates the literal store artifact
 # boots — the class of bug that broke the app earlier this week.
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 - launchApp:
     clearState: true

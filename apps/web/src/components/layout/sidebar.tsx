@@ -237,12 +237,12 @@ export function Sidebar({
       >
         {/* Logo mark */}
         <img
-          src="/mettlelift-logo-light.svg"
-          alt="Mettle Lift"
+          src="/zor-logo-light.svg"
+          alt="Zor"
           className="h-8 w-auto shrink-0 block dark:hidden"
         />
         <img
-          src="/mettlelift-logo-dark.svg"
+          src="/zor-logo-dark.svg"
           alt=""
           aria-hidden="true"
           className="h-8 w-auto shrink-0 hidden dark:block"
@@ -250,7 +250,7 @@ export function Sidebar({
 
         {!collapsed && (
           <span className="font-display text-base font-bold tracking-tight text-foreground">
-            Mettle Lift
+            Zor
           </span>
         )}
       </div>

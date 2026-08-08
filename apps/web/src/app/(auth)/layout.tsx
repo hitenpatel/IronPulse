@@ -9,18 +9,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Logo */}
         <div className="mb-8 flex items-center justify-center gap-2.5">
           <img
-            src="/mettlelift-logo-light.svg"
-            alt="Mettle Lift"
+            src="/zor-logo-light.svg"
+            alt="Zor"
             className="h-10 w-auto block dark:hidden"
           />
           <img
-            src="/mettlelift-logo-dark.svg"
+            src="/zor-logo-dark.svg"
             alt=""
             aria-hidden="true"
             className="h-10 w-auto hidden dark:block"
           />
           <span className="font-display font-bold text-xl tracking-tight">
-            Mettle Lift
+            Zor
           </span>
         </div>
 

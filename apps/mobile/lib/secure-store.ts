@@ -6,7 +6,7 @@
  */
 import * as Keychain from "react-native-keychain";
 
-const SERVICE_PREFIX = "mettlelift_";
+const SERVICE_PREFIX = "zor_";
 
 export async function getItemAsync(key: string): Promise<string | null> {
   try {

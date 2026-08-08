@@ -88,6 +88,10 @@ async function generate() {
 
   writeFileSync(join(ROOT, "apps/web/public/icons/icon.svg"), sourceFor("zor-mark.svg", COLORS.ink));
   outputs["apps/web/public/icons/icon.svg"] = { size: [64, 64], transparent: true, paletteRole: "ink-standalone-svg", sha256: createHash("sha256").update(readFileSync(join(ROOT, "apps/web/public/icons/icon.svg"))).digest("hex") };
+  writeFileSync(join(ROOT, "apps/web/public/zor-logo-light.svg"), sourceFor("zor-lockup-horizontal.svg", COLORS.ink));
+  outputs["apps/web/public/zor-logo-light.svg"] = { size: [180, 64], transparent: true, paletteRole: "ink-lockup-for-light-bg", sha256: createHash("sha256").update(readFileSync(join(ROOT, "apps/web/public/zor-logo-light.svg"))).digest("hex") };
+  writeFileSync(join(ROOT, "apps/web/public/zor-logo-dark.svg"), sourceFor("zor-lockup-horizontal.svg", COLORS.lime));
+  outputs["apps/web/public/zor-logo-dark.svg"] = { size: [180, 64], transparent: true, paletteRole: "lime-lockup-for-dark-bg", sha256: createHash("sha256").update(readFileSync(join(ROOT, "apps/web/public/zor-logo-dark.svg"))).digest("hex") };
   await writePng("apps/web/public/icons/icon-192.png", displayInk(192, { background: COLORS.lime }), 192, 192, { transparent: false, paletteRole: "lime-tile-ink-mark" });
   await writePng("apps/web/public/icons/icon-512.png", displayInk(512, { background: COLORS.lime }), 512, 512, { transparent: false, paletteRole: "lime-tile-ink-mark" });
   await writePng("apps/web/public/icons/icon-512-maskable.png", displayInk(512, { background: COLORS.lime, scale: 0.66 }), 512, 512, { transparent: false, paletteRole: "lime-tile-ink-mark-safe-zone" });

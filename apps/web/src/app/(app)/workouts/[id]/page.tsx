@@ -196,7 +196,7 @@ export default function WorkoutDetailPage() {
                   const url = `${window.location.origin}/share/workout/${id}`;
                   const shareData = {
                     title: workout.name || "Workout",
-                    text: `Check out my workout on Mettle Lift!`,
+                    text: `Check out my workout on Zor!`,
                     url,
                   };
                   if (typeof navigator.share === "function" && navigator.canShare?.(shareData)) {

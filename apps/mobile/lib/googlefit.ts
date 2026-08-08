@@ -76,7 +76,7 @@ export function makeGoogleFitExternalId(dataSourceId: string): string {
 export function shouldSkipGoogleFitImport(
   appPackage: string | undefined
 ): boolean {
-  return appPackage === "com.mettlelift.app";
+  return appPackage === "com.zor.app";
 }
 
 // ---------------------------------------------------------------------------

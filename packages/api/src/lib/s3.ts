@@ -22,7 +22,7 @@ function getS3(): S3Client {
   return s3Instance;
 }
 
-const BUCKET = process.env.S3_BUCKET ?? "mettlelift";
+const BUCKET = process.env.S3_BUCKET ?? "ironpulse";
 
 /**
  * Cache-Control policies applied at upload time so the CDN (Cloudflare in

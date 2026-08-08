@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Zor <noreply@zor.app>";
 
   const candidates = await findExpiringChallengeMembers(db);
 

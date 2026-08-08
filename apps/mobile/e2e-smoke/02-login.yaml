@@ -3,7 +3,7 @@
 # screen. Read-only — creates no data. Asserting the login screen disappears
 # (rather than a specific dashboard/onboarding element) keeps it robust
 # regardless of the account's onboarding state.
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 - launchApp:
     clearKeychain: true

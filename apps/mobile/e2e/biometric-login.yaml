@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # Verify biometric button appears on login screen when available
 # Note: actual biometric prompt cannot be triggered in CI — this test

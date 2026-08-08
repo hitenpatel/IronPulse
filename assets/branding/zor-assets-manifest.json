@@ -111,6 +111,24 @@
       "paletteRole": "ink-standalone-svg",
       "sha256": "6fe60791bed39f42978ebb4db344b84d76778939760e01b59875f361341aa384"
     },
+    "apps/web/public/zor-logo-dark.svg": {
+      "size": [
+        180,
+        64
+      ],
+      "transparent": true,
+      "paletteRole": "lime-lockup-for-dark-bg",
+      "sha256": "70bbe83610a9289fa8e6e8edb13b5e16cd1be3ac3529e237cbfa94e8fad79365"
+    },
+    "apps/web/public/zor-logo-light.svg": {
+      "size": [
+        180,
+        64
+      ],
+      "transparent": true,
+      "paletteRole": "ink-lockup-for-light-bg",
+      "sha256": "67e48bca251e574c84a2cb3f6e21fa63832431a77fc3d3a3d16a24f01b5ce327"
+    },
     "apps/web/src/app/apple-icon.png": {
       "size": [
         180,
