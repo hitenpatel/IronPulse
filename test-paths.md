@@ -1,7 +1,7 @@
 # Zor Critical Test Paths
 
 This file is read by the **Zor QA** agent (Paperclip skill `zor-qa`)
-on its weekly Sunday 06:00 UTC sweep against `https://staging.zor.hiten-patel.co.uk`.
+on its weekly Sunday 06:00 UTC sweep against `https://staging.ironpulse.hiten-patel.co.uk`.
 
 The agent does **not** invent flows. It runs only the Playwright specs listed below,
 in this order, and files Forgejo issues with `regression` + `agent-suggested` labels
@@ -12,7 +12,7 @@ for any failure that reproduces twice in a row.
 ```bash
 git clone https://claude-agent:$FORGEJO_CLAUDE_AGENT_TOKEN@git.hiten-patel.co.uk/hiten/IronPulse.git ./repo
 cd repo && pnpm install --frozen-lockfile
-BASE_URL=https://staging.zor.hiten-patel.co.uk \
+BASE_URL=https://staging.ironpulse.hiten-patel.co.uk \
   pnpm --filter @zor/web exec playwright test \
   apps/web/e2e/{auth,auth-login,auth-signup,onboarding,navigation,sidebar-nav,workouts,exercise-detail,cardio,goals,settings,csrf,trpc-fallback}.spec.ts \
   --reporter=line,json --output=/tmp/playwright-results

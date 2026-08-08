@@ -107,6 +107,11 @@
       "patterns": ["ironpulse.local"]
     },
     {
+      "reason": "Production and staging hostnames served by the retained self-hosted deployment — cutting over DNS is out of scope for the code rebrand and would break existing installed apps that fall back to this URL.",
+      "paths": ["apps/mobile/lib/config.ts", "test-paths.md"],
+      "patterns": ["ironpulse.hiten-patel.co.uk"]
+    },
+    {
       "reason": "Forgejo and GitHub repository paths remain at hiten/IronPulse per TASK-21 compatibility decision.",
       "paths": [
         "README.md",
