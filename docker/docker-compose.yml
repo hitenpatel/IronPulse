@@ -15,11 +15,11 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: "postgresql://mettlelift:mettlelift@postgres:5432/mettlelift"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:?set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}"
       REDIS_URL: "redis://redis:6379"
       S3_ENDPOINT: "http://minio:9000"
-      S3_ACCESS_KEY: "minioadmin"
-      S3_SECRET_KEY: "minioadmin"
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
       S3_BUCKET: "mettlelift"
       NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
       NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
@@ -42,23 +42,23 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: imresamu/postgis:16-3.4-alpine  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
+    image: imresamu/postgis:16-3.4-alpine@sha256:16c1dc73cfee7f069649b95c140c3aba68e1cfbd98db6df25b1f748916533278  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
     command: ["postgres", "-c", "wal_level=logical"]
     environment:
-      POSTGRES_USER: mettlelift
-      POSTGRES_PASSWORD: mettlelift
-      POSTGRES_DB: mettlelift
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mettlelift"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mettlelift}"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     volumes:
       - redisdata:/data
     healthcheck:
@@ -69,11 +69,11 @@ services:
     restart: unless-stopped
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
     volumes:
       - miniodata:/data
     ports:
@@ -86,13 +86,13 @@ services:
     restart: unless-stopped
 
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:latest@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env} ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env} &&
       mc mb --ignore-existing local/mettlelift &&
       exit 0
       "
@@ -100,7 +100,7 @@ services:
   # Offline-sync backend (Mongo + PowerSync). Opt-in: only needed for the
   # native mobile app / offline web sync. Enable with `--profile sync`.
   mongo:
-    image: mongo:7-jammy
+    image: mongo:7-jammy@sha256:04582c3a144d088f841c446abfc19f79adcefa8bd00ad4a7fb18e27b9585c5d6
     profiles: ["sync"]
     command: ["--replSet", "rs0"]
     volumes:
@@ -112,7 +112,7 @@ services:
     restart: unless-stopped
 
   mongo-init:
-    image: mongo:7-jammy
+    image: mongo:7-jammy@sha256:04582c3a144d088f841c446abfc19f79adcefa8bd00ad4a7fb18e27b9585c5d6
     profiles: ["sync"]
     depends_on:
       mongo:
@@ -121,7 +121,7 @@ services:
     restart: "no"
 
   powersync:
-    image: journeyapps/powersync-service:latest
+    image: journeyapps/powersync-service:latest@sha256:b6b22fa7d0d862f04bdff62846e656756d17bcf3dd6eca399a0633671051438b
     profiles: ["sync"]
     depends_on:
       postgres:
@@ -132,7 +132,7 @@ services:
       - ./powersync.yaml:/app/config/powersync.yaml
       - ./sync-rules.yaml:/app/config/sync-rules.yaml
     environment:
-      PS_DATA_SOURCE_URI: "postgresql://mettlelift:mettlelift@postgres:5432/mettlelift"
+      PS_DATA_SOURCE_URI: "postgresql://${POSTGRES_USER:?set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}"
       PS_MONGO_URI: "mongodb://mongo:27017/powersync"
     ports:
       - "8080:80"
@@ -140,7 +140,7 @@ services:
 
   # Optional status dashboard. Enable with `--profile monitoring`.
   uptime-kuma:
-    image: louislam/uptime-kuma:1
+    image: louislam/uptime-kuma:1@sha256:3d632903e6af34139a37f18055c4f1bfd9b7205ae1138f1e5e8940ddc1d176f9
     profiles: ["monitoring"]
     volumes:
       - uptimekuma:/app/data
@@ -151,15 +151,15 @@ services:
   # Nightly pg_dump. Recommended for any real deployment. Enable with
   # `--profile backup`.
   backup:
-    image: imresamu/postgis:16-3.4-alpine  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
+    image: imresamu/postgis:16-3.4-alpine@sha256:16c1dc73cfee7f069649b95c140c3aba68e1cfbd98db6df25b1f748916533278  # multi-arch incl. arm64 (upstream postgis/postgis segfaults on arm64)
     profiles: ["backup"]
     volumes:
       - ./backup.sh:/backup.sh:ro
       - backups:/backups
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
       POSTGRES_HOST: postgres
     entrypoint: /bin/sh
     command: >
