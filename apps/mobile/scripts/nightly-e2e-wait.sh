@@ -12,11 +12,33 @@ export PATH="$HOME/.maestro/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
 REPO="${REPO:-/home/ubuntu/dev/IronPulse}"
 LOG_DIR="${LOG_DIR:-/home/ubuntu/stack/logs}"
+STATE_DIR="${STATE_DIR:-/home/ubuntu/stack/state}"
+LAST_GREEN_FILE="$STATE_DIR/zor-e2e-last-green.sha"
 LOCK_DIR="/tmp/pixel-e2e-lock"
 MAX_WAIT_SECONDS="${MAX_WAIT_SECONDS:-5400}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-30}"
+BRANCH="${BRANCH:-main}"
+FORCE="${FORCE:-0}"
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
+
+# --- Change detection: skip if HEAD hasn't moved since last green run. ---
+# Nothing to compare against on the very first run (LAST_GREEN missing) — do
+# run the suite. FORCE=1 bypasses the check for manual triggers.
+mkdir -p "$STATE_DIR"
+if [ -d "$REPO/.git" ]; then
+  git -C "$REPO" fetch --quiet origin "$BRANCH" 2>/dev/null || true
+  CUR_SHA=$(git -C "$REPO" rev-parse "origin/$BRANCH" 2>/dev/null || git -C "$REPO" rev-parse HEAD)
+else
+  CUR_SHA="unknown"
+fi
+LAST_SHA=$(cat "$LAST_GREEN_FILE" 2>/dev/null || true)
+log "current $BRANCH SHA: $CUR_SHA"
+log "last green SHA: ${LAST_SHA:-<none>}"
+if [ "$FORCE" != "1" ] && [ -n "$LAST_SHA" ] && [ "$LAST_SHA" = "$CUR_SHA" ]; then
+  log "no new commits since last green nightly — skipping suite"
+  exit 0
+fi
 
 log "waiting for RadioShake maestro to finish (max ${MAX_WAIT_SECONDS}s)"
 
@@ -60,4 +82,8 @@ log "handing off to nightly-e2e.sh — log: $LOG"
 "$REPO/apps/mobile/scripts/nightly-e2e.sh" >>"$LOG" 2>&1
 RC=$?
 log "nightly-e2e.sh exit=$RC"
+if [ "$RC" = "0" ]; then
+  echo "$CUR_SHA" > "$LAST_GREEN_FILE"
+  log "recorded green SHA $CUR_SHA"
+fi
 exit $RC
