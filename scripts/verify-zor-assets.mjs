@@ -38,6 +38,11 @@ assert.equal(
   "display mark must contain exactly two closed reference components",
 );
 assert.equal(
+  (displayPath.match(/Q/gu) ?? []).length,
+  2,
+  "display mark must smooth only the reference's top-left and bottom-right terminals",
+);
+assert.equal(
   readFileSync(REQUIRED_SOURCES[0], "utf8").match(/d="([^"]+)"/u)?.[1],
   readFileSync(REQUIRED_SOURCES[1], "utf8").match(/d="([^"]+)"/u)?.[1],
   "small mark must preserve the traced reference geometry",

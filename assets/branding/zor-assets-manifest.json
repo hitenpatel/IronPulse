@@ -1,6 +1,6 @@
 {
   "generator": "zor-assets-v1",
-  "sourceHash": "212c7c72c13f8b5808d3175cedfc51cdbe58c2fdb37a2af9031c712602b9fb8d",
+  "sourceHash": "651f83aab060adb5f9bea14c183d150e507a6301cac55e643d80340580303c35",
   "outputs": {
     "apps/mobile/assets/android-icon-background.png": {
       "size": [
@@ -18,7 +18,7 @@
       ],
       "transparent": true,
       "paletteRole": "ink-transparent-safe-zone",
-      "sha256": "166dc223a75d3288fc9e143245cc0af15436db57d5b4f55afa70dce611f5d769"
+      "sha256": "5f45e735409bb212c5ee96fda4a6e5c0f7ddc6f6ead2b8db39278074e189fd60"
     },
     "apps/mobile/assets/android-icon-monochrome.png": {
       "size": [
@@ -27,7 +27,7 @@
       ],
       "transparent": true,
       "paletteRole": "alpha-mask",
-      "sha256": "c51b7245f31f8fe87d923f68f93e5c6276826c93a9b9f0fdafe06e0a6db5b532"
+      "sha256": "b6b4e305c11f582676aa413f6810c7eb575d049b41f5d04f832feccb220bb36c"
     },
     "apps/mobile/assets/favicon.png": {
       "size": [
@@ -36,7 +36,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "019dc74d190436baacbdcb8d835469ae31bd9e8a7f1fe01353c491599e72841e"
+      "sha256": "3fb47457c78f211c7a4cc3077298275c116608751233d450b576c3a432627d0a"
     },
     "apps/mobile/assets/icon.png": {
       "size": [
@@ -45,7 +45,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "8767637ddc9957f155e7085427ed14f93ca9f4237036b50f769e0273c575b306"
+      "sha256": "9c4bdd4130a5adc6187819ef07e301dcba2c12f42af6c059e1f8ffe4fc14342a"
     },
     "apps/mobile/assets/logo-mark.png": {
       "size": [
@@ -54,7 +54,7 @@
       ],
       "transparent": true,
       "paletteRole": "lime-transparent",
-      "sha256": "49a8520c04fe08155ed12d335bd39cdef51054444d4a055ff903ae0a3ae45153"
+      "sha256": "2005655a6c3310f13a126b2bba2aa188d7a11df4853d5578b0a8dc4d4c27d91c"
     },
     "apps/mobile/assets/splash-icon.png": {
       "size": [
@@ -63,7 +63,7 @@
       ],
       "transparent": true,
       "paletteRole": "lime-transparent",
-      "sha256": "0dfb148007c1778b285412d57560b8c76ad00c89d1a16ea01b675bb31bd0c802"
+      "sha256": "3aec78026d07177657a0ed8936f7527554e5fa228dcd6c5e49e81542c849778c"
     },
     "apps/web/public/favicon.ico": {
       "size": [
@@ -73,7 +73,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "91af8414053782d51a60c0df94ddc6c456e70c6aa9dcd09c3f90177f0ab94fa1"
+      "sha256": "cf820d55ed2e6e4f2ffdd9dae34085958d28fea503d136a194ff8a1358972b61"
     },
     "apps/web/public/icons/icon-192.png": {
       "size": [
@@ -82,7 +82,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "b8757f2a5fe641293924050ea5af18e025f19cbd8380fb60b6c2bd714c800f8d"
+      "sha256": "564f38c69adef444bc10fdd932b96a8cc99cbb3d14b790ccd499e974e5707aef"
     },
     "apps/web/public/icons/icon-512-maskable.png": {
       "size": [
@@ -91,7 +91,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark-safe-zone",
-      "sha256": "ca8bfa869f2763648e23a0d7b50003f21fb93ef6d162c4d2362dd6f9beabf6db"
+      "sha256": "2551f262b73c06f663a292e2b49f459993e0755e1555edcf101dcfcc687c6c8d"
     },
     "apps/web/public/icons/icon-512.png": {
       "size": [
@@ -100,7 +100,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "36730259a8ddfdb9fcfca809b6942dc05df5a5dbc7f774eeb50dbbd5ab57e232"
+      "sha256": "bef60af16db7a09ebb7ed1aa914109e9f9602ec411bc8ecd1f8236c60bffd1cc"
     },
     "apps/web/public/icons/icon.svg": {
       "size": [
@@ -109,7 +109,7 @@
       ],
       "transparent": true,
       "paletteRole": "ink-standalone-svg",
-      "sha256": "0e5cbfb7670d181ce024de104e32b91745a991c8c5cad3049fc1025592d49045"
+      "sha256": "a33c938ccb8a82b7b16026fe1ec666f5f914b306f89ce39d6b95531f47e8c1a5"
     },
     "apps/web/src/app/apple-icon.png": {
       "size": [
@@ -118,7 +118,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "bec34896d463ee5428c324c5c0e7a302fc297020cd5f257cbb41d891471ec1ae"
+      "sha256": "c317c64cef76e01e01b9d9a721eaaecd5460d7bdf77b82dd94b8d7b902e5f605"
     },
     "apps/web/src/app/icon.png": {
       "size": [
@@ -127,7 +127,7 @@
       ],
       "transparent": false,
       "paletteRole": "lime-tile-ink-mark",
-      "sha256": "36730259a8ddfdb9fcfca809b6942dc05df5a5dbc7f774eeb50dbbd5ab57e232"
+      "sha256": "bef60af16db7a09ebb7ed1aa914109e9f9602ec411bc8ecd1f8236c60bffd1cc"
     },
     "assets/branding/generated/zor-mark-16.png": {
       "size": [
@@ -136,7 +136,7 @@
       ],
       "transparent": true,
       "paletteRole": "lime-transparent-small",
-      "sha256": "2ff7ca09ecc44de3be2e2d105d96db253ed56d178159c8a8239289227d282a3d"
+      "sha256": "3987b8df9c13b6400ebfa1f6add30af04af3ffe87fac15b20b2a0e7b1d3b7356"
     },
     "assets/branding/generated/zor-mark-24.png": {
       "size": [
@@ -145,7 +145,7 @@
       ],
       "transparent": true,
       "paletteRole": "lime-transparent-small",
-      "sha256": "ef92f4eedc4a9d94013bc661b0db6bda17d392cfd5688c6a7e9677d23d62c423"
+      "sha256": "df7b18c8a8b3eda97a28ab74a0d7eee1acab9f5ac493a1575a9f477c7862c5b9"
     },
     "assets/branding/generated/zor-svg-preview.png": {
       "size": [
@@ -154,7 +154,7 @@
       ],
       "transparent": false,
       "paletteRole": "ink-lime-bone",
-      "sha256": "0cf501a741def8e73454b0c01d36d1f41f726502ba6cb9f3ea123bce9e377f4d"
+      "sha256": "6814e657083f3146d9af82b960d4067b6c2649ac0c2234cef511f3f152ca34ea"
     },
     "assets/branding/zor-social-card.png": {
       "size": [
@@ -163,7 +163,7 @@
       ],
       "transparent": false,
       "paletteRole": "ink-lime-bone",
-      "sha256": "26698ce0f2ae5f86e817b104523729e587860ee38372cf4a83e2d567ca66f5e8"
+      "sha256": "d64b614fb560189bead082e03e2ba4509681829182a1b381ed66c1707c2682fd"
     }
   }
 }
