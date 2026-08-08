@@ -28,30 +28,36 @@ async function seed() {
   let created = 0;
   let updated = 0;
 
-  for (const ex of exercises) {
-    const existing = await db.exercise.findFirst({
-      where: { name: ex.name, isCustom: false },
-    });
+  await db.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(727272)`;
+      for (const ex of exercises) {
+        const existing = await tx.exercise.findFirst({
+          where: { name: ex.name, isCustom: false },
+        });
 
-    if (existing) {
-      await db.exercise.update({
-        where: { id: existing.id },
-        data: {
-          category: ex.category,
-          primaryMuscles: ex.primaryMuscles,
-          secondaryMuscles: ex.secondaryMuscles,
-          equipment: ex.equipment,
-          instructions: ex.instructions,
-          imageUrls: ex.imageUrls,
-          videoUrls: ex.videoUrls,
-        },
-      });
-      updated++;
-    } else {
-      await db.exercise.create({ data: ex });
-      created++;
-    }
-  }
+        if (existing) {
+          await tx.exercise.update({
+            where: { id: existing.id },
+            data: {
+              category: ex.category,
+              primaryMuscles: ex.primaryMuscles,
+              secondaryMuscles: ex.secondaryMuscles,
+              equipment: ex.equipment,
+              instructions: ex.instructions,
+              imageUrls: ex.imageUrls,
+              videoUrls: ex.videoUrls,
+            },
+          });
+          updated++;
+        } else {
+          await tx.exercise.create({ data: ex });
+          created++;
+        }
+      }
+    },
+    { timeout: 300_000 },
+  );
 
   console.log(`Seed complete: ${created} created, ${updated} updated`);
 }

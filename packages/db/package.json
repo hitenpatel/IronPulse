@@ -13,7 +13,8 @@
     "db:seed:dev": "tsx seeds/seed-dev.ts",
     "db:studio": "prisma studio",
     "lint": "tsc --noEmit && eslint src/",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "vitest run"
   },
   "dependencies": {
     "@prisma/client": "^6.3",
@@ -26,6 +27,7 @@
     "@types/bcryptjs": "^2.4",
     "prisma": "^6.3",
     "tsx": "^4.21.0",
-    "typescript": "^5.7"
+    "typescript": "^5.7",
+    "vitest": "^3.0"
   }
 }

@@ -5,13 +5,21 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { resolveSeedPassword, shouldSkipDevSeed } from "./seed-utils";
 
 const db = new PrismaClient();
 
 async function seedDev() {
   console.log("Seeding dev environment...");
 
-  const password = await bcrypt.hash("password123", 12);
+  const existingWorkouts = await db.workout.count({
+    where: { user: { email: "test@example.com" } },
+  });
+  if (shouldSkipDevSeed(existingWorkouts, process.env)) {
+    console.log("Dev seed data already present — skipping (set SEED_DEV_FORCE=1 to re-run).");
+    return;
+  }
+  const password = await bcrypt.hash(resolveSeedPassword(process.env), 12);
 
   // ── Test Users ──
   const users = [
@@ -58,7 +66,7 @@ async function seedDev() {
   for (const u of users) {
     const user = await db.user.upsert({
       where: { email: u.email },
-      update: {},
+      update: { passwordHash: password },
       create: {
         email: u.email,
         name: u.name,
