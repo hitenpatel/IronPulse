@@ -63,11 +63,11 @@ const IP_TO_HK: Record<string, string> = {
   walk: "Walking",
 };
 
-export function mapHealthKitTypeToMettleLift(hkType: string): string {
+export function mapHealthKitTypeToZor(hkType: string): string {
   return HK_TO_IP[hkType] ?? "other";
 }
 
-export function mapMettleLiftTypeToHealthKit(ipType: string): string {
+export function mapZorTypeToHealthKit(ipType: string): string {
   return IP_TO_HK[ipType] ?? "Other";
 }
 
@@ -212,7 +212,7 @@ export function saveWorkout(opts: SaveWorkoutOpts): Promise<void> {
 
   const HK = getHealthKit();
   const sample = {
-    type: mapMettleLiftTypeToHealthKit(opts.type),
+    type: mapZorTypeToHealthKit(opts.type),
     startDate: opts.startDate.toISOString(),
     endDate: opts.endDate.toISOString(),
     duration: opts.durationMinutes * 60,
@@ -277,7 +277,7 @@ export async function syncFromHealthKit(
     if (existing.rows?.length > 0) continue;
 
     const id = randomUUID();
-    const ipType = mapHealthKitTypeToMettleLift(w.activityName);
+    const ipType = mapHealthKitTypeToZor(w.activityName);
     const durationSeconds = Math.round(w.duration * 60);
 
     await db.execute(

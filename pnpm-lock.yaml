@@ -73,12 +73,6 @@ importers:
       '@journeyapps/react-native-quick-sqlite':
         specifier: ^2.5.2
         version: 2.5.2(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.1.3(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      '@mettlelift/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@mettlelift/sync':
-        specifier: workspace:*
-        version: link:../../packages/sync
       '@powersync/react':
         specifier: ^1.9.0
         version: 1.9.0(@powersync/common@1.49.0)(react@19.1.0)
@@ -103,6 +97,12 @@ importers:
       '@trpc/server':
         specifier: ^11.0
         version: 11.12.0(typescript@5.9.3)
+      '@zor/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@zor/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
       expo-device:
         specifier: ~7.0.0
         version: 7.0.3(expo@54.0.33)
@@ -161,9 +161,6 @@ importers:
         specifier: ^2.2
         version: 2.2.6
     devDependencies:
-      '@mettlelift/api':
-        specifier: workspace:^
-        version: link:../../packages/api
       '@react-native-community/cli':
         specifier: ^20.1.3
         version: 20.1.3(typescript@5.9.3)
@@ -185,6 +182,9 @@ importers:
       '@types/react':
         specifier: ~19.1.0
         version: 19.1.17
+      '@zor/api':
+        specifier: workspace:^
+        version: link:../../packages/api
       typescript:
         specifier: ~5.9.2
         version: 5.9.3
@@ -203,18 +203,6 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.1.0)
-      '@mettlelift/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@mettlelift/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@mettlelift/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@mettlelift/sync':
-        specifier: workspace:*
-        version: link:../../packages/sync
       '@powersync/react':
         specifier: ^1.9.0
         version: 1.9.0(@powersync/common@1.49.0)(react@19.1.0)
@@ -260,6 +248,18 @@ importers:
       '@trpc/server':
         specifier: ^11.0
         version: 11.12.0(typescript@5.9.3)
+      '@zor/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@zor/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@zor/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@zor/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
       bcryptjs:
         specifier: ^2.4
         version: 2.4.3
@@ -375,12 +375,6 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1009.0
         version: 3.1009.0
-      '@mettlelift/db':
-        specifier: workspace:*
-        version: link:../db
-      '@mettlelift/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@simplewebauthn/server':
         specifier: ^13.3.0
         version: 13.3.0
@@ -390,6 +384,12 @@ importers:
       '@trpc/server':
         specifier: ^11.0
         version: 11.12.0(typescript@5.9.3)
+      '@zor/db':
+        specifier: workspace:*
+        version: link:../db
+      '@zor/shared':
+        specifier: workspace:*
+        version: link:../shared
       bcryptjs:
         specifier: ^2.4
         version: 2.4.3
@@ -483,9 +483,6 @@ importers:
 
   packages/sync:
     dependencies:
-      '@mettlelift/api':
-        specifier: workspace:*
-        version: link:../api
       '@powersync/common':
         specifier: ^1.0.0
         version: 1.49.0
@@ -495,6 +492,9 @@ importers:
       '@trpc/client':
         specifier: ^11.0
         version: 11.12.0(@trpc/server@11.12.0(typescript@5.9.3))(typescript@5.9.3)
+      '@zor/api':
+        specifier: workspace:*
+        version: link:../api
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -13746,7 +13746,9 @@ snapshots:
       metro-runtime: 0.83.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/metro-config@0.84.1(@babel/core@7.29.0)':
     dependencies:

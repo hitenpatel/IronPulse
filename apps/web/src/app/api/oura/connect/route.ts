@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { auth } from "@/lib/auth";
-import { getRedis } from "@mettlelift/api/src/lib/redis";
+import { getRedis } from "@zor/api/src/lib/redis";
 
 export async function GET() {
   const session = await auth();

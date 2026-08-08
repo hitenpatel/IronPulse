@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@mettlelift/db";
+import { PrismaClient } from "@zor/db";
 import {
   findInactiveUsers,
   sendRetentionNudge,
   type RetentionUser,
-} from "@mettlelift/api";
+} from "@zor/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";

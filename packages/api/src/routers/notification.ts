@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import {
   listNotificationsSchema,
   markNotificationReadSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const notificationRouter = createTRPCRouter({

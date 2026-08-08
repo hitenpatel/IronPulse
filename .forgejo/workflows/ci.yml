@@ -38,9 +38,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Run shared package tests
-        run: pnpm --filter @mettlelift/shared test
+        run: pnpm --filter @zor/shared test
       - name: Run sync package tests
-        run: pnpm --filter @mettlelift/sync test
+        run: pnpm --filter @zor/sync test
 
   test-api:
     name: API Tests (real PostgreSQL)
@@ -49,11 +49,11 @@ jobs:
       postgres:
         image: imresamu/postgis:16-3.4-alpine  # multi-arch (has arm64, unlike upstream postgis/postgis)
         env:
-          POSTGRES_USER: mettlelift
-          POSTGRES_PASSWORD: mettlelift
-          POSTGRES_DB: mettlelift_test
+          POSTGRES_USER: ironpulse
+          POSTGRES_PASSWORD: ironpulse
+          POSTGRES_DB: ironpulse_test
         options: >-
-          --health-cmd "pg_isready -U mettlelift"
+          --health-cmd "pg_isready -U ironpulse"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -65,7 +65,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://mettlelift:mettlelift@postgres:5432/mettlelift_test
+      DATABASE_URL: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test
       REDIS_URL: redis://redis:6379
       STRIPE_SECRET_KEY: sk_test_dummy_for_ci_do_not_use
       STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_ci
@@ -93,7 +93,7 @@ jobs:
       - name: Push database schema
         run: |
           for attempt in 1 2 3 4 5; do
-            if pnpm --filter @mettlelift/db db:push; then
+            if pnpm --filter @zor/db db:push; then
               exit 0
             fi
             echo "db:push failed (attempt $attempt/5), retrying in $((attempt * 5))s..."
@@ -101,7 +101,7 @@ jobs:
           done
           exit 1
       - name: Run API tests
-        run: pnpm --filter @mettlelift/api test
+        run: pnpm --filter @zor/api test
 
   build:
     runs-on: arm64
@@ -123,7 +123,7 @@ jobs:
             nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             nextjs-${{ runner.os }}-
       - name: Build web app
-        run: pnpm --filter @mettlelift/web build
+        run: pnpm --filter @zor/web build
 
   # ── Lighthouse CI: web performance + a11y budgets ──
   lighthouse:
@@ -140,11 +140,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Build web app
-        run: pnpm --filter @mettlelift/web build
+        run: pnpm --filter @zor/web build
       - name: Run Lighthouse CI
         run: |
           # Run lighthouse against locally-served build
-          pnpm --filter @mettlelift/web exec lhci autorun --config=../../lighthouserc.json || echo "Lighthouse assertions failed (advisory)"
+          pnpm --filter @zor/web exec lhci autorun --config=../../lighthouserc.json || echo "Lighthouse assertions failed (advisory)"
       - name: Upload Lighthouse report
         if: always()
         uses: actions/upload-artifact@v4
@@ -165,11 +165,11 @@ jobs:
       postgres:
         image: imresamu/postgis:16-3.4-alpine  # multi-arch (has arm64, unlike upstream)
         env:
-          POSTGRES_USER: mettlelift
-          POSTGRES_PASSWORD: mettlelift
-          POSTGRES_DB: mettlelift_test
+          POSTGRES_USER: ironpulse
+          POSTGRES_PASSWORD: ironpulse
+          POSTGRES_DB: ironpulse_test
         options: >-
-          --health-cmd "pg_isready -U mettlelift"
+          --health-cmd "pg_isready -U ironpulse"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -181,7 +181,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://mettlelift:mettlelift@postgres:5432/mettlelift_test
+      DATABASE_URL: postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test
       REDIS_URL: redis://redis:6379
       STRIPE_SECRET_KEY: sk_test_dummy_for_ci_do_not_use
       STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_ci
@@ -199,18 +199,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Push schema and seed
         run: |
-          pnpm --filter @mettlelift/db db:push
+          pnpm --filter @zor/db db:push
           # No '|| true' — exercise seed must succeed or seed:dev produces a
           # workout-less DB and the trpc-fallback / workout specs all fail.
-          pnpm --filter @mettlelift/db db:seed
+          pnpm --filter @zor/db db:seed
           # E2E specs sign in as athlete@test.com (and other test tier users)
           # which only seed-dev creates. Without this the signIn helper times
           # out at /login on every spec.
-          pnpm --filter @mettlelift/db db:seed:dev
+          pnpm --filter @zor/db db:seed:dev
       - name: Install Playwright browsers
-        run: pnpm --filter @mettlelift/web exec playwright install --with-deps chromium
+        run: pnpm --filter @zor/web exec playwright install --with-deps chromium
       - name: Build web app
-        run: pnpm --filter @mettlelift/web build
+        run: pnpm --filter @zor/web build
       - name: Start API server
         # next.config.ts sets output: "standalone", which means `next start`
         # silently no-ops (Next prints a warning then never accepts requests).
@@ -232,7 +232,7 @@ jobs:
           echo "--- end ---"
           curl -sv http://localhost:3000/api/health 2>&1 | head -20 || true
       - name: Run Playwright tests
-        run: pnpm --filter @mettlelift/web test:e2e
+        run: pnpm --filter @zor/web test:e2e
         env:
           BASE_URL: http://localhost:3000
       - name: Dump web server log on failure

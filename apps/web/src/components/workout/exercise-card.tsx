@@ -13,7 +13,7 @@ import { useDataMode } from "@/hooks/use-data-mode";
 import { trpc } from "@/lib/trpc/client";
 import { SetRow } from "./set-row";
 import { uuid } from "@/lib/uuid";
-import { calculateOverloadSuggestion } from "@mettlelift/api/src/lib/overload-suggestions";
+import { calculateOverloadSuggestion } from "@zor/api/src/lib/overload-suggestions";
 
 interface ExerciseSet {
   id: string;

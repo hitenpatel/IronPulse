@@ -1,4 +1,4 @@
-# Mettle Lift
+# Zor
 
 A self-hosted fitness tracking platform combining strength training, GPS cardio, health metrics, social features, and coaching — with offline-first sync.
 
@@ -20,8 +20,8 @@ A self-hosted fitness tracking platform combining strength training, GPS cardio,
 # Prerequisites: Node 22+, pnpm 9.15+, Docker
 
 # Clone and run the automated setup
-git clone https://git.hiten-patel.co.uk/hiten/mettlelift.git
-cd Mettle Lift
+git clone https://git.hiten-patel.co.uk/hiten/IronPulse.git
+cd Zor
 ./scripts/dev-start.sh
 ```
 
@@ -30,7 +30,7 @@ The script will:
 2. Start PostgreSQL, Redis, MinIO via Docker Compose
 3. Install dependencies and push the database schema
 4. Seed test data (4 test accounts, exercise library)
-5. Start the dev server at `https://mettlelift.local`
+5. Start the dev server at `https://zor.local`
 
 ### Test Accounts
 
@@ -77,7 +77,7 @@ pnpm db:studio    # Open Prisma Studio
 pnpm db:seed      # Seed production data
 
 # Analysis
-pnpm --filter @mettlelift/web analyze  # Bundle size analysis
+pnpm --filter @zor/web analyze  # Bundle size analysis
 ```
 
 ## Infrastructure
@@ -108,10 +108,10 @@ Production runs as a Docker Compose stack:
 GNU Affero General Public License v3.0 — see [LICENSE](./LICENSE) and
 [NOTICE](./NOTICE).
 
-You can self-host, modify, and redistribute Mettle Lift under the terms
+You can self-host, modify, and redistribute Zor under the terms
 of AGPL-3.0. If you run a modified version as a network service, you
 must make the modified source available to your users (AGPL § 13).
 
-"Mettle Lift" and the Mettle Lift logo are trademarks of the project
+"Zor" and the Zor logo are trademarks of the project
 author. Forks and derivative works must use a different name and
 brand.

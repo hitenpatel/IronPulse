@@ -7,7 +7,7 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import { PrismaClient } from "@mettlelift/db";
+import { PrismaClient } from "@zor/db";
 import { createTRPCContext, createCallerFactory } from "../src/trpc";
 import { createTestUser } from "./helpers";
 import { stripeRouter } from "../src/routers/stripe";

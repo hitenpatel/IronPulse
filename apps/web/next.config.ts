@@ -37,10 +37,10 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["@simplewebauthn/server"],
   transpilePackages: [
-    "@mettlelift/api",
-    "@mettlelift/db",
-    "@mettlelift/shared",
-    "@mettlelift/sync",
+    "@zor/api",
+    "@zor/db",
+    "@zor/shared",
+    "@zor/sync",
   ],
   images: {
     remotePatterns: [

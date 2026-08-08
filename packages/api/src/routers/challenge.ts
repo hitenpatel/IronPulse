@@ -4,7 +4,7 @@ import {
   joinChallengeSchema,
   leaveChallengeSchema,
   updateChallengeProgressSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const challengeRouter = createTRPCRouter({

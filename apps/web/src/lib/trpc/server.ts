@@ -1,6 +1,6 @@
 import "server-only";
-import { createTRPCContext, createCallerFactory, appRouter } from "@mettlelift/api";
-import { db } from "@mettlelift/db";
+import { createTRPCContext, createCallerFactory, appRouter } from "@zor/api";
+import { db } from "@zor/db";
 import { auth } from "@/lib/auth";
 
 const createCaller = createCallerFactory(appRouter);

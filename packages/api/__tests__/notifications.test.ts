@@ -14,7 +14,7 @@ import {
   notifyNewMessage,
   notifyNewPR,
 } from "../src/lib/notifications";
-import { ACHIEVEMENT_CATALOG } from "@mettlelift/shared";
+import { ACHIEVEMENT_CATALOG } from "@zor/shared";
 import { sendPushNotification } from "../src/lib/push";
 import { captureError } from "../src/lib/capture-error";
 

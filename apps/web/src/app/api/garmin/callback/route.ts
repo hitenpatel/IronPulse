@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@mettlelift/db";
-import { getRedis } from "@mettlelift/api/src/lib/redis";
-import { encryptToken } from "@mettlelift/api/src/lib/encryption";
-import { runGarminBackfill } from "@mettlelift/api/src/lib/garmin";
+import { db } from "@zor/db";
+import { getRedis } from "@zor/api/src/lib/redis";
+import { encryptToken } from "@zor/api/src/lib/encryption";
+import { runGarminBackfill } from "@zor/api/src/lib/garmin";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

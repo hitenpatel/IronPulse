@@ -1,4 +1,4 @@
-import { AppSchema, BackendConnector } from "@mettlelift/sync";
+import { AppSchema, BackendConnector } from "@zor/sync";
 import * as SecureStore from "@/lib/secure-store";
 
 import { Config } from "./config";

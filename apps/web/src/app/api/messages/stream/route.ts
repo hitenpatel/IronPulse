@@ -1,5 +1,5 @@
-import { db } from "@mettlelift/db";
-import { subscribeToMessages } from "@mettlelift/api/src/lib/message-pubsub";
+import { db } from "@zor/db";
+import { subscribeToMessages } from "@zor/api/src/lib/message-pubsub";
 import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

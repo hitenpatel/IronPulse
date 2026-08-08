@@ -1,7 +1,7 @@
 import {
   detectStagnantVolume,
   type WeeklyExerciseVolume,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { captureError } from "./capture-error";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

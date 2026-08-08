@@ -30,14 +30,14 @@ fi
 KEYSTORE_ENV="$SCRIPT_DIR/../keystore/.env"
 if [ -f "$KEYSTORE_ENV" ]; then
   set -a; . "$KEYSTORE_ENV"; set +a
-  if [ -n "${METTLELIFT_KEYSTORE_FILE:-}" ]; then
+  if [ -n "${ZOR_KEYSTORE_FILE:-}" ]; then
     cat > "$ANDROID_DIR/keystore.properties" <<EOF
-storeFile=${METTLELIFT_KEYSTORE_FILE}
-storePassword=${METTLELIFT_KEYSTORE_PASSWORD}
-keyAlias=${METTLELIFT_KEY_ALIAS}
-keyPassword=${METTLELIFT_KEY_PASSWORD}
+storeFile=${ZOR_KEYSTORE_FILE}
+storePassword=${ZOR_KEYSTORE_PASSWORD}
+keyAlias=${ZOR_KEY_ALIAS}
+keyPassword=${ZOR_KEY_PASSWORD}
 EOF
-    echo "[build-android] signing: release keystore = $METTLELIFT_KEYSTORE_FILE"
+    echo "[build-android] signing: release keystore = $ZOR_KEYSTORE_FILE"
   fi
 else
   echo "[build-android] signing: no keystore/.env found — release will use debug key"

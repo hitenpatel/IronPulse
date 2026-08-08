@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { PrismaClient } from "@mettlelift/db";
+import { PrismaClient } from "@zor/db";
 import { createCallerFactory, createTRPCContext } from "../src/trpc";
 import { createTestUser, cleanupTestData } from "./helpers";
 import { searchRouter } from "../src/routers/search";
@@ -120,7 +120,7 @@ describe("search.global", () => {
       },
     });
     await db.user.create({
-      data: { email: "mettlelift-user@test.com", name: "Zor User" },
+      data: { email: "zor-user@test.com", name: "Zor User" },
     });
     await db.workout.create({
       data: { userId: testUser.id, name: "Zor Workout", startedAt: new Date() },

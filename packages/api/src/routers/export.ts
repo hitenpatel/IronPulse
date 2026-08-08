@@ -1,5 +1,5 @@
 import { stringify } from "csv-stringify/sync";
-import { exportFormatSchema } from "@mettlelift/shared";
+import { exportFormatSchema } from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const exportRouter = createTRPCRouter({

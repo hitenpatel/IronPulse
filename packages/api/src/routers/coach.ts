@@ -7,7 +7,7 @@ import {
   updateCoachProfileSchema,
   uploadCoachProfileImageSchema,
   attendanceHeatmapSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";
 

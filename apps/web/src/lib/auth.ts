@@ -3,9 +3,9 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
-import { db } from "@mettlelift/db";
-import { verifyPasskeyLoginToken } from "@mettlelift/api/src/lib/passkey";
-import { signInSchema } from "@mettlelift/shared";
+import { db } from "@zor/db";
+import { verifyPasskeyLoginToken } from "@zor/api/src/lib/passkey";
+import { signInSchema } from "@zor/shared";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [

@@ -38,6 +38,6 @@ echo "Seeding reference data..."
 # the runtime image so this works without local module resolution.
 prisma db seed
 
-echo "Starting Mettle Lift..."
+echo "Starting Zor..."
 cd /app
 exec "$@"

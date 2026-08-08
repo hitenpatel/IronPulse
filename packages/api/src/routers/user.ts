@@ -9,7 +9,7 @@ import {
   unregisterPushTokenSchema,
   updateProfileSchema,
   uploadAvatarSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { sendEmailChangeVerificationEmail } from "../lib/email";
 import { getPresignedUploadUrl } from "../lib/s3";
 import { createTRPCRouter, protectedProcedure, rateLimitedProcedure } from "../trpc";

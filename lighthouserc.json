@@ -1,7 +1,7 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "pnpm --filter @mettlelift/web start",
+      "startServerCommand": "pnpm --filter @zor/web start",
       "startServerReadyPattern": "Ready on",
       "url": [
         "http://localhost:3000/",

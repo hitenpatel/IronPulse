@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@mettlelift/db";
-import { notifyCoachActivity } from "@mettlelift/api";
+import { PrismaClient } from "@zor/db";
+import { notifyCoachActivity } from "@zor/api";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

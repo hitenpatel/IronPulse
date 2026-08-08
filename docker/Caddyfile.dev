@@ -1,4 +1,4 @@
-mettlelift.local {
+ironpulse.local {
 	tls internal
 
 	reverse_proxy sablier:10000

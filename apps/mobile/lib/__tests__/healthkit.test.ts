@@ -1,19 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { mapHealthKitTypeToMettleLift, mapMettleLiftTypeToHealthKit, makeExternalId, shouldSkipImport } from "../healthkit";
+import { mapHealthKitTypeToZor, mapZorTypeToHealthKit, makeExternalId, shouldSkipImport } from "../healthkit";
 
-describe("mapHealthKitTypeToMettleLift", () => {
-  it("maps Running to run", () => expect(mapHealthKitTypeToMettleLift("Running")).toBe("run"));
-  it("maps Cycling to cycle", () => expect(mapHealthKitTypeToMettleLift("Cycling")).toBe("cycle"));
-  it("maps Swimming to swim", () => expect(mapHealthKitTypeToMettleLift("Swimming")).toBe("swim"));
-  it("maps Hiking to hike", () => expect(mapHealthKitTypeToMettleLift("Hiking")).toBe("hike"));
-  it("maps Walking to walk", () => expect(mapHealthKitTypeToMettleLift("Walking")).toBe("walk"));
-  it("maps unknown to other", () => expect(mapHealthKitTypeToMettleLift("Yoga")).toBe("other"));
+describe("mapHealthKitTypeToZor", () => {
+  it("maps Running to run", () => expect(mapHealthKitTypeToZor("Running")).toBe("run"));
+  it("maps Cycling to cycle", () => expect(mapHealthKitTypeToZor("Cycling")).toBe("cycle"));
+  it("maps Swimming to swim", () => expect(mapHealthKitTypeToZor("Swimming")).toBe("swim"));
+  it("maps Hiking to hike", () => expect(mapHealthKitTypeToZor("Hiking")).toBe("hike"));
+  it("maps Walking to walk", () => expect(mapHealthKitTypeToZor("Walking")).toBe("walk"));
+  it("maps unknown to other", () => expect(mapHealthKitTypeToZor("Yoga")).toBe("other"));
 });
 
-describe("mapMettleLiftTypeToHealthKit", () => {
-  it("maps run to Running", () => expect(mapMettleLiftTypeToHealthKit("run")).toBe("Running"));
-  it("maps cycle to Cycling", () => expect(mapMettleLiftTypeToHealthKit("cycle")).toBe("Cycling"));
-  it("maps other to Other", () => expect(mapMettleLiftTypeToHealthKit("other")).toBe("Other"));
+describe("mapZorTypeToHealthKit", () => {
+  it("maps run to Running", () => expect(mapZorTypeToHealthKit("run")).toBe("Running"));
+  it("maps cycle to Cycling", () => expect(mapZorTypeToHealthKit("cycle")).toBe("Cycling"));
+  it("maps other to Other", () => expect(mapZorTypeToHealthKit("other")).toBe("Other"));
 });
 
 describe("makeExternalId", () => {

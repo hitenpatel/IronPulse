@@ -28,7 +28,7 @@ import {
 
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
-import { useWorkouts, useCardioSessions } from "@mettlelift/sync";
+import { useWorkouts, useCardioSessions } from "@zor/sync";
 import {
   isBiometricAvailable,
   isBiometricEnabled,

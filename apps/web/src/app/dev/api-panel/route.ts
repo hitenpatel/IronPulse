@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { renderTrpcPanel } from "trpc-ui";
-import { appRouter } from "@mettlelift/api";
+import { appRouter } from "@zor/api";
 
 /**
  * Interactive tRPC API documentation. Lists every procedure with its Zod

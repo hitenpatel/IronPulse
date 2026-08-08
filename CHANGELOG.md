@@ -92,11 +92,11 @@ Out-of-band security follow-up to v1.0.0, landing all four High-severity finding
 
 ## v1.0.0 (2026-04-24) — General Availability
 
-Consolidates seven release candidates (rc.1–rc.7) plus Sprint 16's final feature batch into the production release. Mettle Lift is GA.
+Consolidates seven release candidates (rc.1–rc.7) plus Sprint 16's final feature batch into the production release. Zor is GA.
 
 ### Sprint 16 — Launch-Prep finish
 - **Warm-up generator UI wired into active workout** (#268) — chip appears once a working weight is entered; sheet lets the user pick strength/hypertrophy/light and previews the ramp before inserting; warm-ups slot in front of working sets via a single renumber transaction. User pref (scheme + enabled) in Settings.
-- **Mobile Achievements screen** (#171) — grid of unlocked + locked badges with dates and progress. Shared `ACHIEVEMENT_CATALOG` extracted to `@mettlelift/shared` so web and mobile consume one source of truth.
+- **Mobile Achievements screen** (#171) — grid of unlocked + locked badges with dates and progress. Shared `ACHIEVEMENT_CATALOG` extracted to `@zor/shared` so web and mobile consume one source of truth.
 - **Expanded achievements to 23 badge types** (#157) — added volume totals, cardio distance, social firsts, recovery streaks, goal completion, and extended workout/PR/streak milestones. New `achievement.checkMine` mutation lets screens trigger retroactive unlock on open; unlocks now emit per-badge in-app + push notifications via `notifyAchievement`.
 - **Import prompt in onboarding** (#170) — optional 4th step inviting users migrating from Strong/Hevy/FitNotes to upload CSV; on confirm, lands the user directly on the import screen post-onboarding.
 - **Guided first-workout tutorial** (#169) — dismissible dashboard banner (web + mobile) walks new users through start / add exercise / log sets / finish. Preference persisted on the User model so it never reappears.
@@ -121,8 +121,8 @@ Consolidates seven release candidates (rc.1–rc.7) plus Sprint 16's final featu
 
 ### Features
 - **Mobile dark/light theme toggle** — system detection + secure-store persistence in Settings (#165)
-- **Mobile 1RM + plate calculators** — Profile → Tools. Backed by a new `@mettlelift/shared` math layer (Epley/Brzycki/Lander 1RM, greedy plate loader for kg/lb) used by web too (#172)
-- **Warm-up set generator** in `@mettlelift/shared` — strength / hypertrophy / light schemes, plate-granular rounding (#177)
+- **Mobile 1RM + plate calculators** — Profile → Tools. Backed by a new `@zor/shared` math layer (Epley/Brzycki/Lander 1RM, greedy plate loader for kg/lb) used by web too (#172)
+- **Warm-up set generator** in `@zor/shared` — strength / hypertrophy / light schemes, plate-granular rounding (#177)
 - **Interactive tRPC API panel** at `/dev/api-panel` — dev-only, 180+ procedures with Zod schemas (#178)
 
 ### UI polish — density & type scale

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, Dumbbell, X } from "lucide-react";
-import { useExercises, type ExerciseRow } from "@mettlelift/sync";
+import { useExercises, type ExerciseRow } from "@zor/sync";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { Card } from "@/components/ui/card";

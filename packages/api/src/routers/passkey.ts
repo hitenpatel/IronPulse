@@ -6,7 +6,7 @@ import {
   passkeyRenameSchema,
   passkeyDeleteSchema,
   removePasswordSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import {
   createRegistrationOptions,
   verifyAndSaveRegistration,

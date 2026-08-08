@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Activity } from "lucide-react";
-import { useWorkouts, useCardioSessions, type WorkoutRow, type CardioSessionRow } from "@mettlelift/sync";
+import { useWorkouts, useCardioSessions, type WorkoutRow, type CardioSessionRow } from "@zor/sync";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { Card } from "@/components/ui/card";

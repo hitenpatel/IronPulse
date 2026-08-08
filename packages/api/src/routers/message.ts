@@ -4,7 +4,7 @@ import {
   sendBulkMessageSchema,
   messageHistorySchema,
   markReadSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { notifyNewMessage } from "../lib/notifications";
 import { captureError } from "../lib/capture-error";

@@ -29,7 +29,7 @@ appId: com.ironpulse.app
     visible:
       id: "greeting"
     timeout: 60000
-- assertVisible: "Mettle Lift"
+- assertVisible: "Zor"
 - assertVisible: "Ready to train?"
 - assertVisible:
     id: "next-up-hero"

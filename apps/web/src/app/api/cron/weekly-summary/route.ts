@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@mettlelift/db";
-import { sendWeeklySummaryForUser } from "@mettlelift/api";
+import { PrismaClient } from "@zor/db";
+import { sendWeeklySummaryForUser } from "@zor/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@mettlelift/db";
+import { PrismaClient } from "@zor/db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

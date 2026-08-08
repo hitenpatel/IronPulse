@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { db } from "@mettlelift/db";
+import { db } from "@zor/db";
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);

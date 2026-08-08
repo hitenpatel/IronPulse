@@ -3,7 +3,7 @@ import {
   logSleepSchema,
   listSleepSchema,
   deleteSleepSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const sleepRouter = createTRPCRouter({

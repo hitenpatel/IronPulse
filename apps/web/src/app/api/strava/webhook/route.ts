@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@mettlelift/db";
-import { importStravaActivity } from "@mettlelift/api/src/lib/strava";
-import { captureError } from "@mettlelift/api/src/lib/capture-error";
+import { db } from "@zor/db";
+import { importStravaActivity } from "@zor/api/src/lib/strava";
+import { captureError } from "@zor/api/src/lib/capture-error";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { db } from "@mettlelift/db";
+import { db } from "@zor/db";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 

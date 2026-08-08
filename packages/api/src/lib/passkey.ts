@@ -10,7 +10,7 @@ import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
 } from "@simplewebauthn/types";
-import type { PrismaClient } from "@mettlelift/db";
+import type { PrismaClient } from "@zor/db";
 import crypto from "crypto";
 
 const RP_NAME = "Zor";

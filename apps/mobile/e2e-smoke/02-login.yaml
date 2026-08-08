@@ -14,7 +14,7 @@ appId: com.ironpulse.app
     timeout: 60000
 - tapOn:
     id: "email-input"
-- inputText: "smoke-e2e@mettlelift.app"
+- inputText: "smoke-e2e@zor.app"
 - tapOn:
     id: "password-input"
 - inputText: "SmokeTest123!"

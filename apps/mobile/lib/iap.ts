@@ -1,5 +1,5 @@
 // IAP module - lazy loaded. When ready to enable IAP:
-// 1. pnpm --filter @mettlelift/mobile add react-native-iap
+// 1. pnpm --filter @zor/mobile add react-native-iap
 // 2. Replace lazy require with direct import
 
 const PRODUCTS = {

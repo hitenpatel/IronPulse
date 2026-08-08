@@ -3,7 +3,7 @@ import {
   createProgressPhotoSchema,
   uploadProgressPhotoSchema,
   deleteProgressPhotoSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { getPresignedUploadUrl, getPresignedDownloadUrl } from "../lib/s3";
 
 export const progressPhotoRouter = createTRPCRouter({

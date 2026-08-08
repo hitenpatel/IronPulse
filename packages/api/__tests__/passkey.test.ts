@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { PrismaClient } from "@mettlelift/db";
+import { PrismaClient } from "@zor/db";
 import bcrypt from "bcryptjs";
 import { createTRPCContext, createCallerFactory } from "../src/trpc";
 import { passkeyRouter } from "../src/routers/passkey";

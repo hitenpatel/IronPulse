@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@mettlelift/db";
+import { db } from "@zor/db";
 import {
   ensureWithingsFreshToken,
   fetchWithingsApi,
   importWithingsMeasures,
-} from "@mettlelift/api/src/lib/withings";
-import { captureError } from "@mettlelift/api/src/lib/capture-error";
+} from "@zor/api/src/lib/withings";
+import { captureError } from "@zor/api/src/lib/capture-error";
 
 /**
  * Withings webhook notification payload.

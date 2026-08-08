@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { signMobileToken, verifyMobileToken } from "../src/lib/mobile-auth";
-import type { SessionUser } from "@mettlelift/shared";
+import type { SessionUser } from "@zor/shared";
 
 const testUser: SessionUser = {
   id: "user-123",

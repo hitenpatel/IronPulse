@@ -1,5 +1,5 @@
 import { PowerSyncDatabase, WASQLiteOpenFactory } from "@powersync/web";
-import { AppSchema } from "@mettlelift/sync";
+import { AppSchema } from "@zor/sync";
 
 let dbInstance: PowerSyncDatabase | null = null;
 
