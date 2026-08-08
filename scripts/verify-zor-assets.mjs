@@ -42,6 +42,11 @@ assert.equal(
   2,
   "display mark must smooth only the reference's top-left and bottom-right terminals",
 );
+assert.match(
+  displayPath,
+  /M10\.8 55\.65L54\.98 12\.36L25\.98 45\.83/u,
+  "upper-right point must be the sharp 180-degree counterpart of the lower-left point",
+);
 assert.equal(
   readFileSync(REQUIRED_SOURCES[0], "utf8").match(/d="([^"]+)"/u)?.[1],
   readFileSync(REQUIRED_SOURCES[1], "utf8").match(/d="([^"]+)"/u)?.[1],
