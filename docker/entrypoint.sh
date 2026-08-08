@@ -14,29 +14,31 @@ until pg_isready -d "$DATABASE_URL" >/dev/null 2>&1; do
   sleep 2
 done
 
-echo "Syncing database schema..."
-# schema.prisma is the source of truth. The prisma/migrations folder is
-# incremental-only (no base migration that creates the core tables), so
-# `migrate deploy` cannot build a fresh database — this matches how CI
-# provisions the DB (`prisma db push`). db push creates/updates every table
-# from the schema in one step. Without --accept-data-loss it refuses
-# destructive changes, so existing data is never dropped silently.
-prisma db push --skip-generate
+if [ "${SCHEMA_MANAGEMENT:-push}" = "external" ]; then
+  echo "SCHEMA_MANAGEMENT=external — schema and seeds are applied by the deploy job."
+else
+  echo "Syncing database schema..."
+  # schema.prisma is the source of truth in dev. Staging/prod use
+  # `prisma migrate deploy`, run once per release by the deploy job
+  # (SCHEMA_MANAGEMENT=external) so app restarts never touch the schema.
+  prisma db push --skip-generate
+  echo "Seeding reference data..."
+  prisma db seed
+fi
 
 echo "Ensuring PowerSync publication..."
 # Required by the optional `sync` profile (PowerSync logical replication) and
-# inert without it. The base migration intentionally defers this to the
-# entrypoint. Idempotent across reboots.
+# inert without it. Runs on every container start in all environments.
+# create-if-missing so staging/prod restarts don't interrupt replication.
 prisma db execute --schema prisma/schema.prisma --stdin <<'SQL' || true
-DROP PUBLICATION IF EXISTS powersync;
-CREATE PUBLICATION powersync FOR ALL TABLES;
+DO $body$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'powersync') THEN
+    CREATE PUBLICATION powersync FOR ALL TABLES;
+  END IF;
+END
+$body$;
 SQL
-
-echo "Seeding reference data..."
-# `prisma db seed` reads the seed entry from packages/db/package.json
-# (`"prisma": { "seed": "tsx seeds/seed.ts" }`). tsx is globally installed in
-# the runtime image so this works without local module resolution.
-prisma db seed
 
 echo "Starting Mettle Lift..."
 cd /app
