@@ -1,6 +1,6 @@
 {
   "generator": "zor-assets-v1",
-  "sourceHash": "4e7d377e66acdbccf223908edfa15a488fb5eb301485cc7c06e56c7ffe8096c1",
+  "sourceHash": "289d4c149a6493d3080a592f7316c7508eef6056d16451b41d03d87ebfff36f8",
   "outputs": {
     "apps/mobile/assets/android-icon-background.png": {
       "size": [
@@ -118,7 +118,7 @@
       ],
       "transparent": true,
       "paletteRole": "lime-lockup-for-dark-bg",
-      "sha256": "70bbe83610a9289fa8e6e8edb13b5e16cd1be3ac3529e237cbfa94e8fad79365"
+      "sha256": "ae81d1fb781d2fa660efa7dfef9c88b3e5152ea19d238ff5e49044dde6ec1439"
     },
     "apps/web/public/zor-logo-light.svg": {
       "size": [
@@ -127,7 +127,7 @@
       ],
       "transparent": true,
       "paletteRole": "ink-lockup-for-light-bg",
-      "sha256": "67e48bca251e574c84a2cb3f6e21fa63832431a77fc3d3a3d16a24f01b5ce327"
+      "sha256": "de87f1993521b697265b559610902eb6a8f329eb5a365137fa44c911f0bef062"
     },
     "apps/web/src/app/apple-icon.png": {
       "size": [
@@ -172,7 +172,7 @@
       ],
       "transparent": false,
       "paletteRole": "ink-lime-bone",
-      "sha256": "6ea49915d6103d31fe1fd662194a9c14416494d421b91f0486071f534fe13202"
+      "sha256": "855b2abe2700701c707f960831589de6ce39a81aefb6efd1ddb70e9636ab1870"
     },
     "assets/branding/zor-social-card.png": {
       "size": [
@@ -181,7 +181,7 @@
       ],
       "transparent": false,
       "paletteRole": "ink-lime-bone",
-      "sha256": "aa285ac5223390a1ae2db6d330bb5267a02195d47cbef6876eeada09843357a0"
+      "sha256": "888513c18818d8d902b7992f51216da666c3007052b256a3b19d7a493a9435ef"
     }
   }
 }
