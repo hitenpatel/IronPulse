@@ -1,16 +1,11 @@
-import { ExpoConfig, ConfigContext } from "expo/config";
-
-// The e2e build ships the same JS bundle + native code as production; only the
-// applicationId and backend URL differ, so it installs alongside the real app
-// and exercises the same code paths. Driven by the `e2e` EAS profile.
 const IS_E2E = process.env.EXPO_PUBLIC_E2E === "1";
 const ANDROID_PACKAGE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
 const IOS_BUNDLE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+module.exports = ({ config }) => ({
   ...config,
   name: IS_E2E ? "Zor E2E" : "Zor",
-  slug: "zor",
+  slug: "ironpulse",
   version: "1.0.0",
   scheme: ["zor", "ironpulse"],
   userInterfaceStyle: "dark",

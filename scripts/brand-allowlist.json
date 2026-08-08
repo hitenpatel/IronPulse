@@ -2,15 +2,15 @@
   "//": "Allowlist of retained IronPulse identifiers. Each entry pins a file glob to the exact substrings that may appear there and the compatibility reason. The brand-audit script rejects any ironpulse occurrence not covered here, and rejects any mettlelift occurrence anywhere.",
   "compatibility": [
     {
-      "reason": "iOS/Android bundle identifier — cannot change without breaking existing installs on Apple and Google stores.",
+      "reason": "iOS/Android bundle identifier — cannot change without breaking existing installs on Apple and Google stores. EAS project slug is also fixed at `ironpulse` for the same reason.",
       "paths": [
-        "apps/mobile/app.config.ts",
+        "apps/mobile/app.config.js",
         "apps/mobile/eas.json",
         "apps/mobile/scripts/nightly-e2e.sh",
         "apps/mobile/e2e/*.yaml",
         "apps/mobile/e2e-smoke/*.yaml"
       ],
-      "patterns": ["com.ironpulse.app", "com.ironpulse.app.e2e"]
+      "patterns": ["com.ironpulse.app", "com.ironpulse.app.e2e", "\"ironpulse\""]
     },
     {
       "reason": "IAP product identifiers registered with App Store Connect and Google Play — renaming would create a new SKU and lose subscribers.",
