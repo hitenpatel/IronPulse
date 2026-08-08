@@ -44,8 +44,8 @@ assert.equal(
 );
 assert.equal(
   displayPath,
-  "M9.52 52.14L38.52 18.67L5.5 17.77L11.3 10.62Q12.5 8.85 14.7 8.85L53.7 9.29L9.52 52.14Z M10.3 54.71L54.48 11.86L25.48 45.33L58.5 46.23L52.7 53.38Q51.5 55.15 49.3 55.15L10.3 54.71Z",
-  "the two components must be exact 180-degree rotations with the approved narrow spacing",
+  "M6 54.9L39.02 18L6 18L11.8 10.87Q13 9.1 15.2 9.1L54.2 9.1L6 54.9Z M9.8 54.9L58 9.1L24.98 46L58 46L52.2 53.13Q51 54.9 48.8 54.9L9.8 54.9Z",
+  "the two components must be exact 180-degree rotations with horizontal rails, aligned tips, and the approved narrow spacing",
 );
 assert.equal(
   readFileSync(REQUIRED_SOURCES[0], "utf8").match(/d="([^"]+)"/u)?.[1],
