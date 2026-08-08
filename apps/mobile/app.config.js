@@ -4,6 +4,7 @@ const IOS_BUNDLE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
 
 module.exports = ({ config }) => ({
   ...config,
+  owner: "hiten123",
   name: IS_E2E ? "Zor E2E" : "Zor",
   slug: "ironpulse",
   version: "1.0.0",

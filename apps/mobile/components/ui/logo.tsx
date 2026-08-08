@@ -2,7 +2,7 @@ import { View, type ViewStyle, type StyleProp } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { LOGO_XML } from "./logo-xml";
 
-const ASPECT = 160 / 64;
+const ASPECT = 100 / 64;
 
 interface LogoProps {
   /** Height in dp. Width scales from the logo's natural 487:215 aspect. */
