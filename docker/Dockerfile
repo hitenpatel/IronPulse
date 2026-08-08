@@ -61,6 +61,9 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+ARG BUILD_SHA=dev
+ENV BUILD_SHA=$BUILD_SHA
+
 EXPOSE 3000
 ENV HOSTNAME="0.0.0.0"
 ENTRYPOINT ["/entrypoint.sh"]

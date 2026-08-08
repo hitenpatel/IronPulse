@@ -11,6 +11,7 @@
     "db:seed": "pnpm --filter @mettlelift/db db:seed",
     "db:studio": "pnpm --filter @mettlelift/db db:studio",
     "changelog": "changelogen",
+    "test:smoke": "vitest run scripts/smoke",
     "cleanup:tokens": "tsx packages/db/scripts/cleanup-expired-tokens.ts",
     "prepare": "husky"
   },

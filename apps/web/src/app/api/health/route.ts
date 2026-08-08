@@ -56,6 +56,7 @@ export async function GET() {
     status: allOk ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version ?? "unknown",
+    sha: process.env.BUILD_SHA ?? "dev",
     services: { db, redis, s3 },
   };
 
