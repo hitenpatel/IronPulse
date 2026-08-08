@@ -73,6 +73,7 @@ cat migration_lock.toml   # must still say provider = "postgresql"
 - [ ] **Step 4: Prove it on an empty PostGIS database (this is spec acceptance #1)**
 
 ```bash
+docker rm -f migrate-proof 2>/dev/null || true
 docker run -d --name migrate-proof -e POSTGRES_USER=proof -e POSTGRES_PASSWORD=proof -e POSTGRES_DB=proof -p 55432:5432 imresamu/postgis:16-3.4-alpine
 sleep 10
 cd packages/db
@@ -84,7 +85,8 @@ Expected: `migrate deploy` applies `00000000000000_init`; `migrate status` repor
 - [ ] **Step 5: Prove the app schema matches (no drift)**
 
 ```bash
-DATABASE_URL=postgresql://proof:proof@localhost:55432/proof npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+export DATABASE_URL=postgresql://proof:proof@localhost:55432/proof
+npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
 ```
 Expected: exit 0 (no difference). Then clean up: `docker rm -f migrate-proof`.
 
@@ -197,6 +199,8 @@ const password = await bcrypt.hash(resolveSeedPassword(process.env), 12);
 ```
 Replace the current `bcrypt.hash("password123", 12)` line.
 
+**Also fix password rotation:** the existing user `upsert` calls have an empty (or password-less) `update` branch, so changing `SEED_USER_PASSWORD` would never update already-created accounts. Include `password` in each upsert's `update` object so re-running the seed (with `SEED_DEV_FORCE=1`) rotates the hashes.
+
 - [ ] **Step 7: Verify against a real database** (project rule: no mocked DB):
 
 ```bash
@@ -214,9 +218,10 @@ docker rm -f seed-proof
 - [ ] **Step 8: Commit**
 
 ```bash
-git add packages/db
+git add packages/db pnpm-lock.yaml
 git commit -m "feat(db): idempotent seeds with advisory lock, run-once dev seed, env password"
 ```
+(`pnpm-lock.yaml` changed when vitest was added — CI's `--frozen-lockfile` install fails without it.)
 
 ---
 
@@ -243,7 +248,19 @@ else
   prisma db seed
 fi
 ```
-Keep the pg_isready wait and the publication block unchanged (publication stays in the entrypoint for both modes).
+Keep the pg_isready wait. The publication block stays in the entrypoint for both modes, but change it from DROP/CREATE (which interrupts PowerSync replication on every restart) to create-if-missing:
+
+```sh
+prisma db execute --schema prisma/schema.prisma --stdin <<'SQL' || true
+DO $body$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'powersync') THEN
+    CREATE PUBLICATION powersync FOR ALL TABLES;
+  END IF;
+END
+$body$;
+SQL
+```
 
 - [ ] **Step 2: Verify dev path unchanged:** `docker compose -f docker/docker-compose.yml config >/dev/null && sh -n docker/entrypoint.sh` (syntax check). Full behaviour is exercised in Task 6 Step 4.
 
@@ -420,12 +437,13 @@ git commit -m "feat(docker): require credentials via env and pin images by diges
 **Files:**
 - Create: `docker/compose.staging.yml`
 - Create: `docker/compose.prod.yml`
+- Create: `docker/remote-deploy.sh`
 - Create: `docker/.env.staging.example`
 - Create: `docker/.env.prod.example`
 
 **Interfaces:**
 - Consumes: env var names from Task 5, `SCHEMA_MANAGEMENT` from Task 3.
-- Produces: on each host, `docker compose -f docker-compose.yml -f compose.<env>.yml --env-file .env` is the canonical invocation; image tag comes from `IMAGE_TAG` in the env file. Deploy jobs (Tasks 9/10) write `IMAGE_TAG` and run this exact invocation.
+- Produces: on each host, `docker compose -f docker-compose.yml -f compose.<env>.yml --env-file .env` is the canonical invocation; image tag comes from `IMAGE_TAG` in `.env`. `docker/remote-deploy.sh <staging|prod> <image-tag>` is the single deploy entrypoint on hosts (pull → migrate → write tag → up); deploy jobs (Tasks 9/10) invoke it under `flock`. `.env` is only updated **after** migration succeeds, so a failed deploy leaves restarts on the previous tag.
 
 - [ ] **Step 1:** `docker/compose.staging.yml`:
 
@@ -433,28 +451,50 @@ git commit -m "feat(docker): require credentials via env and pin images by diges
 services:
   mettlelift:
     image: git.hiten-patel.co.uk/hiten/mettlelift:${IMAGE_TAG:?set by deploy job}
-    build: !reset null
     environment:
       SCHEMA_MANAGEMENT: "external"
       NEXTAUTH_URL: "https://staging.mettlelift.hiten-patel.co.uk"
 ```
+The base file's `build:` section remains, but deploys always use explicit `pull` + `up -d --no-build`, so nothing is ever built on the hosts.
 
-- [ ] **Step 2:** `docker/compose.prod.yml` — same shape, prod URL, plus backup always on:
+- [ ] **Step 2:** `docker/compose.prod.yml` — same shape with the prod URL:
 
 ```yaml
 services:
   mettlelift:
     image: git.hiten-patel.co.uk/hiten/mettlelift:${IMAGE_TAG:?set by deploy job}
-    build: !reset null
     environment:
       SCHEMA_MANAGEMENT: "external"
       NEXTAUTH_URL: "https://mettlelift.hiten-patel.co.uk"
-  backup:
-    profiles: !reset []
 ```
-(`!reset` requires Compose v2.24+; verify with `docker compose version` on both hosts — runbook Task 12 covers hosts. If the NAS compose is older, instead override with `profiles: ["default"]`-style workaround documented inline.)
+Backup-always-on is done via `COMPOSE_PROFILES=backup` in the prod `.env` (no `!reset` YAML tricks — works on any Compose v2).
 
-- [ ] **Step 3:** `.env.staging.example` / `.env.prod.example`: all Task 5 vars with placeholders, plus `IMAGE_TAG=` (comment: written by deploy job), staging file additionally `SEED_USER_PASSWORD=`; note that real files live only on the hosts.
+- [ ] **Step 2b:** `docker/remote-deploy.sh` (runs **on the host**, from the repo's `docker/` dir):
+
+```sh
+#!/bin/sh
+# Usage: remote-deploy.sh <staging|prod> <image-tag>
+# .env is written only after migrate succeeds — failed deploys leave the
+# previous tag in place for restarts.
+set -e
+ENV="$1"; TAG="$2"
+[ -n "$ENV" ] && [ -n "$TAG" ] || { echo "usage: remote-deploy.sh <staging|prod> <image-tag>"; exit 2; }
+COMPOSE="docker compose -f docker-compose.yml -f compose.$ENV.yml --env-file .env"
+PREV=$(grep '^IMAGE_TAG=' .env | cut -d= -f2)
+echo "previous tag: ${PREV:-<none>}"
+IMAGE_TAG="$TAG" $COMPOSE pull mettlelift
+if [ "$ENV" = "staging" ]; then
+  IMAGE_TAG="$TAG" $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate deploy && prisma db seed && tsx seeds/seed-dev.ts"
+else
+  IMAGE_TAG="$TAG" $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate deploy && prisma db seed"
+fi
+sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env
+$COMPOSE up -d --no-build
+echo "deployed $TAG (previous: ${PREV:-<none>})"
+```
+Validate: `sh -n docker/remote-deploy.sh && chmod +x docker/remote-deploy.sh`.
+
+- [ ] **Step 3:** `.env.staging.example` / `.env.prod.example`: all Task 5 vars with placeholders, plus `IMAGE_TAG=` (comment: written by remote-deploy.sh); staging file additionally `SEED_USER_PASSWORD=`; prod file additionally `COMPOSE_PROFILES=backup`. Note that real files live only on the hosts.
 
 - [ ] **Step 4: Local end-to-end proof of the staging shape** (uses local image, arm64 host is fine):
 
@@ -465,7 +505,7 @@ cp .env.staging.example .env.localtest && sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=stag
 docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.localtest up -d postgres redis minio
 # migrate as the deploy job will (entrypoint bypassed):
 docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.localtest run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate deploy && prisma db seed"
-docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.localtest up -d mettlelift
+docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.localtest up -d --no-build mettlelift
 sleep 20 && node ../scripts/smoke/check-health.mjs http://localhost:3000 localtest
 docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.localtest down -v && rm .env.localtest
 ```
@@ -581,7 +621,7 @@ git commit -m "ci: build and push multi-arch sha-tagged images to forgejo regist
 - Modify: `.forgejo/workflows/ci.yml` (new `deploy-staging` job)
 
 **Interfaces:**
-- Consumes: image tag from Task 8; compose invocation from Task 6; `check-health.mjs` from Task 4. Secrets: `STAGING_SSH_KEY` (private key), `STAGING_SSH_HOST` (e.g. `hiten@192.168.1.24 -p 222` form split into host/user/port secrets as provisioned in Task 12), staging dir convention `/volume1/docker/mettlelift` (confirm actual path in Task 12 runbook and update here if different).
+- Consumes: image tag from Task 8; `remote-deploy.sh` from Task 6; `check-health.mjs` from Task 4. Secrets: `STAGING_SSH_KEY`, `STAGING_SSH_HOST`, `STAGING_SSH_USER`, `STAGING_SSH_PORT`, `STAGING_COMPOSE_DIR` = **repo clone root** on the NAS (confirm actual path in Task 12 runbook). Staging is publicly reachable over HTTPS with **no basic auth** (the weekly QA agent needs it); env-var seed passwords are the access control.
 - Produces: every `develop` push ends with staging serving that sha (spec acceptance #3, #4).
 
 - [ ] **Step 1:** Append:
@@ -606,15 +646,17 @@ git commit -m "ci: build and push multi-arch sha-tagged images to forgejo regist
         run: |
           TAG=staging-${{ github.sha }}
           SSH="ssh -i ~/.ssh/staging -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}"
-          DIR=${{ secrets.STAGING_COMPOSE_DIR }}
-          $SSH "cd $DIR && git pull --ff-only && sed -i \"s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/\" .env"
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env pull mettlelift"
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env run --rm --entrypoint sh mettlelift -c 'cd /app/packages/db && prisma migrate deploy && prisma db seed && tsx seeds/seed-dev.ts'"
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env up -d"
+          DIR=${{ secrets.STAGING_COMPOSE_DIR }}   # repo clone root on the NAS
+          $SSH "cd $DIR && git pull --ff-only && cd docker && flock /tmp/mettlelift-deploy.lock sh remote-deploy.sh staging $TAG"
       - name: Smoke test
         run: |
-          sleep 20
-          node scripts/smoke/check-health.mjs https://staging.mettlelift.hiten-patel.co.uk ${{ github.sha }}
+          for i in $(seq 1 20); do
+            if node scripts/smoke/check-health.mjs https://staging.mettlelift.hiten-patel.co.uk ${{ github.sha }}; then exit 0; fi
+            echo "attempt $i/20 failed; retrying in 6s"
+            sleep 6
+          done
+          echo "smoke failed after 20 attempts"
+          exit 1
       - name: Login + write-path smoke (Playwright)
         run: |
           # pnpm setup mirrors other jobs
@@ -637,76 +679,96 @@ git commit -m "ci: auto-deploy develop to staging with migrate, seed and smoke"
 
 ---
 
-### Task 10: Prod deploy workflow (manual, gated)
+### Task 10: Manual deploy workflow (staging + prod, gated)
 
 **Files:**
-- Create: `.forgejo/workflows/deploy-prod.yml`
+- Create: `.forgejo/workflows/deploy.yml`
 
 **Interfaces:**
-- Consumes: `prod-<sha>` images (Task 8), compose.prod.yml (Task 6), check-health.mjs (Task 4). Secrets: `PROD_SSH_KEY`, `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PORT`, `PROD_COMPOSE_DIR`.
-- Produces: operator-triggered deploy of an explicit sha with pre-deploy verified dump (spec acceptance #5); failure at any step leaves the previous release running.
+- Consumes: `staging-<sha>`/`prod-<sha>` images (Task 8), `remote-deploy.sh` (Task 6), check-health.mjs (Task 4). Secrets: `PROD_SSH_KEY`, `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PORT`, `PROD_COMPOSE_DIR` (repo clone root on the VM) + the `STAGING_*` set from Task 9.
+- Produces: operator-triggered deploy of an explicit sha to either environment. Prod gets a verified pre-deploy dump (spec acceptance #5). Staging redeploy of a prior sha is the rollback drill path (acceptance #6). `.env` tag mutation happens inside `remote-deploy.sh` only after migration succeeds, so pull/migrate failure leaves restarts on the previous tag.
 
 - [ ] **Step 1:** Create the workflow:
 
 ```yaml
-name: Deploy Production
+name: Manual Deploy
 
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: [staging, prod]
       sha:
-        description: "Full commit sha to deploy (must have a prod-<sha> image)"
+        description: "Full commit sha to deploy (must have a <env>-<sha> image)"
         required: true
 
 jobs:
-  deploy-prod:
+  deploy:
     runs-on: arm64
     concurrency:
-      group: deploy-prod
+      group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Set up SSH
+      - name: Select target
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/prod && chmod 600 ~/.ssh/prod
-          ssh-keyscan -p ${{ secrets.PROD_SSH_PORT }} ${{ secrets.PROD_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-      - name: Pre-deploy backup (verified)
+          if [[ "${{ inputs.environment }}" == "prod" ]]; then
+            echo "SSH_HOST=${{ secrets.PROD_SSH_HOST }}" >> "$GITHUB_ENV"
+            echo "SSH_USER=${{ secrets.PROD_SSH_USER }}" >> "$GITHUB_ENV"
+            echo "SSH_PORT=${{ secrets.PROD_SSH_PORT }}" >> "$GITHUB_ENV"
+            echo "DIR=${{ secrets.PROD_COMPOSE_DIR }}" >> "$GITHUB_ENV"
+            echo "BASE_URL=https://mettlelift.hiten-patel.co.uk" >> "$GITHUB_ENV"
+            echo "${{ secrets.PROD_SSH_KEY }}" > /tmp/deploy_key
+          else
+            echo "SSH_HOST=${{ secrets.STAGING_SSH_HOST }}" >> "$GITHUB_ENV"
+            echo "SSH_USER=${{ secrets.STAGING_SSH_USER }}" >> "$GITHUB_ENV"
+            echo "SSH_PORT=${{ secrets.STAGING_SSH_PORT }}" >> "$GITHUB_ENV"
+            echo "DIR=${{ secrets.STAGING_COMPOSE_DIR }}" >> "$GITHUB_ENV"
+            echo "BASE_URL=https://staging.mettlelift.hiten-patel.co.uk" >> "$GITHUB_ENV"
+            echo "${{ secrets.STAGING_SSH_KEY }}" > /tmp/deploy_key
+          fi
+          chmod 600 /tmp/deploy_key
+          ssh-keyscan -p $(grep SSH_PORT "$GITHUB_ENV" | tail -1 | cut -d= -f2) $(grep SSH_HOST "$GITHUB_ENV" | tail -1 | cut -d= -f2) >> ~/.ssh/known_hosts 2>/dev/null || mkdir -p ~/.ssh
+      - name: Pre-deploy backup (prod only, verified)
+        if: inputs.environment == 'prod'
         run: |
-          SSH="ssh -i ~/.ssh/prod -p ${{ secrets.PROD_SSH_PORT }} ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}"
-          DIR=${{ secrets.PROD_COMPOSE_DIR }}
+          SSH="ssh -i /tmp/deploy_key -p $SSH_PORT $SSH_USER@$SSH_HOST"
           STAMP=$(date +%Y%m%d-%H%M%S)
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env exec -T postgres sh -c 'pg_dump -U \$POSTGRES_USER \$POSTGRES_DB' > predeploy-$STAMP.sql"
+          $SSH "cd $DIR/docker && mkdir -p backups && docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env exec -T postgres sh -c 'pg_dump -U \$POSTGRES_USER \$POSTGRES_DB' > backups/predeploy-$STAMP.sql"
           # verify: non-trivial size and a closing dump marker
-          $SSH "cd $DIR && test \$(stat -c%s predeploy-$STAMP.sql) -gt 100000 && tail -1 predeploy-$STAMP.sql | grep -q 'PostgreSQL database dump complete'"
+          $SSH "cd $DIR/docker && test \$(stat -c%s backups/predeploy-$STAMP.sql) -gt 100000 && tail -1 backups/predeploy-$STAMP.sql | grep -q 'PostgreSQL database dump complete'"
           echo "STAMP=$STAMP" >> "$GITHUB_ENV"
       - name: Deploy
         run: |
-          TAG=prod-${{ inputs.sha }}
-          SSH="ssh -i ~/.ssh/prod -p ${{ secrets.PROD_SSH_PORT }} ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}"
-          DIR=${{ secrets.PROD_COMPOSE_DIR }}
-          $SSH "cd $DIR && git pull --ff-only && sed -i \"s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/\" .env"
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env pull mettlelift"
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env run --rm --entrypoint sh mettlelift -c 'cd /app/packages/db && prisma migrate deploy && prisma db seed'"
-          $SSH "cd $DIR && docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env up -d"
+          TAG=${{ inputs.environment }}-${{ inputs.sha }}
+          SSH="ssh -i /tmp/deploy_key -p $SSH_PORT $SSH_USER@$SSH_HOST"
+          $SSH "cd $DIR && git pull --ff-only && cd docker && flock /tmp/mettlelift-deploy.lock sh remote-deploy.sh ${{ inputs.environment }} $TAG"
       - name: Smoke test
         run: |
-          sleep 20
-          node scripts/smoke/check-health.mjs https://mettlelift.hiten-patel.co.uk ${{ inputs.sha }}
+          for i in $(seq 1 20); do
+            if node scripts/smoke/check-health.mjs $BASE_URL ${{ inputs.sha }}; then exit 0; fi
+            echo "attempt $i/20 failed; retrying in 6s"
+            sleep 6
+          done
+          echo "smoke failed after 20 attempts"
+          exit 1
       - name: Rollback hint on failure
         if: failure()
         run: |
-          echo "Deploy failed. Previous release is still running unless 'up -d' succeeded with a broken image."
-          echo "App rollback: set IMAGE_TAG back to the previous prod-<sha> in $PROD_COMPOSE_DIR/.env and 'docker compose ... up -d'."
-          echo "DB restore (loses writes since dump): psql < predeploy-${{ env.STAMP }}.sql"
+          echo "Deploy failed. remote-deploy.sh printed the previous tag in the Deploy step log."
+          echo "App rollback: re-run this workflow with the previous sha."
+          echo "DB restore (prod only; loses writes since dump): psql < ${{ secrets.PROD_COMPOSE_DIR }}/docker/backups/predeploy-${{ env.STAMP }}.sql"
 ```
-No `seed-dev` in prod — reference seed only.
+No `seed-dev` in prod — `remote-deploy.sh` handles the per-env seed difference.
 
 - [ ] **Step 2:** YAML validate. **Step 3: Commit**
 
 ```bash
-git add .forgejo/workflows/deploy-prod.yml
-git commit -m "ci: manual gated prod deploy with verified pre-deploy dump"
+git add .forgejo/workflows/deploy.yml
+git commit -m "ci: manual gated deploy workflow for staging and prod"
 ```
 
 ---
@@ -753,7 +815,7 @@ Do not touch the `e2e` profile (its comment explains the coexist-package trap).
 cd apps/mobile
 npx eas build --profile preview --platform android --non-interactive --no-wait
 ```
-When the build finishes, download the APK, then: `unzip -p app.apk | grep -a -c "staging.mettlelift"` (count > 0 proves the URL is baked in) or install via ADB-over-Tailscale to the Pixel and check the login screen hits staging (network log). Record the check in the backlog task. (If EAS quota is a concern, defer the actual build to the release checkpoint and mark this step pending — do not silently skip.)
+When the build finishes, download the APK, then: `unzip -p app.apk | grep -a -c "staging.mettlelift"` (count > 0 proves the URL is baked in) or install via ADB-over-Tailscale to the Pixel and check the login screen hits staging (network log). Record the check in the backlog task. The **production** artifact gets the same URL/channel check at the first real prod release (release gate — spec acceptance #10 covers both profiles). If EAS quota is a concern, defer the preview build to the same release checkpoint and mark this step pending — do not silently skip.
 
 - [ ] **Step 3: Commit**
 
@@ -773,18 +835,23 @@ git commit -m "feat(mobile): align eas preview/production profiles to staging/pr
 This task is docs + manual ops; no code. The runbook must contain, as executable steps:
 
 - [ ] **Step 1: Write the runbook** covering:
-  1. **Forgejo secrets** to create in repo settings: `REGISTRY_USER`/`REGISTRY_TOKEN` (claude-agent, package:write), `STAGING_SSH_KEY`, `STAGING_SSH_HOST`, `STAGING_SSH_USER`, `STAGING_SSH_PORT`, `STAGING_COMPOSE_DIR`; `PROD_SSH_KEY`, `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PORT`, `PROD_COMPOSE_DIR`. Include the ssh-keygen commands (`ssh-keygen -t ed25519 -f staging-deploy -C forgejo-deploy`) and where to add the public keys (NAS + VM `authorized_keys`).
+  1. **Forgejo secrets** to create in repo settings: `REGISTRY_USER`/`REGISTRY_TOKEN` (claude-agent, package:write), `STAGING_SSH_KEY`, `STAGING_SSH_HOST`, `STAGING_SSH_USER`, `STAGING_SSH_PORT`, `STAGING_COMPOSE_DIR` (repo clone root); `PROD_SSH_KEY`, `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PORT`, `PROD_COMPOSE_DIR` (repo clone root). Include the ssh-keygen commands (`ssh-keygen -t ed25519 -f staging-deploy -C forgejo-deploy`) and where to add the public keys (NAS + VM `authorized_keys`).
+  1b. **Registry read access on both hosts**: create a read-scope token and `docker login git.hiten-patel.co.uk` on the NAS and the prod VM (persists in each host's docker config) — without this, `remote-deploy.sh`'s pull of the private image fails.
   2. **NAS staging stack**: create compose dir, clone repo (or sparse checkout of `docker/`), write `.env` from `.env.staging.example` with real secrets + `SEED_USER_PASSWORD`, `docker compose version` check (≥2.24 for `!reset`), reverse-proxy vhost for `staging.mettlelift.hiten-patel.co.uk` → staging app port, DNS record. Remember Synology gotchas from shared memory: published ports see clients as 172.18.0.1 — bind the staging app port to the LAN interface IP if access control is wanted.
   3. **Prod VM stack**: mirror of current prod moved onto the compose.prod.yml invocation; `.env` from `.env.prod.example`; confirm Caddy/proxy for `mettlelift.hiten-patel.co.uk` points at the compose port.
-  4. **Prod DB baseline (one-time, highest-risk step)** — exact order:
+  4. **Prod DB baseline (one-time, highest-risk step)** — exact order, run from the repo's `docker/` dir on the prod VM (`COMPOSE="docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env"`):
      ```bash
+     # 0. inventory: prod is db-push-managed, so _prisma_migrations should not exist.
+     #    If it DOES contain rows, stop and reconcile them before resolving.
+     $COMPOSE exec -T postgres sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB -c "select migration_name from _prisma_migrations"' || echo "no migrations table — expected"
      # 1. verified backup first
-     docker compose ... exec -T postgres sh -c 'pg_dump -U $POSTGRES_USER $POSTGRES_DB' > baseline-backup.sql
-     test $(stat -c%s baseline-backup.sql) -gt 100000
-     # 2. rehearse on staging: restore this dump into the staging DB, then
-     docker compose ... run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate resolve --applied 00000000000000_init && prisma migrate status"
+     $COMPOSE exec -T postgres sh -c 'pg_dump -U $POSTGRES_USER $POSTGRES_DB' > baseline-backup.sql
+     test $(stat -c%s baseline-backup.sql) -gt 100000 && tail -1 baseline-backup.sql | grep -q 'PostgreSQL database dump complete'
+     # 2. rehearse on staging first: restore this dump into the staging DB, then run
+     #    (with the staging COMPOSE variant):
+     $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate resolve --applied 00000000000000_init && prisma migrate status"
      # expect: "Database schema is up to date"
-     # 3. repeat step 2's resolve+status on prod only after staging rehearsal passes
+     # 3. repeat step 2's resolve+status on prod only after the staging rehearsal passes
      ```
   5. **Uptime Kuma monitors**: add HTTP(s) keyword monitors for both `/api/health` URLs (keyword `"status"`, expect 200), via `docker/setup-monitors.sh` or UI.
   6. **Registry cleanup note**: sha tags accumulate; prune old packages quarterly (Forgejo UI) — keep last 10 per prefix.
@@ -806,9 +873,9 @@ git commit -m "docs(docker): point to staging/prod deploy workflows and runbook"
 
 - [ ] **Step 1:** Re-read `test-paths.md`; update the seeded-credentials note to reference `SEED_USER_PASSWORD` (staging accounts no longer guaranteed `password123`). Keep Tier lists untouched.
 - [ ] **Step 2:** Run the Tier-1 subset once against restored staging (acceptance #11): `BASE_URL=https://staging.mettlelift.hiten-patel.co.uk pnpm --filter @mettlelift/web exec playwright test e2e/auth-login.spec.ts e2e/navigation.spec.ts e2e/workouts.spec.ts`.
-- [ ] **Step 3:** Rollback drill (acceptance #6): redeploy the previous staging sha by re-running the deploy with the prior tag; confirm smoke passes.
+- [ ] **Step 3:** Rollback drill (acceptance #6): run the Manual Deploy workflow (Task 10) with `environment=staging` and the previous sha; confirm smoke passes.
 - [ ] **Step 4:** Backlog finalization per `backlog instructions task-finalization`: check acceptance criteria against the spec's 11 items, close the implementation task, close Task-14 (staging restored) with a note, annotate Task-3 (weekly sweep unblocked).
-- [ ] **Step 5:** Commit docs, merge branch per normal PR flow (`develop` first — the merge itself is the staging pipeline's first live run).
+- [ ] **Step 5:** Commit docs, merge branch per normal PR flow. **Hard ordering rule: do NOT merge to `develop` until Task 12 (secrets, host stacks, registry logins, DNS/proxy) is fully executed** — the merge itself is the staging pipeline's first live run. Per project memory, verify remote `main`/`develop` actually moved after any Forgejo squash-merge (silent no-ops happen).
 
 ---
 
