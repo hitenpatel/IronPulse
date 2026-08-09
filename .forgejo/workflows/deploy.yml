@@ -1,0 +1,73 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: [staging, prod]
+      sha:
+        description: "Full commit sha to deploy (must have a <env>-<sha> image)"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: arm64
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select target
+        run: |
+          mkdir -p ~/.ssh
+          if [[ "${{ inputs.environment }}" == "prod" ]]; then
+            echo "SSH_HOST=${{ secrets.PROD_SSH_HOST }}" >> "$GITHUB_ENV"
+            echo "SSH_USER=${{ secrets.PROD_SSH_USER }}" >> "$GITHUB_ENV"
+            echo "SSH_PORT=${{ secrets.PROD_SSH_PORT }}" >> "$GITHUB_ENV"
+            echo "DIR=${{ secrets.PROD_COMPOSE_DIR }}" >> "$GITHUB_ENV"
+            echo "BASE_URL=https://mettlelift.hiten-patel.co.uk" >> "$GITHUB_ENV"
+            echo "${{ secrets.PROD_SSH_KEY }}" > /tmp/deploy_key
+            ssh-keyscan -p ${{ secrets.PROD_SSH_PORT }} ${{ secrets.PROD_SSH_HOST }} >> ~/.ssh/known_hosts
+          else
+            echo "SSH_HOST=${{ secrets.STAGING_SSH_HOST }}" >> "$GITHUB_ENV"
+            echo "SSH_USER=${{ secrets.STAGING_SSH_USER }}" >> "$GITHUB_ENV"
+            echo "SSH_PORT=${{ secrets.STAGING_SSH_PORT }}" >> "$GITHUB_ENV"
+            echo "DIR=${{ secrets.STAGING_COMPOSE_DIR }}" >> "$GITHUB_ENV"
+            echo "BASE_URL=https://staging.mettlelift.hiten-patel.co.uk" >> "$GITHUB_ENV"
+            echo "${{ secrets.STAGING_SSH_KEY }}" > /tmp/deploy_key
+            ssh-keyscan -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts
+          fi
+          chmod 600 /tmp/deploy_key
+          test -s ~/.ssh/known_hosts || { echo "ERROR: ssh-keyscan produced empty known_hosts — aborting"; exit 1; }
+      - name: Pre-deploy backup (prod only, verified)
+        if: inputs.environment == 'prod'
+        run: |
+          SSH="ssh -i /tmp/deploy_key -p $SSH_PORT $SSH_USER@$SSH_HOST"
+          STAMP=$(date +%Y%m%d-%H%M%S)
+          $SSH "cd '$DIR/docker' && mkdir -p backups && docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env exec -T postgres sh -c 'pg_dump -U \$POSTGRES_USER \$POSTGRES_DB' > backups/predeploy-$STAMP.sql"
+          # verify: non-trivial size and a closing dump marker
+          $SSH "cd '$DIR/docker' && test \$(stat -c%s backups/predeploy-$STAMP.sql) -gt 100000 && tail -1 backups/predeploy-$STAMP.sql | grep -q 'PostgreSQL database dump complete'"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+      - name: Deploy
+        run: |
+          TAG=${{ inputs.environment }}-${{ inputs.sha }}
+          SSH="ssh -i /tmp/deploy_key -p $SSH_PORT $SSH_USER@$SSH_HOST"
+          $SSH "cd '$DIR' && git pull --ff-only && cd docker && flock /tmp/mettlelift-deploy.lock sh remote-deploy.sh ${{ inputs.environment }} $TAG"
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 20); do
+            if node scripts/smoke/check-health.mjs $BASE_URL ${{ inputs.sha }}; then exit 0; fi
+            echo "attempt $i/20 failed; retrying in 6s"
+            sleep 6
+          done
+          echo "smoke failed after 20 attempts"
+          exit 1
+      - name: Rollback hint on failure
+        if: failure()
+        run: |
+          echo "Deploy failed. remote-deploy.sh printed the previous tag in the Deploy step log."
+          echo "App rollback: re-run this workflow with the previous sha."
+          echo "DB restore (prod only; loses writes since dump): psql < ${{ secrets.PROD_COMPOSE_DIR }}/docker/backups/predeploy-${{ env.STAMP }}.sql"
