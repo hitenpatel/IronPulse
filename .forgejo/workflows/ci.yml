@@ -293,13 +293,14 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/staging && chmod 600 ~/.ssh/staging
-          ssh-keyscan -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts || { echo "ERROR: ssh-keyscan produced empty known_hosts — aborting"; exit 1; }
       - name: Deploy
         run: |
           TAG=staging-${{ github.sha }}
           SSH="ssh -i ~/.ssh/staging -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}"
           DIR=${{ secrets.STAGING_COMPOSE_DIR }}   # repo clone root on the NAS
-          $SSH "cd $DIR && git pull --ff-only && cd docker && flock /tmp/mettlelift-deploy.lock sh remote-deploy.sh staging $TAG"
+          $SSH "cd '$DIR' && git pull --ff-only && cd docker && flock /tmp/mettlelift-deploy.lock sh remote-deploy.sh staging $TAG"
       - name: Smoke test
         run: |
           for i in $(seq 1 20); do
@@ -310,6 +311,7 @@ jobs:
           echo "smoke failed after 20 attempts"
           exit 1
       - name: Login + write-path smoke (Playwright)
+        if: ${{ secrets.STAGING_TEST_USER_PASSWORD != '' }}
         run: |
           # pnpm setup mirrors other jobs
           corepack enable
