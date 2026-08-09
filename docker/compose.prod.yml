@@ -1,0 +1,6 @@
+services:
+  mettlelift:
+    image: git.hiten-patel.co.uk/hiten/mettlelift:${IMAGE_TAG:?set by deploy job}
+    environment:
+      SCHEMA_MANAGEMENT: "external"
+      NEXTAUTH_URL: "https://mettlelift.hiten-patel.co.uk"
