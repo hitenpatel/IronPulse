@@ -1,5 +1,7 @@
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+# Install pnpm via npm rather than corepack: corepack segfaults (exit 139)
+# under QEMU amd64-on-arm64 emulation during multi-arch buildx builds.
+RUN npm install -g pnpm@9.15.4
 WORKDIR /app
 
 # Install dependencies
