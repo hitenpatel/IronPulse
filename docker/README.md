@@ -207,6 +207,23 @@ Only `mettlelift:3000` needs to be reachable by users. Keep the rest on the inte
 
 ---
 
+## Staging/production deploys
+
+Automated and manual deploys to the staging (NAS, amd64) and production (Oracle ARM VM, arm64) environments are managed by two Forgejo Actions workflows:
+
+| Workflow | Trigger | Target |
+|----------|---------|--------|
+| [`.forgejo/workflows/ci.yml`](../.forgejo/workflows/ci.yml) | Push to `develop` | Staging — auto-deploys via `deploy-staging` job |
+| [`.forgejo/workflows/deploy.yml`](../.forgejo/workflows/deploy.yml) | Manual dispatch | Staging or prod — select environment + commit SHA |
+
+Both workflows SSH to the target host and run [`docker/remote-deploy.sh`](./remote-deploy.sh), which pulls the pre-built image, runs migrations, and restarts the stack. The `deploy.yml` prod path takes a verified `pg_dump` backup before deploying.
+
+**Initial host setup** (Forgejo secrets, SSH keys, `.env` files, registry auth, reverse-proxy vhosts, Uptime Kuma monitors, and the one-time prod DB baseline) is documented in the BookStack runbook:
+
+> **[SDLC environments — host provisioning](https://docs.hiten-patel.co.uk/books/documentation-2ub/page/sdlc-environments-host-provisioning)**
+
+---
+
 ## Contributing
 
 Mettle Lift is AGPL-3.0. Patches welcome via PR on the [Forgejo repo](https://git.hiten-patel.co.uk/hiten/mettlelift) or the [GitHub mirror](https://github.com/hitenpatel/mettlelift). For non-trivial changes please open an issue first.
