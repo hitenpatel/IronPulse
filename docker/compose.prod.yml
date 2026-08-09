@@ -1,6 +1,35 @@
+name: mettlelift-prod
+
 services:
   mettlelift:
     image: git.hiten-patel.co.uk/hiten/mettlelift:${IMAGE_TAG:?set by deploy job}
     environment:
       SCHEMA_MANAGEMENT: "external"
       NEXTAUTH_URL: "https://mettlelift.hiten-patel.co.uk"
+    networks:
+      default: {}
+      edge: {}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "edge"
+      traefik.http.routers.mettlelift.rule: "Host(`mettlelift.hiten-patel.co.uk`)"
+      traefik.http.routers.mettlelift.entryPoints: "websecure"
+      traefik.http.routers.mettlelift.tls: "true"
+      traefik.http.routers.mettlelift.tls.certresolver: "cloudflare"
+      traefik.http.services.mettlelift.loadbalancer.server.port: "3000"
+
+networks:
+  edge:
+    external: true
+
+# Reuse the pre-SDLC production volumes so existing data carries over.
+volumes:
+  pgdata:
+    name: ironpulse-production_production-pgdata
+    external: true
+  miniodata:
+    name: ironpulse-production_production-miniodata
+    external: true
+  redisdata:
+    name: ironpulse-production_production-redisdata
+    external: true

@@ -1,3 +1,5 @@
+name: mettlelift-staging
+
 services:
   mettlelift:
     image: git.hiten-patel.co.uk/hiten/mettlelift:${IMAGE_TAG:?set by deploy job}

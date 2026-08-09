@@ -8,7 +8,7 @@ services:
         # Page/runtime errors still fail the build; only TS/ESLint are ignored.
         SKIP_TYPECHECK_ON_BUILD: "1"
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     # Pass through optional integration keys (OPENAI_API_KEY, STRIPE_*, OAuth,
     # RESEND_API_KEY, MEAL_SCAN_API_KEY, …) from .env. Values in `environment:`
     # below take precedence over anything in the env file.
@@ -20,7 +20,7 @@ services:
       S3_ENDPOINT: "http://minio:9000"
       S3_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
-      S3_BUCKET: "mettlelift"
+      S3_BUCKET: ${S3_BUCKET:-mettlelift}
       NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
       NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
       DEPLOYMENT_MODE: "self-hosted"
@@ -77,7 +77,7 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      - "9001:9001"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -93,7 +93,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env} ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env} &&
-      mc mb --ignore-existing local/mettlelift &&
+      mc mb --ignore-existing local/${S3_BUCKET:-mettlelift} &&
       exit 0
       "
 
@@ -135,7 +135,7 @@ services:
       PS_DATA_SOURCE_URI: "postgresql://${POSTGRES_USER:?set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}"
       PS_MONGO_URI: "mongodb://mongo:27017/powersync"
     ports:
-      - "8080:80"
+      - "${POWERSYNC_PORT:-8080}:80"
     restart: unless-stopped
 
   # Optional status dashboard. Enable with `--profile monitoring`.
@@ -145,7 +145,7 @@ services:
     volumes:
       - uptimekuma:/app/data
     ports:
-      - "3001:3001"
+      - "${KUMA_PORT:-3001}:3001"
     restart: unless-stopped
 
   # Nightly pg_dump. Recommended for any real deployment. Enable with
