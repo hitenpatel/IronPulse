@@ -3,6 +3,8 @@
 # .env is written only after migrate succeeds — failed deploys leave the
 # previous tag in place for restarts.
 set -eu
+# Synology ships docker in /usr/local/bin, which non-interactive ssh PATH lacks.
+export PATH="/usr/local/bin:$PATH"
 ENV="$1"; TAG="$2"
 [ -n "$ENV" ] && [ -n "$TAG" ] || { echo "usage: remote-deploy.sh <staging|prod> <image-tag>"; exit 2; }
 case "$ENV" in
