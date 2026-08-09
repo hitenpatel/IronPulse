@@ -160,7 +160,6 @@ jobs:
     name: Web E2E + a11y (Playwright)
     runs-on: arm64
     needs: [build]
-    continue-on-error: true
     services:
       postgres:
         image: imresamu/postgis:16-3.4-alpine  # multi-arch (has arm64, unlike upstream)
@@ -252,14 +251,14 @@ jobs:
     name: CI Gate
     runs-on: arm64
     if: always()
-    needs: [build]
+    needs: [build, test-api, e2e-web]
     steps:
       - name: Check all required jobs
         run: |
           echo "build: ${{ needs.build.result }}"
-          # Build and Android E2E must pass. iOS E2E is advisory (simulator flakiness).
-          if [[ "${{ needs.build.result }}" != "success" ]]; then
-            echo "Build failed — blocking"
-            exit 1
-          fi
+          echo "test-api: ${{ needs.test-api.result }}"
+          echo "e2e-web: ${{ needs.e2e-web.result }}"
+          for r in "${{ needs.build.result }}" "${{ needs.test-api.result }}" "${{ needs.e2e-web.result }}"; do
+            if [[ "$r" != "success" ]]; then echo "required job failed — blocking"; exit 1; fi
+          done
 
