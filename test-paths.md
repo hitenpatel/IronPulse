@@ -19,10 +19,12 @@ BASE_URL=https://staging.mettlelift.hiten-patel.co.uk \
 ```
 
 Test accounts (pre-seeded into staging DB via `db:seed:dev`):
-- `athlete@test.com` / `password123` — primary regression account
-- `coach@test.com` / `password123` — coach-tier flows
-- `free@test.com` / `password123` — free-tier flows
-- `new@test.com` / `password123` — pre-onboarding state
+- `athlete@test.com` / `$SEED_USER_PASSWORD` (default: `password123`) — primary regression account
+- `coach@test.com` / `$SEED_USER_PASSWORD` (default: `password123`) — coach-tier flows
+- `free@test.com` / `$SEED_USER_PASSWORD` (default: `password123`) — free-tier flows
+- `new@test.com` / `$SEED_USER_PASSWORD` (default: `password123`) — pre-onboarding state
+
+**Note**: Seed account passwords are controlled by the `SEED_USER_PASSWORD` environment variable set in the staging host's `docker/.env`; if unset, defaults to `password123`.
 
 ## Tier-1: must-pass (blocks Release Manager autonomous cut)
 
