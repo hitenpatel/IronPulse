@@ -250,7 +250,8 @@ jobs:
 
   build-image:
     name: Build & Push Image
-    runs-on: arm64
+    # arm64-dind maps to a docker-CLI-capable image with the host socket automounted
+    runs-on: arm64-dind
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     needs: [ci-gate]
     steps:
