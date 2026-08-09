@@ -279,6 +279,46 @@ jobs:
           cache-from: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache
           cache-to: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache,mode=max
 
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: arm64
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [build-image]
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/staging && chmod 600 ~/.ssh/staging
+          ssh-keyscan -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Deploy
+        run: |
+          TAG=staging-${{ github.sha }}
+          SSH="ssh -i ~/.ssh/staging -p ${{ secrets.STAGING_SSH_PORT }} ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}"
+          DIR=${{ secrets.STAGING_COMPOSE_DIR }}   # repo clone root on the NAS
+          $SSH "cd $DIR && git pull --ff-only && cd docker && flock /tmp/mettlelift-deploy.lock sh remote-deploy.sh staging $TAG"
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 20); do
+            if node scripts/smoke/check-health.mjs https://staging.mettlelift.hiten-patel.co.uk ${{ github.sha }}; then exit 0; fi
+            echo "attempt $i/20 failed; retrying in 6s"
+            sleep 6
+          done
+          echo "smoke failed after 20 attempts"
+          exit 1
+      - name: Login + write-path smoke (Playwright)
+        run: |
+          # pnpm setup mirrors other jobs
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm --filter @mettlelift/web exec playwright install --with-deps chromium
+          BASE_URL=https://staging.mettlelift.hiten-patel.co.uk pnpm --filter @mettlelift/web exec playwright test e2e/auth-login.spec.ts e2e/goals.spec.ts
+        env:
+          TEST_USER_PASSWORD: ${{ secrets.STAGING_TEST_USER_PASSWORD }}
+
   ci-gate:
     name: CI Gate
     runs-on: arm64

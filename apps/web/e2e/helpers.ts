@@ -8,7 +8,7 @@ export async function signIn(page: Page) {
   await expect(emailInput).toBeVisible({ timeout: 10_000 });
 
   await emailInput.fill("athlete@test.com");
-  await page.getByTestId("password-input").fill("password123");
+  await page.getByTestId("password-input").fill(process.env.TEST_USER_PASSWORD ?? "password123");
   await page.getByTestId("login-button").click();
   await page.waitForURL(/\/(dashboard|workouts|feed|onboarding)/, {
     timeout: 15_000,
