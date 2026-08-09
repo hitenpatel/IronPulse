@@ -260,6 +260,7 @@ export default function GoalsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label="Delete goal"
                             className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                             onClick={() => deleteGoal.mutate({ id: goal.id })}
                           >
@@ -347,6 +348,7 @@ export default function GoalsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Delete goal"
                       className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                       onClick={() => deleteGoal.mutate({ id: goal.id })}
                     >

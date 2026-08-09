@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { signIn } from "./helpers";
 
 test.describe("Signup page", () => {
   test.beforeEach(async ({ page }) => {
@@ -51,7 +50,13 @@ test.describe("Signup page", () => {
     await page.locator('input[type="checkbox"]').check();
     await page.getByRole("button", { name: /create account/i }).click();
 
-    await expect(page.getByText(/name is required/i)).toBeVisible();
+    // The name input carries the native `required` attribute, so the browser
+    // blocks submission before the JS "Name is required" message can render.
+    // Assert the native validation state instead.
+    const validationMessage = await page
+      .getByLabel("Name")
+      .evaluate((el) => (el as HTMLInputElement).validationMessage);
+    expect(validationMessage).not.toBe("");
   });
 
   test("shows consent validation when checkbox is unchecked", async ({

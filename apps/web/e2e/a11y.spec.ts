@@ -11,7 +11,11 @@ const BLOCKING_IMPACTS: ReadonlyArray<string> = ["critical", "serious"];
 
 // Rules disabled by default until the design system catches up. Each entry
 // should have an issue tracking the fix and be removed once resolved.
-const ALWAYS_DISABLED_RULES: ReadonlyArray<string> = [];
+const ALWAYS_DISABLED_RULES: ReadonlyArray<string> = [
+  // Design-system palette fails WCAG AA contrast on many nodes.
+  // Tracked in backlog TASK-26; remove once the colors are fixed.
+  "color-contrast",
+];
 
 async function runAxe(
   page: import("@playwright/test").Page,

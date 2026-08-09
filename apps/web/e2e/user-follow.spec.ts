@@ -38,11 +38,12 @@ test.describe("Find Users / follow page", () => {
     // Wait until loading skeleton is gone.
     await expect(loading).toHaveCount(0, { timeout: 10_000 });
 
-    const userCards = page.locator('[class*="space-y-3"] .rounded-xl');
-    const hasResults = await userCards.count() > 0;
-    const hasEmpty = await noUsers.isVisible();
-
-    expect(hasResults || hasEmpty).toBe(true);
+    // Result cards contain profile links — sturdier than matching on
+    // presentational classes, which drift with design changes.
+    const userLinks = page.locator('main a[href^="/users/"]');
+    await expect(userLinks.first().or(noUsers)).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test("searching for a specific term shows Follow or Unfollow buttons when results exist", async ({

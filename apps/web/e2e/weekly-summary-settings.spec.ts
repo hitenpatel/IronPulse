@@ -15,20 +15,23 @@ test.describe("Weekly summary settings", () => {
     await page.goto("/settings");
     const toggle = page.getByLabel(/weekly summary email toggle/i);
     await expect(toggle).toBeVisible();
+    // The checkbox is disabled while the profile query loads — reading or
+    // clicking before it settles races against the real checked state.
+    await expect(toggle).toBeEnabled();
 
-    // Get initial state
     const initial = await toggle.isChecked();
-    // Flip it
     await toggle.click();
-    await page.waitForTimeout(500);
+    // The checkbox is controlled: its state only flips once the mutation
+    // succeeds and the query refetches. Wait for that, not a fixed timeout.
+    await expect(toggle).toBeChecked({ checked: !initial, timeout: 10_000 });
 
-    // Reload and verify new state
     await page.reload();
-    await expect(toggle).toBeVisible();
-    const afterReload = await page.getByLabel(/weekly summary email toggle/i).isChecked();
-    expect(afterReload).toBe(!initial);
+    const reloaded = page.getByLabel(/weekly summary email toggle/i);
+    await expect(reloaded).toBeEnabled();
+    await expect(reloaded).toBeChecked({ checked: !initial, timeout: 10_000 });
 
-    // Reset
-    await page.getByLabel(/weekly summary email toggle/i).click();
+    // Reset so the test is idempotent for the shared seed user.
+    await reloaded.click();
+    await expect(reloaded).toBeChecked({ checked: initial, timeout: 10_000 });
   });
 });

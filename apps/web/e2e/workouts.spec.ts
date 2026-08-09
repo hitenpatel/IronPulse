@@ -22,17 +22,14 @@ test.describe("Workouts list page", () => {
       page.getByRole("heading", { name: "Workouts", level: 1 })
     ).toBeVisible();
 
-    // Allow time for data to settle
-    await page.waitForTimeout(1000);
-
-    // Either a workout card link or the empty-state copy should be visible
-    const workoutLink = page.locator('a[href^="/workouts/"]').first();
+    // Either a workout card link or the empty-state copy should appear once
+    // data settles — wait on the condition instead of a fixed timeout.
+    const workoutLink = page
+      .locator('a[href^="/workouts/"]:not([href$="/new"])')
+      .first();
     const emptyText = page.getByText("No workouts yet");
 
-    const hasWorkouts = await workoutLink.isVisible().catch(() => false);
-    const isEmpty = await emptyText.isVisible().catch(() => false);
-
-    expect(hasWorkouts || isEmpty).toBe(true);
+    await expect(workoutLink.or(emptyText)).toBeVisible({ timeout: 10_000 });
   });
 
   test("can navigate to workout detail if workouts exist", async ({ page }) => {
@@ -41,7 +38,9 @@ test.describe("Workouts list page", () => {
     // Wait for potential loading to finish
     await page.waitForTimeout(1000);
 
-    const firstWorkoutLink = page.locator('a[href^="/workouts/"]').first();
+    const firstWorkoutLink = page
+      .locator('a[href^="/workouts/"]:not([href$="/new"])')
+      .first();
     const exists = await firstWorkoutLink.isVisible().catch(() => false);
 
     if (!exists) {
@@ -55,8 +54,8 @@ test.describe("Workouts list page", () => {
 
     await page.waitForURL(`**${href}`);
 
-    // Verify we landed on the detail page (heading or "Back to Workouts" link)
-    const backLink = page.getByRole("link", { name: /Workouts/i });
+    // Use main-scoped locator to avoid collision with the sidebar "Workouts" nav link.
+    const backLink = page.locator('main a[href="/workouts"]').first();
     await expect(backLink).toBeVisible();
   });
 

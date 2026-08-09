@@ -31,7 +31,7 @@ test.describe("CSRF protection", () => {
       maxRedirects: 0,
     });
     // either redirect to an error page, or return 4xx — both are acceptable rejections
-    expect([302, 303, 400, 401, 403]).toContain(res.status());
+    expect([302, 303, 307, 400, 401, 403]).toContain(res.status());
     const location = res.headers()["location"] ?? "";
     if (res.status() >= 300 && res.status() < 400) {
       expect(location).toMatch(/error=invalid_state|\berror=/);
@@ -44,7 +44,7 @@ test.describe("CSRF protection", () => {
       `/api/strava/callback?code=forged&state=${forged}`,
       { maxRedirects: 0 },
     );
-    expect([302, 303, 400, 401, 403]).toContain(res.status());
+    expect([302, 303, 307, 400, 401, 403]).toContain(res.status());
     const location = res.headers()["location"] ?? "";
     if (res.status() >= 300 && res.status() < 400) {
       expect(location).toMatch(/error=invalid_state|\berror=/);

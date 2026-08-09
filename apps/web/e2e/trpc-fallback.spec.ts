@@ -165,7 +165,10 @@ test.describe("tRPC Fallback — Workout Flow", () => {
     await page.goto("/workouts");
     await page.waitForTimeout(1500);
 
-    const firstLink = page.locator('a[href^="/workouts/"]').first();
+    // Exclude the "Start Workout" link (/workouts/new) — only real detail links.
+    const firstLink = page
+      .locator('a[href^="/workouts/"]:not([href$="/new"])')
+      .first();
     const exists = await firstLink.isVisible().catch(() => false);
 
     if (!exists) {
@@ -253,9 +256,9 @@ test.describe("tRPC Fallback — Cardio Flow", () => {
     await page.waitForURL(`**${href}`);
     await page.waitForTimeout(1500);
 
-    // Should show cardio session details or back link
-    const backLink = page.getByRole("link", { name: /cardio/i });
-    await expect(backLink).toBeVisible();
+    // Should show cardio session details or back link. /cardio/i matches both
+    // the sidebar nav link and the breadcrumb — use the sidebar testid.
+    await expect(page.getByTestId("nav-cardio")).toBeVisible();
   });
 });
 

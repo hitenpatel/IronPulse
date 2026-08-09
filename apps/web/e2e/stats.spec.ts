@@ -74,7 +74,8 @@ test.describe("Stats page", () => {
     await page.goto("/stats");
     await page.waitForTimeout(1000);
 
-    const saveButton = page.getByRole("button", { name: "Save" });
+    // "Save Measurements" also matches { name: "Save" } — require exact.
+    const saveButton = page.getByRole("button", { name: "Save", exact: true });
     await expect(saveButton).toBeVisible();
   });
 

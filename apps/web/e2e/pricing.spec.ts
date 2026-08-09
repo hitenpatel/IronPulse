@@ -11,8 +11,14 @@ test.describe("Pricing Page", () => {
     await expect(
       page.getByRole("heading", { name: "Plans & Pricing" })
     ).toBeVisible();
-    await expect(page.getByText("Athlete")).toBeVisible();
-    await expect(page.getByText("Coach")).toBeVisible();
+    // Tier names also appear in the user menu and feature lists — target the
+    // tier card headings to avoid strict-mode violations.
+    await expect(
+      page.getByRole("heading", { name: "Athlete", exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Coach", exact: true })
+    ).toBeVisible();
   });
 
   test("should show current plan indicator", async ({ page }) => {

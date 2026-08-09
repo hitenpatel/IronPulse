@@ -11,13 +11,16 @@ const publicRoutes = [
   "/terms",
 ];
 
-const authApiRoutes = ["/api/auth", "/api/health"];
-
-function buildCsp(nonce: string): string {
+function buildCsp(): string {
   const isDev = process.env.NODE_ENV !== "production";
+  // Nonce + strict-dynamic is incompatible with statically prerendered pages
+  // (/login, /signup, ...): their HTML is built once and cannot carry a
+  // per-request nonce, so the browser blocks every script and the app never
+  // hydrates. Stick to unsafe-inline until pages are made dynamic or a
+  // hash-based policy is generated at build time.
   const scriptSrc = isDev
-    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`;
+    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
+    : `script-src 'self' 'unsafe-inline'`;
   return [
     "default-src 'self'",
     scriptSrc,
@@ -35,34 +38,30 @@ function buildCsp(nonce: string): string {
 }
 
 export default auth((req) => {
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = buildCsp(nonce);
+  const csp = buildCsp();
 
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth?.user;
   const onboardingComplete =
     (req.auth?.user as Record<string, unknown>)?.onboardingComplete ?? true;
 
-  const nextWithNonce = () => {
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-nonce", nonce);
-    const res = NextResponse.next({ request: { headers: requestHeaders } });
+  const nextWithCsp = () => {
+    const res = NextResponse.next();
     res.headers.set("content-security-policy", csp);
     return res;
   };
 
-  // Allow auth API routes and tRPC
-  if (
-    authApiRoutes.some((route) => pathname.startsWith(route)) ||
-    pathname.startsWith("/api/trpc")
-  ) {
+  // API routes enforce their own auth (session, webhook signatures,
+  // CRON_SECRET). Redirecting them to /login breaks external callers
+  // like Stripe webhooks and cron.
+  if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
   // Allow public routes for unauthenticated users
   if (!isLoggedIn) {
     if (publicRoutes.includes(pathname) || pathname.startsWith("/share")) {
-      return nextWithNonce();
+      return nextWithCsp();
     }
     return NextResponse.redirect(new URL("/login", req.url));
   }
@@ -70,7 +69,7 @@ export default auth((req) => {
   // Authenticated but onboarding not complete
   if (!onboardingComplete) {
     if (pathname === "/onboarding") {
-      return nextWithNonce();
+      return nextWithCsp();
     }
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }
@@ -80,7 +79,7 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  return nextWithNonce();
+  return nextWithCsp();
 });
 
 export const config = {

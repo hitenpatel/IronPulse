@@ -188,6 +188,7 @@ jobs:
       GOOGLE_CLIENT_SECRET: dummy-google-client-secret-for-ci
       APPLE_ID: dummy-apple-id-for-ci
       APPLE_SECRET: dummy-apple-secret-for-ci
+      RATE_LIMIT_API_MAX: "10000"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -10,7 +10,11 @@ test.describe("Password Change", () => {
     page,
   }) => {
     await page.goto("/profile/security");
-    await expect(page.getByText("Change Password")).toBeVisible();
+    // "Change Password" matches both the section heading and the button —
+    // target the heading to avoid a strict-mode violation.
+    await expect(
+      page.getByRole("heading", { name: "Change Password" })
+    ).toBeVisible();
   });
 
   test("should expand password change form", async ({ page }) => {

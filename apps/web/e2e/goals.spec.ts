@@ -40,9 +40,12 @@ test.describe("Goals Page", () => {
 
     await expect(page.getByText(title)).toBeVisible({ timeout: 10000 });
 
-    // Delete the goal
-    const goalCard = page.locator(`text=${title}`).first().locator('..').locator('..');
-    await goalCard.getByRole("button").last().click();
+    // Delete the goal — scope to the card that contains the title and use the
+    // accessible name added for axe compliance.
+    const goalCard = page
+      .locator("div.rounded-lg.border")
+      .filter({ hasText: title });
+    await goalCard.getByRole("button", { name: "Delete goal" }).first().click();
     await expect(page.getByText(title)).not.toBeVisible({ timeout: 10000 });
   });
 });

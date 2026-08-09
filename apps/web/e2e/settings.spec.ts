@@ -82,12 +82,14 @@ test.describe("Settings – Connected Apps (integrations) page", () => {
     await expect(page.getByText("Strava", { exact: true })).toBeVisible();
   });
 
-  test("shows the Garmin Connect card", async ({ page }) => {
+  // Garmin Connect card was intentionally removed from the UI (partner
+  // approval not viable for launch); Garmin syncs via Intervals.icu instead.
+  test("shows the Intervals.icu card", async ({ page }) => {
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0, {
       timeout: 10_000,
     });
 
-    await expect(page.getByText("Garmin Connect")).toBeVisible();
+    await expect(page.getByText("Intervals.icu", { exact: true })).toBeVisible();
   });
 
   test("Strava section shows connect or disconnect state", async ({ page }) => {
@@ -107,17 +109,21 @@ test.describe("Settings – Connected Apps (integrations) page", () => {
     expect(hasConnect || hasDisconnect).toBe(true);
   });
 
-  test("Garmin section shows connect or disconnect state", async ({ page }) => {
+  test("Intervals.icu section shows connect or disconnect state", async ({
+    page,
+  }) => {
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0, {
       timeout: 10_000,
     });
 
-    const connectLink = page.locator('a[href="/api/garmin/connect"]');
+    // Not connected → API key/athlete ID form with a Connect button;
+    // connected → Disconnect button.
+    const connectBtn = page.getByRole("button", { name: "Connect", exact: true });
     const disconnectBtn = page
       .getByRole("button", { name: "Disconnect" })
       .last();
 
-    const hasConnect = await connectLink.isVisible();
+    const hasConnect = await connectBtn.isVisible();
     const hasDisconnect = await disconnectBtn.isVisible();
 
     expect(hasConnect || hasDisconnect).toBe(true);

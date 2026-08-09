@@ -14,7 +14,10 @@ test.describe("Workout detail page", () => {
     await page.goto("/workouts");
     await page.waitForTimeout(1000);
 
-    const firstLink = page.locator('a[href^="/workouts/"]').first();
+    // Exclude the "Start Workout" link (/workouts/new) — only real detail links.
+    const firstLink = page
+      .locator('a[href^="/workouts/"]:not([href$="/new"])')
+      .first();
     const exists = await firstLink.isVisible().catch(() => false);
     if (!exists) return null;
 
@@ -81,7 +84,8 @@ test.describe("Workout detail page", () => {
       return;
     }
 
-    const backLink = page.getByRole("link", { name: /workouts/i });
+    // The sidebar nav also has a "Workouts" link — scope to main content.
+    const backLink = page.locator('main a[href="/workouts"]').first();
     await expect(backLink).toBeVisible();
   });
 

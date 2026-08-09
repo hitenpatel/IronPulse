@@ -7,7 +7,11 @@ interface RateLimitConfig {
 }
 
 export const RATE_LIMITS = {
-  api: { windowMs: 60_000, maxRequests: 100 },
+  // Overridable so e2e suites (one user hammering the API) don't trip it.
+  api: {
+    windowMs: 60_000,
+    maxRequests: Number(process.env.RATE_LIMIT_API_MAX ?? 100),
+  },
   upload: { windowMs: 3_600_000, maxRequests: 10 },
   auth: { windowMs: 60_000, maxRequests: 5 },
   passkeyReg: { windowMs: 3_600_000, maxRequests: 5 },

@@ -2,9 +2,12 @@ import { test, expect } from "@playwright/test";
 import { signIn } from "./helpers";
 
 test.describe("Onboarding page", () => {
-  // Most onboarding assertions can be made without a real session because
-  // Next.js renders the page regardless; session data only pre-fills the name
-  // field. For tests that need a real auth session, call signIn(page) first.
+  // Middleware redirects unauthenticated visitors to /login, so every test
+  // needs a real session. Authenticated users with onboarding complete can
+  // still view /onboarding directly.
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+  });
 
   test("page loads and shows step indicator", async ({ page }) => {
     await page.goto("/onboarding");
@@ -51,7 +54,8 @@ test.describe("Onboarding page", () => {
   }) => {
     await page.goto("/onboarding");
 
-    // Leave name blank
+    // The session pre-fills the name — clear it to hit the validation path.
+    await page.getByLabel("Name").fill("");
     await page.getByRole("button", { name: /next/i }).click();
 
     await expect(page.getByText(/name is required/i)).toBeVisible();

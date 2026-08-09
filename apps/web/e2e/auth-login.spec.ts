@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { signIn } from "./helpers";
 
 test.describe("Login page", () => {
   test.beforeEach(async ({ page }) => {
@@ -9,9 +8,8 @@ test.describe("Login page", () => {
   test("renders email, password fields and sign in button", async ({ page }) => {
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /sign in/i })
-    ).toBeVisible();
+    // "Sign in with passkey" also matches /sign in/i — target the submit button.
+    await expect(page.getByTestId("login-button")).toBeVisible();
   });
 
   test("shows heading and subtitle", async ({ page }) => {
