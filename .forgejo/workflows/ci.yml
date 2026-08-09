@@ -250,8 +250,9 @@ jobs:
 
   build-image:
     name: Build & Push Image
-    # arm64-dind maps to a docker-CLI-capable image with the host socket automounted
-    runs-on: arm64-dind
+    # amd64-dind runs on the NAS-native x86_64 forgejo-runner (docker CLI + socket).
+    # Native build avoids QEMU emulation which timed out on the Oracle arm64 runner.
+    runs-on: amd64-dind
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     needs: [ci-gate]
     steps:
@@ -270,10 +271,9 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          # staging NAS DS923+ is x86_64 (native for CI runner via docker socket).
-          # Prod is arm64 (Oracle A1.Flex) but deploys are gated/manual; add a
-          # native arm64 runner later so we can multi-arch build without QEMU
-          # (which times out at 3h under emulation).
+          # Native amd64 on the NAS runner. Prod arm64 is deployed manually; a
+          # multi-arch build can be added when the Oracle arm64-dind runner is
+          # brought in for a second platform (avoids QEMU either way).
           platforms: linux/amd64
           push: true
           build-args: |
