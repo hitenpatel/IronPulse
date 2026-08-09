@@ -2,9 +2,16 @@
 # Usage: remote-deploy.sh <staging|prod> <image-tag>
 # .env is written only after migrate succeeds — failed deploys leave the
 # previous tag in place for restarts.
-set -e
+set -eu
 ENV="$1"; TAG="$2"
 [ -n "$ENV" ] && [ -n "$TAG" ] || { echo "usage: remote-deploy.sh <staging|prod> <image-tag>"; exit 2; }
+case "$ENV" in
+  staging|prod) ;;
+  *) echo "invalid env: '$ENV' (must be staging or prod)" >&2; exit 2 ;;
+esac
+case "$TAG" in
+  *[!A-Za-z0-9._-]*|"") echo "invalid tag: '$TAG'" >&2; exit 2 ;;
+esac
 COMPOSE="docker compose -f docker-compose.yml -f compose.$ENV.yml --env-file .env"
 PREV=$(grep '^IMAGE_TAG=' .env | cut -d= -f2)
 echo "previous tag: ${PREV:-<none>}"
