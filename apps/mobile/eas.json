@@ -8,7 +8,11 @@
     "preview": {
       "ios": { "simulator": true },
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "channel": "staging",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://staging.mettlelift.hiten-patel.co.uk"
+      }
     },
     "e2e": {
       "extends": "preview",
@@ -21,8 +25,12 @@
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
       "android": { "buildType": "app-bundle" },
-      "ios": { "resourceClass": "m-medium" }
+      "ios": { "resourceClass": "m-medium" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://mettlelift.hiten-patel.co.uk"
+      }
     }
   },
   "submit": {
