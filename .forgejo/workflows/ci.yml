@@ -256,8 +256,6 @@ jobs:
     needs: [ci-gate]
     steps:
       - uses: actions/checkout@v4
-      - name: Install QEMU binfmt (amd64 emulation for staging NAS)
-        run: docker run --privileged --rm tonistiigi/binfmt --install amd64
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -272,8 +270,11 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          # staging NAS DS923+ is x86_64, prod Oracle A1.Flex is arm64 — both needed.
-          platforms: linux/amd64,linux/arm64
+          # staging NAS DS923+ is x86_64 (native for CI runner via docker socket).
+          # Prod is arm64 (Oracle A1.Flex) but deploys are gated/manual; add a
+          # native arm64 runner later so we can multi-arch build without QEMU
+          # (which times out at 3h under emulation).
+          platforms: linux/amd64
           push: true
           build-args: |
             BUILD_SHA=${{ github.sha }}
