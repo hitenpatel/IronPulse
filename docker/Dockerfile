@@ -1,10 +1,12 @@
-FROM node:22-alpine AS base
+FROM node:22-slim AS base
 # Install pnpm from the standalone linuxstatic release: both `corepack enable`
 # and `npm install -g pnpm` crash with QEMU SIGSEGV when building linux/amd64
 # on an arm64 runner. The standalone binary avoids the npm/node subprocess
 # path during install.
 ARG TARGETARCH
-RUN apk add --no-cache wget ca-certificates && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
     case "${TARGETARCH:-amd64}" in \
       amd64) A=x64 ;; \
       arm64) A=arm64 ;; \
@@ -53,7 +55,9 @@ WORKDIR /app
 
 # postgresql-client provides pg_isready, used by entrypoint.sh to wait for the
 # database before running migrations (avoids the first-boot migration race).
-RUN apk add --no-cache postgresql-client
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
 
 # Prisma CLI + tsx are needed at runtime for migrations and dev seeding.
 # In the builder image they live in pnpm's .pnpm/ store with symlinks; the
