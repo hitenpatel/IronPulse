@@ -1,7 +1,19 @@
 FROM node:22-alpine AS base
-# Install pnpm via npm rather than corepack: corepack segfaults (exit 139)
-# under QEMU amd64-on-arm64 emulation during multi-arch buildx builds.
-RUN npm install -g pnpm@9.15.4
+# Install pnpm from the standalone linuxstatic release: both `corepack enable`
+# and `npm install -g pnpm` crash with QEMU SIGSEGV when building linux/amd64
+# on an arm64 runner. The standalone binary avoids the npm/node subprocess
+# path during install.
+ARG TARGETARCH
+RUN apk add --no-cache wget ca-certificates && \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) A=x64 ;; \
+      arm64) A=arm64 ;; \
+      *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac && \
+    wget -q "https://github.com/pnpm/pnpm/releases/download/v9.15.4/pnpm-linuxstatic-${A}" \
+      -O /usr/local/bin/pnpm && \
+    chmod +x /usr/local/bin/pnpm && \
+    pnpm --version
 WORKDIR /app
 
 # Install dependencies
