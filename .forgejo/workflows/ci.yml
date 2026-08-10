@@ -250,19 +250,17 @@ jobs:
 
   build-image:
     name: Build & Push Image
-    # amd64-dind runs on the NAS-native x86_64 forgejo-runner (docker CLI + socket).
-    # Native build avoids QEMU emulation which timed out on the Oracle arm64 runner.
-    runs-on: amd64-dind
+    # Runs on the Oracle arm64 host under QEMU amd64 emulation (~90min). The
+    # NAS-native amd64-dind runner is faster (~10min) but its push hangs on
+    # the router NAT hairpin (NAS resolves git.hiten-patel.co.uk to the public
+    # IP). Switching back requires a /etc/hosts entry on the NAS mapping
+    # git.hiten-patel.co.uk to 192.168.1.24 (see TASK-27).
+    runs-on: arm64-dind
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     needs: [ci-gate]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-        with:
-          # Buildkit must use host network so registry pushes to
-          # git.hiten-patel.co.uk hit local traefik on loopback instead of
-          # going out the router and NAT-hairpinning back (long PUTs hang).
-          driver-opts: network=host
       - uses: docker/login-action@v3
         with:
           registry: git.hiten-patel.co.uk
