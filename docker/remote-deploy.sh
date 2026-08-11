@@ -18,10 +18,13 @@ COMPOSE="docker compose -f docker-compose.yml -f compose.$ENV.yml --env-file .en
 PREV=$(grep '^IMAGE_TAG=' .env | cut -d= -f2)
 echo "previous tag: ${PREV:-<none>}"
 IMAGE_TAG="$TAG" $COMPOSE pull mettlelift
+# Overriding --entrypoint skips the image's pg_isready wait, so on a fresh
+# volume prisma migrate can race postgres initdb. Wait explicitly here.
+WAIT_PG='until pg_isready -d "$DATABASE_URL" >/dev/null 2>&1; do echo waiting for postgres; sleep 2; done'
 if [ "$ENV" = "staging" ]; then
-  IMAGE_TAG="$TAG" $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate deploy && prisma db seed && tsx seeds/seed-dev.ts"
+  IMAGE_TAG="$TAG" $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && $WAIT_PG && prisma migrate deploy && prisma db seed && tsx seeds/seed-dev.ts"
 else
-  IMAGE_TAG="$TAG" $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && prisma migrate deploy && prisma db seed"
+  IMAGE_TAG="$TAG" $COMPOSE run --rm --entrypoint sh mettlelift -c "cd /app/packages/db && $WAIT_PG && prisma migrate deploy && prisma db seed"
 fi
 sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env
 $COMPOSE up -d --no-build
