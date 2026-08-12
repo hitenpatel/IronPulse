@@ -8,7 +8,15 @@ import type { AchievementBadge } from "@zor/shared";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
 
-type NotificationKind =
+/** Structural subset shared by PrismaClient and Prisma.TransactionClient. */
+export type DbClient = {
+  notificationOutbox: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    upsert: (args: any) => Promise<any>;
+  };
+};
+
+export type NotificationKind =
   | "follow"
   | "reaction"
   | "message"
@@ -21,6 +29,33 @@ type NotificationKind =
   | "reengagement"
   | "deload_suggestion"
   | "challenge_expiry";
+
+export interface NotificationIntent {
+  dedupeKey: string;
+  userId: string;
+  type: NotificationKind;
+  title: string;
+  body?: string;
+  linkPath?: string;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Enqueue a notification in the outbox with a stable dedupeKey.
+ * Idempotent: calling twice with the same dedupeKey is a no-op that returns
+ * the existing row. Callers inside the finalization worker use this instead
+ * of createNotification so that retried finalizations don't re-notify.
+ */
+export async function enqueueNotification(
+  db: DbClient,
+  intent: NotificationIntent,
+) {
+  return db.notificationOutbox.upsert({
+    where: { dedupeKey: intent.dedupeKey },
+    create: intent,
+    update: {},
+  });
+}
 
 /**
  * Persist an in-app notification AND fire a push notification to all of

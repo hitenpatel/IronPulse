@@ -3,14 +3,14 @@ import { detectPRs } from "../src/lib/pr-detection";
 
 const mockDb = {
   exerciseSet: { findMany: vi.fn() },
-  personalRecord: { findFirst: vi.fn(), create: vi.fn() },
+  personalRecord: { findFirst: vi.fn(), upsert: vi.fn() },
 } as any;
 
 const achievedAt = new Date("2026-04-16T10:00:00Z");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockDb.personalRecord.create.mockResolvedValue({});
+  mockDb.personalRecord.upsert.mockResolvedValue({});
 });
 
 describe("detectPRs", () => {
@@ -20,7 +20,7 @@ describe("detectPRs", () => {
     const result = await detectPRs(mockDb, "u1", "w1", achievedAt);
 
     expect(result).toEqual([]);
-    expect(mockDb.personalRecord.create).not.toHaveBeenCalled();
+    expect(mockDb.personalRecord.upsert).not.toHaveBeenCalled();
   });
 
   it("detects 1RM PR using epley formula", async () => {
@@ -43,16 +43,20 @@ describe("detectPRs", () => {
     expect(rm!.value).toBeCloseTo(116.667, 1);
     expect(rm!.setId).toBe("set-1");
 
-    expect(mockDb.personalRecord.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        userId: "u1",
-        exerciseId: "ex-1",
-        type: "1rm",
-        value: expect.closeTo(116.667, 1),
-        achievedAt,
-        setId: "set-1",
+    expect(mockDb.personalRecord.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { setId_type: { setId: "set-1", type: "1rm" } },
+        create: expect.objectContaining({
+          userId: "u1",
+          exerciseId: "ex-1",
+          type: "1rm",
+          value: expect.closeTo(116.667, 1),
+          achievedAt,
+          setId: "set-1",
+        }),
+        update: {},
       }),
-    });
+    );
   });
 
   it("detects volume PR (weight x reps)", async () => {
@@ -98,7 +102,7 @@ describe("detectPRs", () => {
     const result = await detectPRs(mockDb, "u1", "w1", achievedAt);
 
     expect(result).toEqual([]);
-    expect(mockDb.personalRecord.create).not.toHaveBeenCalled();
+    expect(mockDb.personalRecord.upsert).not.toHaveBeenCalled();
   });
 
   it("skips 1RM calculation for reps > 10 but still creates volume PR", async () => {
@@ -120,11 +124,14 @@ describe("detectPRs", () => {
     expect(result[0].type).toBe("volume");
     expect(result[0].value).toBe(750);
 
-    // personalRecord.create called only once (for volume)
-    expect(mockDb.personalRecord.create).toHaveBeenCalledTimes(1);
-    expect(mockDb.personalRecord.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ type: "volume" }),
-    });
+    // personalRecord.upsert called only once (for volume)
+    expect(mockDb.personalRecord.upsert).toHaveBeenCalledTimes(1);
+    expect(mockDb.personalRecord.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ type: "volume" }),
+        update: {},
+      }),
+    );
   });
 
   it("handles multiple exercises in one workout", async () => {

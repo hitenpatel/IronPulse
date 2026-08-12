@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from "@zor/db";
+import type { PrismaClient, Prisma, PersonalRecord } from "@zor/db";
 
 interface CompletedSet {
   id: string;
@@ -11,6 +11,14 @@ interface CompletedSet {
 
 interface NewPR {
   exerciseId: string;
+  type: "1rm" | "volume";
+  value: number;
+  setId: string;
+}
+
+export interface FinalizedPR {
+  exerciseId: string;
+  exerciseName: string;
   type: "1rm" | "volume";
   value: number;
   setId: string;
@@ -89,8 +97,9 @@ export async function detectPRs(
       });
 
       if (!existing1RM || best1RM.value > Number(existing1RM.value)) {
-        await db.personalRecord.create({
-          data: {
+        await db.personalRecord.upsert({
+          where: { setId_type: { setId: best1RM.setId, type: "1rm" } },
+          create: {
             userId,
             exerciseId,
             type: "1rm",
@@ -98,6 +107,7 @@ export async function detectPRs(
             achievedAt,
             setId: best1RM.setId,
           },
+          update: {},
         });
         newPRs.push({
           exerciseId,
@@ -116,8 +126,9 @@ export async function detectPRs(
       });
 
       if (!existingVolume || bestVolume.value > Number(existingVolume.value)) {
-        await db.personalRecord.create({
-          data: {
+        await db.personalRecord.upsert({
+          where: { setId_type: { setId: bestVolume.setId, type: "volume" } },
+          create: {
             userId,
             exerciseId,
             type: "volume",
@@ -125,6 +136,7 @@ export async function detectPRs(
             achievedAt,
             setId: bestVolume.setId,
           },
+          update: {},
         });
         newPRs.push({
           exerciseId,

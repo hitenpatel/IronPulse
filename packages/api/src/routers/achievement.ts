@@ -1,5 +1,5 @@
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
-import { notifyAchievement } from "../lib/notifications";
+import { enqueueNotification } from "../lib/notifications";
 import type { PrismaClient } from "@zor/db";
 import {
   ACHIEVEMENT_CATALOG,
@@ -136,16 +136,24 @@ export async function checkAndUnlock(
       skipDuplicates: true,
     });
 
-    // Fire notifications in parallel — a single unlock run can produce
-    // several notifications (e.g. a catch-up recomputation for existing
-    // users will emit one per newly-qualified badge).
+    // Enqueue notifications in the outbox with stable dedupeKeys so that
+    // repeated calls to checkAndUnlock (e.g. from a retried finalizer) never
+    // produce duplicate notifications.
     await Promise.all(
       toUnlock.map((type) => {
         const badge = ACHIEVEMENT_CATALOG.find(
           (b): b is AchievementBadge => b.type === type,
         );
         if (!badge) return Promise.resolve();
-        return notifyAchievement(db, userId, badge);
+        return enqueueNotification(db as Parameters<typeof enqueueNotification>[0], {
+          dedupeKey: `achievement:${userId}:${type}`,
+          userId,
+          type: "achievement",
+          title: `${badge.emoji} ${badge.label}`,
+          body: badge.description,
+          linkPath: `/achievements`,
+          data: { achievementType: badge.type },
+        });
       }),
     );
   }
