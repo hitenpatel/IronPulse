@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import type { PrismaClient } from "@zor/db";
+import type { PrismaClient, Prisma } from "@zor/db";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { signPowerSyncToken } from "../lib/powersync-auth";
 import {
@@ -7,6 +7,11 @@ import {
   syncUpdateSchema,
   syncDeleteSchema,
 } from "@zor/shared/src/schemas/sync";
+import {
+  registerWorkoutFinalization,
+  processWorkoutFinalization,
+} from "../lib/workout-finalization";
+import { captureError } from "../lib/capture-error";
 
 // Narrow delegate shape used for dynamic model access in this router. Prisma's
 // generated delegate types differ per model (the `where`/`data` shapes vary);
@@ -226,6 +231,50 @@ function enforceUserIdScope(
   }
 }
 
+// ─── Workout completion detection ────────────────────────
+
+/**
+ * Returns true when a mapped Prisma record transitions a workout to completed.
+ * The predicate is: table === "workouts" AND completedAt is a non-null value.
+ */
+function isWorkoutCompletion(table: string, mapped: Record<string, unknown>): boolean {
+  return table === "workouts" && mapped.completedAt != null;
+}
+
+/**
+ * After verifying ownership, register finalization inside the caller's tx
+ * (or directly via db when called outside a transaction for legacy endpoints).
+ * Returns the workoutId when registration was triggered, null otherwise.
+ */
+async function maybeRegisterFinalization(
+  tx: Prisma.TransactionClient,
+  table: string,
+  id: string,
+  mapped: Record<string, unknown>,
+  userId: string,
+): Promise<string | null> {
+  if (!isWorkoutCompletion(table, mapped)) return null;
+
+  const completedAt = mapped.completedAt instanceof Date
+    ? mapped.completedAt
+    : new Date(mapped.completedAt as string);
+
+  // Read startedAt from within the tx so we get the already-written value.
+  const existing = await tx.workout.findFirst({
+    where: { id, userId },
+    select: { startedAt: true },
+  });
+  if (!existing) return null;
+
+  const durationSeconds = Math.max(
+    0,
+    Math.floor((completedAt.getTime() - existing.startedAt.getTime()) / 1000),
+  );
+
+  await registerWorkoutFinalization(tx, { workoutId: id, userId, completedAt, durationSeconds });
+  return id;
+}
+
 // ─── Router ─────────────────────────────────────────────
 
 export const syncRouter = createTRPCRouter({
@@ -251,11 +300,39 @@ export const syncRouter = createTRPCRouter({
 
       const { id, ...data } = mapped;
 
-      await model(ctx.db, modelName).upsert({
-        where: { id: id as string },
-        create: mapped,
-        update: data,
+      // For user-owned tables, if the row already exists it must belong to the
+      // caller — prevent cross-user ID hijacks.
+      if (USER_OWNED_TABLES.has(table)) {
+        const existing = await model(ctx.db, modelName).findUnique({ where: { id: id as string } });
+        if (existing && existing.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Not your record" });
+        }
+      }
+
+      let registeredWorkoutId: string | null = null;
+
+      await ctx.db.$transaction(async (tx) => {
+        await model(tx as unknown as PrismaClient, modelName).upsert({
+          where: { id: id as string },
+          create: mapped,
+          update: data,
+        });
+
+        registeredWorkoutId = await maybeRegisterFinalization(
+          tx,
+          table,
+          id as string,
+          mapped,
+          ctx.user.id,
+        );
       });
+
+      // Attempt immediate processing after commit; sweep owns retries on failure.
+      if (registeredWorkoutId) {
+        processWorkoutFinalization(ctx.db, registeredWorkoutId).catch((err) =>
+          captureError(err, { context: "processWorkoutFinalization (applyChange)", workoutId: registeredWorkoutId }),
+        );
+      }
 
       return { success: true };
     }),
@@ -275,10 +352,29 @@ export const syncRouter = createTRPCRouter({
       // Prevent changing user_id via update
       delete mapped.userId;
 
-      await model(ctx.db, modelName).update({
-        where: { id },
-        data: mapped,
+      let registeredWorkoutId: string | null = null;
+
+      await ctx.db.$transaction(async (tx) => {
+        await model(tx as unknown as PrismaClient, modelName).update({
+          where: { id },
+          data: mapped,
+        });
+
+        registeredWorkoutId = await maybeRegisterFinalization(
+          tx,
+          table,
+          id,
+          mapped,
+          ctx.user.id,
+        );
       });
+
+      // Attempt immediate processing after commit; sweep owns retries on failure.
+      if (registeredWorkoutId) {
+        processWorkoutFinalization(ctx.db, registeredWorkoutId).catch((err) =>
+          captureError(err, { context: "processWorkoutFinalization (update)", workoutId: registeredWorkoutId }),
+        );
+      }
 
       return { success: true };
     }),

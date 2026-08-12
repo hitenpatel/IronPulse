@@ -128,3 +128,81 @@ describe("sync.delete", () => {
     await expect(caller.delete({ table: "workouts", id })).rejects.toThrow();
   });
 });
+
+describe("sync — workout completion transition registers finalization", () => {
+  it("applyChange with completed_at creates a finalization row", async () => {
+    const caller = syncCaller({ user: testUser });
+    const id = crypto.randomUUID();
+    const startedAt = new Date(Date.now() - 3600_000).toISOString();
+    const completedAt = new Date().toISOString();
+
+    // PUT (upsert) the initial workout row.
+    await caller.applyChange({
+      table: "workouts",
+      record: { id, user_id: testUser.id, name: "PowerSync Workout", started_at: startedAt },
+    });
+
+    // PATCH (upsert) with completed_at — this is the "completing" transition.
+    await caller.applyChange({
+      table: "workouts",
+      record: { id, user_id: testUser.id, name: "PowerSync Workout", started_at: startedAt, completed_at: completedAt },
+    });
+
+    const finRow = await db.workoutFinalization.findUnique({ where: { workoutId: id } });
+    expect(finRow).not.toBeNull();
+    expect(["pending", "processing", "completed"]).toContain(finRow!.status);
+  });
+
+  it("replaying the same applyChange produces exactly one finalization row", async () => {
+    const caller = syncCaller({ user: testUser });
+    const id = crypto.randomUUID();
+    const startedAt = new Date(Date.now() - 3600_000).toISOString();
+    const completedAt = new Date().toISOString();
+
+    await caller.applyChange({
+      table: "workouts",
+      record: { id, user_id: testUser.id, name: "Replay", started_at: startedAt, completed_at: completedAt },
+    });
+    // Replay the same batch — idempotent.
+    await caller.applyChange({
+      table: "workouts",
+      record: { id, user_id: testUser.id, name: "Replay", started_at: startedAt, completed_at: completedAt },
+    });
+
+    const fins = await db.workoutFinalization.findMany({ where: { workoutId: id } });
+    expect(fins).toHaveLength(1);
+  });
+
+  it("sync.update with completed_at creates a finalization row", async () => {
+    const caller = syncCaller({ user: testUser });
+    const id = crypto.randomUUID();
+    const startedAt = new Date(Date.now() - 3600_000);
+
+    await db.workout.create({ data: { id, userId: testUser.id, name: "Legacy", startedAt } });
+
+    await caller.update({
+      table: "workouts",
+      id,
+      data: { completed_at: new Date().toISOString() },
+    });
+
+    const finRow = await db.workoutFinalization.findUnique({ where: { workoutId: id } });
+    expect(finRow).not.toBeNull();
+  });
+
+  it("cross-user PUT cannot upsert over an existing row owned by another user", async () => {
+    const otherUser = createTestUser({ id: crypto.randomUUID(), email: "cross-user@test.com" });
+    await db.user.create({ data: { id: otherUser.id, email: otherUser.email, name: otherUser.name } });
+
+    const id = crypto.randomUUID();
+    await db.workout.create({ data: { id, userId: otherUser.id, name: "OtherOwned", startedAt: new Date() } });
+
+    const caller = syncCaller({ user: testUser });
+    await expect(
+      caller.applyChange({
+        table: "workouts",
+        record: { id, user_id: testUser.id, name: "Hijack attempt", started_at: new Date().toISOString() },
+      }),
+    ).rejects.toThrow();
+  });
+});

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
 import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -6,8 +6,62 @@ import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { useQuery } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@zor/sync";
+import { trpc } from "../../lib/trpc";
 
 import { calculateVolume, formatElapsed } from "../../lib/workout-utils";
+
+const POLL_INTERVAL_MS = 2_000;
+
+type FinalizationState =
+  | { status: "pending" | "processing" | "failed"; newPRs: unknown[] }
+  | { status: "completed"; newPRs: unknown[] };
+
+/** Poll finalization status every 2 s, stopping once status === 'completed'. */
+function useFinalizationStatus(workoutId: string): FinalizationState {
+  const [state, setState] = useState<FinalizationState>({
+    status: "pending",
+    newPRs: [],
+  });
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!workoutId) return;
+
+    let stopped = false;
+
+    async function poll() {
+      if (stopped) return;
+      try {
+        const result = await trpc.workout.finalizationStatus.query({ workoutId });
+        if (stopped) return;
+        setState({ status: result.status, newPRs: result.newPRs });
+        if (result.status === "completed") {
+          stopped = true;
+          if (intervalRef.current !== null) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+        }
+      } catch {
+        // Network error — keep polling, don't clear the last known state.
+      }
+    }
+
+    // Immediate first poll, then on interval.
+    void poll();
+    intervalRef.current = setInterval(() => { void poll(); }, POLL_INTERVAL_MS);
+
+    return () => {
+      stopped = true;
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [workoutId]);
+
+  return state;
+}
 
 const colors = {
   background: "hsl(224, 71%, 4%)",
@@ -22,6 +76,8 @@ export default function WorkoutCompleteScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "WorkoutComplete">>();
   const { workoutId } = route.params ?? { workoutId: "" };
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const finalization = useFinalizationStatus(workoutId ?? "");
 
   // Workout data
   const { data: workoutRows } = useQuery(
@@ -168,8 +224,7 @@ export default function WorkoutCompleteScreen() {
               </View>
             </View>
 
-            {/* Neutral finalization status — server PR detection runs after
-                PowerSync uploads the completion row and its side effects. */}
+            {/* Finalization status — shows PR results once completed, neutral copy while pending/processing/failed. */}
             <View
               style={{
                 marginTop: 20,
@@ -178,15 +233,41 @@ export default function WorkoutCompleteScreen() {
                 padding: 14,
               }}
             >
-              <Text
-                style={{
-                  color: colors.mutedFg,
-                  fontSize: 14,
-                  textAlign: "center",
-                }}
-              >
-                Records will appear after syncing.
-              </Text>
+              {finalization.status === "completed" && finalization.newPRs.length > 0 ? (
+                <>
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontSize: 14,
+                      fontWeight: "700",
+                      textAlign: "center",
+                      marginBottom: 6,
+                    }}
+                  >
+                    New Personal Records!
+                  </Text>
+                  {(finalization.newPRs as Array<{ exerciseName?: string; type?: string; value?: number }>).map(
+                    (pr, i) => (
+                      <Text
+                        key={i}
+                        style={{ color: colors.mutedFg, fontSize: 13, textAlign: "center" }}
+                      >
+                        {pr.exerciseName ?? "Exercise"} — {pr.type === "1rm" ? "Est. 1RM" : "Volume"}: {pr.value}
+                      </Text>
+                    ),
+                  )}
+                </>
+              ) : (
+                <Text
+                  style={{
+                    color: colors.mutedFg,
+                    fontSize: 14,
+                    textAlign: "center",
+                  }}
+                >
+                  Records will appear after syncing.
+                </Text>
+              )}
             </View>
 
             {/* Exercise summary heading */}

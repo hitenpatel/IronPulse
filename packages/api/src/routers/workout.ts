@@ -11,11 +11,12 @@ import {
   cursorPaginationSchema,
 } from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
-import { detectPRs } from "../lib/pr-detection";
-import { createFeedItem } from "../lib/feed";
-import { notifyNewPR, notifyCoachActivity } from "../lib/notifications";
-import { checkAndUnlock } from "./achievement";
+import { notifyCoachActivity } from "../lib/notifications";
 import { captureError } from "../lib/capture-error";
+import {
+  registerWorkoutFinalization,
+  processWorkoutFinalization,
+} from "../lib/workout-finalization";
 
 export const workoutRouter = createTRPCRouter({
   create: rateLimitedProcedure
@@ -348,57 +349,26 @@ export const workoutRouter = createTRPCRouter({
 
       const completedAt = input.completedAt ?? new Date();
       const durationSeconds = Math.round(
-        (completedAt.getTime() - existing.startedAt.getTime()) / 1000
+        (completedAt.getTime() - existing.startedAt.getTime()) / 1000,
       );
 
-      const workout = await ctx.db.workout.update({
-        where: { id: input.workoutId },
-        data: { completedAt, durationSeconds },
-        select: { id: true, name: true, startedAt: true, completedAt: true, durationSeconds: true },
+      // Register finalization inside a transaction — idempotent, first-writer wins.
+      await ctx.db.$transaction(async (tx) => {
+        await registerWorkoutFinalization(tx, {
+          workoutId: input.workoutId,
+          userId: ctx.user.id,
+          completedAt,
+          durationSeconds,
+        });
       });
 
-      // PR detection
-      const newPRs = await detectPRs(
-        ctx.db,
-        ctx.user.id,
-        input.workoutId,
-        completedAt
+      // Attempt immediate processing after the transaction commits (fire-and-forget
+      // on failure — the sweep cron will retry if this errors).
+      processWorkoutFinalization(ctx.db, input.workoutId).catch((err) =>
+        captureError(err, { context: "processWorkoutFinalization", workoutId: input.workoutId }),
       );
 
-      // Create activity feed items
-      await createFeedItem(ctx.db, ctx.user.id, "workout", input.workoutId);
-      for (const pr of newPRs) {
-        await createFeedItem(ctx.db, ctx.user.id, "pr", pr.setId);
-      }
-
-      // Push notifications for new PRs (fire-and-forget)
-      if (newPRs.length > 0) {
-        const exerciseIds = [...new Set(newPRs.map((pr) => pr.exerciseId))];
-        const exercises = await ctx.db.exercise.findMany({
-          where: { id: { in: exerciseIds } },
-          select: { id: true, name: true },
-        });
-        const nameMap = new Map(exercises.map((e: { id: string; name: string }) => [e.id, e.name]));
-        for (const pr of newPRs) {
-          const exerciseName = nameMap.get(pr.exerciseId) ?? "Unknown";
-          const label = pr.type === "1rm" ? "Est. 1RM" : "Volume";
-          notifyNewPR(
-            ctx.db,
-            ctx.user.id,
-            exerciseName,
-            `${label}: ${pr.value}`
-          ).catch((err) =>
-            captureError(err, { context: "notifyNewPR", userId: ctx.user.id, exerciseId: pr.exerciseId })
-          );
-        }
-      }
-
-      // Achievement checks (fire-and-forget — never block the response)
-      checkAndUnlock(ctx.db, ctx.user.id).catch((err) =>
-        captureError(err, { context: "checkAndUnlock", userId: ctx.user.id })
-      );
-
-      // Notify coach of client activity if athlete has an active program assignment
+      // Notify coach (best-effort, never block the response).
       (async () => {
         try {
           const assignment = await ctx.db.programAssignment.findFirst({
@@ -410,14 +380,11 @@ export const workoutRouter = createTRPCRouter({
             where: { id: ctx.user.id },
             select: { name: true },
           });
-          const summary = newPRs.length > 0
-            ? `completed a workout with ${newPRs.length} new PR${newPRs.length === 1 ? "" : "s"}`
-            : "completed a workout";
           await notifyCoachActivity(
             ctx.db,
             assignment.coachId,
             athlete?.name ?? "Athlete",
-            summary,
+            "completed a workout",
             ctx.user.id,
           );
         } catch (err) {
@@ -425,6 +392,59 @@ export const workoutRouter = createTRPCRouter({
         }
       })();
 
-      return { workout, newPRs };
+      const workout = await ctx.db.workout.findFirst({
+        where: { id: input.workoutId, userId: ctx.user.id },
+        select: { id: true, name: true, startedAt: true, completedAt: true, durationSeconds: true },
+      });
+
+      // Read back finalization status/result.
+      const finalization = await ctx.db.workoutFinalization.findUnique({
+        where: { workoutId: input.workoutId },
+        select: { status: true, result: true, processedAt: true },
+      });
+
+      const newPRs =
+        finalization?.status === "completed" && finalization.result
+          ? ((finalization.result as { newPRs?: unknown[] }).newPRs ?? [])
+          : [];
+
+      return { workout: workout!, newPRs };
+    }),
+
+  finalizationStatus: rateLimitedProcedure
+    .input(z.object({ workoutId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // Scope to owner — throw NOT_FOUND for missing or cross-user.
+      const workout = await ctx.db.workout.findFirst({
+        where: { id: input.workoutId, userId: ctx.user.id },
+        select: { id: true },
+      });
+      if (!workout) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Workout not found" });
+      }
+
+      const finalization = await ctx.db.workoutFinalization.findUnique({
+        where: { workoutId: input.workoutId },
+        select: { status: true, result: true, processedAt: true },
+      });
+
+      if (!finalization) {
+        return { status: "pending" as const, newPRs: [], message: "Records will appear after syncing." };
+      }
+
+      const newPRs =
+        finalization.status === "completed" && finalization.result
+          ? ((finalization.result as { newPRs?: unknown[] }).newPRs ?? [])
+          : [];
+
+      return {
+        status: finalization.status as "pending" | "processing" | "completed" | "failed",
+        newPRs,
+        finalizedAt: finalization.processedAt ?? undefined,
+        message:
+          finalization.status === "completed"
+            ? undefined
+            : "Records will appear after syncing.",
+      };
     }),
 });

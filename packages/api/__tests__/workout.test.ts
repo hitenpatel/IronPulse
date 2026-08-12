@@ -259,7 +259,7 @@ describe("workout.addSet / updateSet / deleteSet", () => {
 });
 
 describe("workout.complete", () => {
-  it("marks workout complete and detects PRs", async () => {
+  it("marks workout complete and registers a finalization row", async () => {
     const workout = await db.workout.create({
       data: {
         userId: testUser.id,
@@ -284,21 +284,19 @@ describe("workout.complete", () => {
 
     expect(result.workout.completedAt).toBeDefined();
     expect(result.workout.durationSeconds).toBeGreaterThan(0);
-    expect(result.newPRs.length).toBeGreaterThan(0);
 
-    // Verify PRs in database
-    const prs = await db.personalRecord.findMany({
-      where: { userId: testUser.id, exerciseId: testExerciseId },
+    // Finalization row must exist in DB (status completed or pending — immediate processing may have run).
+    const finRow = await db.workoutFinalization.findUnique({
+      where: { workoutId: workout.id },
     });
-    expect(prs.length).toBeGreaterThan(0);
+    expect(finRow).not.toBeNull();
   });
 
-  it("does not create duplicate PRs on second completion", async () => {
-    // First workout with PRs
-    const w1 = await db.workout.create({
+  it("calling complete twice returns the same finalization (no-op replay)", async () => {
+    const workout = await db.workout.create({
       data: {
         userId: testUser.id,
-        startedAt: new Date(Date.now() - 7200_000),
+        startedAt: new Date(Date.now() - 3600_000),
         workoutExercises: {
           create: {
             exerciseId: testExerciseId,
@@ -312,27 +310,30 @@ describe("workout.complete", () => {
     });
 
     const caller = workoutCaller({ user: testUser });
-    await caller.complete({ workoutId: w1.id });
+    const t1 = new Date(Date.now() - 1000);
+    const t2 = new Date();
 
-    // Second workout with lower weight — should not create new PRs
-    const w2 = await db.workout.create({
-      data: {
-        userId: testUser.id,
-        startedAt: new Date(Date.now() - 3600_000),
-        workoutExercises: {
-          create: {
-            exerciseId: testExerciseId,
-            order: 0,
-            sets: {
-              create: { setNumber: 1, weightKg: 80, reps: 5, type: "working", completed: true },
-            },
-          },
-        },
-      },
+    await caller.complete({ workoutId: workout.id, completedAt: t1 });
+    await caller.complete({ workoutId: workout.id, completedAt: t2 });
+
+    // First timestamp must be preserved.
+    const w = await db.workout.findUnique({ where: { id: workout.id } });
+    expect(w!.completedAt!.getTime()).toBe(t1.getTime());
+
+    // Exactly one finalization row.
+    const fins = await db.workoutFinalization.findMany({ where: { workoutId: workout.id } });
+    expect(fins).toHaveLength(1);
+  });
+
+  it("rejects completion of another user's workout", async () => {
+    const otherUser = createTestUser({ email: "other-complete@test.com", id: crypto.randomUUID() });
+    await db.user.create({ data: { id: otherUser.id, email: otherUser.email, name: otherUser.name } });
+    const workout = await db.workout.create({
+      data: { userId: otherUser.id, name: "Other's", startedAt: new Date() },
     });
 
-    const result2 = await caller.complete({ workoutId: w2.id });
-    expect(result2.newPRs.length).toBe(0);
+    const caller = workoutCaller({ user: testUser });
+    await expect(caller.complete({ workoutId: workout.id })).rejects.toThrow();
   });
 
   it("skips bodyweight-only sets for PR detection", async () => {
@@ -355,5 +356,72 @@ describe("workout.complete", () => {
     const caller = workoutCaller({ user: testUser });
     const result = await caller.complete({ workoutId: workout.id });
     expect(result.newPRs.length).toBe(0);
+  });
+});
+
+describe("workout.finalizationStatus", () => {
+  it("returns pending when finalization row does not exist yet", async () => {
+    const workout = await db.workout.create({
+      data: { userId: testUser.id, startedAt: new Date() },
+    });
+
+    const caller = workoutCaller({ user: testUser });
+    const result = await caller.finalizationStatus({ workoutId: workout.id });
+    expect(result.status).toBe("pending");
+    expect(result.newPRs).toEqual([]);
+  });
+
+  it("returns status from finalization row when present", async () => {
+    const workout = await db.workout.create({
+      data: {
+        userId: testUser.id,
+        startedAt: new Date(Date.now() - 3600_000),
+        completedAt: new Date(),
+        durationSeconds: 3600,
+      },
+    });
+    await db.workoutFinalization.create({
+      data: {
+        workoutId: workout.id,
+        userId: testUser.id,
+        completedAt: workout.completedAt!,
+        durationSeconds: 3600,
+        status: "completed",
+        processedAt: new Date(),
+        result: { newPRs: [] },
+        availableAt: new Date(),
+      },
+    });
+
+    const caller = workoutCaller({ user: testUser });
+    const result = await caller.finalizationStatus({ workoutId: workout.id });
+    expect(result.status).toBe("completed");
+  });
+
+  it("throws NOT_FOUND for a different user's workout", async () => {
+    const otherUser = createTestUser({ email: "other-status@test.com", id: crypto.randomUUID() });
+    await db.user.create({ data: { id: otherUser.id, email: otherUser.email, name: otherUser.name } });
+    const workout = await db.workout.create({
+      data: { userId: otherUser.id, startedAt: new Date() },
+    });
+
+    const caller = workoutCaller({ user: testUser });
+    await expect(caller.finalizationStatus({ workoutId: workout.id })).rejects.toThrow();
+  });
+
+  it("returns pending when workout has a locally-completed row but no finalization registered yet", async () => {
+    const workout = await db.workout.create({
+      data: {
+        userId: testUser.id,
+        startedAt: new Date(Date.now() - 3600_000),
+        completedAt: new Date(),
+        durationSeconds: 3600,
+      },
+    });
+
+    const caller = workoutCaller({ user: testUser });
+    const result = await caller.finalizationStatus({ workoutId: workout.id });
+    expect(result.status).toBe("pending");
+    expect(result.message).toMatch(/syncing/i);
   });
 });
