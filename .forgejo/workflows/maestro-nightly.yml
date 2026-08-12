@@ -181,8 +181,16 @@ jobs:
           # building x86_64/x86/armeabi-v7a via QEMU on the arm64 runner blows
           # past the job timeout (last run OOT at 2h during :app:buildCMakeDebug
           # [armeabi-v7a] after ~1h emulated x86_64 NDK builds).
+          #
+          # bundleForVariant=debug bakes the JS bundle into the debug APK. Without
+          # it the APK fetches from Metro at runtime, which is fragile in a pnpm
+          # monorepo (Metro's server root becomes the workspace and the expo
+          # virtual entry URL 404s under sourcePaths=url-server). The nightly
+          # runs against staging, so a self-contained APK is more reliable than
+          # standing up a Metro server in the runner container.
           ./gradlew :app:assembleDebug \
             -PreactNativeArchitectures=arm64-v8a \
+            -Preact-native.internal.bundleForVariant=debug \
             -Pandroid.aapt2FromMavenOverride="$ANDROID_HOME/build-tools/36.0.0/aapt2"
           ls -la app/build/outputs/apk/debug/app-debug.apk
 
