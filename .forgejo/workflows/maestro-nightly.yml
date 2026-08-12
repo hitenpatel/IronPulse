@@ -73,7 +73,7 @@ jobs:
     # Expo prebuild + gradle on arm64 is slower than a native Android build.
     # 90 min covers the build (~35 min), main suite (42 flows @ ~45s each),
     # and prod smoke (3 flows).
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -177,7 +177,12 @@ jobs:
         run: |
           set -eu
           cd apps/mobile/android
+          # Restrict native libs to arm64-v8a — the Pixel target is arm64 and
+          # building x86_64/x86/armeabi-v7a via QEMU on the arm64 runner blows
+          # past the job timeout (last run OOT at 2h during :app:buildCMakeDebug
+          # [armeabi-v7a] after ~1h emulated x86_64 NDK builds).
           ./gradlew :app:assembleDebug \
+            -PreactNativeArchitectures=arm64-v8a \
             -Pandroid.aapt2FromMavenOverride="$ANDROID_HOME/build-tools/36.0.0/aapt2"
           ls -la app/build/outputs/apk/debug/app-debug.apk
 
