@@ -111,9 +111,17 @@ jobs:
         run: |
           set -eu
           export DEBIAN_FRONTEND=noninteractive
+          # The cross libs cover aapt2. react-native-reanimated invokes the
+          # NDK's x86_64 clang under QEMU, which loads libz.so.1 and libtinfo6
+          # from the amd64 root — add the amd64 dpkg architecture so those are
+          # available at their real multiarch paths (the cross packages only
+          # ship libc + libstdc++).
+          dpkg --add-architecture amd64
+          apt-get update
           apt-get install -y --no-install-recommends \
             qemu-user-static binfmt-support \
-            libc6-amd64-cross libstdc++6-amd64-cross
+            libc6-amd64-cross libstdc++6-amd64-cross \
+            libc6:amd64 libstdc++6:amd64 zlib1g:amd64 libtinfo6:amd64
           echo "QEMU_LD_PREFIX=/usr/x86_64-linux-gnu" >> "$GITHUB_ENV"
           QEMU_LD_PREFIX=/usr/x86_64-linux-gnu \
             "$ANDROID_HOME/build-tools/36.0.0/aapt2" version
