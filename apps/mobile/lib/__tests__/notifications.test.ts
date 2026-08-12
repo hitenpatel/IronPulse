@@ -1,91 +1,146 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Platform } from "react-native";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock expo modules
-vi.mock("expo-notifications", () => ({
-  getPermissionsAsync: vi.fn(),
-  requestPermissionsAsync: vi.fn(),
-  getExpoPushTokenAsync: vi.fn(),
-  setNotificationChannelAsync: vi.fn(),
-  addNotificationResponseReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
-  addPushTokenListener: vi.fn(() => ({ remove: vi.fn() })),
-  AndroidImportance: { MAX: 5 },
-}));
+// notifications.ts uses top-level `require("expo-notifications")` and
+// `require("react-native").Platform.OS` behind an availability guard that
+// returns null when the native modules aren't linked. Under Node the guard
+// naturally trips (no global `require` in ESM, no native modules), so tests
+// stub a global `require` that returns fake modules before dynamically
+// importing notifications for each test.
 
-vi.mock("expo-device", () => ({
-  isDevice: true,
-}));
+type PermissionStatus = "granted" | "denied" | "undetermined";
 
-vi.mock("react-native", () => ({
-  Platform: { OS: "ios" },
-}));
+interface Fakes {
+  expoNotifications: {
+    getPermissionsAsync: ReturnType<typeof vi.fn>;
+    requestPermissionsAsync: ReturnType<typeof vi.fn>;
+    getExpoPushTokenAsync: ReturnType<typeof vi.fn>;
+    setNotificationChannelAsync: ReturnType<typeof vi.fn>;
+    addNotificationResponseReceivedListener: ReturnType<typeof vi.fn>;
+    addPushTokenListener: ReturnType<typeof vi.fn>;
+    AndroidImportance: { MAX: number };
+  };
+  expoDevice: { isDevice: boolean };
+  reactNative: { Platform: { OS: "ios" | "android" } };
+}
 
-import * as ExpoNotifications from "expo-notifications";
-import * as Device from "expo-device";
-import { registerForPushNotifications } from "../notifications";
+function makeFakes(overrides: {
+  isDevice?: boolean;
+  os?: "ios" | "android";
+  permission?: PermissionStatus;
+  requestedPermission?: PermissionStatus;
+  token?: string;
+} = {}): Fakes {
+  const permission = overrides.permission ?? "granted";
+  const requestedPermission = overrides.requestedPermission ?? permission;
+  return {
+    expoNotifications: {
+      getPermissionsAsync: vi.fn().mockResolvedValue({ status: permission }),
+      requestPermissionsAsync: vi
+        .fn()
+        .mockResolvedValue({ status: requestedPermission }),
+      getExpoPushTokenAsync: vi
+        .fn()
+        .mockResolvedValue({ data: overrides.token ?? "ExponentPushToken[abc]" }),
+      setNotificationChannelAsync: vi.fn().mockResolvedValue(undefined),
+      addNotificationResponseReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
+      addPushTokenListener: vi.fn(() => ({ remove: vi.fn() })),
+      AndroidImportance: { MAX: 5 },
+    },
+    expoDevice: { isDevice: overrides.isDevice ?? true },
+    reactNative: { Platform: { OS: overrides.os ?? "ios" } },
+  };
+}
 
-const mockGetPerms = vi.mocked(ExpoNotifications.getPermissionsAsync);
-const mockRequestPerms = vi.mocked(ExpoNotifications.requestPermissionsAsync);
-const mockGetToken = vi.mocked(ExpoNotifications.getExpoPushTokenAsync);
+function installRequireStub(fakes: Fakes) {
+  vi.stubGlobal("require", (id: string) => {
+    if (id === "expo-notifications") return fakes.expoNotifications;
+    if (id === "expo-device") return fakes.expoDevice;
+    if (id === "react-native") return fakes.reactNative;
+    throw new Error(`unexpected require in test: ${id}`);
+  });
+}
+
+async function loadNotifications() {
+  vi.resetModules();
+  return import("../notifications");
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe("registerForPushNotifications", () => {
   it("returns null on non-device (simulator)", async () => {
-    vi.mocked(Device).isDevice = false;
+    const fakes = makeFakes({ isDevice: false });
+    installRequireStub(fakes);
+    const { registerForPushNotifications } = await loadNotifications();
 
     const token = await registerForPushNotifications();
-    expect(token).toBeNull();
-    expect(mockGetPerms).not.toHaveBeenCalled();
 
-    vi.mocked(Device).isDevice = true;
+    expect(token).toBeNull();
+    expect(fakes.expoNotifications.getPermissionsAsync).not.toHaveBeenCalled();
   });
 
   it("returns token when permissions already granted", async () => {
-    mockGetPerms.mockResolvedValue({ status: "granted" } as any);
-    mockGetToken.mockResolvedValue({ data: "ExponentPushToken[abc123]" } as any);
+    const fakes = makeFakes({ permission: "granted", token: "ExponentPushToken[abc123]" });
+    installRequireStub(fakes);
+    const { registerForPushNotifications } = await loadNotifications();
 
     const token = await registerForPushNotifications();
 
     expect(token).toBe("ExponentPushToken[abc123]");
-    expect(mockRequestPerms).not.toHaveBeenCalled();
+    expect(fakes.expoNotifications.requestPermissionsAsync).not.toHaveBeenCalled();
   });
 
   it("requests permissions when not yet granted", async () => {
-    mockGetPerms.mockResolvedValue({ status: "undetermined" } as any);
-    mockRequestPerms.mockResolvedValue({ status: "granted" } as any);
-    mockGetToken.mockResolvedValue({ data: "ExponentPushToken[xyz]" } as any);
+    const fakes = makeFakes({
+      permission: "undetermined",
+      requestedPermission: "granted",
+      token: "ExponentPushToken[xyz]",
+    });
+    installRequireStub(fakes);
+    const { registerForPushNotifications } = await loadNotifications();
 
     const token = await registerForPushNotifications();
 
-    expect(mockRequestPerms).toHaveBeenCalled();
+    expect(fakes.expoNotifications.requestPermissionsAsync).toHaveBeenCalled();
     expect(token).toBe("ExponentPushToken[xyz]");
   });
 
   it("returns null when permissions denied", async () => {
-    mockGetPerms.mockResolvedValue({ status: "undetermined" } as any);
-    mockRequestPerms.mockResolvedValue({ status: "denied" } as any);
+    const fakes = makeFakes({
+      permission: "undetermined",
+      requestedPermission: "denied",
+    });
+    installRequireStub(fakes);
+    const { registerForPushNotifications } = await loadNotifications();
 
     const token = await registerForPushNotifications();
 
     expect(token).toBeNull();
-    expect(mockGetToken).not.toHaveBeenCalled();
+    expect(fakes.expoNotifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
   });
 
   it("sets up Android notification channel on Android", async () => {
-    vi.mocked(Platform).OS = "android" as any;
-    mockGetPerms.mockResolvedValue({ status: "granted" } as any);
-    mockGetToken.mockResolvedValue({ data: "ExponentPushToken[droid]" } as any);
+    const fakes = makeFakes({
+      os: "android",
+      permission: "granted",
+      token: "ExponentPushToken[droid]",
+    });
+    installRequireStub(fakes);
+    const { registerForPushNotifications } = await loadNotifications();
 
     await registerForPushNotifications();
 
-    expect(ExpoNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+    expect(
+      fakes.expoNotifications.setNotificationChannelAsync,
+    ).toHaveBeenCalledWith(
       "default",
       expect.objectContaining({ name: "Default" }),
     );
-
-    vi.mocked(Platform).OS = "ios" as any;
   });
 });

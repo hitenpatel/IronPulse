@@ -14,11 +14,17 @@ let Device: typeof import("expo-device") | null = null;
 let available = false;
 
 try {
-  ExpoNotifications = require("expo-notifications");
-  Device = require("expo-device");
-  // Probe a property that requires the native module — if this throws, we stay disabled
-  void ExpoNotifications?.getPermissionsAsync;
-  available = true;
+  // Prefer an injected global `require` (tests) over Metro's runtime require
+  // so pure-Node harnesses can stub native modules without shipping them.
+  const req: any =
+    (globalThis as any).require ?? (typeof require === "function" ? require : null);
+  if (req) {
+    ExpoNotifications = req("expo-notifications");
+    Device = req("expo-device");
+    // Probe a property that requires the native module — if this throws, we stay disabled
+    void ExpoNotifications?.getPermissionsAsync;
+    available = true;
+  }
 } catch {
   available = false;
 }
@@ -56,7 +62,9 @@ export async function registerForPushNotifications(): Promise<string | null> {
     }
     if (finalStatus !== "granted") return null;
 
-    if (require("react-native").Platform.OS === "android") {
+    const rnReq: any =
+      (globalThis as any).require ?? (typeof require === "function" ? require : null);
+    if (rnReq?.("react-native")?.Platform?.OS === "android") {
       await ExpoNotifications.setNotificationChannelAsync("default", {
         name: "Default",
         importance: ExpoNotifications.AndroidImportance.MAX,
