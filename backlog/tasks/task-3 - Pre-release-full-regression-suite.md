@@ -4,9 +4,11 @@ title: Pre-release full regression suite
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
+updated_date: '2026-08-12 15:48'
 labels:
   - 'priority:high'
   - testing
+milestone: m-0
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/212'

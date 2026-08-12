@@ -4,12 +4,15 @@ title: Make workout completion finalization durable and idempotent
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:27'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - api
   - database
   - sync
   - workout
+  - mobile
+  - product
+milestone: m-0
 dependencies:
   - TASK-23.1
   - TASK-23.7

@@ -4,9 +4,12 @@ title: Configure Apple Developer account for passkeys and Sign in with Apple
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
+updated_date: '2026-08-12 15:48'
 labels:
   - manual-work
   - 'priority:medium'
+  - oauth
+milestone: m-0
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/211'

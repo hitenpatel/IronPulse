@@ -4,11 +4,12 @@ title: Extract mobile active workout session controller
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:59'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - agent-suggested
   - mobile
   - tech-debt
+milestone: m-0
 dependencies:
   - TASK-23.2
 references:

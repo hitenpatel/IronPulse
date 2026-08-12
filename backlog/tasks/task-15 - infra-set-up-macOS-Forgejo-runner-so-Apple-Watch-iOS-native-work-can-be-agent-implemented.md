@@ -6,10 +6,14 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-07-24 06:07'
+updated_date: '2026-08-12 15:48'
 labels:
   - infrastructure
   - manual-work
+  - watch
+  - infra
+  - ci
+milestone: m-1
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/394'

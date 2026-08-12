@@ -4,9 +4,11 @@ title: 'test-blocked: haptics.ts trigger mapping untestable in ESM environment'
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-07-24 06:07'
+updated_date: '2026-08-12 15:48'
 labels:
   - bug
+  - testing
+  - mobile
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/406'

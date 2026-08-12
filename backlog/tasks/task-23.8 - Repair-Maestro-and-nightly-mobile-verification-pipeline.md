@@ -4,11 +4,14 @@ title: Repair Maestro and nightly mobile verification pipeline
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:52'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - test
   - e2e
+  - testing
+  - ci
+milestone: m-0
 dependencies:
   - TASK-23.3
   - TASK-23.4

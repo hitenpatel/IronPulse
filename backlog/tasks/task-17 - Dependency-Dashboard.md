@@ -4,8 +4,9 @@ title: Dependency Dashboard
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-07-24 06:07'
-labels: []
+updated_date: '2026-08-12 15:48'
+labels:
+  - tech-debt
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/412'

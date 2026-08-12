@@ -4,8 +4,10 @@ title: Rebrand IronPulse/Mettle Lift completely to Zor
 status: Done
 assignee: []
 created_date: '2026-08-07 22:14'
-updated_date: '2026-08-08 09:04'
-labels: []
+updated_date: '2026-08-12 15:48'
+labels:
+  - branding
+milestone: m-0
 dependencies: []
 references:
   - designs/zor-logo-spec.md

@@ -4,11 +4,12 @@ title: Measure mobile workout logging efficiency
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:29'
-updated_date: '2026-08-09 04:14'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - telemetry
   - workout
+  - product
 dependencies:
   - TASK-23.6
 documentation:

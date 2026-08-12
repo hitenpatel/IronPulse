@@ -4,10 +4,14 @@ title: Move provider webhooks to a retry-backed job queue
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
+updated_date: '2026-08-12 15:48'
 labels:
   - infrastructure
   - 'priority:medium'
   - tech-debt
+  - integrations
+  - api
+milestone: m-2
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/299'

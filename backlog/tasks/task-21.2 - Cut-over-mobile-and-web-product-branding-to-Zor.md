@@ -4,8 +4,12 @@ title: Cut over mobile and web product branding to Zor
 status: Done
 assignee: []
 created_date: '2026-08-08 06:35'
-updated_date: '2026-08-08 08:58'
-labels: []
+updated_date: '2026-08-12 15:48'
+labels:
+  - branding
+  - mobile
+  - web
+milestone: m-0
 dependencies:
   - TASK-21.1
 parent_task_id: TASK-21

@@ -4,11 +4,13 @@ title: Remove unsafe mobile completion side call
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:27'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - workout
   - api
+  - product
+milestone: m-0
 dependencies: []
 documentation:
   - docs/superpowers/specs/2026-08-09-mobile-workout-focus-mode-design.md

@@ -5,11 +5,13 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-08-09 03:04'
-updated_date: '2026-08-09 04:34'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - ux
   - workout
+  - product
+milestone: m-0
 dependencies: []
 documentation:
   - docs/superpowers/specs/2026-08-09-mobile-workout-focus-mode-design.md

@@ -4,11 +4,13 @@ title: Build focus-mode active workout screen
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:28'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - ux
   - workout
+  - product
+milestone: m-0
 dependencies:
   - TASK-18
   - TASK-23.1

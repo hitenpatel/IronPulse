@@ -4,10 +4,12 @@ title: Nightly Maestro on Pixel (chained after RadioShake)
 status: To Do
 assignee: []
 created_date: '2026-08-11 07:24'
+updated_date: '2026-08-12 15:48'
 labels:
   - ci
   - mobile
   - e2e
+  - testing
 dependencies: []
 priority: high
 ordinal: 39000

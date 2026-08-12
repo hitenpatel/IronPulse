@@ -4,11 +4,13 @@ title: 'feat(watch): workout history list view on Apple Watch'
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-07-24 06:07'
+updated_date: '2026-08-12 15:48'
 labels:
   - agent-ready
   - feature
   - mobile
+  - watch
+milestone: m-1
 dependencies: []
 references:
   - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/385'

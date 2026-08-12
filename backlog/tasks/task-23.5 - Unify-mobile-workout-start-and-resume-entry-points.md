@@ -4,12 +4,14 @@ title: Unify mobile workout start and resume entry points
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:28'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - ux
   - dashboard
   - workout
+  - product
+milestone: m-0
 dependencies:
   - TASK-23.3
 documentation:

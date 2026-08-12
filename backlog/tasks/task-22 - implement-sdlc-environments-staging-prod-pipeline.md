@@ -5,8 +5,11 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-08 15:33'
-updated_date: '2026-08-08 15:34'
-labels: []
+updated_date: '2026-08-12 15:48'
+labels:
+  - infra
+  - ci
+milestone: m-0
 dependencies: []
 priority: high
 ordinal: 25000

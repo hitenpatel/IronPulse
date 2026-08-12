@@ -4,8 +4,10 @@ title: Build canonical Zor SVG identity system
 status: Done
 assignee: []
 created_date: '2026-08-08 06:35'
-updated_date: '2026-08-08 08:50'
-labels: []
+updated_date: '2026-08-12 15:48'
+labels:
+  - branding
+milestone: m-0
 dependencies: []
 references:
   - assets/branding/zor-logo-system.png

@@ -4,10 +4,12 @@ title: Restore mobile unit and component test baseline
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:50'
-updated_date: '2026-08-09 04:20'
+updated_date: '2026-08-12 15:48'
 labels:
   - mobile
   - test
+  - testing
+milestone: m-0
 dependencies:
   - TASK-23.1
 documentation:

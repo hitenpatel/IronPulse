@@ -4,8 +4,11 @@ title: Complete safe developer and deployment branding migration to Zor
 status: Done
 assignee: []
 created_date: '2026-08-08 06:36'
-updated_date: '2026-08-08 09:04'
-labels: []
+updated_date: '2026-08-12 15:48'
+labels:
+  - branding
+  - infra
+milestone: m-0
 dependencies:
   - TASK-21.2
 parent_task_id: TASK-21
