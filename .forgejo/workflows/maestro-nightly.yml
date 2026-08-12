@@ -117,6 +117,20 @@ jobs:
           # available at their real multiarch paths (the cross packages only
           # ship libc + libstdc++).
           dpkg --add-architecture amd64
+          # ports.ubuntu.com (used by the arm64 runner image) does not host
+          # amd64 packages — they live on archive.ubuntu.com. Constrain the
+          # existing sources to arm64 and add an amd64-only archive source.
+          for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
+            [ -f "$f" ] && sed -i 's|^deb http|deb [arch=arm64] http|' "$f"
+          done
+          for f in /etc/apt/sources.list.d/*.sources; do
+            [ -f "$f" ] && sed -i '/^Architectures:/d; /^Types:/a Architectures: arm64' "$f"
+          done
+          {
+            echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main universe multiverse restricted"
+            echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main universe multiverse restricted"
+            echo "deb [arch=amd64] http://security.ubuntu.com/ubuntu noble-security main universe multiverse restricted"
+          } > /etc/apt/sources.list.d/amd64.list
           apt-get update
           apt-get install -y --no-install-recommends \
             qemu-user-static binfmt-support \
