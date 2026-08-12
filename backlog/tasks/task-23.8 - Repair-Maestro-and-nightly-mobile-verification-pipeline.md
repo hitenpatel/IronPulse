@@ -1,10 +1,11 @@
 ---
 id: TASK-23.8
 title: Repair Maestro and nightly mobile verification pipeline
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-08-09 03:52'
-updated_date: '2026-08-12 19:37'
+updated_date: '2026-08-12 20:09'
 labels:
   - mobile
   - test
@@ -45,6 +46,20 @@ Make device-level workout verification deterministic and failure-sensitive after
 - [ ] #8 iOS remains an explicit macOS or EAS release gate until an automated runner is available
 <!-- AC:END -->
 
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Surgical native-tree alignment (app.config.js is source of truth for scheme + bundle ID after Zor rebrand):
+
+1. apps/mobile/android/app/build.gradle: namespace + applicationId com.mettlelift.app -> com.ironpulse.app
+2. apps/mobile/android/settings.gradle: rootProject.name 'Mettle Lift' -> 'Zor'
+3. apps/mobile/android/app/src/main/res/values/strings.xml: app_name 'Mettle Lift' -> 'Zor'
+4. apps/mobile/android/app/src/main/AndroidManifest.xml: replace 'mettlelift' deep-link scheme with two <data> entries for 'zor' and 'ironpulse' (matches app.config.js scheme array)
+5. Rebuild E2E APK: EXPO_PUBLIC_E2E=1 cd apps/mobile/android && ./gradlew assembleRelease (or via build-safe.sh per memory) - required com.ironpulse.app.e2e output
+6. Uninstall stale com.mettlelift.app.e2e from Pixel 100.69.203.52:5555, install fresh com.ironpulse.app.e2e
+7. Rerun prod-smoke flow first (auth-signin) as fastest feedback, then full main suite
+<!-- SECTION:PLAN:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -61,4 +76,22 @@ Root cause: bundle-ID drift. apps/mobile/android/app/build.gradle still declares
 Fix scope: rewrite android/app/build.gradle namespace + applicationId to com.ironpulse.app, rebuild + reinstall the E2E APK on the Pixel, then rerun the nightly. Verify with the pre-flight prod smoke first (single flow, faster feedback than the full main suite).
 
 Cron intact at 03:30 UTC. Nightly will refire tomorrow; expect same failure until android/app/build.gradle is aligned and the E2E APK re-installed.
+
+EAS build kicked off 2026-08-12 17:35: build ID c8a92b79-20cc-431e-a1e3-20f862d55ec0 (profile e2e, com.ironpulse.app.e2e). Local android/ edits (build.gradle, settings.gradle, strings.xml, AndroidManifest.xml) applied but gitignored per apps/mobile/.gitignore — expo prebuild regenerates from app.config.js on EAS anyway. When build finishes: uninstall com.mettlelift.app.e2e from Pixel 100.69.203.52:5555, install fresh APK, rerun smoke.
+
+Post-rebuild verification (2026-08-12 20:06, /home/ubuntu/.maestro/tests/2026-08-12_200551):
+  Launch app com.ironpulse.app.e2e ...............COMPLETED
+  Assert id: email-input visible ..................COMPLETED
+  Tap email-input .................................COMPLETED
+  Input test@example.com ..........................COMPLETED
+  Tap password-input ..............................COMPLETED
+  Input password123 ...............................COMPLETED
+  Tap login-button ................................COMPLETED
+  Assert id: greeting visible .....................FAILED
+
+Structural fix confirmed: correct APK on device (com.ironpulse.app.e2e installed from EAS build c8a92b79...), sed rewrite in nightly-e2e.sh produces matching appId, app boots, login UI renders, inputs work. Remaining greeting-visible failure is API-side, not pipeline-side.
+
+Root cause of new failure: the E2E APK points at EXPO_PUBLIC_API_URL=http://100.113.79.51:3000 (this VM's tailscale IP per apps/mobile/eas.json line 14), but nothing binds :3000 here — connection refused. Login POST hits nowhere, no session, greeting never renders. Same class of gap as TASK-23.10 (no local dev Postgres). New follow-up needed to bring up a dev API + seeded auth for e2e.
+
+TASK-23.8 pipeline-repair scope met: the maestro runner now exercises real UI. API availability is a separate concern (TASK-23.11 covers it).
 <!-- SECTION:NOTES:END -->
