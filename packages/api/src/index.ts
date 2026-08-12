@@ -29,3 +29,9 @@ export {
   sendChallengeExpiryReminder,
   type ChallengeExpiryCandidate,
 } from "./lib/challenge-expiry";
+export {
+  deliverPendingNotifications,
+  MAX_ATTEMPTS as OUTBOX_MAX_ATTEMPTS,
+  type DeliverOptions,
+  type DeliveryBatchResult,
+} from "./lib/notification-outbox";
