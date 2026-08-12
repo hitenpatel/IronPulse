@@ -121,7 +121,7 @@ export type RootStackParamList = {
   // Workout
   WorkoutActive: { workoutId: string };
   WorkoutAddExercise: { workoutId: string };
-  WorkoutComplete: { workoutId: string; prs: string };
+  WorkoutComplete: { workoutId: string };
   // Cardio
   CardioTypePicker: undefined;
   CardioTracking: { type: string; sessionId?: string };

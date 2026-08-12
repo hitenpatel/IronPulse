@@ -21,9 +21,9 @@ import { ExerciseCard } from "../../components/workout/exercise-card";
 import { RestTimer } from "../../components/workout/rest-timer";
 import { RpePicker } from "../../components/workout/rpe-picker";
 import { ProgressDots } from "../../components/workout/progress-dots";
-import { trpc } from "../../lib/trpc";
 import { useAuth } from "../../lib/auth";
 import { maybeRequestReview } from "../../lib/review-prompt";
+import { completeWorkoutLocally } from "../../lib/workout-local-completion";
 import { colors, fonts } from "@/lib/theme";
 
 export default function ActiveWorkoutScreen() {
@@ -176,24 +176,18 @@ export default function ActiveWorkoutScreen() {
   }, [db, workoutId, navigation]);
 
   const handleFinish = useCallback(async () => {
-    if (!workout) return;
+    if (!workout || !workoutId) return;
 
-    const startedAt = new Date(workout.started_at).getTime();
-    const durationSeconds = Math.floor((Date.now() - startedAt) / 1000);
-
-    // Update workout with completion data
-    await db.execute(
-      "UPDATE workouts SET completed_at = ?, duration_seconds = ? WHERE id = ?",
-      [new Date().toISOString(), durationSeconds, workoutId]
-    );
-
-    // Try to sync via tRPC (tolerate offline failures)
-    let prs: unknown[] = [];
     try {
-      const result = await trpc.workout.complete.mutate({ id: workoutId! });
-      prs = (result as any)?.prs ?? [];
+      await completeWorkoutLocally(db, {
+        workoutId,
+        startedAt: workout.started_at,
+        completedAt: new Date(),
+      });
     } catch {
-      // Offline — will sync later
+      // Local commit failed (row missing or transaction error). Preserve the
+      // active workout in place — do not navigate — so the user can retry.
+      return;
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -204,7 +198,7 @@ export default function ActiveWorkoutScreen() {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "WorkoutComplete", params: { workoutId: workoutId!, prs: JSON.stringify(prs) } }],
+        routes: [{ name: "WorkoutComplete", params: { workoutId } }],
       })
     );
   }, [workout, db, workoutId, navigation]);

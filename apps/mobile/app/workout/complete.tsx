@@ -1,15 +1,11 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import { Dimensions, FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
+import React, { useMemo } from "react";
+import { FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
 import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { useQuery } from "@powersync/react";
 import { useWorkoutExercises, useWorkoutSets } from "@zor/sync";
-import { Trophy } from "lucide-react-native";
-import ConfettiCannon from "react-native-confetti-cannon";
-import * as Haptics from "@/lib/haptics";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 import { calculateVolume, formatElapsed } from "../../lib/workout-utils";
 
@@ -20,29 +16,12 @@ const colors = {
   mutedFg: "hsl(215, 20%, 65%)",
   primary: "hsl(210, 40%, 98%)",
   accent: "hsl(216, 34%, 17%)",
-  green: "hsl(142, 71%, 45%)",
-  greenBorder: "hsl(142, 50%, 30%)",
 };
-
-interface PR {
-  exercise_name: string;
-  type: string;
-  value: number;
-}
 
 export default function WorkoutCompleteScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "WorkoutComplete">>();
-  const { workoutId, prs: prsParam } = route.params ?? { workoutId: "", prs: "" };
+  const { workoutId } = route.params ?? { workoutId: "" };
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  // Parse PRs from route params
-  const prs = useMemo<PR[]>(() => {
-    try {
-      return prsParam ? JSON.parse(prsParam) : [];
-    } catch {
-      return [];
-    }
-  }, [prsParam]);
 
   // Workout data
   const { data: workoutRows } = useQuery(
@@ -61,18 +40,6 @@ export default function WorkoutCompleteScreen() {
 
   const { data: exercises } = useWorkoutExercises(workoutId);
   const { data: sets } = useWorkoutSets(workoutId);
-
-  const reducedMotion = useReducedMotion();
-  const hasPR = prs.length > 0;
-  const confettiFired = useRef(false);
-  useEffect(() => {
-    if (hasPR && !confettiFired.current) {
-      confettiFired.current = true;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  }, [hasPR]);
-
-  const windowWidth = Dimensions.get("window").width;
 
   // Group sets by workout_exercise_id
   const setsByExercise = useMemo(() => {
@@ -100,16 +67,6 @@ export default function WorkoutCompleteScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      {hasPR && !reducedMotion && (
-        <ConfettiCannon
-          count={160}
-          origin={{ x: windowWidth / 2, y: -10 }}
-          explosionSpeed={380}
-          fallSpeed={2600}
-          fadeOut
-          colors={["#D4FF3A", "#C4EF2A", "#3A6DFF", "#FFB800", "#F4F0E6"]}
-        />
-      )}
       <FlatList
         data={exercises ?? []}
         keyExtractor={(item) => item.id}
@@ -211,48 +168,26 @@ export default function WorkoutCompleteScreen() {
               </View>
             </View>
 
-            {/* PR Callouts */}
-            {prs.length > 0 && (
-              <View style={{ marginTop: 20, gap: 10 }}>
-                {prs.map((pr, idx) => (
-                  <View
-                    key={idx}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 12,
-                      backgroundColor: colors.muted,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: colors.greenBorder,
-                      padding: 14,
-                    }}
-                  >
-                    <Trophy size={22} color={colors.green} />
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          color: colors.green,
-                          fontSize: 14,
-                          fontWeight: "700",
-                        }}
-                      >
-                        Personal Record
-                      </Text>
-                      <Text
-                        style={{
-                          color: colors.foreground,
-                          fontSize: 15,
-                          marginTop: 2,
-                        }}
-                      >
-                        {pr.exercise_name} - {pr.type}: {pr.value}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
+            {/* Neutral finalization status — server PR detection runs after
+                PowerSync uploads the completion row and its side effects. */}
+            <View
+              style={{
+                marginTop: 20,
+                backgroundColor: colors.muted,
+                borderRadius: 12,
+                padding: 14,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.mutedFg,
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                Records will appear after syncing.
+              </Text>
+            </View>
 
             {/* Exercise summary heading */}
             <Text
