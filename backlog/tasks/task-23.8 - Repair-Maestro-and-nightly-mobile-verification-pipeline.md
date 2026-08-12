@@ -4,7 +4,7 @@ title: Repair Maestro and nightly mobile verification pipeline
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:52'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-08-12 19:37'
 labels:
   - mobile
   - test
@@ -44,3 +44,21 @@ Make device-level workout verification deterministic and failure-sensitive after
 - [ ] #7 The runner is proven to fail on an intentionally broken copied flow and all nine repaired workout flows then pass
 - [ ] #8 iOS remains an explicit macOS or EAS release gate until an automated runner is available
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nightly failure signature (captured 2026-08-12 from run 1261 + prior 1249/1250/1253/1255/1257/1259):
+
+Maestro log /home/ubuntu/.maestro/tests/2026-08-12_140633/maestro.log:
+  14:06:52 Launching app com.mettlelift.app.e2e
+  14:06:53 Assert id:email-input is visible RUNNING
+  14:07:53 CommandFailed after 60s: Assertion is false: id: email-input is visible
+  14:07:53 Screenshot taken, driver uninstalled
+
+Root cause: bundle-ID drift. apps/mobile/android/app/build.gradle still declares namespace + applicationId 'com.mettlelift.app' (rename-branch leftover). apps/mobile/app.config.js correctly uses 'com.ironpulse.app'. Expo prebuild would fix but the checked-in Android native folder overrides. The E2E APK on the Pixel (100.69.203.52:5555) is therefore com.mettlelift.app.e2e; when nightly-e2e.sh rewrites appIds it produces com.mettlelift.app.e2e (or com.ironpulse.app.e2e after my current-day rebrand — a mismatch either way). The wrong APK launches but never reaches login within 60s.
+
+Fix scope: rewrite android/app/build.gradle namespace + applicationId to com.ironpulse.app, rebuild + reinstall the E2E APK on the Pixel, then rerun the nightly. Verify with the pre-flight prod smoke first (single flow, faster feedback than the full main suite).
+
+Cron intact at 03:30 UTC. Nightly will refire tomorrow; expect same failure until android/app/build.gradle is aligned and the E2E APK re-installed.
+<!-- SECTION:NOTES:END -->
