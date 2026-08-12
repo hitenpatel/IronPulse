@@ -7,7 +7,9 @@ export async function createFeedItem(
   referenceId: string,
   visibility = "followers",
 ) {
-  return db.activityFeedItem.create({
-    data: { userId, type, referenceId, visibility },
+  return db.activityFeedItem.upsert({
+    where: { userId_type_referenceId: { userId, type, referenceId } },
+    create: { userId, type, referenceId, visibility },
+    update: { visibility },
   });
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createFeedItem } from "../src/lib/feed";
 
-const mockCreate = vi.fn().mockResolvedValue({
+const mockUpsert = vi.fn().mockResolvedValue({
   id: "feed-1",
   userId: "u1",
   type: "workout",
@@ -10,7 +10,7 @@ const mockCreate = vi.fn().mockResolvedValue({
 });
 
 const mockDb = {
-  activityFeedItem: { create: mockCreate },
+  activityFeedItem: { upsert: mockUpsert },
 } as any;
 
 beforeEach(() => {
@@ -21,13 +21,15 @@ describe("createFeedItem", () => {
   it("creates a feed item with correct data", async () => {
     const result = await createFeedItem(mockDb, "u1", "workout", "w1");
 
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: {
+    expect(mockUpsert).toHaveBeenCalledWith({
+      where: { userId_type_referenceId: { userId: "u1", type: "workout", referenceId: "w1" } },
+      create: {
         userId: "u1",
         type: "workout",
         referenceId: "w1",
         visibility: "followers",
       },
+      update: { visibility: "followers" },
     });
     expect(result).toEqual({
       id: "feed-1",
@@ -41,25 +43,31 @@ describe("createFeedItem", () => {
   it('uses "followers" as default visibility', async () => {
     await createFeedItem(mockDb, "u1", "pr", "pr-1");
 
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ visibility: "followers" }),
-    });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ visibility: "followers" }),
+      })
+    );
   });
 
   it("passes custom visibility when provided", async () => {
     await createFeedItem(mockDb, "u1", "workout", "w2", "public");
 
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ visibility: "public" }),
-    });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ visibility: "public" }),
+      })
+    );
   });
 
   it("passes private visibility when provided", async () => {
     await createFeedItem(mockDb, "u1", "workout", "w3", "private");
 
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ visibility: "private" }),
-    });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ visibility: "private" }),
+      })
+    );
   });
 
   it("returns the created feed item", async () => {
@@ -70,7 +78,7 @@ describe("createFeedItem", () => {
       referenceId: "pr-1",
       visibility: "public",
     };
-    mockCreate.mockResolvedValueOnce(customReturn);
+    mockUpsert.mockResolvedValueOnce(customReturn);
 
     const result = await createFeedItem(mockDb, "u2", "pr", "pr-1", "public");
     expect(result).toEqual(customReturn);

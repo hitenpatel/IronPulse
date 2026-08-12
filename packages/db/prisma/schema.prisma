@@ -18,28 +18,28 @@ datasource db {
 // ─── Users & Auth ────────────────────────────────────────
 
 model User {
-  id                 String   @id @default(uuid()) @db.Uuid
-  email              String   @unique
-  name               String
-  avatarUrl          String?  @map("avatar_url")
-  passwordHash       String?  @map("password_hash")
-  unitSystem         String   @default("metric") @map("unit_system")
-  tier               String   @default("athlete")
-  subscriptionStatus String   @default("none") @map("subscription_status")
-  stripeCustomerId   String?  @unique @map("stripe_customer_id")
-  onboardingComplete    Boolean   @default(false) @map("onboarding_complete")
-  fitnessGoal           String?   @map("fitness_goal")
-  experienceLevel       String?   @map("experience_level")
-  defaultRestSeconds    Int       @default(90) @map("default_rest_seconds")
-  deletionRequestedAt   DateTime? @map("deletion_requested_at")
-  consentedAt           DateTime? @map("consented_at")
-  weeklySummaryEnabled  Boolean   @default(true) @map("weekly_summary_enabled")
-  weeklySummaryLastSentAt DateTime? @map("weekly_summary_last_sent_at")
-  warmupScheme          String    @default("strength") @map("warmup_scheme")
-  warmupEnabled         Boolean   @default(true) @map("warmup_enabled")
-  firstWorkoutTutorialDismissed Boolean @default(false) @map("first_workout_tutorial_dismissed")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+  id                            String    @id @default(uuid()) @db.Uuid
+  email                         String    @unique
+  name                          String
+  avatarUrl                     String?   @map("avatar_url")
+  passwordHash                  String?   @map("password_hash")
+  unitSystem                    String    @default("metric") @map("unit_system")
+  tier                          String    @default("athlete")
+  subscriptionStatus            String    @default("none") @map("subscription_status")
+  stripeCustomerId              String?   @unique @map("stripe_customer_id")
+  onboardingComplete            Boolean   @default(false) @map("onboarding_complete")
+  fitnessGoal                   String?   @map("fitness_goal")
+  experienceLevel               String?   @map("experience_level")
+  defaultRestSeconds            Int       @default(90) @map("default_rest_seconds")
+  deletionRequestedAt           DateTime? @map("deletion_requested_at")
+  consentedAt                   DateTime? @map("consented_at")
+  weeklySummaryEnabled          Boolean   @default(true) @map("weekly_summary_enabled")
+  weeklySummaryLastSentAt       DateTime? @map("weekly_summary_last_sent_at")
+  warmupScheme                  String    @default("strength") @map("warmup_scheme")
+  warmupEnabled                 Boolean   @default(true) @map("warmup_enabled")
+  firstWorkoutTutorialDismissed Boolean   @default(false) @map("first_workout_tutorial_dismissed")
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
 
   accounts                Account[]
   passwordResetTokens     PasswordResetToken[]
@@ -71,6 +71,8 @@ model User {
   sleepLogs               SleepLog[]
   goals                   Goal[]
   notifications           Notification[]
+  workoutFinalizations    WorkoutFinalization[]
+  notificationOutbox      NotificationOutbox[]
 
   @@map("users")
 }
@@ -194,21 +196,22 @@ model Workout {
   shareToken      String?   @unique @default(uuid()) @map("share_token")
   createdAt       DateTime  @default(now()) @map("created_at")
 
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template         WorkoutTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template         WorkoutTemplate?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
   workoutExercises WorkoutExercise[]
+  finalization     WorkoutFinalization?
 
   @@index([userId, startedAt])
   @@map("workouts")
 }
 
 model WorkoutExercise {
-  id             String  @id @default(uuid()) @db.Uuid
-  workoutId      String  @map("workout_id") @db.Uuid
-  exerciseId     String  @map("exercise_id") @db.Uuid
-  order          Int
-  notes          String?
-  supersetGroup  Int?    @map("superset_group")
+  id            String  @id @default(uuid()) @db.Uuid
+  workoutId     String  @map("workout_id") @db.Uuid
+  exerciseId    String  @map("exercise_id") @db.Uuid
+  order         Int
+  notes         String?
+  supersetGroup Int?    @map("superset_group")
 
   workout  Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   exercise Exercise      @relation(fields: [exerciseId], references: [id])
@@ -373,6 +376,7 @@ model PersonalRecord {
   exercise Exercise     @relation(fields: [exerciseId], references: [id])
   set      ExerciseSet? @relation(fields: [setId], references: [id], onDelete: SetNull)
 
+  @@unique([setId, type])
   @@index([userId, exerciseId, type])
   @@map("personal_records")
 }
@@ -440,6 +444,7 @@ model ActivityFeedItem {
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   reactions FeedReaction[]
 
+  @@unique([userId, type, referenceId])
   @@index([userId, createdAt])
   @@index([visibility, createdAt])
   @@map("activity_feed_items")
@@ -449,7 +454,7 @@ model FeedReaction {
   id         String   @id @default(uuid()) @db.Uuid
   feedItemId String   @map("feed_item_id") @db.Uuid
   userId     String   @map("user_id") @db.Uuid
-  type       String   // kudos, fire, muscle
+  type       String // kudos, fire, muscle
   createdAt  DateTime @default(now()) @map("created_at")
 
   feedItem ActivityFeedItem @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
@@ -576,7 +581,7 @@ model Message {
 model Achievement {
   id         String   @id @default(uuid()) @db.Uuid
   userId     String   @map("user_id") @db.Uuid
-  type       String   // first_workout, streak_7, streak_30, pr_count_10, workouts_50, workouts_100
+  type       String // first_workout, streak_7, streak_30, pr_count_10, workouts_50, workouts_100
   unlockedAt DateTime @default(now()) @map("unlocked_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -615,8 +620,8 @@ model SleepLog {
   bedtime      DateTime?
   wakeTime     DateTime? @map("wake_time")
   durationMins Int?      @map("duration_mins")
-  quality      String?   // poor, fair, good, excellent
-  source       String?   // manual, garmin, apple_health
+  quality      String? // poor, fair, good, excellent
+  source       String? // manual, garmin, apple_health
   stages       Json?
   score        Int?
   externalId   String?   @map("external_id")
@@ -635,12 +640,13 @@ model SleepLog {
 model Notification {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @map("user_id") @db.Uuid
-  type      String    // follow, reaction, message, pr, workout_complete, goal_complete, achievement
+  type      String // follow, reaction, message, pr, workout_complete, goal_complete, achievement
   title     String
   body      String?
   linkPath  String?   @map("link_path") // e.g. "/feed?post=abc", "/messages/user-xyz"
   data      Json?
   readAt    DateTime? @map("read_at")
+  dedupeKey String?   @unique @map("dedupe_key")
   createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -650,23 +656,73 @@ model Notification {
   @@map("notifications")
 }
 
+// ─── Workout Finalization ────────────────────────────────
+
+model WorkoutFinalization {
+  workoutId       String    @id @map("workout_id") @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  completedAt     DateTime  @map("completed_at")
+  durationSeconds Int       @map("duration_seconds")
+  status          String    @default("pending")
+  availableAt     DateTime  @default(now()) @map("available_at")
+  attempts        Int       @default(0)
+  lockedAt        DateTime? @map("locked_at")
+  lockToken       String?   @map("lock_token") @db.Uuid
+  processedAt     DateTime? @map("processed_at")
+  result          Json?
+  lastError       String?   @map("last_error")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt, lockedAt])
+  @@map("workout_finalizations")
+}
+
+model NotificationOutbox {
+  id          String    @id @default(uuid()) @db.Uuid
+  dedupeKey   String    @unique @map("dedupe_key")
+  userId      String    @map("user_id") @db.Uuid
+  type        String
+  title       String
+  body        String?
+  linkPath    String?   @map("link_path")
+  data        Json?
+  status      String    @default("pending")
+  availableAt DateTime  @default(now()) @map("available_at")
+  attempts    Int       @default(0)
+  lockedAt    DateTime? @map("locked_at")
+  lockToken   String?   @map("lock_token") @db.Uuid
+  sentAt      DateTime? @map("sent_at")
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt, lockedAt])
+  @@map("notification_outbox")
+}
+
 // ─── Goals ──────────────────────────────────────────────
 
 model Goal {
-  id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @map("user_id") @db.Uuid
-  type         String    // body_weight, exercise_pr, weekly_workouts, cardio_distance
-  title        String
-  description  String?
-  targetValue  Decimal   @map("target_value") @db.Decimal(12, 2)
-  startValue   Decimal?  @map("start_value") @db.Decimal(12, 2)
-  unit         String    // kg, lb, count, km, mi
-  exerciseId   String?   @map("exercise_id") @db.Uuid
-  targetDate   DateTime? @map("target_date") @db.Date
-  status       String    @default("active") // active, completed, abandoned
-  completedAt  DateTime? @map("completed_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  type        String // body_weight, exercise_pr, weekly_workouts, cardio_distance
+  title       String
+  description String?
+  targetValue Decimal   @map("target_value") @db.Decimal(12, 2)
+  startValue  Decimal?  @map("start_value") @db.Decimal(12, 2)
+  unit        String // kg, lb, count, km, mi
+  exerciseId  String?   @map("exercise_id") @db.Uuid
+  targetDate  DateTime? @map("target_date") @db.Date
+  status      String    @default("active") // active, completed, abandoned
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
