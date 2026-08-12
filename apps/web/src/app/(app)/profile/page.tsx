@@ -10,7 +10,7 @@ import { signOut } from "next-auth/react";
 import { User, Settings, LogOut, Check, Link2, Users, Download, Shield, Camera } from "lucide-react";
 import Link from "next/link";
 
-const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/ironpulse";
+const S3_PUBLIC_URL = process.env.NEXT_PUBLIC_S3_PUBLIC_URL ?? "http://localhost:9000/zor";
 
 export default function ProfilePage() {
   const utils = trpc.useUtils();

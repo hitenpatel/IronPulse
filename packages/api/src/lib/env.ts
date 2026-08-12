@@ -70,7 +70,7 @@ export const env = {
     return optional("S3_SECRET_KEY", "minioadmin")!;
   },
   get S3_BUCKET() {
-    return optional("S3_BUCKET", "ironpulse")!;
+    return optional("S3_BUCKET", "zor")!;
   },
 
   // Cache
