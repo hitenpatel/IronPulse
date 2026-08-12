@@ -10,3 +10,9 @@ dist/
 apps/web/public/@powersync/
 apps/web/e2e/*.spec.ts-snapshots/
 designs/screenshots-*/
+
+# Local dev artifacts
+.claude/settings.json
+.env.systemd
+mempalace.yaml
+test-results/
