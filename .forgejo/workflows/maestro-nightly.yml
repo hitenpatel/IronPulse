@@ -135,10 +135,35 @@ jobs:
           apt-get install -y --no-install-recommends \
             qemu-user-static binfmt-support \
             libc6-amd64-cross libstdc++6-amd64-cross \
-            libc6:amd64 libstdc++6:amd64 zlib1g:amd64 libtinfo6:amd64
+            libc6:amd64 libstdc++6:amd64 zlib1g:amd64 libtinfo6:amd64 \
+            cmake ninja-build
           echo "QEMU_LD_PREFIX=/usr/x86_64-linux-gnu" >> "$GITHUB_ENV"
           QEMU_LD_PREFIX=/usr/x86_64-linux-gnu \
             "$ANDROID_HOME/build-tools/36.0.0/aapt2" version
+
+      - name: Install NDK + swap bundled x86_64 cmake/ninja for arm64 native
+        run: |
+          set -eu
+          # AGP triggers `sdkmanager --install cmake;3.x.x ndk;27.x.x` lazily
+          # on the first native build. Pre-install so the swap runs before the
+          # gradle build.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "ndk;27.1.12297006" "cmake;3.22.1"
+          # Google ships the CMake bundle only as linux-x86_64. On the arm64
+          # runner both cmake and ninja run through QEMU, and QEMU's x86_64
+          # emulator segfaults during ninja's `restat` pass on real trees
+          # (react-native-reanimated's configure hit this reliably). Replace
+          # the bundled binaries with the arm64-native cmake + ninja from apt.
+          CM=$(ls -d "$ANDROID_HOME"/cmake/*/bin | head -1)
+          for tool in cmake ninja; do
+            SYS=$(command -v $tool || true)
+            [ -n "$SYS" ] || { echo "system $tool missing"; exit 1; }
+            rm -f "$CM/$tool"
+            ln -sf "$SYS" "$CM/$tool"
+          done
+          echo "swapped $CM cmake/ninja -> arm64 apt binaries"
+          "$CM/cmake" --version | head -1
+          "$CM/ninja" --version
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
