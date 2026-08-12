@@ -5,7 +5,7 @@ import {
   completeStravaAuthSchema,
   completeGarminAuthSchema,
   completeIntervalsIcuAuthSchema,
-} from "@mettlelift/shared/src/schemas/integration";
+} from "@zor/shared/src/schemas/integration";
 import { encryptToken, decryptToken } from "../lib/encryption";
 import { revokeToken } from "../lib/strava";
 import { requireIntegrationCredentials } from "../lib/env";

@@ -90,7 +90,7 @@ export default function SettingsPage() {
         </p>
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Upload a CSV export to bring your existing workout data into Mettle Lift.
+            Upload a CSV export to bring your existing workout data into Zor.
           </p>
           <Button asChild variant="outline">
             <Link href="/settings/import">Go to Import</Link>

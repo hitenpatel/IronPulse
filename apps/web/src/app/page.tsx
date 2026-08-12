@@ -61,7 +61,7 @@ const plans = [
       "Community support",
     ],
     cta: "Get Started",
-    href: "https://github.com/mettlelift/mettlelift",
+    href: "https://github.com/hiten/IronPulse",
     highlighted: false,
   },
   {
@@ -106,12 +106,12 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <img
-              src="/mettlelift-logo-light.svg"
-              alt="Mettle Lift"
+              src="/zor-logo-light.svg"
+              alt="Zor"
               className="h-8 w-auto block dark:hidden"
             />
             <img
-              src="/mettlelift-logo-dark.svg"
+              src="/zor-logo-dark.svg"
               alt=""
               aria-hidden="true"
               className="h-8 w-auto hidden dark:block"
@@ -251,7 +251,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border/40 py-8">
         <div className="mx-auto max-w-6xl px-6 flex items-center justify-between text-sm text-muted-foreground">
-          <span>Mettle Lift</span>
+          <span>Zor</span>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="hover:text-foreground transition-colors">
               Privacy Policy

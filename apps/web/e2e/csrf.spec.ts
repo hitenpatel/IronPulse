@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * CSRF protection across the Mettle Lift API surface.
+ * CSRF protection across the Zor API surface.
  *
  * Covers:
  * - NextAuth CSRF token endpoint exists and returns a token

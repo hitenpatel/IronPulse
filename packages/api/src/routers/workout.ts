@@ -9,7 +9,7 @@ import {
   deleteSetSchema,
   completeWorkoutSchema,
   cursorPaginationSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { detectPRs } from "../lib/pr-detection";
 import { createFeedItem } from "../lib/feed";

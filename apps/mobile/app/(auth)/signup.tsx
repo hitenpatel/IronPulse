@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { Config } from "@/lib/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/ui/logo";
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
@@ -112,17 +113,7 @@ export default function SignupScreen() {
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}>
         {/* Logo */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>
-          <Text
-            style={{
-              fontSize: 32,
-              fontWeight: "800",
-              color: C.text,
-              letterSpacing: -0.5,
-              fontFamily: "SpaceGrotesk-Bold",
-            }}
-          >
-            Mettle Lift
-          </Text>
+          <Logo size={64} />
         </View>
 
         {/* Heading */}
@@ -228,7 +219,7 @@ export default function SignupScreen() {
                 if (!googleDiscovery) return;
                 setLoading(true);
                 try {
-                  const redirectUri = AuthSession.makeRedirectUri({ scheme: "mettlelift" });
+                  const redirectUri = AuthSession.makeRedirectUri({ scheme: "zor" });
                   const request = new AuthSession.AuthRequest({
                     clientId: GOOGLE_CLIENT_ID,
                     scopes: ["openid", "profile", "email"],

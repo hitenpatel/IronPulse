@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { ChevronLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
-import { useCardioSession, useCardioLaps, type LapRow } from "@mettlelift/sync";
+import { useCardioSession, useCardioLaps, type LapRow } from "@zor/sync";
 import { Card } from "@/components/ui/card";
 import {
   formatDuration,
@@ -18,7 +18,7 @@ import {
   getHRZoneName,
   getHRZoneColor,
   getZoneBoundaries,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 
 const RouteMap = dynamic(
   () => import("@/components/cardio/route-map"),

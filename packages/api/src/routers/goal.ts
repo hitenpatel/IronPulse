@@ -4,7 +4,7 @@ import {
   updateGoalSchema,
   deleteGoalSchema,
   listGoalsSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { computeGoalProgress, computeProgressPct } from "../lib/goal-progress";
 import { captureError } from "../lib/capture-error";

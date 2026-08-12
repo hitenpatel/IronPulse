@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@mettlelift/db";
+import { PrismaClient } from "@zor/db";
 import {
   findStreakAtRiskUsers,
   sendRetentionNudge,
-} from "@mettlelift/api";
+} from "@zor/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Zor <noreply@zor.app>";
 
   const users = await findStreakAtRiskUsers(db);
 
@@ -64,9 +64,9 @@ export async function POST(req: Request) {
           "",
           "A 10-minute session is enough to keep the flame going. Your future self will thank you.",
           "",
-          "Open Mettle Lift and start your workout: https://mettlelift.app/dashboard",
+          "Open Zor and start your workout: https://zor.app/dashboard",
           "",
-          "— Mettle Lift",
+          "— Zor",
         ].join("\n"),
         linkPath: "/dashboard",
         resendSend: resend

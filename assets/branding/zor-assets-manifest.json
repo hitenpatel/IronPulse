@@ -1,0 +1,187 @@
+{
+  "generator": "zor-assets-v1",
+  "sourceHash": "44aa6bbbd0d2a3fab18ab70997bf9030a78801abd08fbbb0c299a4ac2a6d7231",
+  "outputs": {
+    "apps/mobile/assets/android-icon-background.png": {
+      "size": [
+        108,
+        108
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile",
+      "sha256": "1e773fa83f9474586183fade9948924a08f58ec446428bd32fb3065e85b97020"
+    },
+    "apps/mobile/assets/android-icon-foreground.png": {
+      "size": [
+        432,
+        432
+      ],
+      "transparent": true,
+      "paletteRole": "ink-transparent-safe-zone",
+      "sha256": "704375f8ef17d60f684d9f0027f7b1a8f48887bbfcc0a12221adb9b8b0ee39f7"
+    },
+    "apps/mobile/assets/android-icon-monochrome.png": {
+      "size": [
+        432,
+        432
+      ],
+      "transparent": true,
+      "paletteRole": "alpha-mask",
+      "sha256": "a9606e5b053b8547e08e7673709bf9d43df6a392a096da80ad499edd5f56444e"
+    },
+    "apps/mobile/assets/favicon.png": {
+      "size": [
+        48,
+        48
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "294332711eb1522197bb61db48ac5488c635f38a9a0fbb4026844799b814ed0b"
+    },
+    "apps/mobile/assets/icon.png": {
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "b4143a83250d3e2dbd4f44a62cdebb26279b4b73627b53817027c8ad91433fc2"
+    },
+    "apps/mobile/assets/logo-mark.png": {
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "paletteRole": "lime-transparent",
+      "sha256": "f98dcd6ed55397c215b16e64b2abed931bca57a729c6dcc7b11a73773dae16f0"
+    },
+    "apps/mobile/assets/splash-icon.png": {
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "paletteRole": "lime-transparent",
+      "sha256": "471c7a81e5c907832110970e0a5aa992aa5de96c580ec4c151c1d489a5738748"
+    },
+    "apps/web/public/favicon.ico": {
+      "size": [
+        16,
+        32,
+        48
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "5301b5b626121550f8ff8c04d6a6d3b35f1f994c769579f6dda39340ff2f21e0"
+    },
+    "apps/web/public/icons/icon-192.png": {
+      "size": [
+        192,
+        192
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "317e627b3fcb15e594790829c65952306f071d7b622dc7235b50de6850b866b4"
+    },
+    "apps/web/public/icons/icon-512-maskable.png": {
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark-safe-zone",
+      "sha256": "81db811af09d1991b6d5ba434fface01d137f38684f851346ee172a709bfaf87"
+    },
+    "apps/web/public/icons/icon-512.png": {
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "bd5b0a344850a04d7ae4929555cd418b2050c7611f29107f59af320d6c4de6e5"
+    },
+    "apps/web/public/icons/icon.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "transparent": true,
+      "paletteRole": "ink-standalone-svg",
+      "sha256": "6fe60791bed39f42978ebb4db344b84d76778939760e01b59875f361341aa384"
+    },
+    "apps/web/public/zor-logo-dark.svg": {
+      "size": [
+        180,
+        64
+      ],
+      "transparent": true,
+      "paletteRole": "lime-lockup-for-dark-bg",
+      "sha256": "ce526612cbe1096beab591c5f38689a19aa4633e0edccf024378f79257c10596"
+    },
+    "apps/web/public/zor-logo-light.svg": {
+      "size": [
+        180,
+        64
+      ],
+      "transparent": true,
+      "paletteRole": "ink-lockup-for-light-bg",
+      "sha256": "bfc842c635aaa06864bb2f537e4be5aa2b7a7fb137d4e334bca82abf1e371c17"
+    },
+    "apps/web/src/app/apple-icon.png": {
+      "size": [
+        180,
+        180
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "ff627784b79f9d6272879c2a728ce0328c55555db7a7e5b5f11aae2a8b3a17bc"
+    },
+    "apps/web/src/app/icon.png": {
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "paletteRole": "lime-tile-ink-mark",
+      "sha256": "bd5b0a344850a04d7ae4929555cd418b2050c7611f29107f59af320d6c4de6e5"
+    },
+    "assets/branding/generated/zor-mark-16.png": {
+      "size": [
+        16,
+        16
+      ],
+      "transparent": true,
+      "paletteRole": "lime-transparent-small",
+      "sha256": "837117998a77d7f5d8f5a8c4bfc9021f684e8a7e340cbeb8cef99b82d22e4d7e"
+    },
+    "assets/branding/generated/zor-mark-24.png": {
+      "size": [
+        24,
+        24
+      ],
+      "transparent": true,
+      "paletteRole": "lime-transparent-small",
+      "sha256": "7bda8cc1b17e7be8bfbb532ee5dea929bbc76b11e8c60502e9f0e1dfddbcbe2a"
+    },
+    "assets/branding/generated/zor-svg-preview.png": {
+      "size": [
+        1600,
+        1000
+      ],
+      "transparent": false,
+      "paletteRole": "ink-lime-bone",
+      "sha256": "1f1170a9080d049f1040208dbb3954408c9a93fbb91bef6d4b0165146a31a651"
+    },
+    "assets/branding/zor-social-card.png": {
+      "size": [
+        1200,
+        630
+      ],
+      "transparent": false,
+      "paletteRole": "ink-lime-bone",
+      "sha256": "f962b2ee55d1e048c1f773ae25bf054248c7188e2202a77c8901ee0e759e5c93"
+    }
+  }
+}

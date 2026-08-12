@@ -5,7 +5,7 @@ import {
 } from "@powersync/common";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
-import type { AppRouter } from "@mettlelift/api";
+import type { AppRouter } from "@zor/api";
 
 export interface BackendConnectorOptions {
   baseUrl?: string;

@@ -40,6 +40,6 @@ END
 $body$;
 SQL
 
-echo "Starting Mettle Lift..."
+echo "Starting Zor..."
 cd /app
 exec "$@"

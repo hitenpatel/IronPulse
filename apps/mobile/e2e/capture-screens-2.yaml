@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # Second pass. App is already logged in; starts from wherever and taps into
 # remaining profile rows. Screenshots land in cwd.

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Dumbbell, Clock, Star, Plus } from "lucide-react";
-import { useWorkouts, type WorkoutRow } from "@mettlelift/sync";
+import { useWorkouts, type WorkoutRow } from "@zor/sync";
 import { trpc } from "@/lib/trpc/client";
 import { useDataMode } from "@/hooks/use-data-mode";
 import { formatRelativeDate, formatDuration } from "@/lib/format";

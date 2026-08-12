@@ -5,7 +5,7 @@ import {
   PLATE_SIZES_KG,
   calculatePlates,
   validatePlateCalcInput,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { Button } from "@/components/ui";
 import { colors, fonts, radii, spacing, typography } from "@/lib/theme";
 

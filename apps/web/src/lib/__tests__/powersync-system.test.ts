@@ -9,7 +9,7 @@ vi.mock("@powersync/web", () => ({
   WASQLiteOpenFactory: MockWASQLiteOpenFactory,
 }));
 
-vi.mock("@mettlelift/sync", () => ({
+vi.mock("@zor/sync", () => ({
   AppSchema: { tables: [] },
 }));
 
@@ -45,14 +45,14 @@ describe("getPowerSyncDatabase", () => {
     getPowerSyncDatabase();
     expect(MockWASQLiteOpenFactory).toHaveBeenCalledWith(
       expect.objectContaining({
-        dbFilename: "mettlelift.db",
+        dbFilename: "ironpulse.db",
         worker: "/@powersync/worker/WASQLiteDB.umd.js",
       })
     );
   });
 
   it("passes AppSchema and disableSSRWarning to PowerSyncDatabase", async () => {
-    const { AppSchema } = await import("@mettlelift/sync");
+    const { AppSchema } = await import("@zor/sync");
     const { getPowerSyncDatabase } = await importFresh();
     getPowerSyncDatabase();
     expect(MockPowerSyncDatabase).toHaveBeenCalledWith(

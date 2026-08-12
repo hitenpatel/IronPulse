@@ -41,12 +41,12 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY . .
-RUN pnpm --filter @mettlelift/db db:generate
+RUN pnpm --filter @zor/db db:generate
 # Regenerate the PowerSync web worker assets into apps/web/public. They are
 # gitignored, so `COPY . .` above didn't bring them in; without this the
 # Next.js build ships without the offline-sync worker.
-RUN pnpm --filter @mettlelift/web run postinstall
-RUN pnpm --filter @mettlelift/web build
+RUN pnpm --filter @zor/web run postinstall
+RUN pnpm --filter @zor/web build
 
 # Runtime
 FROM base AS runner

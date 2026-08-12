@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
-import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@mettlelift/shared";
+import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@zor/shared";
 import { Lock, Trophy } from "lucide-react";
 
 function BadgeCard({

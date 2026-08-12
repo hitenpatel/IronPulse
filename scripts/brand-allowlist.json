@@ -1,0 +1,148 @@
+{
+  "//": "Allowlist of retained IronPulse identifiers. Each entry pins a file glob to the exact substrings that may appear there and the compatibility reason. The brand-audit script rejects any ironpulse occurrence not covered here, and rejects any mettlelift occurrence anywhere.",
+  "compatibility": [
+    {
+      "reason": "iOS/Android bundle identifier — cannot change without breaking existing installs on Apple and Google stores. EAS project slug is also fixed at `ironpulse` for the same reason.",
+      "paths": [
+        "apps/mobile/app.config.js",
+        "apps/mobile/eas.json",
+        "apps/mobile/scripts/nightly-e2e.sh",
+        "apps/mobile/e2e/*.yaml",
+        "apps/mobile/e2e-smoke/*.yaml"
+      ],
+      "patterns": ["com.ironpulse.app", "com.ironpulse.app.e2e", "\"ironpulse\""]
+    },
+    {
+      "reason": "IAP product identifiers registered with App Store Connect and Google Play — renaming would create a new SKU and lose subscribers.",
+      "paths": ["apps/mobile/lib/iap.ts"],
+      "patterns": [
+        "com.ironpulse.athlete.monthly",
+        "com.ironpulse.athlete.yearly",
+        "com.ironpulse.coach.monthly",
+        "com.ironpulse.coach.yearly"
+      ]
+    },
+    {
+      "reason": "Client PowerSync SQLite filename — renaming would orphan existing offline data on every device.",
+      "paths": [
+        "apps/mobile/lib/gps-task.ts",
+        "apps/mobile/lib/powersync.ts",
+        "apps/web/src/lib/powersync/system.ts",
+        "apps/web/src/lib/__tests__/powersync-system.test.ts"
+      ],
+      "patterns": ["ironpulse.db"]
+    },
+    {
+      "reason": "Postgres role, password, and database name — changing these requires a coordinated dump/restore migration across every self-hosted instance and every CI job.",
+      "paths": [
+        "docker/docker-compose.yml",
+        "docker/docker-compose.dev.yml",
+        "docker/.env.example",
+        ".env.example",
+        "scripts/dev-start.sh",
+        ".forgejo/workflows/ci.yml"
+      ],
+      "patterns": [
+        "postgresql://ironpulse:ironpulse@postgres:5432/ironpulse",
+        "postgresql://ironpulse:ironpulse@postgres:5432/ironpulse_test",
+        "postgresql://ironpulse:ironpulse@localhost:5432/ironpulse",
+        "POSTGRES_USER: ironpulse",
+        "POSTGRES_PASSWORD: ironpulse",
+        "POSTGRES_DB: ironpulse",
+        "POSTGRES_DB: ironpulse_test",
+        "POSTGRES_USER=ironpulse",
+        "POSTGRES_PASSWORD=ironpulse",
+        "POSTGRES_DB=ironpulse",
+        "pg_isready -U ironpulse"
+      ]
+    },
+    {
+      "reason": "MinIO/S3 bucket name — changing would require object migration and would break existing signed URLs.",
+      "paths": [
+        "docker/docker-compose.yml",
+        ".env.example",
+        "packages/api/src/lib/s3.ts",
+        "packages/api/src/lib/env.ts",
+        "packages/api/__tests__/s3.test.ts",
+        "apps/web/src/app/(app)/profile/page.tsx",
+        "apps/web/src/app/(app)/coach/page.tsx"
+      ],
+      "patterns": ["\"ironpulse\"", "S3_BUCKET: \"ironpulse\"", "S3_BUCKET=\"ironpulse\"", "local/ironpulse", "localhost:9000/ironpulse"]
+    },
+    {
+      "reason": "Docker container and service names — renaming would break existing docker-compose volumes and named networks on running deployments.",
+      "paths": [
+        "docker/docker-compose.yml",
+        "docker/docker-compose.dev.yml",
+        "docker/traefik-dev-dynamic.yml",
+        "docker/powersync.yaml",
+        "docker/setup-monitors.sh",
+        "docker/verify-backup.sh"
+      ],
+      "patterns": [
+        "ironpulse:",
+        "ironpulse-traefik",
+        "ironpulse-sablier",
+        "ironpulse-dev",
+        "ironpulse-backup-verify",
+        "sablier-ironpulse",
+        "ironpulse-app",
+        "http://ironpulse:3000",
+        "ironpulse:3000"
+      ]
+    },
+    {
+      "reason": "Backup filename convention — restore.sh, backup.sh, and verify-backup.sh all look for ironpulse_*.sql.gz; existing backups must remain restorable.",
+      "paths": ["docker/backup.sh", "docker/restore.sh", "docker/verify-backup.sh"],
+      "patterns": ["ironpulse_", "ironpulse_*.sql.gz"]
+    },
+    {
+      "reason": "Legacy deep-link scheme — retained as alias so notification URLs, share links, and OAuth callbacks issued before the rebrand keep resolving.",
+      "paths": ["apps/mobile/app.config.ts", "docs/superpowers/specs/2026-08-08-zor-complete-rebrand-design.md"],
+      "patterns": ["\"ironpulse\"", "ironpulse://"]
+    },
+    {
+      "reason": "Developer hostname alias — kept so existing engineer /etc/hosts entries, Caddyfile blocks, and cached OAuth callback registrations still work.",
+      "paths": ["docker/Caddyfile.dev", "docs/superpowers/specs/2026-08-08-zor-complete-rebrand-design.md"],
+      "patterns": ["ironpulse.local"]
+    },
+    {
+      "reason": "Production and staging hostnames served by the retained self-hosted deployment — cutting over DNS is out of scope for the code rebrand and would break existing installed apps that fall back to this URL.",
+      "paths": ["apps/mobile/lib/config.ts", "test-paths.md"],
+      "patterns": ["ironpulse.hiten-patel.co.uk"]
+    },
+    {
+      "reason": "Forgejo and GitHub repository paths remain at hiten/IronPulse per TASK-21 compatibility decision.",
+      "paths": [
+        "README.md",
+        "docker/README.md",
+        "apps/web/src/app/page.tsx",
+        "test-paths.md",
+        "docs/superpowers/specs/2026-08-08-zor-complete-rebrand-design.md"
+      ],
+      "patterns": ["hiten/IronPulse", "hitenpatel/IronPulse"]
+    },
+    {
+      "reason": "Historical context in specs, plans, ADRs, and the changelog — these are frozen records of past decisions and must retain the names in use at the time. The audit skips these paths entirely rather than allowlisting individual strings.",
+      "paths": [
+        "CHANGELOG.md",
+        "docs/adr/**",
+        "docs/superpowers/plans/**",
+        "docs/superpowers/specs/**",
+        "backlog/**",
+        "designs/**"
+      ],
+      "patterns": ["*"]
+    },
+    {
+      "reason": "Self-hosting documentation refers to the primary web container by its retained service name.",
+      "paths": ["docker/README.md"],
+      "patterns": ["ironpulse", "ironpulse:3000", "logs -f ironpulse", "logs ironpulse"]
+    },
+    {
+      "reason": "Nightly Maestro script pins the workspace path to the retained IronPulse checkout.",
+      "paths": ["apps/mobile/scripts/nightly-e2e.sh"],
+      "patterns": ["/home/ubuntu/dev/IronPulse/", "/home/ubuntu/dev/IronPulse"]
+    }
+  ]
+}

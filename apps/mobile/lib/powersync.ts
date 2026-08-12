@@ -1,4 +1,4 @@
-import { AppSchema, BackendConnector } from "@mettlelift/sync";
+import { AppSchema, BackendConnector } from "@zor/sync";
 import * as SecureStore from "@/lib/secure-store";
 
 import { Config } from "./config";
@@ -36,7 +36,7 @@ export function getPowerSyncDatabase(): any {
     const { PowerSyncDatabase } = require("@powersync/react-native");
     const db = new PowerSyncDatabase({
       schema: AppSchema,
-      database: { dbFilename: "mettlelift.db" },
+      database: { dbFilename: "ironpulse.db" },
     });
     // Route ongoing sync errors to Sentry. Different PowerSync versions
     // expose different hooks, so defensively feature-detect rather than

@@ -3,7 +3,7 @@ set -euo pipefail
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
-BACKUP_FILE="$BACKUP_DIR/mettlelift_$TIMESTAMP.sql.gz"
+BACKUP_FILE="$BACKUP_DIR/ironpulse_$TIMESTAMP.sql.gz"
 
 mkdir -p "$BACKUP_DIR"
 
@@ -19,5 +19,5 @@ PGPASSWORD="$POSTGRES_PASSWORD" pg_dump \
 echo "[$(date)] Backup saved to $BACKUP_FILE ($(du -sh "$BACKUP_FILE" | cut -f1))"
 
 # Retention: keep last 30 daily backups
-find "$BACKUP_DIR" -name "mettlelift_*.sql.gz" -mtime +30 -delete
+find "$BACKUP_DIR" -name "ironpulse_*.sql.gz" -mtime +30 -delete
 echo "[$(date)] Old backups cleaned up (30-day retention)"

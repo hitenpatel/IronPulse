@@ -18,13 +18,13 @@ const displayFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Mettle Lift",
+  title: "Zor",
   description: "Fitness tracking for athletes and coaches",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Mettle Lift",
+    title: "Zor",
   },
 };
 

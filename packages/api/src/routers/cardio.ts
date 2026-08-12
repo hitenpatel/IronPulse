@@ -8,7 +8,7 @@ import {
   previewFitSchema,
   importFitSchema,
   listCardioSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { parseGpx, haversineDistance } from "../lib/gpx";
 import { parseFitFile } from "../lib/fit";

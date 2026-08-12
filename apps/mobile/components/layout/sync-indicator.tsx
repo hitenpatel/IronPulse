@@ -13,7 +13,7 @@ let useSyncStatusHook: () => {
 };
 
 try {
-  const sync = require("@mettlelift/sync");
+  const sync = require("@zor/sync");
   useSyncStatusHook = sync.useSyncStatus;
 } catch {
   useSyncStatusHook = () => ({ connected: true, uploading: false, downloading: false });

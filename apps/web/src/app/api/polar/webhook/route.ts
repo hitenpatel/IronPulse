@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@mettlelift/db";
-import { importPolarActivity } from "@mettlelift/api/src/lib/polar";
-import { captureError } from "@mettlelift/api/src/lib/capture-error";
+import { db } from "@zor/db";
+import { importPolarActivity } from "@zor/api/src/lib/polar";
+import { captureError } from "@zor/api/src/lib/capture-error";
 
 interface PolarWebhookEvent {
   event: string;

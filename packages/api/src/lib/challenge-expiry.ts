@@ -113,7 +113,7 @@ export async function sendChallengeExpiryReminder(
     timeZone: "UTC",
   });
   const rankStr = `${candidate.rank}${getRankSuffix(candidate.rank)}`;
-  const challengeUrl = `https://mettlelift.app/challenges/${candidate.challengeId}`;
+  const challengeUrl = `https://zor.app/challenges/${candidate.challengeId}`;
 
   try {
     await createNotification(db, {
@@ -146,7 +146,7 @@ export async function sendChallengeExpiryReminder(
       "",
       `View your standing and log your progress: ${challengeUrl}`,
       "",
-      "— Mettle Lift",
+      "— Zor",
     ].join("\n");
 
     try {

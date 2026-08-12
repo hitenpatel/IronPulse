@@ -71,7 +71,7 @@ export async function requestForegroundPermissionsAsync(): Promise<PermissionRes
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: "Location Permission",
-          message: "Mettle Lift needs location access to track your cardio sessions.",
+          message: "Zor needs location access to track your cardio sessions.",
           buttonPositive: "Allow",
           buttonNegative: "Deny",
         }

@@ -6,7 +6,7 @@ import {
   dailySummarySchema,
   getMealScanUploadUrlSchema,
   analyzeMealPhotoSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { getPresignedUploadUrl, getPresignedDownloadUrl } from "../lib/s3";
 import { runMealScan } from "../lib/meal-scan";

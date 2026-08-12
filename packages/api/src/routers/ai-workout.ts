@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { generateAiWorkoutSchema } from "@mettlelift/shared";
+import { generateAiWorkoutSchema } from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 import { generateWorkoutWithAi } from "../lib/ai-workout";
 import { env } from "../lib/env";

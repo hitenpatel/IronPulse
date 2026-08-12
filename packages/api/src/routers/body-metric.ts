@@ -1,7 +1,7 @@
 import {
   createBodyMetricSchema,
   listBodyMetricsSchema,
-} from "@mettlelift/shared";
+} from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const bodyMetricRouter = createTRPCRouter({

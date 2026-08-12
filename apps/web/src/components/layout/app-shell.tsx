@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <span className="ml-3 font-display text-base font-bold tracking-tight text-foreground">
-            Mettle Lift
+            Zor
           </span>
         </header>
 

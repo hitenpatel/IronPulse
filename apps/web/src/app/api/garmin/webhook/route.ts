@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@mettlelift/db";
-import { importGarminActivity } from "@mettlelift/api/src/lib/garmin";
-import { captureError } from "@mettlelift/api/src/lib/capture-error";
+import { db } from "@zor/db";
+import { importGarminActivity } from "@zor/api/src/lib/garmin";
+import { captureError } from "@zor/api/src/lib/capture-error";
 
 interface GarminWebhookPayload {
   activityDetails?: Array<{

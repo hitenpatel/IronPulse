@@ -15,7 +15,7 @@ import { usePowerSync, useQuery } from "@powersync/react";
 
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
-import { useWorkouts, useCardioSessions } from "@mettlelift/sync";
+import { useWorkouts, useCardioSessions } from "@zor/sync";
 import { randomUUID } from "@/lib/uuid";
 import { formatElapsed } from "@/lib/workout-utils";
 import {
@@ -306,18 +306,8 @@ export default function DashboardScreen() {
             paddingBottom: 14,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Logo size={24} />
-            <Text
-              style={{
-                fontFamily: fonts.displaySemi,
-                fontSize: 20,
-                color: colors.text,
-                letterSpacing: -0.3,
-              }}
-            >
-              Mettle Lift
-            </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Logo size={28} />
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <SyncIndicator />

@@ -1,7 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter, createTRPCContext } from "@mettlelift/api";
-import { RateLimitError } from "@mettlelift/api/src/lib/rate-limit";
-import { db } from "@mettlelift/db";
+import { appRouter, createTRPCContext } from "@zor/api";
+import { RateLimitError } from "@zor/api/src/lib/rate-limit";
+import { db } from "@zor/db";
 import { auth } from "@/lib/auth";
 
 const handler = async (req: Request) => {

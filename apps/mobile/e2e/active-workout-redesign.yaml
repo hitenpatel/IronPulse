@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # QA for ticket #219 — Active Workout redesign.
 # Asserts the new landmarks: close X + workout name + live timer + Finish,

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ClipboardList, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PowerSyncContext } from "@powersync/react";
-import { useTemplates, type TemplateRow } from "@mettlelift/sync";
+import { useTemplates, type TemplateRow } from "@zor/sync";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

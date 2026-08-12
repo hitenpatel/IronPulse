@@ -2,11 +2,11 @@
 # Nightly mobile e2e.
 #
 #   - Main suite : apps/mobile/e2e/*.yaml  run against the COEXIST e2e build
-#                  (com.mettlelift.app.e2e, pointed at the seeded test backend).
+#                  (com.ironpulse.app.e2e, pointed at the seeded test backend).
 #                  Flow appIds are rewritten to the .e2e package at run time so
 #                  the committed flows stay untouched.
 #   - Prod smoke : apps/mobile/e2e-smoke/*.yaml run against the SHIPPING build
-#                  (com.mettlelift.app, pointed at production) — validates the
+#                  (com.ironpulse.app, pointed at production) — validates the
 #                  literal store artifact boots + authenticates.
 #
 # Maestro needs the device awake and UNLOCKED to drive the UI.
@@ -17,8 +17,8 @@ export PATH="$HOME/.maestro/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-arm64}"
 
 DEVICE="${E2E_DEVICE:-100.69.203.52:5555}"
-REPO=/home/ubuntu/dev/Mettle Lift
-E2E_APK="${E2E_APK:-/home/ubuntu/dev/Mettle Lift/apps/mobile/.e2e-build/mettlelift-e2e.apk}"
+REPO=/home/ubuntu/dev/IronPulse
+E2E_APK="${E2E_APK:-/home/ubuntu/dev/IronPulse/apps/mobile/.e2e-build/zor-e2e.apk}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="/tmp/e2e-reports/$STAMP"
 mkdir -p "$OUT"
@@ -110,8 +110,8 @@ adb -s "$DEVICE" install -r "$E2E_APK" 2>&1 | tail -1 | tee -a "$OUT/run.log"
 RUN=/tmp/e2e-run; rm -rf "$RUN"; mkdir -p "$RUN"
 cp "$REPO"/apps/mobile/e2e/*.yaml "$RUN"/
 # anchored to end-of-line so it never double-suffixes
-sed -i 's/^appId: com\.mettlelift\.app$/appId: com.mettlelift.app.e2e/' "$RUN"/*.yaml
-log "running main suite ($(ls "$RUN"/*.yaml | wc -l) flows) vs com.mettlelift.app.e2e"
+sed -i 's/^appId: com\.ironpulse\.app$/appId: com.ironpulse.app.e2e/' "$RUN"/*.yaml
+log "running main suite ($(ls "$RUN"/*.yaml | wc -l) flows) vs com.ironpulse.app.e2e"
 maestro test --udid "$DEVICE" "$RUN" --format junit --output "$OUT/suite.xml" \
   > "$OUT/suite.log" 2>&1
 SUITE_RC=$?
@@ -120,7 +120,7 @@ log "main suite exit=$SUITE_RC"
 # 5. Prod smoke vs shipping build. Capture a pre-smoke screenshot too — if a
 # flow fails on "email-input is visible" we want to see what was actually on
 # screen at the moment Maestro queried it.
-log "running prod smoke vs com.mettlelift.app"
+log "running prod smoke vs com.ironpulse.app"
 adb -s "$DEVICE" shell screencap -p /sdcard/_e2e_pre_smoke.png 2>/dev/null
 adb -s "$DEVICE" pull /sdcard/_e2e_pre_smoke.png "$OUT/pre-smoke.png" 2>/dev/null | tail -1 | tee -a "$OUT/run.log"
 maestro test --udid "$DEVICE" "$REPO/apps/mobile/e2e-smoke" --format junit \

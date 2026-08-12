@@ -1,4 +1,4 @@
-appId: com.mettlelift.app
+appId: com.ironpulse.app
 ---
 # QA for ticket #218 — Dashboard redesign.
 # Asserts the handoff landmarks are present: brand row, greeting, Next Up
@@ -29,7 +29,7 @@ appId: com.mettlelift.app
     visible:
       id: "greeting"
     timeout: 60000
-- assertVisible: "Mettle Lift"
+- assertVisible: "Zor"
 - assertVisible: "Ready to train?"
 - assertVisible:
     id: "next-up-hero"

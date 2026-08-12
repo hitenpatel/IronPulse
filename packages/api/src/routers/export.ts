@@ -1,5 +1,5 @@
 import { stringify } from "csv-stringify/sync";
-import { exportFormatSchema } from "@mettlelift/shared";
+import { exportFormatSchema } from "@zor/shared";
 import { createTRPCRouter, rateLimitedProcedure } from "../trpc";
 
 export const exportRouter = createTRPCRouter({
@@ -240,7 +240,7 @@ export const exportRouter = createTRPCRouter({
       exportedAt: new Date().toISOString(),
       userId,
       dataPortabilityNotice:
-        "This archive contains all personal data Mettle Lift stores about you, exported under GDPR Article 20. OAuth tokens for linked devices are intentionally excluded.",
+        "This archive contains all personal data Zor stores about you, exported under GDPR Article 20. OAuth tokens for linked devices are intentionally excluded.",
       profile,
       coachProfile,
       workouts,

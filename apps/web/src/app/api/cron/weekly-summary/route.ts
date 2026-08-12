@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@mettlelift/db";
-import { sendWeeklySummaryForUser } from "@mettlelift/api";
+import { PrismaClient } from "@zor/db";
+import { sendWeeklySummaryForUser } from "@zor/api";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const resend = getResend();
-  const fromAddr = process.env.EMAIL_FROM ?? "Mettle Lift <noreply@mettlelift.app>";
+  const fromAddr = process.env.EMAIL_FROM ?? "Zor <noreply@zor.app>";
 
   // Find users opted in who haven't been sent a summary in 6+ days (or ever)
   const cutoff = new Date();

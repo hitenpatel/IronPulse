@@ -12,7 +12,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { usePowerSync, useQuery } from "@powersync/react";
-import { useWorkoutExercises, useWorkoutSets } from "@mettlelift/sync";
+import { useWorkoutExercises, useWorkoutSets } from "@zor/sync";
 import * as Haptics from "@/lib/haptics";
 import { Plus } from "lucide-react-native";
 

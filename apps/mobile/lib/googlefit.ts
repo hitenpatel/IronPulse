@@ -61,11 +61,11 @@ const IP_TO_GF: Record<string, number> = {
   walk: GF_ACTIVITY_WALKING,
 };
 
-export function mapGoogleFitTypeToMettleLift(type: number): string {
+export function mapGoogleFitTypeToZor(type: number): string {
   return GF_TO_IP[type] ?? "other";
 }
 
-export function mapMettleLiftTypeToGoogleFit(type: string): number {
+export function mapZorTypeToGoogleFit(type: string): number {
   return IP_TO_GF[type] ?? 4; // 4 = "Unknown activity"
 }
 
@@ -76,7 +76,7 @@ export function makeGoogleFitExternalId(dataSourceId: string): string {
 export function shouldSkipGoogleFitImport(
   appPackage: string | undefined
 ): boolean {
-  return appPackage === "com.mettlelift.app";
+  return appPackage === "com.zor.app";
 }
 
 // ---------------------------------------------------------------------------
@@ -205,7 +205,7 @@ export async function saveWorkoutToGoogleFit(session: {
 
   const GoogleFit = getGoogleFit();
 
-  const activityType = mapMettleLiftTypeToGoogleFit(session.type);
+  const activityType = mapZorTypeToGoogleFit(session.type);
 
   await GoogleFit.startRecording(
     (callback: any) => {},
@@ -276,7 +276,7 @@ export async function syncFromGoogleFit(
     if (existing.rows?.length > 0) continue;
 
     const id = randomUUID();
-    const ipType = mapGoogleFitTypeToMettleLift(w.activityType);
+    const ipType = mapGoogleFitTypeToZor(w.activityType);
     const startMs = new Date(w.startDate).getTime();
     const endMs = new Date(w.endDate).getTime();
     const durationSeconds = Math.round((endMs - startMs) / 1000);

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Lock, Trophy } from "lucide-react-native";
-import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@mettlelift/shared";
+import { ACHIEVEMENT_CATALOG, type AchievementBadge } from "@zor/shared";
 import { trpc } from "@/lib/trpc";
 import { formatBadgeDate } from "@/lib/achievement-utils";
 

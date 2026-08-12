@@ -1,4 +1,4 @@
-import { getPowerSyncJWKS } from "@mettlelift/api";
+import { getPowerSyncJWKS } from "@zor/api";
 
 export async function GET() {
   const jwks = getPowerSyncJWKS();

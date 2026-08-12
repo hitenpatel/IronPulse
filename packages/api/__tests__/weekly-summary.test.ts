@@ -161,7 +161,7 @@ describe("formatWeeklySummaryText", () => {
     expect(text).toContain("Hi Alex");
     expect(text).toContain("4");
     expect(text).toContain("12,500");
-    expect(text).toContain("The Mettle Lift team");
+    expect(text).toContain("The Zor team");
     expect(text).toContain("disable weekly summaries in Settings");
   });
 

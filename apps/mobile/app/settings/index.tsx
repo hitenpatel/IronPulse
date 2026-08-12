@@ -223,13 +223,13 @@ export default function SettingsScreen() {
           setNotificationsEnabled(false);
           Alert.alert(
             "Permission Denied",
-            "Enable notifications in your device Settings for Mettle Lift.",
+            "Enable notifications in your device Settings for Zor.",
           );
         }
       } else {
         Alert.alert(
           "Disable Notifications",
-          "To disable notifications, go to your device Settings and turn off notifications for Mettle Lift.",
+          "To disable notifications, go to your device Settings and turn off notifications for Zor.",
         );
       }
     } catch {
