@@ -58,7 +58,12 @@ export const darkColors = {
 // wholesale via useColors(). Lime primary + cobalt secondary keep their
 // brand identity; backgrounds flip to warm off-whites and text inverts to
 // near-black for legibility on bright surfaces.
-export const lightColors: typeof darkColors = {
+//
+// Typed as Record<keyof typeof darkColors, string> rather than `typeof darkColors`
+// so each slot can hold a different literal value (light ≠ dark hex) while
+// still being structurally complete. The dark palette is the source-of-truth
+// for key names; light values are brand-adjusted equivalents.
+export const lightColors: Record<keyof typeof darkColors, string> = {
   bg: "#F9F4E1",
   bg1: "#FFFBEE",
   bg2: "#F2ECD6",
