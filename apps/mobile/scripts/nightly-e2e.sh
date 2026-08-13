@@ -26,52 +26,16 @@ log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$OUT/run.log"; }
 
 log "=== nightly e2e $STAMP ==="
 
-# 1. Device — connect, wake, keep awake, dismiss a non-secure keyguard.
-# With the phone charging and/or Android Smart Lock (trusted place = home) the
-# keyguard is non-secure and this is enough; for a fully secure lock, an
-# Automate flow on the phone must keep it awake + unlocked during the window.
-adb connect "$DEVICE" 2>&1 | tee -a "$OUT/run.log"
-if ! adb -s "$DEVICE" shell true 2>/dev/null; then
-  log "FATAL: device $DEVICE not reachable over adb — aborting"
+# 1. Device — connect, wake, keep awake, unlock. All handled by the shared
+# prep script (also used by RadioShake's maestro nightly): pins the screen on
+# while charging via stay_on_while_plugged_in=7, disables doze/screensaver,
+# wakes with KEYCODE_POWER, and falls back to swipe + per-digit PIN entry
+# (from ADB_PIN or /home/ubuntu/stack/.e2e-device-pin) with retries.
+PREP="$(dirname "$0")/adb-device-prep.sh"
+OUT_DIR="$OUT" E2E_DEVICE="$DEVICE" bash "$PREP" prep "$DEVICE" 2>&1 | tee -a "$OUT/run.log"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+  log "FATAL: device prep/unlock failed — aborting"
   exit 1
-fi
-adb -s "$DEVICE" shell input keyevent KEYCODE_WAKEUP 2>/dev/null
-adb -s "$DEVICE" shell svc power stayon true 2>/dev/null    # screen stays on while charging
-adb -s "$DEVICE" shell wm dismiss-keyguard 2>/dev/null       # non-secure keyguard only
-# Swipe up to expose the bouncer (PIN pad) on a secure keyguard.
-adb -s "$DEVICE" shell input swipe 540 1800 540 600 200 2>/dev/null
-sleep 2
-
-# If the device is still locked behind a secure keyguard (modern Android killed
-# Smart Lock's trusted-place / trusted-Wi-Fi options, so a Pixel left idle
-# overnight WILL be locked at 01:05 UTC), unlock by typing the PIN from a
-# local 0600 file. No-op if the file is absent or the device is already
-# unlocked.
-PIN_FILE="${E2E_PIN_FILE:-/home/ubuntu/stack/.e2e-device-pin}"
-is_locked() {
-  adb -s "$DEVICE" shell dumpsys window 2>/dev/null \
-    | grep -qE "AlternateBouncerView|KeyguardScrim|Bouncer"
-}
-if is_locked && [ -r "$PIN_FILE" ]; then
-  log "device locked — entering PIN"
-  PIN=$(tr -d '\r\n\t ' < "$PIN_FILE")
-  # Type digits as keyevents (KEYCODE_0..9 = 7..16). More reliable than
-  # `input text` on the bouncer's PIN field.
-  KEYS=""
-  for (( i=0; i<${#PIN}; i++ )); do
-    KEYS="$KEYS $((7 + ${PIN:$i:1}))"
-  done
-  adb -s "$DEVICE" shell input keyevent $KEYS 2>/dev/null
-  sleep 1
-  adb -s "$DEVICE" shell input keyevent KEYCODE_ENTER 2>/dev/null
-  sleep 2
-  if is_locked; then
-    log "WARNING: still locked after PIN entry — diagnostic screenshot will show state"
-  else
-    log "unlock succeeded"
-  fi
-elif is_locked; then
-  log "WARNING: device locked and no readable PIN file at $PIN_FILE"
 fi
 
 # Diagnostic: capture device state + screenshot so a "no email-input visible"
@@ -90,7 +54,7 @@ adb -s "$DEVICE" pull /sdcard/_e2e_pre.png "$OUT/pre-suite.png" 2>/dev/null | ta
 cleanup_backend() {
   log "stopping test backend (volumes preserved)"
   ( cd "$REPO/docker" && docker compose down >/dev/null 2>&1 )
-  adb -s "$DEVICE" shell svc power stayon false 2>/dev/null
+  bash "$PREP" restore "$DEVICE" 2>&1 | tee -a "$OUT/run.log"
 }
 trap cleanup_backend EXIT
 
