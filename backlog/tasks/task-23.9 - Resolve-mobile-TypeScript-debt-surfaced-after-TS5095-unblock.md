@@ -1,9 +1,10 @@
 ---
 id: TASK-23.9
 title: Resolve mobile TypeScript debt surfaced after TS5095 unblock
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-12 16:59'
+updated_date: '2026-08-13 00:26'
 labels:
   - mobile
   - tech-debt
@@ -27,7 +28,19 @@ Top categories: 6 tRPC useQuery arg-shape mismatches, 4 tabBarTestID options (un
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 pnpm exec tsc -p apps/mobile/tsconfig.json --noEmit exits 0
-- [ ] #2 No runtime type guards weakened to satisfy the type checker
-- [ ] #3 Fixes are grouped by category with self-contained commits
+- [x] #1 pnpm exec tsc -p apps/mobile/tsconfig.json --noEmit exits 0
+- [x] #2 No runtime type guards weakened to satisfy the type checker
+- [x] #3 Fixes are grouped by category with self-contained commits
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Shipped in 8 category commits (d98fa8e..d79ccba): theme literal widening, tabBarTestID→tabBarButtonTestID (bottom-tabs v7), notification payload typing at JSON boundary, WriteTransactionDb export + test cast, review-prompt mock shape, navigation typing (useNavigation<NativeStackNavigationProp<RootStackParamList>> + setOptions), Date-vs-string alignment for superjson-deserialized fields, misc component ripples. Verification: pnpm exec tsc -p apps/mobile/tsconfig.json --noEmit exits 0; mobile 183 vitest + 1 jest, api 712, web 147 all green. Runtime guards preserved throughout — only 'as unknown as X' casts used at JSON/generic boundaries with inline comments.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+73 mobile TSC errors → 0. Landed as 8 category-grouped commits. Full type-check gate restored; mobile + api + web test suites all still green. Runtime guards preserved (no as-any weakening); casts limited to JSON boundaries and generic-parameter mock injection with inline justification.
+<!-- SECTION:FINAL_SUMMARY:END -->
