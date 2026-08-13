@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { completeWorkoutLocally } from "../workout-local-completion";
+import { completeWorkoutLocally, type WriteTransactionDb } from "../workout-local-completion";
 
 type Tx = {
   execute: ReturnType<typeof vi.fn>;
@@ -13,10 +13,11 @@ function makeDb(overrides: Partial<Tx> = {}) {
     duration_seconds: 3600,
   });
   const tx: Tx = { execute, getOptional, ...overrides };
-  const writeTransaction = vi.fn(
-    async (run: (t: Tx) => Promise<unknown>) => run(tx),
-  );
-  return { db: { writeTransaction }, execute: tx.execute, getOptional: tx.getOptional, writeTransaction };
+  const writeTransaction = vi.fn(async (run: (t: Tx) => Promise<unknown>) => run(tx));
+  // vi.fn() captures Promise<unknown>; cast to WriteTransactionDb so the mock
+  // satisfies the generic interface — runtime behaviour is identical.
+  const db = { writeTransaction } as unknown as WriteTransactionDb;
+  return { db, execute: tx.execute, getOptional: tx.getOptional, writeTransaction };
 }
 
 describe("completeWorkoutLocally", () => {
@@ -102,7 +103,7 @@ describe("completeWorkoutLocally", () => {
   it("rejects when the transaction throws and does not resolve", async () => {
     const boom = new Error("db offline");
     const writeTransaction = vi.fn().mockRejectedValue(boom);
-    const db = { writeTransaction };
+    const db = { writeTransaction } as unknown as WriteTransactionDb;
 
     await expect(
       completeWorkoutLocally(db, {

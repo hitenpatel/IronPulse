@@ -14,7 +14,7 @@ interface Tx {
   getOptional<T = unknown>(sql: string, params: unknown[]): Promise<T | null>;
 }
 
-interface WriteTransactionDb {
+export interface WriteTransactionDb {
   writeTransaction<T>(run: (tx: Tx) => Promise<T>): Promise<T>;
 }
 
