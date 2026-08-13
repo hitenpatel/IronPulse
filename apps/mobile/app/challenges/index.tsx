@@ -24,8 +24,8 @@ type Challenge = {
   name: string;
   type: string;
   target: number;
-  startsAt: string;
-  endsAt: string;
+  startsAt: Date;
+  endsAt: Date;
   participantCount: number;
   joined: boolean;
 };

@@ -33,7 +33,7 @@ type Conversation = {
   partnerName: string;
   partnerAvatarUrl: string | null;
   lastMessage: string;
-  lastMessageAt: string;
+  lastMessageAt: Date;
   unreadCount: number;
 };
 

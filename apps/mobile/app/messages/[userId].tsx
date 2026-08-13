@@ -35,8 +35,8 @@ type Message = {
   senderId: string;
   receiverId: string;
   content: string;
-  createdAt: string;
-  readAt: string | null;
+  createdAt: Date;
+  readAt: Date | null;
 };
 
 export default function MessageThreadScreen() {

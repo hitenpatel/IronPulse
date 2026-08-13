@@ -46,7 +46,7 @@ type Client = {
   athleteEmail: string;
   programName: string | null;
   status: string;
-  startedAt: string | null;
+  startedAt: Date | null;
 };
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number | string; label: string }) {

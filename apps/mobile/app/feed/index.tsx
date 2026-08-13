@@ -27,7 +27,7 @@ const colors = {
 type FeedItem = {
   id: string;
   type: string;
-  createdAt: string;
+  createdAt: Date;
   user: { name: string | null };
 };
 
