@@ -295,94 +295,21 @@ jobs:
           ADB_PIN: ${{ secrets.ADB_PIN }}
         shell: bash
         run: |
-          set -u   # NOT -e — adb/grep can return non-zero on transient state
-                   # and we don't want the whole step to silently die. Failures
-                   # at meaningful checkpoints are surfaced with explicit `exit 1`.
-          DEVICE=100.69.203.52:5555
-          # Daydream / screensaver completely off for the run — this was
-          # the run #48/49 failure: DreamActivity sat on top of the
-          # keyguard and ate the PIN keyevents. Disable AOD too; restored
-          # in "Restore device state".
-          adb -s $DEVICE shell settings put secure screensaver_enabled 0
-          adb -s $DEVICE shell settings put secure doze_enabled 0
-          adb -s $DEVICE shell settings put secure doze_always_on 0
-          adb -s $DEVICE shell svc power stayon true
-          adb -s $DEVICE shell settings put system screen_off_timeout 1800000
-          # Kill any active dream so it doesn't intercept keyevents.
-          adb -s $DEVICE shell am broadcast -a android.intent.action.STOP_DREAM || true
-          sleep 1
-          # KEYCODE_POWER (not WAKEUP) reliably transitions the Pixel from
-          # mWakefulness=Dozing → Awake. WAKEUP alone left it dozing.
-          # Wake until awake (max 3 attempts).
-          for _ in 1 2 3; do
-            adb -s $DEVICE shell input keyevent KEYCODE_POWER
-            sleep 1
-            if adb -s $DEVICE shell dumpsys power | grep -q "mWakefulness=Awake"; then break; fi
-          done
-          adb -s $DEVICE shell dumpsys power | grep mWakefulness | head -1
-          # Swipe-up to surface PIN entry / kick Extend Unlock.
-          adb -s $DEVICE shell input swipe 500 2000 500 500 300
-          # Poll up to 8s — Extend Unlock by trusted device/place is async.
-          STATE="locked"
-          for _ in 1 2 3 4 5 6 7 8; do
-            sleep 1
-            STATE=$(adb -s $DEVICE shell dumpsys window | grep -E "mDreamingLockscreen=" | head -1)
-            if echo "$STATE" | grep -q "mDreamingLockscreen=false"; then
-              break
-            fi
-          done
-          echo "lockscreen state after wait: $STATE"
-          if echo "$STATE" | grep -q "mDreamingLockscreen=true"; then
-            if [ -z "${ADB_PIN:-}" ]; then
-              echo "ERROR: lockscreen up + no ADB_PIN secret. Aborting."
-              exit 1
-            fi
-            echo "lockscreen still up — entering PIN"
-            adb -s $DEVICE shell am broadcast -a android.intent.action.STOP_DREAM || true
-            sleep 1
-            echo "[pin] re-waking via KEYCODE_POWER"
-            for _ in 1 2 3; do
-              adb -s $DEVICE shell input keyevent KEYCODE_POWER || echo "[pin] POWER keyevent returned non-zero"
-              sleep 1
-              WAKE_STATE=$(adb -s $DEVICE shell dumpsys power | grep mWakefulness= | head -1)
-              echo "[pin] wake state: $WAKE_STATE"
-              if echo "$WAKE_STATE" | grep -q "Awake"; then break; fi
-            done
-            echo "[pin] swiping up (slow, full-height)"
-            # Slower, longer swipe — keyguard sometimes ignores fast gestures.
-            adb -s $DEVICE shell input swipe 500 2100 500 200 800 || echo "[pin] swipe returned non-zero"
-            sleep 4
-            # Screenshot the screen state BEFORE typing — if PIN keypad isn't
-            # focused, this will show whatever screen IS focused.
-            adb -s $DEVICE exec-out screencap -p > pre-pin.png 2>/dev/null || true
-            ls -la pre-pin.png 2>/dev/null || true
-            echo "[pin] entering ${#ADB_PIN}-digit PIN"
-            # `input text` is blocked on Android 14+ secure keyguard — use
-            # per-digit KEYCODE_<n> events.
-            for (( i=0; i<${#ADB_PIN}; i++ )); do
-              D="${ADB_PIN:$i:1}"
-              adb -s $DEVICE shell input keyevent "KEYCODE_$D" || echo "[pin] digit $i keyevent returned non-zero"
-              sleep 0.2
-            done
-            # 4-digit PINs auto-submit on Pixel; longer PINs need ENTER.
-            if [ "${#ADB_PIN}" -gt 4 ]; then
-              echo "[pin] sending ENTER"
-              adb -s $DEVICE shell input keyevent KEYCODE_ENTER || echo "[pin] ENTER returned non-zero"
-            fi
-            sleep 3
-            STATE=$(adb -s $DEVICE shell dumpsys window | grep -E "mDreamingLockscreen=" | head -1 || echo "(no state)")
-            DREAM=$(adb -s $DEVICE shell dumpsys window | grep -E "mShowingDream=" | head -1 || echo "(no dream)")
-            RESUMED=$(adb -s $DEVICE shell dumpsys activity activities | grep -m1 topResumedActivity || echo "(no resumed)")
-            echo "[pin] after PIN: $STATE / $DREAM"
-            echo "[pin] resumed: $RESUMED"
-            if echo "$STATE" | grep -q "mDreamingLockscreen=true"; then
-              echo "ERROR: PIN didn't dismiss lockscreen. Aborting."
-              adb -s $DEVICE exec-out screencap -p > pin-debug.png 2>/dev/null || true
-              ls -la pin-debug.png 2>/dev/null || true
-              exit 1
-            fi
-            echo "[pin] lockscreen dismissed"
-          fi
+          set -u
+          # Shared device prep script (canonical copy: this repo's
+          # apps/mobile/scripts/adb-device-prep.sh; installed on the runner
+          # host at /home/ubuntu/stack/). Also used by RadioShake's nightly.
+          # It disables daydream/doze (a DreamActivity on top of the keyguard
+          # ate PIN keyevents in earlier runs), disables deviceidle (deep doze
+          # swallows wake keyevents outright), pins the screen on while
+          # charging via stay_on_while_plugged_in=7 so the phone cannot
+          # re-lock mid-suite, wakes with KEYCODE_WAKEUP then POWER, waits for
+          # async Extend Unlock, and falls back to a slow full-height swipe
+          # plus per-digit KEYCODE PIN entry with retries. Exits non-zero
+          # unless dumpsys trust reports deviceLocked=0. Undone in
+          # "Restore device state".
+          OUT_DIR="$PWD" ADB_PIN="${ADB_PIN:-}" \
+            bash /home/ubuntu/stack/adb-device-prep.sh prep 100.69.203.52:5555
 
       - name: Install fresh debug APK (com.mettlelift.app.e2e)
         run: |
@@ -537,12 +464,10 @@ jobs:
         if: always()
         run: |
           DEVICE=100.69.203.52:5555
-          # Re-enable screensaver and allow display to sleep
-          adb -s $DEVICE shell settings put secure screensaver_enabled 1 || true
-          adb -s $DEVICE shell svc power stayon false || true
-          # Restore default 30-second screen-off timeout (we pushed it to
-          # 30min in the wake step to survive PIN entry).
-          adb -s $DEVICE shell settings put system screen_off_timeout 30000 || true
+          # Re-enable screensaver + deviceidle, allow the display to sleep
+          # (including while charging), restore the 30s screen-off timeout —
+          # the shared script undoes exactly what its prep mode set.
+          bash /home/ubuntu/stack/adb-device-prep.sh restore $DEVICE || true
           # Maestro's setOrientation turns auto-rotate off to pin the rotation
           # and never turns it back on, so a flow that rotates leaves this phone
           # — the owner's daily driver — stuck in whatever orientation it ended
