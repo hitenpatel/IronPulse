@@ -80,6 +80,8 @@ interface FocusModeComposerProps {
   onAddExercise(): void;
   onCancel(): void;
   requestedFocusSetId?: string;
+  /** Optional — opens the template picker from the empty state secondary chip. */
+  onTemplates?(): void;
 }
 
 type SavingState = "idle" | "saving" | "slow" | "retry";
@@ -98,6 +100,7 @@ export function FocusModeComposer({
   onAddExercise,
   onCancel,
   requestedFocusSetId,
+  onTemplates,
 }: FocusModeComposerProps) {
   const db = usePowerSync();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -409,7 +412,13 @@ export function FocusModeComposer({
   const remainingRestSeconds = computeRemainingSeconds(restState, Date.now());
 
   if (exercises.length === 0) {
-    return <WorkoutEmptyState onAddExercise={onAddExercise} />;
+    return (
+      <WorkoutEmptyState
+        onAddExercise={onAddExercise}
+        onRecentExercises={onAddExercise}
+        onTemplates={onTemplates}
+      />
+    );
   }
 
   const focusedExerciseIndex = focusedExercise
