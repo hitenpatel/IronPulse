@@ -36,9 +36,24 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 function makeWorkouts(total: number, completed: number) {
   return {
     data: [
-      ...Array.from({ length: completed }, () => ({ completedAt: "2025-01-01" })),
-      ...Array.from({ length: total - completed }, () => ({ completedAt: null })),
+      ...Array.from({ length: completed }, () => ({
+        completedAt: new Date("2025-01-01"),
+        id: "00000000-0000-4000-8000-000000000000",
+        name: null,
+        startedAt: new Date("2025-01-01"),
+        durationSeconds: null,
+        _count: { workoutExercises: 0 },
+      })),
+      ...Array.from({ length: total - completed }, () => ({
+        completedAt: null,
+        id: "00000000-0000-4000-8000-000000000001",
+        name: null,
+        startedAt: new Date("2025-01-01"),
+        durationSeconds: null,
+        _count: { workoutExercises: 0 },
+      })),
     ],
+    nextCursor: null,
   };
 }
 
