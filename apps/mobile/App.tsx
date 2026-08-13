@@ -119,7 +119,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   MainTabs: undefined;
   // Workout
-  WorkoutActive: { workoutId: string };
+  WorkoutActive: { workoutId: string; requestedFocusSetId?: string };
   WorkoutAddExercise: { workoutId: string };
   WorkoutComplete: { workoutId: string };
   // Cardio

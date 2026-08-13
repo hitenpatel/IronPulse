@@ -79,6 +79,7 @@ interface FocusModeComposerProps {
   userId: string;
   onAddExercise(): void;
   onCancel(): void;
+  requestedFocusSetId?: string;
 }
 
 type SavingState = "idle" | "saving" | "slow" | "retry";
@@ -96,6 +97,7 @@ export function FocusModeComposer({
   userId,
   onAddExercise,
   onCancel,
+  requestedFocusSetId,
 }: FocusModeComposerProps) {
   const db = usePowerSync();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -112,8 +114,11 @@ export function FocusModeComposer({
     [sets],
   );
 
-  // Persisted focus/anchor from storage (loaded once on mount)
-  const [persistedFocusId, setPersistedFocusId] = useState<string | null>(null);
+  // Persisted focus/anchor from storage (loaded once on mount).
+  // requestedFocusSetId seeds the initial focus when returning from picker (AC #5).
+  const [persistedFocusId, setPersistedFocusId] = useState<string | null>(
+    requestedFocusSetId ?? null,
+  );
   const progressionAnchorRef = useRef<string | null>(null);
 
   const focusedSetId = useMemo(

@@ -16,6 +16,7 @@ import { useState } from "react";
 export default function ActiveWorkoutScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "WorkoutActive">>();
   const workoutId = route.params?.workoutId;
+  const requestedFocusSetId = route.params?.requestedFocusSetId;
   const { user } = useAuth();
 
   const {
@@ -70,6 +71,7 @@ export default function ActiveWorkoutScreen() {
         userId={userId}
         onAddExercise={handleAddExercise}
         onCancel={handleCancel}
+        requestedFocusSetId={requestedFocusSetId}
       />
 
       {/* RPE picker overlay */}
