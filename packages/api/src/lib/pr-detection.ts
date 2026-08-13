@@ -9,7 +9,7 @@ interface CompletedSet {
   };
 }
 
-interface NewPR {
+export interface NewPR {
   exerciseId: string;
   type: "1rm" | "volume";
   value: number;

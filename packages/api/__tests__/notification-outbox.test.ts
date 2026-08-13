@@ -11,6 +11,12 @@ import {
   MAX_ATTEMPTS,
 } from "../src/lib/notification-outbox";
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Extract SQL text from a Prisma tagged-template call arg (has `.sql`) or a plain string. */
+const sqlText = (value: unknown): string =>
+  (value as { sql?: string })?.sql ?? String(value);
+
 // ── Push mock ────────────────────────────────────────────────────────────────
 
 const mockSendPush = vi.fn();
@@ -98,7 +104,7 @@ describe("deliverPendingNotifications", () => {
 
     // Verify markSent was called with correct status update
     const executeRawCall = (db.$executeRaw as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(executeRawCall.sql ?? String(executeRawCall)).toContain("sent");
+    expect(sqlText(executeRawCall)).toContain("sent");
   });
 
   it("(b) transient push failure leaves the row retryable (advances availableAt)", async () => {
@@ -124,7 +130,7 @@ describe("deliverPendingNotifications", () => {
     // releaseWithError was called — status = 'failed', available_at advanced
     const executeRawSql = (db.$executeRaw as ReturnType<typeof vi.fn>).mock.calls;
     const releaseCall = executeRawSql.find((c: unknown[]) =>
-      (c[0]?.sql ?? String(c[0])).includes("available_at"),
+      sqlText(c[0]).includes("available_at"),
     );
     expect(releaseCall).toBeDefined();
   });
@@ -148,13 +154,13 @@ describe("deliverPendingNotifications", () => {
     // Should NOT advance available_at (dead-lettered)
     const executeCalls = (db.$executeRaw as ReturnType<typeof vi.fn>).mock.calls;
     const hasAvailableAtAdvance = executeCalls.some((c: unknown[]) =>
-      (c[0]?.sql ?? String(c[0])).includes("available_at"),
+      sqlText(c[0]).includes("available_at"),
     );
     expect(hasAvailableAtAdvance).toBe(false);
 
     // Should set status = 'failed' but without advancing available_at
     const failedCall = executeCalls.find((c: unknown[]) =>
-      (c[0]?.sql ?? String(c[0])).includes("failed"),
+      sqlText(c[0]).includes("failed"),
     );
     expect(failedCall).toBeDefined();
   });
@@ -192,7 +198,7 @@ describe("deliverPendingNotifications", () => {
     // Row is still retryable — available_at is advanced
     const executeCalls = (db.$executeRaw as ReturnType<typeof vi.fn>).mock.calls;
     const releaseCall = executeCalls.find((c: unknown[]) =>
-      (c[0]?.sql ?? String(c[0])).includes("available_at"),
+      sqlText(c[0]).includes("available_at"),
     );
     expect(releaseCall).toBeDefined();
 
@@ -247,7 +253,7 @@ describe("deliverPendingNotifications", () => {
     // markSent called
     const executeRawSql = (db.$executeRaw as ReturnType<typeof vi.fn>).mock.calls;
     const sentCall = executeRawSql.find((c: unknown[]) =>
-      (c[0]?.sql ?? String(c[0])).includes("sent"),
+      sqlText(c[0]).includes("sent"),
     );
     expect(sentCall).toBeDefined();
   });

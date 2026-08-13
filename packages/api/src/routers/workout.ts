@@ -17,6 +17,7 @@ import {
   registerWorkoutFinalization,
   processWorkoutFinalization,
 } from "../lib/workout-finalization";
+import type { NewPR } from "../lib/pr-detection";
 
 export const workoutRouter = createTRPCRouter({
   create: rateLimitedProcedure
@@ -405,7 +406,7 @@ export const workoutRouter = createTRPCRouter({
 
       const newPRs =
         finalization?.status === "completed" && finalization.result
-          ? ((finalization.result as { newPRs?: unknown[] }).newPRs ?? [])
+          ? ((finalization.result as { newPRs?: NewPR[] }).newPRs ?? [])
           : [];
 
       return { workout: workout!, newPRs };

@@ -1,11 +1,11 @@
 ---
 id: TASK-23.11
 title: 'Stand up a dev API + seeded auth for mobile E2E on 100.113.79.51:3000'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-08-12 20:09'
-updated_date: '2026-08-13 02:30'
+updated_date: '2026-08-13 05:36'
 labels:
   - api
   - infra
@@ -30,7 +30,7 @@ Provide a persistent dev API at :3000 with a seeded user (test@example.com / pas
 <!-- AC:BEGIN -->
 - [x] #1 curl http://100.113.79.51:3000/api/health returns 200
 - [x] #2 POST http://100.113.79.51:3000/api/auth/callback/credentials with test@example.com/password123 creates a session cookie
-- [ ] #3 Full maestro auth-signin flow via nightly-e2e.sh main suite passes end-to-end
+- [x] #3 Full maestro auth-signin flow via nightly-e2e.sh main suite passes end-to-end
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -45,4 +45,12 @@ Verified 2026-08-13:
 AC #3 (full maestro suite E2E) BLOCKED by external device state: Pixel 100.69.203.52 is tailscale-reachable (ping ok) but adb-over-wifi on :5555 returns 'Connection refused'. Wireless debugging needs to be re-enabled from the device (Settings → Developer options → Wireless debugging, or reissue 'adb tcpip 5555' from USB). Once device is back, rerun: cp apps/mobile/e2e/auth-signin.yaml /tmp/zor-e2e-run/ && sed -i 's/^appId: com.ironpulse.app$/appId: com.ironpulse.app.e2e/' /tmp/zor-e2e-run/auth-signin.yaml && maestro --device 100.69.203.52:5555 test /tmp/zor-e2e-run/auth-signin.yaml
 
 Session 2026-08-13: Pixel 100.69.203.52 tailscale-ok but adb :5555 Connection refused throughout. Cannot verify device-bound ACs this session. Reconnect steps: from device, Settings → System → Developer options → Wireless debugging toggle off/on; OR plug USB and run 'adb tcpip 5555' then unplug. After that, adb connect 100.69.203.52:5555 from this VM. Then rerun the relevant maestro suite.
+
+AC#3 verified 2026-08-13: reconnected device via adb tcpip 5555 (pinned port), fixed 'Invalid credentials' root cause (api test suites had wiped dev DB seed users — reseeded seed.ts + seed-dev.ts; auth.mobileSignIn curl returns JWT). Full maestro auth-signin flow passed on device: launchApp clearState/clearKeychain → email/password input → login-button → greeting visible. Exit 0.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dev API on :3000 with seeded auth for mobile E2E. Health 200 (db+redis via docker overlay; S3 optional), credentials login creates session, and full maestro auth-signin flow passes on-device against the e2e APK. Root-caused two blockers: bundle-ID drift (rebuilt e2e APK from app.config.js) and test-suite DB wipes (reseeded). systemd user service zor-dev-api.service registered for persistence.
+<!-- SECTION:FINAL_SUMMARY:END -->
