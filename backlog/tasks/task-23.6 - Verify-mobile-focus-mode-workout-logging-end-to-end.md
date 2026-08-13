@@ -4,7 +4,7 @@ title: Verify mobile focus-mode workout logging end to end
 status: To Do
 assignee: []
 created_date: '2026-08-09 03:28'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-08-13 02:30'
 labels:
   - mobile
   - test
@@ -45,3 +45,9 @@ Provide release-level evidence that the focus-mode workout flow remains correct 
 - [ ] #5 Existing stable Maestro identifiers are preserved and new reorderable entities use database-ID-based identifiers
 - [ ] #6 Regression evidence is recorded against every TASK-23 acceptance criterion before the parent task is finalized
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Session 2026-08-13: Pixel 100.69.203.52 tailscale-ok but adb :5555 Connection refused throughout. Cannot verify device-bound ACs this session. Reconnect steps: from device, Settings → System → Developer options → Wireless debugging toggle off/on; OR plug USB and run 'adb tcpip 5555' then unplug. After that, adb connect 100.69.203.52:5555 from this VM. Then rerun the relevant maestro suite.
+<!-- SECTION:NOTES:END -->

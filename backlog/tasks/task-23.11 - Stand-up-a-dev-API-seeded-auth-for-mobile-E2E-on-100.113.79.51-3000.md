@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-12 20:09'
-updated_date: '2026-08-13 01:57'
+updated_date: '2026-08-13 02:30'
 labels:
   - api
   - infra
@@ -43,4 +43,6 @@ Verified 2026-08-13:
 - Systemd user service /home/ubuntu/.config/systemd/user/zor-dev-api.service registered + enabled (linger=yes, survives logout). Brings up postgres+redis then runs pnpm dev. Not started in this session because a transient pnpm dev is already holding :3000; will pick up on next boot / when transient dies.
 
 AC #3 (full maestro suite E2E) BLOCKED by external device state: Pixel 100.69.203.52 is tailscale-reachable (ping ok) but adb-over-wifi on :5555 returns 'Connection refused'. Wireless debugging needs to be re-enabled from the device (Settings → Developer options → Wireless debugging, or reissue 'adb tcpip 5555' from USB). Once device is back, rerun: cp apps/mobile/e2e/auth-signin.yaml /tmp/zor-e2e-run/ && sed -i 's/^appId: com.ironpulse.app$/appId: com.ironpulse.app.e2e/' /tmp/zor-e2e-run/auth-signin.yaml && maestro --device 100.69.203.52:5555 test /tmp/zor-e2e-run/auth-signin.yaml
+
+Session 2026-08-13: Pixel 100.69.203.52 tailscale-ok but adb :5555 Connection refused throughout. Cannot verify device-bound ACs this session. Reconnect steps: from device, Settings → System → Developer options → Wireless debugging toggle off/on; OR plug USB and run 'adb tcpip 5555' then unplug. After that, adb connect 100.69.203.52:5555 from this VM. Then rerun the relevant maestro suite.
 <!-- SECTION:NOTES:END -->

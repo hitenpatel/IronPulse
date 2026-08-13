@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-09 03:52'
-updated_date: '2026-08-12 20:09'
+updated_date: '2026-08-13 02:30'
 labels:
   - mobile
   - test
@@ -94,4 +94,6 @@ Structural fix confirmed: correct APK on device (com.ironpulse.app.e2e installed
 Root cause of new failure: the E2E APK points at EXPO_PUBLIC_API_URL=http://100.113.79.51:3000 (this VM's tailscale IP per apps/mobile/eas.json line 14), but nothing binds :3000 here — connection refused. Login POST hits nowhere, no session, greeting never renders. Same class of gap as TASK-23.10 (no local dev Postgres). New follow-up needed to bring up a dev API + seeded auth for e2e.
 
 TASK-23.8 pipeline-repair scope met: the maestro runner now exercises real UI. API availability is a separate concern (TASK-23.11 covers it).
+
+Session 2026-08-13: Pixel 100.69.203.52 tailscale-ok but adb :5555 Connection refused throughout. Cannot verify device-bound ACs this session. Reconnect steps: from device, Settings → System → Developer options → Wireless debugging toggle off/on; OR plug USB and run 'adb tcpip 5555' then unplug. After that, adb connect 100.69.203.52:5555 from this VM. Then rerun the relevant maestro suite.
 <!-- SECTION:NOTES:END -->
