@@ -1,5 +1,5 @@
-import { useRef, useEffect } from "react";
-import { Text, Pressable, View, FlatList } from "react-native";
+import { useRef, useEffect, useState } from "react";
+import { Alert, Text, Pressable, View, FlatList, ActivityIndicator } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { usePowerSync } from "@powersync/react";
 import { useNavigation } from "@react-navigation/native";
@@ -8,8 +8,11 @@ import type { RootStackParamList } from "../../App";
 import { Play, FileText } from "lucide-react-native";
 import { useTemplates, type TemplateRow } from "@zor/sync";
 import { useAuth } from "@/lib/auth";
-import { getWorkoutName } from "@/lib/workout-utils";
-import { randomUUID } from "@/lib/uuid";
+import {
+  startEmptyWorkoutAtomic,
+  startWorkoutFromTemplateAtomic,
+  DuplicateActiveWorkoutError,
+} from "@/lib/workout-start";
 
 interface Props {
   open: boolean;
@@ -22,6 +25,7 @@ export function TemplatePicker({ open, onClose }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const { data: templates } = useTemplates();
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -31,60 +35,64 @@ export function TemplatePicker({ open, onClose }: Props) {
     }
   }, [open]);
 
-  async function createEmptyWorkout() {
-    const id = randomUUID();
-    const now = new Date().toISOString();
-    await db.execute(
-      `INSERT INTO workouts (id, user_id, name, started_at, created_at) VALUES (?, ?, ?, ?, ?)`,
-      [id, user!.id, getWorkoutName(), now, now]
+  async function handleDuplicate(
+    retryFn: (discardExisting: boolean) => Promise<void>,
+    workoutName: string,
+  ) {
+    Alert.alert(
+      "Active Workout",
+      `You have "${workoutName}" in progress. Discard it and start a new one?`,
+      [
+        { text: "Keep Active", style: "cancel" },
+        {
+          text: "Discard & Start New",
+          style: "destructive",
+          onPress: () => retryFn(true),
+        },
+      ],
     );
-    onClose();
-    navigation.navigate("WorkoutActive", { workoutId: id });
   }
 
-  async function createFromTemplate(template: TemplateRow) {
-    const workoutId = randomUUID();
-    const now = new Date().toISOString();
+  async function createEmptyWorkout(discardExisting = false) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { workoutId } = await startEmptyWorkoutAtomic(db as any, user!.id, {
+        discardExisting,
+      });
+      onClose();
+      navigation.navigate("WorkoutActive", { workoutId });
+    } catch (err) {
+      if (err instanceof DuplicateActiveWorkoutError) {
+        handleDuplicate(createEmptyWorkout, err.existingWorkoutId);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
-    await db.execute(
-      `INSERT INTO workouts (id, user_id, name, started_at, template_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-      [workoutId, user!.id, template.name, now, template.id, now]
-    );
-
-    const templateExercises = await db.execute(
-      `SELECT id, exercise_id, "order", notes FROM template_exercises WHERE template_id = ? ORDER BY "order"`,
-      [template.id]
-    );
-
-    for (const te of templateExercises.rows?._array ?? []) {
-      const weId = randomUUID();
-      await db.execute(
-        `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes) VALUES (?, ?, ?, ?, ?)`,
-        [weId, workoutId, te.exercise_id, te.order, te.notes]
+  async function createFromTemplate(template: TemplateRow, discardExisting = false) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { workoutId } = await startWorkoutFromTemplateAtomic(
+        db as any,
+        user!.id,
+        template.id,
+        { discardExisting },
       );
-
-      const templateSets = await db.execute(
-        `SELECT set_number, target_reps, target_weight_kg, type FROM template_sets WHERE template_exercise_id = ? ORDER BY set_number`,
-        [te.id]
-      );
-
-      for (const ts of templateSets.rows?._array ?? []) {
-        await db.execute(
-          `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, weight_kg, reps, completed) VALUES (?, ?, ?, ?, ?, ?, 0)`,
-          [
-            randomUUID(),
-            weId,
-            ts.set_number,
-            ts.type,
-            ts.target_weight_kg,
-            ts.target_reps,
-          ]
+      onClose();
+      navigation.navigate("WorkoutActive", { workoutId });
+    } catch (err) {
+      if (err instanceof DuplicateActiveWorkoutError) {
+        handleDuplicate(
+          (discard) => createFromTemplate(template, discard),
+          err.existingWorkoutId,
         );
       }
+    } finally {
+      setBusy(false);
     }
-
-    onClose();
-    navigation.navigate("WorkoutActive", { workoutId });
   }
 
   const hasTemplates = templates.length > 0;
@@ -121,10 +129,16 @@ export function TemplatePicker({ open, onClose }: Props) {
             borderRadius: 12,
             backgroundColor: "hsl(210, 40%, 98%)",
             padding: 16,
+            opacity: busy ? 0.6 : 1,
           }}
-          onPress={createEmptyWorkout}
+          onPress={() => createEmptyWorkout()}
+          disabled={busy}
         >
-          <Play size={20} color="hsl(222.2, 47.4%, 11.2%)" />
+          {busy ? (
+            <ActivityIndicator size="small" color="hsl(222.2, 47.4%, 11.2%)" />
+          ) : (
+            <Play size={20} color="hsl(222.2, 47.4%, 11.2%)" />
+          )}
           <Text
             style={{
               color: "hsl(222.2, 47.4%, 11.2%)",
@@ -168,8 +182,10 @@ export function TemplatePicker({ open, onClose }: Props) {
                     backgroundColor: "hsl(216, 34%, 17%)",
                     padding: 16,
                     marginBottom: 8,
+                    opacity: busy ? 0.6 : 1,
                   }}
                   onPress={() => createFromTemplate(item)}
+                  disabled={busy}
                 >
                   <FileText size={20} color="hsl(213, 31%, 91%)" />
                   <View style={{ flex: 1 }}>
