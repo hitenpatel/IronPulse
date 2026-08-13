@@ -3,11 +3,9 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Svg, { Circle } from "react-native-svg";
 import {
   Bell,
   Flame,
-  Play,
   Dumbbell,
   Activity,
 } from "lucide-react-native";
@@ -15,8 +13,7 @@ import { usePowerSync, useQuery } from "@powersync/react";
 
 import { useAuth } from "@/lib/auth";
 import { trpc } from "@/lib/trpc";
-import { useWorkouts, useCardioSessions } from "@zor/sync";
-import { randomUUID } from "@/lib/uuid";
+import { useWorkouts, useCardioSessions, useLatestIncompleteWorkout } from "@zor/sync";
 import { formatElapsed } from "@/lib/workout-utils";
 import {
   currentWeekRange,
@@ -51,33 +48,10 @@ import Animated, {
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { SyncIndicator } from "@/components/layout/sync-indicator";
-import { FirstWorkoutTutorial } from "@/components/onboarding/first-workout-tutorial";
+import { WorkoutEntryCard } from "@/components/workout/workout-entry-card";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-function workoutNameForTimeOfDay(now: Date = new Date()): string {
-  const h = now.getHours();
-  if (h < 12) return "Morning Workout";
-  if (h < 17) return "Afternoon Workout";
-  return "Evening Workout";
-}
-
-/** Concentric circle decoration used on the Next Up hero card. */
-function ConcentricDeco() {
-  return (
-    <Svg
-      width={120}
-      height={120}
-      viewBox="0 0 100 100"
-      style={{ position: "absolute", right: -14, top: -14, opacity: 0.08 }}
-    >
-      <Circle cx="50" cy="50" r="40" stroke={colors.blue} strokeWidth={1} fill="none" />
-      <Circle cx="50" cy="50" r="30" stroke={colors.blue} strokeWidth={1} fill="none" />
-      <Circle cx="50" cy="50" r="20" stroke={colors.blue} strokeWidth={1} fill="none" />
-    </Svg>
-  );
-}
 
 /** 3×7 grid of 6px cells, amber intensity per day. */
 function StreakHeatmap({ data }: { data: Array<{ intensity: number; count: number }> }) {
@@ -126,11 +100,21 @@ export default function DashboardScreen() {
   const db = usePowerSync();
   const { data: workouts } = useWorkouts();
   const { data: cardioSessions } = useCardioSessions();
+  const { data: incompleteRows } = useLatestIncompleteWorkout();
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  // Local dismissal flag so the banner disappears immediately on tap, even
-  // before the server round-trip completes.
+  // Local dismissal flag so the first-workout banner disappears immediately on tap.
   const [tutorialDismissed, setTutorialDismissed] = useState(false);
+
+  // Active workout — newest incomplete row (nil when user has no active session).
+  const activeWorkoutRow = incompleteRows?.[0] ?? null;
+  const activeWorkout = activeWorkoutRow
+    ? {
+        id: activeWorkoutRow.id,
+        name: activeWorkoutRow.name ?? "Active Workout",
+        startedAt: activeWorkoutRow.started_at,
+      }
+    : null;
 
   // Parallax — Next-Up hero drifts up slightly and fades as the user scrolls.
   const scrollY = useSharedValue(0);
@@ -240,35 +224,17 @@ export default function DashboardScreen() {
     return items.slice(0, 5);
   }, [workouts, cardioSessions]);
 
-  const handleStartWorkout = useCallback(async () => {
-    const name = workoutNameForTimeOfDay();
-    try {
-      const workoutId = randomUUID();
-      const now = new Date().toISOString();
-      await db.execute(
-        `INSERT INTO workouts (id, user_id, name, started_at, created_at) VALUES (?, ?, ?, ?, ?)`,
-        [workoutId, user!.id, name, now, now],
-      );
-      navigation.navigate("WorkoutActive", { workoutId });
-    } catch {
-      try {
-        const result = await trpc.workout.create.mutate({ name });
-        navigation.navigate("WorkoutActive", { workoutId: result.workout.id });
-      } catch {
-        // surfaced to user elsewhere
-      }
-    }
-  }, [db, user, navigation]);
-
   const firstName = user?.name?.split(" ")[0] ?? "Athlete";
   const timeDuration = compactDuration(weeklySummary.totalSeconds);
 
-  const showFirstWorkoutTutorial =
+  // Show first-workout guidance when no workouts exist and not dismissed.
+  const showFirstWorkoutCard =
     !tutorialDismissed &&
     user?.firstWorkoutTutorialDismissed !== true &&
-    (workouts?.length ?? 0) === 0;
+    (workouts?.length ?? 0) === 0 &&
+    !activeWorkout;
 
-  const handleDismissTutorial = useCallback(async () => {
+  const handleDismissFirstWorkout = useCallback(async () => {
     setTutorialDismissed(true);
     try {
       await trpc.user.updateProfile.mutate({
@@ -359,93 +325,18 @@ export default function DashboardScreen() {
           </Text>
         </Animated.View>
 
-        {/* First-workout tutorial — shown once, until they either tap start or dismiss */}
-        {showFirstWorkoutTutorial && (
-          <FirstWorkoutTutorial
-            onStart={handleStartWorkout}
-            onDismiss={handleDismissTutorial}
-          />
-        )}
-
-        {/* Next Up hero — parallax drift + fade on scroll */}
+        {/* Single workout entry card — adapts to active / first-workout / default */}
         <Animated.View
           entering={FadeInDown.delay(80).duration(500)}
           style={heroParallaxStyle}
         >
-        <Pressable testID="next-up-hero" onPress={handleStartWorkout}>
-          <View
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              borderWidth: 1,
-              borderColor: colors.blueSoft,
-              backgroundColor: colors.blueSoft,
-              borderRadius: 16,
-              padding: 14,
-              marginBottom: 12,
-            }}
-          >
-            <ConcentricDeco />
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 10,
-              }}
-            >
-              <View
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: colors.blue,
-                }}
-              />
-              <UppercaseLabel color={colors.blue2}>
-                Next up · fresh session
-              </UppercaseLabel>
-            </View>
-            <Text
-              style={{
-                fontFamily: fonts.displaySemi,
-                fontSize: 22,
-                fontWeight: "600",
-                letterSpacing: -0.5,
-                color: colors.text,
-                marginBottom: 2,
-              }}
-            >
-              {workoutNameForTimeOfDay()}
-            </Text>
-            <Text style={{ color: colors.text3, fontSize: 11.5, marginBottom: 14, fontFamily: fonts.body }}>
-              Tap to start logging
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                alignSelf: "flex-start",
-                backgroundColor: colors.blue,
-                paddingVertical: 10,
-                paddingHorizontal: 14,
-                borderRadius: radii.button,
-              }}
-            >
-              <Play size={14} color={colors.blueInk} />
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemi,
-                  fontSize: 13,
-                  color: colors.blueInk,
-                }}
-              >
-                Start workout
-              </Text>
-            </View>
-          </View>
-        </Pressable>
+          <WorkoutEntryCard
+            db={db as any}
+            userId={user?.id ?? ""}
+            activeWorkout={activeWorkout}
+            isFirstWorkout={showFirstWorkoutCard}
+            onDismissFirstWorkout={handleDismissFirstWorkout}
+          />
         </Animated.View>
 
         {/* Streak */}
