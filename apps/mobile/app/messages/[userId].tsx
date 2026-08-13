@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +9,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../App";
 import { useAuth } from "@/lib/auth";
@@ -40,8 +41,13 @@ type Message = {
 
 export default function MessageThreadScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "MessageThread">>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const userId = route.params?.userId;
   const { user } = useAuth();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: "Chat" });
+  }, [navigation]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -119,8 +125,6 @@ export default function MessageThreadScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <Stack.Screen options={{ title: "Chat" }} />
-
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}

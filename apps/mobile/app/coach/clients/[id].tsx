@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -57,6 +57,10 @@ export default function ClientDetailScreen() {
   const [progress, setProgress] = useState<ClientProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: "Client Progress" });
+  }, [navigation]);
+
   const fetchProgress = useCallback(async () => {
     if (!id) return;
     try {
@@ -91,7 +95,6 @@ export default function ClientDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen options={{ title: "Client Progress" }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {/* Client avatar + name header */}
         <View style={{ alignItems: "center", marginBottom: 20 }}>

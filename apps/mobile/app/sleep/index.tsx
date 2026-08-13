@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 import Svg, { Rect } from "react-native-svg";
 import { Moon, Plus, Trash2 } from "lucide-react-native";
 
@@ -46,7 +48,7 @@ function formatTime(iso: Date | string | null | undefined): string {
 type SleepLogs = Awaited<ReturnType<typeof trpc.sleep.listSleep.query>>;
 
 export default function SleepScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [logs, setLogs] = useState<SleepLogs["logs"]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -392,7 +394,7 @@ function SleepEmptyCta({
   navigation,
   onLogManually,
 }: {
-  navigation: ReturnType<typeof useNavigation>;
+  navigation: NativeStackNavigationProp<RootStackParamList>;
   onLogManually: () => void;
 }) {
   return (

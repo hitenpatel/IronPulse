@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -59,6 +59,22 @@ export default function MessagesScreen() {
     fetchConversations();
   }, [fetchConversations]);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "Messages",
+      headerRight: isCoach
+        ? () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("BroadcastMessage")}
+              style={{ marginRight: 4 }}
+            >
+              <Radio size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [navigation, isCoach]);
+
   if (loading) {
     return (
       <View
@@ -77,21 +93,6 @@ export default function MessagesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen
-        options={{
-          title: "Messages",
-          headerRight: isCoach
-            ? () => (
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("BroadcastMessage")}
-                  style={{ marginRight: 4 }}
-                >
-                  <Radio size={22} color={colors.primary} />
-                </TouchableOpacity>
-              )
-            : undefined,
-        }}
-      />
 
       {conversations.length === 0 ? (
         <View
