@@ -8,6 +8,7 @@
  */
 
 import type { ParsedSetDraft } from "./workout-set-draft";
+import { randomUUID } from "./uuid";
 
 export interface WorkoutDatabase {
   writeTransaction(
@@ -186,4 +187,74 @@ export async function flushDraftsAndFinish(
       [completedAt.toISOString(), durationSeconds, workoutId],
     );
   });
+}
+
+/**
+ * Atomically insert a batch of exercises + their first sets into a workout.
+ *
+ * AC #3: everything inside a single writeTransaction. If any insert throws,
+ * the whole batch rolls back — zero workout_exercises rows land for that batch.
+ *
+ * AC #4: duplicate IDs within the batch are rejected (caller should use
+ * dedupeSelection first, but this function also filters to be safe).
+ *
+ * Returns the workout_exercise id and first set id for the FIRST exercise
+ * in selection order — used by the focus screen to scroll to it.
+ */
+export async function addExercisesAtomic(
+  db: WorkoutDatabase,
+  workoutId: string,
+  selectedExerciseIds: string[],
+): Promise<{ firstWorkoutExerciseId: string; firstSetId: string }> {
+  // Dedup within the batch while preserving order
+  const seen = new Set<string>();
+  const dedupedIds = selectedExerciseIds.filter((id) => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+
+  if (dedupedIds.length === 0) {
+    throw new Error("addExercisesAtomic: no exercise IDs provided");
+  }
+
+  let firstWorkoutExerciseId = "";
+  let firstSetId = "";
+
+  await db.writeTransaction(async (tx) => {
+    // Query current max order so new exercises come after existing ones
+    const orderResult = await tx.execute(
+      `SELECT COALESCE(MAX("order"), 0) AS max_order FROM workout_exercises WHERE workout_id = ?`,
+      [workoutId],
+    );
+    const rows = (orderResult as any)?.rows?._array ?? (orderResult as any)?.rows ?? [];
+    const baseOrder: number =
+      rows.length > 0 ? ((rows[0] as any)?.max_order ?? 0) : 0;
+
+    for (let i = 0; i < dedupedIds.length; i++) {
+      const exerciseId = dedupedIds[i];
+      const weId = randomUUID();
+      const setId = randomUUID();
+      const order = baseOrder + i + 1;
+
+      await tx.execute(
+        `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes)
+         VALUES (?, ?, ?, ?, NULL)`,
+        [weId, workoutId, exerciseId, order],
+      );
+
+      await tx.execute(
+        `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, weight_kg, reps, rpe, completed)
+         VALUES (?, ?, 1, NULL, NULL, NULL, 0)`,
+        [setId, weId],
+      );
+
+      if (i === 0) {
+        firstWorkoutExerciseId = weId;
+        firstSetId = setId;
+      }
+    }
+  });
+
+  return { firstWorkoutExerciseId, firstSetId };
 }
