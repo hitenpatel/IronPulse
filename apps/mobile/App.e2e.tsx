@@ -64,7 +64,8 @@ function E2ELoginScreen({ navigation }: any) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ json: { email, password } }),
       });
-      const data = await resp.json();
+      // as unknown as any: resp.json() returns {} in RN types; shape is tRPC envelope
+      const data = await resp.json() as unknown as any;
       const result = data?.result?.data?.json;
       if (!result?.token) throw new Error(data?.error?.json?.message || "Login failed");
       await auth.setAuthDirect(result.token, result.user);
@@ -207,7 +208,8 @@ function E2ESignupScreen({ navigation }: any) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ json: { name, email, password: pwd } }),
       });
-      const data = await resp.json();
+      // as unknown as any: resp.json() returns {} in RN types; shape is tRPC envelope
+      const data = await resp.json() as unknown as any;
       const result = data?.result?.data?.json;
       if (result?.token) {
         await setAuthDirect(result.token, result.user);
@@ -219,7 +221,8 @@ function E2ESignupScreen({ navigation }: any) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ json: { email, password: pwd } }),
       });
-      const loginData = await loginResp.json();
+      // as unknown as any: resp.json() returns {} in RN types; shape is tRPC envelope
+      const loginData = await loginResp.json() as unknown as any;
       const loginResult = loginData?.result?.data?.json;
       if (loginResult?.token) {
         await setAuthDirect(loginResult.token, loginResult.user);
@@ -1028,22 +1031,22 @@ function MainTabs() {
       <Tab.Screen
         name="Home"
         component={E2EDashboard}
-        options={{ tabBarTestID: "tab-home", tabBarLabel: "Home", tabBarAccessibilityLabel: "Home" }}
+        options={{ tabBarButtonTestID: "tab-home", tabBarLabel: "Home", tabBarAccessibilityLabel: "Home" }}
       />
       <Tab.Screen
         name="Stats"
         component={E2EStatsScreen}
-        options={{ tabBarTestID: "tab-stats", tabBarLabel: "Stats", tabBarAccessibilityLabel: "Stats" }}
+        options={{ tabBarButtonTestID: "tab-stats", tabBarLabel: "Stats", tabBarAccessibilityLabel: "Stats" }}
       />
       <Tab.Screen
         name="Exercises"
         component={E2EExercisesScreen}
-        options={{ tabBarTestID: "tab-exercises", tabBarLabel: "Exercises", tabBarAccessibilityLabel: "Exercises" }}
+        options={{ tabBarButtonTestID: "tab-exercises", tabBarLabel: "Exercises", tabBarAccessibilityLabel: "Exercises" }}
       />
       <Tab.Screen
         name="Profile"
         component={E2EProfileScreen}
-        options={{ tabBarTestID: "tab-profile", tabBarLabel: "Profile", tabBarAccessibilityLabel: "Profile" }}
+        options={{ tabBarButtonTestID: "tab-profile", tabBarLabel: "Profile", tabBarAccessibilityLabel: "Profile" }}
       />
     </Tab.Navigator>
   );
