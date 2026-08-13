@@ -37,7 +37,13 @@ export function useNotificationDeepLink() {
     // Handle notification tap when app is in background or killed
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const data = response.notification.request.content.data;
+        // Notification payloads arrive as JSON blobs; the shape is unknown at
+        // compile time so we cross the JSON boundary with unknown → specific.
+        const data = response.notification.request.content.data as unknown as {
+          screen?: string;
+          params?: Record<string, unknown>;
+          path?: string;
+        };
 
         // New format: { screen, params }
         if (data?.screen) {
@@ -47,7 +53,7 @@ export function useNotificationDeepLink() {
 
         // Legacy format: { path }
         if (data?.path) {
-          const path = data.path as string;
+          const path = data.path;
 
           // Check for parameterized paths like /workout/active?workoutId=xxx
           if (path.startsWith("/workout/active")) {
