@@ -179,16 +179,16 @@ jobs:
       - name: Install workspace dependencies
         run: |
           set -eu
-          # Pull in @mettlelift/mobile and all its workspace dependencies
+          # Pull in @zor/mobile and all its workspace dependencies
           # (packages/shared, packages/api-types, etc.) so that the Expo
           # prebuild has every import available.
-          pnpm install --frozen-lockfile --filter @mettlelift/mobile...
+          pnpm install --frozen-lockfile --filter @zor/mobile...
 
       - name: Expo prebuild (android, e2e variant)
         run: |
           set -eu
-          # EXPO_PUBLIC_E2E=1 causes app.config.ts to flip applicationId to
-          # com.mettlelift.app.e2e and the app name to "Mettle Lift E2E",
+          # EXPO_PUBLIC_E2E=1 causes app.config.js to flip applicationId to
+          # com.ironpulse.app.e2e and the app name to "Zor E2E",
           # which coexists with the prod install on the Pixel.
           # Do NOT set bare E2E=1 — that triggers metro's App.e2e.tsx mock +
           # PowerSync stub (metro.config.js line 23), producing a fake app
@@ -198,7 +198,7 @@ jobs:
           EXPO_PUBLIC_API_URL=https://staging.mettlelift.hiten-patel.co.uk \
             npx expo prebuild --platform android --clean --no-install
 
-      - name: Build debug APK (com.mettlelift.app.e2e)
+      - name: Build debug APK (com.ironpulse.app.e2e)
         run: |
           set -eu
           cd apps/mobile/android
@@ -247,7 +247,7 @@ jobs:
           while [ "$waited" -lt "$MAX_WAIT" ]; do
             if [ -f "$LOCK_DIR/owner" ] && [ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" = "radioshake" ]; then
               :
-            elif pgrep -af "maestro.*com\.mettlelift" >/dev/null 2>&1; then
+            elif pgrep -af "maestro.*com\.ironpulse" >/dev/null 2>&1; then
               # Belt-and-braces: block if a previous Zor maestro is still running
               :
             else
@@ -311,7 +311,7 @@ jobs:
           OUT_DIR="$PWD" ADB_PIN="${ADB_PIN:-}" \
             bash /home/ubuntu/stack/adb-device-prep.sh prep 100.69.203.52:5555
 
-      - name: Install fresh debug APK (com.mettlelift.app.e2e)
+      - name: Install fresh debug APK (com.ironpulse.app.e2e)
         run: |
           set -eu
           DEVICE=100.69.203.52:5555
@@ -321,10 +321,10 @@ jobs:
           # already on the phone (dev's local keystore, previous runner's
           # keystore, etc). Uninstall first to clear the signature mismatch;
           # this is a test phone so the per-app data loss is fine.
-          adb -s $DEVICE uninstall com.mettlelift.app.e2e || true
+          adb -s $DEVICE uninstall com.ironpulse.app.e2e || true
           # -t allows test-only flag; -g pre-grants all dangerous perms.
           adb -s $DEVICE install -t -g "$APK"
-          INSTALLED=$(adb -s $DEVICE shell dumpsys package com.mettlelift.app.e2e | awk -F= '/versionName=/{print $2; exit}')
+          INSTALLED=$(adb -s $DEVICE shell dumpsys package com.ironpulse.app.e2e | awk -F= '/versionName=/{print $2; exit}')
           echo "Installed versionName: $INSTALLED"
           # `-g` on `adb install` skips POST_NOTIFICATIONS on Android 13+ (the
           # runtime model treats it as user-only). Explicitly grant every perm
@@ -339,15 +339,15 @@ jobs:
             android.permission.READ_MEDIA_IMAGES \
             android.permission.ACTIVITY_RECOGNITION \
             android.permission.BODY_SENSORS; do
-            adb -s $DEVICE shell pm grant com.mettlelift.app.e2e "$PERM" || true
+            adb -s $DEVICE shell pm grant com.ironpulse.app.e2e "$PERM" || true
           done
 
       - name: Preflight — app launches without crashing
         run: |
           set -eu
           DEVICE=100.69.203.52:5555
-          adb -s $DEVICE shell am force-stop com.mettlelift.app.e2e
-          adb -s $DEVICE shell monkey -p com.mettlelift.app.e2e -c android.intent.category.LAUNCHER 1
+          adb -s $DEVICE shell am force-stop com.ironpulse.app.e2e
+          adb -s $DEVICE shell monkey -p com.ironpulse.app.e2e -c android.intent.category.LAUNCHER 1
           # Give React Native / Hermes time to lay out; then check the resumed activity.
           # If a permission dialog popped (despite the explicit pm grants),
           # dismiss it once and re-check — the dialog is proof the app is alive.
@@ -360,7 +360,7 @@ jobs:
             RESUMED=$(adb -s $DEVICE shell dumpsys activity activities | grep -m1 ResumedActivity | head -1)
             echo "Resumed (after BACK): $RESUMED"
           fi
-          if ! echo "$RESUMED" | grep -q "com.mettlelift.app.e2e"; then
+          if ! echo "$RESUMED" | grep -q "com.ironpulse.app.e2e"; then
             echo "ERROR: e2e app is not the resumed activity — launch likely crashed. Aborting nightly."
             exit 1
           fi
@@ -390,11 +390,11 @@ jobs:
           echo "Media volume after mute attempt:"
           adb -s $DEVICE shell cmd media_session volume --stream 3 --get || true
 
-      - name: Run E2E flows against coexist build (com.mettlelift.app.e2e)
+      - name: Run E2E flows against coexist build (com.ironpulse.app.e2e)
         id: e2e_main
         run: |
           set +e
-          # The committed flow files use `appId: com.mettlelift.app` (the
+          # The committed flow files use `appId: com.ironpulse.app` (the
           # shipping package). At run time we need to drive the .e2e coexist
           # build instead. Mirror the approach in apps/mobile/scripts/nightly-e2e.sh:
           # copy flows into a temp dir, then sed-rewrite the appId line in each
@@ -403,14 +403,14 @@ jobs:
           RUN_DIR=/tmp/zor-e2e-run
           rm -rf "$RUN_DIR"; mkdir -p "$RUN_DIR"
           cp apps/mobile/e2e/*.yaml "$RUN_DIR"/
-          sed -i 's/^appId: com\.mettlelift\.app$/appId: com.mettlelift.app.e2e/' "$RUN_DIR"/*.yaml
+          sed -i 's/^appId: com\.ironpulse\.app$/appId: com.ironpulse.app.e2e/' "$RUN_DIR"/*.yaml
 
           PASS=0; FAIL=0; FAILED_FLOWS=""
           for flow in apps/mobile/e2e/*.yaml; do
             name=$(basename "$flow")
             tmp_flow="$RUN_DIR/$name"
             echo "::group::$name"
-            adb -s 100.69.203.52:5555 shell am force-stop com.mettlelift.app.e2e
+            adb -s 100.69.203.52:5555 shell am force-stop com.ironpulse.app.e2e
             maestro --device 100.69.203.52:5555 test "$tmp_flow"
             if [ $? -eq 0 ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED_FLOWS="$FAILED_FLOWS $name"; fi
             echo "::endgroup::"
@@ -419,18 +419,18 @@ jobs:
           echo "e2e_fail=$FAIL" >> "$GITHUB_OUTPUT"
           echo "e2e_failed_flows=$FAILED_FLOWS" >> "$GITHUB_OUTPUT"
 
-      - name: Run smoke flows against shipping build (com.mettlelift.app)
+      - name: Run smoke flows against shipping build (com.ironpulse.app)
         id: e2e_smoke
         run: |
           set +e
-          # Smoke flows are committed against com.mettlelift.app (the shipping
+          # Smoke flows are committed against com.ironpulse.app (the shipping
           # build) directly — no appId rewrite needed. This validates the literal
           # store artifact boots + authenticates on the real device.
           # The shipping build must already be installed by the developer (Play
           # release channel) — CI does not build it. Skip if absent so the
           # nightly still reports coexist e2e results.
-          if ! adb -s 100.69.203.52:5555 shell pm list packages | grep -q '^package:com.mettlelift.app$'; then
-            echo "::warning::com.mettlelift.app (shipping build) not installed — skipping smoke flows."
+          if ! adb -s 100.69.203.52:5555 shell pm list packages | grep -q '^package:com.ironpulse.app$'; then
+            echo "::warning::com.ironpulse.app (shipping build) not installed — skipping smoke flows."
             echo "smoke_pass=0" >> "$GITHUB_OUTPUT"
             echo "smoke_fail=0" >> "$GITHUB_OUTPUT"
             echo "smoke_failed_flows=" >> "$GITHUB_OUTPUT"
@@ -440,7 +440,7 @@ jobs:
           for flow in apps/mobile/e2e-smoke/*.yaml; do
             name=$(basename "$flow")
             echo "::group::smoke/$name"
-            adb -s 100.69.203.52:5555 shell am force-stop com.mettlelift.app
+            adb -s 100.69.203.52:5555 shell am force-stop com.ironpulse.app
             maestro --device 100.69.203.52:5555 test "$flow"
             if [ $? -eq 0 ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED_FLOWS="$FAILED_FLOWS $name"; fi
             echo "::endgroup::"
