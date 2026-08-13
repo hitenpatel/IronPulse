@@ -108,6 +108,63 @@ jest.mock("../../../components/workout/progress-dots", () => ({
 
 jest.mock("lucide-react-native", () => ({
   Plus: () => null,
+  X: () => null,
+}));
+
+// ── Mock new focus-mode components ─────────────────────────────────────────
+jest.mock("../../../components/workout/workout-session-header", () => ({
+  WorkoutSessionHeader: ({ name, onCancel, onFinish, onNameChange }: any) => {
+    const { View, Text, Pressable } = require("react-native");
+    return (
+      <View>
+        <Text testID="workout-name">{name}</Text>
+        <Pressable testID="cancel-btn" onPress={onCancel} accessibilityRole="button" accessibilityLabel="Cancel workout">
+          <Text>Cancel</Text>
+        </Pressable>
+        <Pressable testID="finish-btn" onPress={onFinish} accessibilityRole="button" accessibilityLabel="Finish workout">
+          <Text>Finish</Text>
+        </Pressable>
+        <Pressable testID="rename-btn" onPress={() => onNameChange("New Name")} accessibilityRole="button" accessibilityLabel="Rename workout">
+          <Text>Rename</Text>
+        </Pressable>
+      </View>
+    );
+  },
+}));
+
+jest.mock("../../../components/workout/focus-mode-composer", () => ({
+  FocusModeComposer: ({ exercises, onAddExercise }: any) => {
+    const { View, Text, Pressable } = require("react-native");
+    return (
+      <View testID="focus-mode-composer">
+        {(exercises ?? []).map((ex: any) => (
+          <View key={ex.id}>
+            <Text testID={`exercise-${ex.exercise_name}`}>{ex.exercise_name}</Text>
+            <Text testID="active-set-id">set-42</Text>
+          </View>
+        ))}
+        <Pressable testID="add-exercise-button" onPress={onAddExercise} accessibilityLabel="Add exercise" accessibilityRole="button">
+          <Text>Add Exercise</Text>
+        </Pressable>
+      </View>
+    );
+  },
+}));
+
+jest.mock("../../../lib/workout-session-storage", () => ({
+  loadSessionState: jest.fn().mockResolvedValue(null),
+  saveSessionState: jest.fn().mockResolvedValue(undefined),
+  clearSessionState: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: jest.fn(() => ({ top: 0, bottom: 0, left: 0, right: 0 })),
 }));
 
 jest.mock("@/lib/theme", () => ({
