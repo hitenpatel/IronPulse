@@ -208,12 +208,13 @@ export default function TrackingScreen() {
       try {
         const points = await getBufferPoints(db, sid);
         await trpc.cardio.completeGpsSession.mutate({
-          sessionId: sid,
-          points: points.map((p) => ({
-            latitude: p.latitude,
-            longitude: p.longitude,
-            elevation_m: p.elevation_m,
-            timestamp: p.timestamp,
+          type: (type ?? "run") as "run",
+          startedAt: new Date(startTimeRef.current),
+          routePoints: points.map((p) => ({
+            lat: p.latitude,
+            lng: p.longitude,
+            elevation: p.elevation_m ?? null,
+            timestamp: new Date(p.timestamp),
           })),
         });
         await clearBuffer(db, sid);

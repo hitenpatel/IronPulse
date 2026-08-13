@@ -108,26 +108,52 @@ function BadgeCard({ badge, unlockedAt }: BadgeCardProps) {
   );
 }
 
+type AchievementData = {
+  achievements: { id: string; type: string; unlockedAt: Date }[];
+};
+
+// trpc is a vanilla createTRPCClient (not createTRPCReact), so .useQuery /
+// .useMutation hooks are unavailable. Mirror the query/mutation state manually.
 export default function AchievementsScreen() {
-  const query = trpc.achievement.list.useQuery();
-  const refetch = query.refetch;
-  const checkMine = trpc.achievement.checkMine.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-    onError: () => {},
-  });
+  const [data, setData] = React.useState<AchievementData | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isError, setIsError] = React.useState(false);
+  const [error, setError] = React.useState<Error | null>(null);
   const checkedRef = React.useRef(false);
 
+  const fetchAchievements = React.useCallback(async () => {
+    setIsLoading(true);
+    setIsError(false);
+    setError(null);
+    try {
+      const result = await trpc.achievement.list.query();
+      setData(result as unknown as AchievementData);
+    } catch (err) {
+      setIsError(true);
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchAchievements();
+  }, [fetchAchievements]);
+
+  // Trigger retroactive unlock once on mount
   React.useEffect(() => {
     if (checkedRef.current) return;
     checkedRef.current = true;
-    try {
-      checkMine.mutate(undefined);
-    } catch {
-      // retroactive unlock is best-effort
-    }
-  }, [checkMine]);
+    trpc.achievement.checkMine.mutate(undefined).then(fetchAchievements).catch(() => {});
+  }, [fetchAchievements]);
+
+  const query = {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch: fetchAchievements,
+  };
 
   const unlockedMap = React.useMemo(() => {
     const map = new Map<string, Date>();

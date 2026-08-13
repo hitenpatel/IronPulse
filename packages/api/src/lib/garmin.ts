@@ -136,12 +136,13 @@ export async function refreshGarminToken(
   const response = await fetch(GARMIN_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    // .toString() — RN's fetch types lack URLSearchParams in BodyInit; string is always valid
     body: new URLSearchParams({
       grant_type: "refresh_token",
       client_id: clientId,
       client_secret: clientSecret,
       refresh_token: refreshToken,
-    }),
+    }).toString(),
   });
 
   if (!response.ok) {
@@ -161,7 +162,8 @@ export async function revokeGarminToken(accessToken: string): Promise<void> {
   const response = await fetch(GARMIN_REVOKE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ token: accessToken }),
+    // .toString() — RN's fetch types lack URLSearchParams in BodyInit; string is always valid
+    body: new URLSearchParams({ token: accessToken }).toString(),
   });
 
   if (!response.ok) {

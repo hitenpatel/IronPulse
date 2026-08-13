@@ -56,7 +56,7 @@ export function TemplatePicker({ open, onClose }: Props) {
       [template.id]
     );
 
-    for (const te of templateExercises.rows._array) {
+    for (const te of templateExercises.rows?._array ?? []) {
       const weId = randomUUID();
       await db.execute(
         `INSERT INTO workout_exercises (id, workout_id, exercise_id, "order", notes) VALUES (?, ?, ?, ?, ?)`,
@@ -68,7 +68,7 @@ export function TemplatePicker({ open, onClose }: Props) {
         [te.id]
       );
 
-      for (const ts of templateSets.rows._array) {
+      for (const ts of templateSets.rows?._array ?? []) {
         await db.execute(
           `INSERT INTO exercise_sets (id, workout_exercise_id, set_number, type, weight_kg, reps, completed) VALUES (?, ?, ?, ?, ?, ?, 0)`,
           [

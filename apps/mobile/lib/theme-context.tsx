@@ -16,10 +16,16 @@ export type ResolvedTheme = "dark" | "light";
 
 const STORAGE_KEY = "theme-mode";
 
+// Record<keyof typeof darkColors, string> rather than typeof darkColors so
+// lightColors (which has different hex literals) can be substituted safely.
+// All consumers access colors by key; the exact literal types are not needed
+// at the call site.
+type ColorPalette = Record<keyof typeof darkColors, string>;
+
 interface ThemeContextValue {
   mode: ThemeMode;
   resolvedTheme: ResolvedTheme;
-  colors: typeof darkColors;
+  colors: ColorPalette;
   setMode: (mode: ThemeMode) => Promise<void>;
 }
 

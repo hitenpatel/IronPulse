@@ -107,8 +107,14 @@ export default function CardioDetailScreen() {
     setLoadingRoute(true);
     trpc.cardio.getRoutePoints
       .query({ sessionId: id })
-      .then((points) => {
-        if (!cancelled) setRoutePoints(points as RoutePoint[]);
+      .then((result) => {
+        if (!cancelled) {
+          // API returns { points } with Decimal lat/lon; map to local RoutePoint
+          // (as unknown as any crosses the JSON/Prisma-Decimal boundary safely)
+          setRoutePoints(
+            (result as unknown as { points: RoutePoint[] }).points ?? [],
+          );
+        }
       })
       .catch(() => {})
       .finally(() => {

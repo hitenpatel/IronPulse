@@ -30,7 +30,7 @@ export function RouteMap({
   interactive = true,
   style,
 }: RouteMapProps) {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<typeof MapView>(null);
 
   // Follow user: animate to the latest point when it changes
   useEffect(() => {

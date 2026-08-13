@@ -476,7 +476,7 @@ function GoalCard({
         <View
           style={{
             height: "100%",
-            width: `${Math.max(0, Math.min(100, goal.progressPct))}%`,
+            width: `${Math.max(0, Math.min(100, goal.progressPct ?? 0))}%`,
             backgroundColor: isComplete ? colors.green : colors.blue,
             borderRadius: 3,
           }}

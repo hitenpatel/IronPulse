@@ -146,6 +146,7 @@ export const integrationRouter = createTRPCRouter({
       const response = await fetch(GARMIN_TOKEN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        // .toString() — RN's fetch types lack URLSearchParams in BodyInit; string is always valid
         body: new URLSearchParams({
           grant_type: "authorization_code",
           code: input.code,
@@ -153,7 +154,7 @@ export const integrationRouter = createTRPCRouter({
           client_id: garmin.clientId,
           client_secret: garmin.clientSecret,
           code_verifier: input.codeVerifier,
-        }),
+        }).toString(),
       });
 
       if (!response.ok) {

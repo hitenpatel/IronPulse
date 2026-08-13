@@ -158,7 +158,7 @@ export function ExerciseCard({
       "SELECT DISTINCT superset_group FROM workout_exercises WHERE workout_id = ? AND superset_group IS NOT NULL",
       [workoutId]
     );
-    const existing = allGroups.rows._array.map((r: any) => r.superset_group as number);
+    const existing = (allGroups.rows?._array ?? []).map((r: any) => r.superset_group as number);
     const newGroup = existing.length > 0 ? Math.max(...existing) + 1 : 1;
     await db.execute("UPDATE workout_exercises SET superset_group = ? WHERE id = ?", [newGroup, workoutExerciseId]);
     await db.execute("UPDATE workout_exercises SET superset_group = ? WHERE id = ?", [newGroup, nextWorkoutExerciseId]);
