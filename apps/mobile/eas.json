@@ -29,7 +29,7 @@
       "android": { "buildType": "app-bundle" },
       "ios": { "resourceClass": "m-medium" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mettlelift.hiten-patel.co.uk"
+        "EXPO_PUBLIC_API_URL": "https://ironpulse.hiten-patel.co.uk"
       }
     }
   },
