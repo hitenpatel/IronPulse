@@ -19,6 +19,7 @@ export function useExercises(opts?: {
   muscle?: string;
   equipment?: string;
   category?: string;
+  limit?: number;
 }) {
   const conditions: string[] = [];
   const params: string[] = [];
@@ -41,9 +42,33 @@ export function useExercises(opts?: {
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const limit = opts?.limit ?? 100;
 
   return useQuery<ExerciseRow>(
-    `SELECT * FROM exercises ${where} ORDER BY name LIMIT 100`,
+    `SELECT * FROM exercises ${where} ORDER BY name, id LIMIT ${limit}`,
     params
+  );
+}
+
+/**
+ * Returns exercises ordered by most-recently used in completed workouts.
+ * Derives recency from completed workout_exercises joined to completed workouts.
+ * Falls back to an empty list when offline or no history exists.
+ */
+export function useRecentExercises(opts?: { limit?: number }) {
+  const limit = opts?.limit ?? 20;
+  return useQuery<ExerciseRow>(
+    `SELECT e.*
+     FROM exercises e
+     INNER JOIN (
+       SELECT we.exercise_id, MAX(w.completed_at) AS last_used
+       FROM workout_exercises we
+       INNER JOIN workouts w ON we.workout_id = w.id
+       WHERE w.completed_at IS NOT NULL
+       GROUP BY we.exercise_id
+     ) recent ON e.id = recent.exercise_id
+     ORDER BY recent.last_used DESC, e.name, e.id
+     LIMIT ${limit}`,
+    [],
   );
 }
