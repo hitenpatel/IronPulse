@@ -68,6 +68,7 @@ if [ "$MODE" = "restore" ]; then
   adbd shell settings put global stay_on_while_plugged_in 0 || true
   adbd shell settings put system screen_off_timeout 30000 || true
   adbd shell svc power stayon false || true
+  adbd shell dumpsys deviceidle enable >/dev/null 2>&1 || true
   log "restored daily-driver power settings on $DEVICE"
   exit 0
 fi
@@ -79,16 +80,28 @@ adbd shell settings put secure doze_enabled 0 || true
 adbd shell settings put secure doze_always_on 0 || true
 adbd shell settings put system screen_off_timeout 1800000
 adbd shell svc power stayon true || true
+# Deep doze (deviceidle deep=ACTIVE) swallows wake keyevents entirely —
+# observed after ~10min idle even while charging. Disable the idle machinery
+# for the run; re-enabled in restore.
+adbd shell dumpsys deviceidle disable >/dev/null 2>&1 || true
 adbd shell am broadcast -a android.intent.action.STOP_DREAM >/dev/null 2>&1 || true
 sleep 1
 
 # ── wake ──
-for _ in 1 2 3; do
-  adbd shell dumpsys power | grep -q 'mWakefulness=Awake' && break
-  adbd shell input keyevent KEYCODE_POWER
-  sleep 1
+# KEYCODE_WAKEUP first: it is wake-only, so it can never turn the screen off.
+# KEYCODE_POWER as fallback (WAKEUP has been seen to no-op from Dozing), but
+# only after a multi-second poll — the wake transition can take >1s, and a
+# second POWER sent too early toggles the screen straight back off.
+is_awake() { adbd shell dumpsys power | grep -q 'mWakefulness=Awake'; }
+for key in KEYCODE_WAKEUP KEYCODE_POWER KEYCODE_WAKEUP KEYCODE_POWER; do
+  is_awake && break
+  adbd shell input keyevent "$key"
+  for _ in 1 2 3; do
+    sleep 1
+    is_awake && break 2
+  done
 done
-if ! adbd shell dumpsys power | grep -q 'mWakefulness=Awake'; then
+if ! is_awake; then
   log "ERROR: device would not wake (still not mWakefulness=Awake)."
   snap wake-failed
   exit 1
