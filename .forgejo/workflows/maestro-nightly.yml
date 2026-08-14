@@ -4,7 +4,7 @@ on:
   schedule:
     # 03:30 UTC every day — RadioShake runs at 01:00 UTC and gets the
     # 01:00–03:30 window on the same Pixel 9 Pro XL. Both workflows share
-    # /tmp/pixel-e2e-lock to avoid device contention.
+    # /home/ubuntu/stack/pixel-e2e-lock to avoid device contention.
     - cron: '30 3 * * *'
   workflow_dispatch:    # allow manual trigger from Forgejo Actions UI
 
@@ -235,34 +235,36 @@ jobs:
           chmod 644 "$HOME/.android/adbkey.pub"
 
       - name: Wait for shared Pixel lock (yields to RadioShake)
-        # RadioShake's nightly writes owner=radioshake to /tmp/pixel-e2e-lock
-        # when it drives the same Pixel 9 Pro XL. Block here until any
-        # RadioShake run is done, then claim the lock as zor. Max 90 min wait
-        # so a stuck RadioShake run does not silently kill Zor coverage.
+        # Lock lives on the /home/ubuntu/stack bind-mount shared across all job
+        # containers. Stale locks older than 150 min are stolen (crashed run leftover).
         run: |
           set -u
-          LOCK_DIR=/tmp/pixel-e2e-lock
+          LOCK_DIR=/home/ubuntu/stack/pixel-e2e-lock
+          SELF=zor
+          STALE_AFTER=9000   # 150 min > job timeout; anything older is a crashed run's leftover
           MAX_WAIT=5400
           waited=0
           while [ "$waited" -lt "$MAX_WAIT" ]; do
-            if [ -f "$LOCK_DIR/owner" ] && [ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" = "radioshake" ]; then
-              :
-            elif pgrep -af "maestro.*com\.ironpulse" >/dev/null 2>&1; then
-              # Belt-and-braces: block if a previous Zor maestro is still running
-              :
-            else
+            owner="$(cat "$LOCK_DIR/owner" 2>/dev/null || true)"
+            if [ -z "$owner" ] || [ "$owner" = "$SELF" ]; then
+              break
+            fi
+            age=$(( $(date +%s) - $(stat -c %Y "$LOCK_DIR/owner" 2>/dev/null || echo 0) ))
+            if [ "$age" -gt "$STALE_AFTER" ]; then
+              echo "lock owner=$owner is stale (${age}s old) — stealing"
+              rm -rf "$LOCK_DIR"
               break
             fi
             sleep 30
             waited=$((waited + 30))
           done
           if [ "$waited" -ge "$MAX_WAIT" ]; then
-            echo "::error::RadioShake nightly still running after ${MAX_WAIT}s — aborting to avoid device contention"
+            echo "::error::other nightly still holds the Pixel lock after ${MAX_WAIT}s — aborting to avoid device contention"
             exit 1
           fi
           mkdir -p "$LOCK_DIR"
-          echo "zor" > "$LOCK_DIR/owner"
-          echo "acquired /tmp/pixel-e2e-lock as zor"
+          echo "$SELF" > "$LOCK_DIR/owner"
+          echo "acquired $LOCK_DIR as $SELF"
 
       - name: Connect to device over Tailscale ADB
         id: connect
@@ -284,6 +286,10 @@ jobs:
             sleep 5
           done
           adb devices
+          if adb -s "$DEVICE" get-state 2>&1 | grep -q unauthorized; then
+            echo "::error::Pixel rejected the CI ADB key (adb state=unauthorized). The ADB_KEY / ADB_KEY_PUB repo secrets are stale — the phone's 'always allow' USB-debugging trust was reset (typically after an OS/OTA update). Rotate both secrets to the current trusted key from the developer VM (~/.android/adbkey[.pub]); see reference_forgejo_runner_adb for the exact curl PUT commands."
+            exit 1
+          fi
           if ! adb -s "$DEVICE" shell getprop ro.product.model; then
             echo "::warning::Device $DEVICE unreachable — wireless debugging is likely off (phone reboot or OS update). Skipping the E2E run and reporting DEVICE_UNREACHABLE to the dashboard."
             echo "DEVICE_UNREACHABLE=1" >> "$GITHUB_ENV"
@@ -478,10 +484,10 @@ jobs:
       - name: Release shared Pixel lock
         if: always()
         run: |
-          if [ -f /tmp/pixel-e2e-lock/owner ] \
-             && [ "$(cat /tmp/pixel-e2e-lock/owner 2>/dev/null)" = "zor" ]; then
-            rm -rf /tmp/pixel-e2e-lock
-            echo "released /tmp/pixel-e2e-lock"
+          if [ -f /home/ubuntu/stack/pixel-e2e-lock/owner ] \
+             && [ "$(cat /home/ubuntu/stack/pixel-e2e-lock/owner 2>/dev/null)" = "zor" ]; then
+            rm -rf /home/ubuntu/stack/pixel-e2e-lock
+            echo "released /home/ubuntu/stack/pixel-e2e-lock"
           fi
 
       - name: Upload results

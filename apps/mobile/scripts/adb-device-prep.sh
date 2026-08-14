@@ -109,14 +109,15 @@ fi
 
 is_locked() { adbd shell dumpsys trust 2>/dev/null | grep -m1 -q 'deviceLocked=1'; }
 
-if is_locked; then
-  # Kick Extend Unlock (trusted device/place) — it unlocks asynchronously.
-  adbd shell input swipe 500 2000 500 500 300
-  for _ in 1 2 3 4 5 6 7 8; do
-    sleep 1
-    is_locked || break
-  done
-fi
+keyguard_up() { adbd shell dumpsys window 2>/dev/null | grep -m1 -q 'isKeyguardShowing=true'; }
+
+# deviceLocked (dumpsys trust) is the ground truth for whether auth is REQUIRED,
+# but it is NOT the same as the lockscreen being gone: a trusted device (Extend
+# Unlock, trusted place/Wi-Fi) reports deviceLocked=0 while the keyguard is still
+# SHOWING. KEYCODE_HOME does not clear that, so the app under test renders behind
+# the lockscreen and every UI assertion fails. `wm dismiss-keyguard` clears a
+# trusted keyguard outright and raises the PIN bouncer on a secure one.
+adbd shell wm dismiss-keyguard; sleep 1.5
 
 if is_locked; then
   PIN="${ADB_PIN:-}"
@@ -129,7 +130,9 @@ if is_locked; then
     exit 1
   fi
   for attempt in 1 2 3; do
-    log "unlock attempt $attempt: swipe + ${#PIN}-digit PIN"
+    log "unlock attempt $attempt: dismiss-keyguard + ${#PIN}-digit PIN"
+    adbd shell wm dismiss-keyguard; sleep 1
+    # Belt-and-braces: some builds need the swipe to land focus on the keypad.
     adbd shell input swipe 500 2100 500 200 800
     sleep 1.5
     for (( i=0; i<${#PIN}; i++ )); do
@@ -149,11 +152,19 @@ if is_locked; then
   done
 fi
 
-if is_locked; then
-  log "ERROR: device still locked after PIN attempts."
+# Even once auth is satisfied (deviceLocked=0) the keyguard can linger on
+# screen; dismiss it and confirm it is actually gone before proceeding.
+for _ in 1 2 3; do
+  keyguard_up || break
+  adbd shell wm dismiss-keyguard
+  sleep 1
+done
+
+if is_locked || keyguard_up; then
+  log "ERROR: device still locked / keyguard showing after unlock attempts."
   snap unlock-failed
   exit 1
 fi
 
 adbd shell input keyevent KEYCODE_HOME
-log "$DEVICE awake + unlocked (deviceLocked=0); screen pinned on while charging"
+log "$DEVICE awake + unlocked (deviceLocked=0, keyguard dismissed); screen pinned on while charging"
