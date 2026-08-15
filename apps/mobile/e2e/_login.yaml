@@ -1,0 +1,27 @@
+appId: com.ironpulse.app
+tags:
+  - subflow
+---
+# Shared login subflow — invoke with:
+#   - runFlow: _login.yaml
+# Expects the app to already be launched (clearState/clearKeychain in the
+# calling flow).  Lands the user on the dashboard with the greeting visible.
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+# The soft keyboard covers the login button on 360-412dp screens.
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd

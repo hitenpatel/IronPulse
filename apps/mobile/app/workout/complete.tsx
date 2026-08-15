@@ -324,6 +324,7 @@ export default function WorkoutCompleteScreen() {
         }}
         ListFooterComponent={
           <Pressable
+            testID="workout-complete-done"
             onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }))}
             style={{
               backgroundColor: colors.primary,

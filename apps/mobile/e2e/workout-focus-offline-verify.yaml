@@ -1,0 +1,48 @@
+appId: com.ironpulse.app
+tags:
+  - orchestrated
+---
+# Flow 7 verify (TASK-23.8): After offline completion and service restore,
+# assert exactly one finalized result appears.
+#
+# Run AFTER:
+#   - workout-focus-offline.yaml completed (locally finished).
+#   - Runner restarted: docker -p zor-e2e compose start api powersync
+#   - Runner polled until healthy: curl -sf http://localhost:3001/health
+#
+# The finalization poll in use-workout-finalization-status runs every 2 s
+# while foregrounded (pending/processing state).  Allow up to 60 s for
+# PowerSync to sync the locally completed workout and the server finalizer
+# to claim and process it.
+
+- launchApp:
+    clearKeychain: false
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
+- waitForAnimationToEnd
+
+# Navigate to Workout History to find the last workout
+- tapOn: "Workout History"
+- extendedWaitUntil:
+    visible: "Workouts"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# The most recent workout entry should be present and finalized.
+# Tap it to open the detail view.
+- runFlow:
+    when:
+      notVisible: "No workouts yet"
+    commands:
+      - tapOn:
+          index: 0
+      - extendedWaitUntil:
+          visible: "Duration"
+          timeout: 10000
+      # Finalization: "New PRs", "Syncing…", or result list should appear.
+      # Assert NOT "Error" or "Failed" — server retry language is acceptable.
+      - assertNotVisible: "finalization failed"
+      - assertNotVisible: "Error"

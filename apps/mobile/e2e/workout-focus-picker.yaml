@@ -1,0 +1,143 @@
+appId: com.ironpulse.app
+---
+# Flow 9 (TASK-23.8): Exercise picker — keyboard search, view tabs, filters,
+# and selection persistence.
+#
+# Exercise IDs are UUIDs unknown at authoring time; the runner substitutes
+# __EXERCISE_*__ placeholders from the fixture id manifest.
+# Tab testIDs are `tab-recent`, `tab-favorites`, `tab-all`.
+# Filter chip testIDs are `filter-chip-${label}` e.g. `filter-chip-Chest`.
+#
+# NOTE: the picker's error-state (`errorAll`) fires only on a LOCAL PowerSync
+# query error, never on backend unavailability — the library is already synced
+# to SQLite, and an unsynced empty table yields an empty list, not an error.
+# It therefore cannot be induced by stopping backend services (AC#6 style) and
+# is covered by the exercise-multi-picker unit test instead of this flow.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Start an empty workout ──────────────────────────────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+
+# ── Phase 1: open the picker ────────────────────────────────────────────────
+- tapOn:
+    id: "add-exercise-button"
+- extendedWaitUntil:
+    visible:
+      id: "search-input"
+    timeout: 15000
+
+# ── Phase 2: keyboard search ─────────────────────────────────────────────
+# The picker opens on the Recent tab, and search only filters the active
+# tab's list — a fresh fixture user has no recents, so search there matches
+# nothing. Switch to All before searching.
+- tapOn:
+    id: "tab-all"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-list"
+    timeout: 10000
+- tapOn:
+    id: "search-input"
+- inputText: "Barbell Bench Press - Medium"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+    timeout: 10000
+# Select Barbell Bench Press by name text (UUID ID not statically known)
+- tapOn:
+    id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+
+# ── Phase 3: selection registered ──────────────────────────────────────────
+# (Tab-switch persistence is exercised by Phases 6-8: Recent -> Favorites ->
+# commit.) The soft keyboard covers the bottom add-button bar on 360-412dp
+# screens, so dismiss it before asserting.
+- hideKeyboard
+- assertVisible:
+    id: "add-button"
+
+# ── Phase 4: clear search, apply Chest muscle filter ───────────────────────
+# Erase "Barbell Bench Press - Medium" = 28 chars
+- tapOn:
+    id: "search-input"
+- eraseText: 28
+# Dismiss the keyboard the erase tap re-opened so the inline filter panel
+# and list are not covered.
+- hideKeyboard
+# The filter panel is an inline expandable section toggled by filter-toggle
+# (no Back handling — pressing Back closes the whole picker screen).
+- tapOn:
+    id: "filter-toggle"
+- extendedWaitUntil:
+    visible:
+      id: "filter-chip-Chest"
+    timeout: 5000
+- tapOn:
+    id: "filter-chip-Chest"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-list"
+    timeout: 5000
+
+# ── Phase 5: apply Barbell equipment filter ─────────────────────────────────
+# Panel is still expanded from Phase 4; tap the equipment chip directly,
+# then collapse the panel by re-tapping filter-toggle.
+- tapOn:
+    id: "filter-chip-Barbell"
+- tapOn:
+    id: "filter-toggle"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-list"
+    timeout: 5000
+
+# ── Phase 6: switch to Recent view ─────────────────────────────────────────
+- tapOn:
+    id: "tab-recent"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-list"
+    timeout: 5000
+
+# ── Phase 7: switch to Favorites view ──────────────────────────────────────
+- tapOn:
+    id: "tab-favorites"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-list"
+    timeout: 5000
+
+# ── Phase 8: commit selection ───────────────────────────────────────────────
+# Selection from Phase 2 persists across all tab/filter changes
+- tapOn:
+    id: "add-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+
+# ── Clean up ────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible: "Finish anyway"
+    commands:
+      - tapOn: "Finish anyway"
+# Finish lands on the Workout Complete summary screen; dismiss it.
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 15000
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

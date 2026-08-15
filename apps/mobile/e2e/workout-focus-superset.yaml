@@ -1,0 +1,135 @@
+appId: com.ironpulse.app
+tags:
+  - orchestrated
+---
+# Flow 3 (TASK-23.8): Three-member uneven superset, rest after each round.
+#
+# Supersets cannot be built through the UI (WorkoutTemplate has no
+# superset_group column, and the link affordance on exercise-card is never
+# reachable), so the fixture seeds an in-progress workout instead:
+# `db:seed:e2e:superset` creates "E2E — Superset A" with bench/squat/deadlift
+# all in superset group 1 and uneven set counts of 3/2/3, every set pre-filled
+# and incomplete.
+#
+# This flow is tagged `orchestrated` because an incomplete workout always wins
+# the dashboard's Continue Workout slot, which would hijack every flow that
+# expects to start a fresh session. The runner seeds it and runs this flow
+# after the main and offline phases, never before.
+#
+# Expected focus order (workout-focus-sequence.ts round-robins the group and
+# drops members that run out of sets):
+#   round 1  bench 1 → squat 1 → deadlift 1 → rest
+#   round 2  bench 2 → squat 2 → deadlift 2 → rest
+#   round 3  bench 3 → deadlift 3 (squat exhausted) → rest
+#
+# The workout-exercise UUIDs below are the stable E2E_SUPERSET_IDS from
+# packages/db/scripts/reset-mobile-e2e-utils.ts, so the focused card can be
+# asserted by id rather than by exercise name.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Resume the seeded superset workout ──────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
+- assertVisible: "Continue Workout"
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 20000
+- waitForAnimationToEnd
+
+# ── Round 1: bench 1 → squat 1 → deadlift 1 → rest ──────────────────────────
+- assertVisible:
+    id: "focused-exercise-e2e00005-0000-4000-a000-000000000001"
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000002"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000003"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+# Rest only fires at the end of a round — after the last available member.
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Round 2: bench 2 → squat 2 → deadlift 2 → rest ──────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000001"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000002"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000003"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Round 3: bench 3 → deadlift 3 → rest ────────────────────────────────────
+# The squat has only two sets, so round 3 must skip it entirely. Asserting the
+# deadlift card directly after the bench set is what proves the exhausted
+# member is dropped rather than re-focused.
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000001"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "focused-exercise-e2e00005-0000-4000-a000-000000000003"
+    timeout: 10000
+- assertNotVisible:
+    id: "focused-exercise-e2e00005-0000-4000-a000-000000000002"
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Finish ──────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible: "Finish anyway"
+    commands:
+      - tapOn: "Finish anyway"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

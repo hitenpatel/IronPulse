@@ -109,6 +109,7 @@ export const authRouter = createTRPCRouter({
             unitSystem: true,
             onboardingComplete: true,
             defaultRestSeconds: true,
+            firstWorkoutTutorialDismissed: true,
           },
         });
       } catch (err) {
@@ -181,6 +182,7 @@ export const authRouter = createTRPCRouter({
           unitSystem: true,
           onboardingComplete: true,
           defaultRestSeconds: true,
+          firstWorkoutTutorialDismissed: true,
         },
       });
 
@@ -229,6 +231,7 @@ export const authRouter = createTRPCRouter({
               unitSystem: true,
               onboardingComplete: true,
               defaultRestSeconds: true,
+              firstWorkoutTutorialDismissed: true,
             },
           },
         },
@@ -252,6 +255,7 @@ export const authRouter = createTRPCRouter({
             unitSystem: true,
             onboardingComplete: true,
             defaultRestSeconds: true,
+            firstWorkoutTutorialDismissed: true,
           },
         });
 
@@ -296,6 +300,7 @@ export const authRouter = createTRPCRouter({
           unitSystem: true,
           onboardingComplete: true,
           defaultRestSeconds: true,
+          firstWorkoutTutorialDismissed: true,
         },
       });
 

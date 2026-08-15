@@ -268,7 +268,18 @@ export function ExerciseCard({
             </Text>
           </View>
           {(isInSuperset || canLinkSuperset) && (
-            <Pressable onPress={handleSupersetPress} hitSlop={8} style={{ padding: 4 }}>
+            <Pressable
+              onPress={handleSupersetPress}
+              hitSlop={8}
+              style={{ padding: 4 }}
+              testID={isInSuperset ? "superset-unlink" : "superset-link"}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isInSuperset
+                  ? `Remove ${exerciseName} from superset`
+                  : `Superset ${exerciseName} with the next exercise`
+              }
+            >
               {isInSuperset ? (
                 <Link2Off size={16} color={colors.superset} />
               ) : (

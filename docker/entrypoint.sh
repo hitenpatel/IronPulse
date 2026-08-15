@@ -26,6 +26,11 @@ else
   prisma db seed
 fi
 
+echo "Applying PowerSync triggers..."
+# Fills denormalized user_id on child tables so sync-rules.yaml can use
+# single-table queries (PowerSync rejects JOINs at boot). Idempotent.
+prisma db execute --schema prisma/schema.prisma --file prisma/powersync-triggers.sql || true
+
 echo "Ensuring PowerSync publication..."
 # Required by the optional `sync` profile (PowerSync logical replication) and
 # inert without it. Runs on every container start in all environments.

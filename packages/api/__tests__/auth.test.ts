@@ -120,6 +120,29 @@ describe("auth.signIn", () => {
   });
 });
 
+describe("auth.mobileSignIn", () => {
+  it("includes firstWorkoutTutorialDismissed in the session user", async () => {
+    const caller = authCaller();
+    await caller.signUp({
+      email: "mobile@example.com",
+      password: "securepass123",
+      name: "Mobile User",
+    });
+    await db.user.update({
+      where: { email: "mobile@example.com" },
+      data: { firstWorkoutTutorialDismissed: true },
+    });
+
+    const result = await caller.mobileSignIn({
+      email: "mobile@example.com",
+      password: "securepass123",
+    });
+
+    expect(result.token).toBeTruthy();
+    expect(result.user.firstWorkoutTutorialDismissed).toBe(true);
+  });
+});
+
 describe("auth.getSession", () => {
   it("throws UNAUTHORIZED when not authenticated", async () => {
     const caller = authCaller();

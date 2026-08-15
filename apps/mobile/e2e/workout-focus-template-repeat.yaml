@@ -1,0 +1,103 @@
+appId: com.ironpulse.app
+---
+# Flow 2 (TASK-23.8): Template → accepted prior values → rapid repeated sets.
+#
+# Fixture guarantee: a seeded template named "E2E — Strength A" exists with
+# three exercises (Bench, Squat, Deadlift) each having 3 sets with target
+# reps=5 and target weights.  Template targets pre-fill the editor fields.
+# The "accepted prior values" path tests that tapping Complete without typing
+# commits the template targets (targetReps / targetWeightKg) directly.
+# Prior-performance data would additionally pre-fill from the last completed
+# workout of the same exercise when available; the fixture does not seed one
+# but the code path under test is the same — accept suggestion, tap Complete.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Start a workout from a template ────────────────────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+- tapOn:
+    id: "templates-chip"
+- extendedWaitUntil:
+    visible: "E2E — Strength A"
+    timeout: 10000
+- tapOn: "E2E — Strength A"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ── Set 1: accept prior-value suggestion by tapping Complete directly ───────
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Set 2: rapid repeat — accept suggestion again ────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Next exercise, Set 1 ────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Next exercise, Set 2 ────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Finish (remaining sets are untouched — partial-finish sheet expected) ───
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible:
+        text: "Finish workout anyway"
+    commands:
+      - tapOn:
+          text: "Finish workout anyway"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

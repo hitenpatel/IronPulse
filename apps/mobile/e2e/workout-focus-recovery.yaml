@@ -1,0 +1,159 @@
+appId: com.ironpulse.app
+---
+# Flow 5 (TASK-23.8): Background/resume and process restart during edit/rest.
+#
+# Sub-scenario A — background during edit then foreground:
+#   Start workout, type in a weight field, background the app, foreground it,
+#   assert the draft is visible and can be completed.
+#
+# Sub-scenario B — background during rest then foreground:
+#   Complete a set (rest starts), background the app, foreground it,
+#   assert the rest timer is still visible (or idle if expired), skip if present.
+#
+# Sub-scenario C — process restart:
+#   See workout-focus-recovery-restart.yaml.  This flow ends after sub-B.
+#   The runner must issue `adb shell am force-stop com.zor.app.e2e` after
+#   this flow exits, then run workout-focus-recovery-restart.yaml.
+#
+# Runner orchestration:
+#   Scenarios A+B: this file, run once by the runner (the runner uses
+#     `pressKey: Home` + wait + relaunch transparently via Maestro).
+#   Scenario C: runner kills the process then runs recovery-restart.yaml.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Start empty workout and add one exercise ────────────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+- tapOn:
+    id: "add-exercise-button"
+- extendedWaitUntil:
+    visible:
+      id: "search-input"
+    timeout: 10000
+- tapOn:
+    id: "search-input"
+- inputText: "Barbell Bench Press - Medium"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+    timeout: 10000
+- tapOn:
+    id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+- tapOn:
+    id: "add-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ── Sub-scenario A: background mid-edit ────────────────────────────────────
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "80"
+# Background via Home key
+- pressKey: Home
+- waitForAnimationToEnd:
+    timeout: 2000
+# Foreground by relaunching (without clearState — state survives)
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 20000
+# Draft "80" should still be visible in the weight field
+- assertVisible: "80"
+
+# ── Sub-scenario B: background during rest ─────────────────────────────────
+- tapOn:
+    text: "Repetitions"
+- inputText: "8"
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+# Background during rest
+- pressKey: Home
+- waitForAnimationToEnd:
+    timeout: 3000
+# Foreground
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 20000
+# Either rest is still counting or it expired (idle).  Both are valid.
+# Dismiss if present and continue.
+- runFlow:
+    when:
+      visible:
+        id: "rest-timer-pause"
+    commands:
+      - tapOn:
+          text: "Skip rest"
+
+# ── Sub-scenario C: kill the process during rest and resume ─────────────────
+# The workout is deliberately left incomplete here so the relaunch has a
+# Continue card to find. `killApp` drops the process without clearing storage,
+# so the PowerSync database and the focus/rest keys survive.
+- killApp
+
+- launchApp:
+    clearKeychain: false
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
+- waitForAnimationToEnd
+
+# Dashboard must show the Continue Workout card with the previously started
+# workout (next-up-hero rendered in active/continue state).
+- assertVisible:
+    id: "next-up-hero"
+- assertVisible: "Continue Workout"
+
+# Resume the workout
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 20000
+
+# Rest may be expired (idle) or still counting — both valid.
+# Dismiss if present, then assert the set editor is available.
+- runFlow:
+    when:
+      visible:
+        id: "rest-timer-pause"
+    commands:
+      - tapOn:
+          text: "Skip rest"
+
+# The focused set editor should be accessible
+- assertVisible:
+    id: "finish-button"
+
+# Finish to clean up
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible: "Finish anyway"
+    commands:
+      - tapOn: "Finish anyway"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

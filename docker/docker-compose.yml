@@ -103,22 +103,21 @@ services:
     image: mongo:7-jammy@sha256:04582c3a144d088f841c446abfc19f79adcefa8bd00ad4a7fb18e27b9585c5d6
     profiles: ["sync"]
     command: ["--replSet", "rs0"]
+    # Without this the replset config pins the container ID as its member host,
+    # so recreating the container against a preserved volume leaves the node
+    # with "our replica set config is invalid or we are not a member of it".
+    hostname: mongo
     volumes:
       - mongodata:/data/db
     healthcheck:
-      test: mongosh --eval "rs.status()" --quiet
+      # Self-initiating: on a fresh volume rs.status() throws until someone runs
+      # rs.initiate(), but an init sidecar gated on service_healthy deadlocks
+      # against this very check. Initiate from the probe instead, and force a
+      # reconfig if an older volume still carries a container-ID member host.
+      test: mongosh --quiet --eval 'const c={_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}; try { rs.status().ok } catch (e) { try { rs.initiate(c).ok } catch (e2) { rs.reconfig(c,{force:true}).ok } }'
       interval: 10s
       retries: 5
     restart: unless-stopped
-
-  mongo-init:
-    image: mongo:7-jammy@sha256:04582c3a144d088f841c446abfc19f79adcefa8bd00ad4a7fb18e27b9585c5d6
-    profiles: ["sync"]
-    depends_on:
-      mongo:
-        condition: service_healthy
-    command: mongosh --host mongo --eval "rs.initiate()"
-    restart: "no"
 
   powersync:
     image: journeyapps/powersync-service:latest@sha256:b6b22fa7d0d862f04bdff62846e656756d17bcf3dd6eca399a0633671051438b
@@ -129,7 +128,10 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      - ./powersync.yaml:/app/config/powersync.yaml
+      # The image's default config path is /app/powersync.yaml (NOT
+      # /app/config/); sync-rules stays under /app/config because
+      # powersync.yaml's sync_config.path points there.
+      - ./powersync.yaml:/app/powersync.yaml
       - ./sync-rules.yaml:/app/config/sync-rules.yaml
     environment:
       PS_DATA_SOURCE_URI: "postgresql://${POSTGRES_USER:?set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}"

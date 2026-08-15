@@ -212,12 +212,15 @@ model WorkoutExercise {
   order         Int
   notes         String?
   supersetGroup Int?    @map("superset_group")
+  // Denormalized cache of workouts.user_id — filled by DB trigger, never set by app code; used for PowerSync single-table bucket filtering.
+  userId        String? @map("user_id") @db.Uuid
 
   workout  Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   exercise Exercise      @relation(fields: [exerciseId], references: [id])
   sets     ExerciseSet[]
 
   @@index([workoutId])
+  @@index([userId])
   @@map("workout_exercises")
 }
 
@@ -231,11 +234,13 @@ model ExerciseSet {
   rpe               Decimal? @db.Decimal(3, 1)
   restSeconds       Int?     @map("rest_seconds")
   completed         Boolean  @default(false)
+  userId            String?  @map("user_id") @db.Uuid
 
   workoutExercise WorkoutExercise  @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   personalRecords PersonalRecord[]
 
   @@index([workoutExerciseId])
+  @@index([userId])
   @@map("exercise_sets")
 }
 
@@ -289,10 +294,12 @@ model Lap {
   distanceMeters  Decimal @map("distance_meters") @db.Decimal(10, 2)
   durationSeconds Int     @map("duration_seconds")
   avgHeartRate    Int?    @map("avg_heart_rate")
+  userId          String? @map("user_id") @db.Uuid
 
   session CardioSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([userId])
   @@map("laps")
 }
 
@@ -319,12 +326,14 @@ model TemplateExercise {
   exerciseId String  @map("exercise_id") @db.Uuid
   order      Int
   notes      String?
+  userId     String? @map("user_id") @db.Uuid
 
   template     WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   exercise     Exercise        @relation(fields: [exerciseId], references: [id])
   templateSets TemplateSet[]
 
   @@index([templateId])
+  @@index([userId])
   @@map("template_exercises")
 }
 
@@ -335,10 +344,12 @@ model TemplateSet {
   targetReps         Int?     @map("target_reps")
   targetWeightKg     Decimal? @map("target_weight_kg") @db.Decimal(7, 2)
   type               String   @default("working")
+  userId             String?  @map("user_id") @db.Uuid
 
   templateExercise TemplateExercise @relation(fields: [templateExerciseId], references: [id], onDelete: Cascade)
 
   @@index([templateExerciseId])
+  @@index([userId])
   @@map("template_sets")
 }
 

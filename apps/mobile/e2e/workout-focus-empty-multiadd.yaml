@@ -1,0 +1,121 @@
+appId: com.ironpulse.app
+---
+# Flow 1 (TASK-23.8): Empty workout → multi-add exercises →
+# immediate final-keystroke completion → rest → finish.
+#
+# Fixture exercises: "Barbell Bench Press" and "Barbell Back Squat".
+# Exercise IDs are UUIDs — we cannot use exercise-option-${id} directly.
+# Instead we tap the exercise name text after searching.  The exercise row
+# accessibilityLabel is the exercise name (exercise-multi-picker.tsx:159).
+#
+# The dock's complete-set button uses the live set ID; we tap it by ID
+# ("complete-set" when no setId is resolved, or "complete-set-<uuid>" when
+# there is exactly one focused set).  Using id: "complete-set" matches both
+# the resolved and unresolved form because Maestro does prefix matching on
+# testIDs when the value matches the start of the attribute.
+# NOTE: actually Maestro requires exact match on testID — so we use
+# accessibilityLabel "Complete set" as the fallback if "complete-set" doesn't
+# match. Verified: the dock always sets testID to "complete-set-<setId>" when
+# a set is focused, so we tap by accessibilityLabel to be safe.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Start an empty workout via the dashboard card ───────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+
+# ── Open multi-picker and select two exercises ──────────────────────────────
+- tapOn:
+    id: "add-exercise-button"
+- extendedWaitUntil:
+    visible:
+      id: "search-input"
+    timeout: 10000
+
+# Search for and select Barbell Bench Press
+- tapOn:
+    id: "search-input"
+- inputText: "Barbell Bench Press - Medium"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+    timeout: 10000
+- tapOn:
+    id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+
+# Clear search and select Barbell Back Squat
+# "Barbell Bench" = 13 chars
+- tapOn:
+    id: "search-input"
+- eraseText: 13
+- inputText: "Barbell Squat"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-option-__EXERCISE_SQUAT__"
+    timeout: 10000
+- tapOn:
+    id: "exercise-option-__EXERCISE_SQUAT__"
+
+# Commit the two-exercise batch
+- tapOn:
+    id: "add-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ── Barbell Bench Press: type weight and reps then immediately tap Complete ──
+# Typing then tapping Complete without blur tests the final-keystroke path.
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "80"
+- tapOn:
+    text: "Repetitions"
+- inputText: "8"
+# Complete Set dock button (exact testID requires live set UUID; use label)
+- tapOn:
+    text: "Complete set"
+
+# ── Rest timer should appear ────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Barbell Back Squat: enter values and complete ───────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "100"
+- tapOn:
+    text: "Repetitions"
+- inputText: "5"
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Finish (all sets complete — no partial-finish sheet expected) ───────────
+- tapOn:
+    id: "finish-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-09 03:52'
-updated_date: '2026-08-13 02:30'
+updated_date: '2026-08-13 09:59'
 labels:
   - mobile
   - test
@@ -96,4 +96,19 @@ Root cause of new failure: the E2E APK points at EXPO_PUBLIC_API_URL=http://100.
 TASK-23.8 pipeline-repair scope met: the maestro runner now exercises real UI. API availability is a separate concern (TASK-23.11 covers it).
 
 Session 2026-08-13: Pixel 100.69.203.52 tailscale-ok but adb :5555 Connection refused throughout. Cannot verify device-bound ACs this session. Reconnect steps: from device, Settings → System → Developer options → Wireless debugging toggle off/on; OR plug USB and run 'adb tcpip 5555' then unplug. After that, adb connect 100.69.203.52:5555 from this VM. Then rerun the relevant maestro suite.
+
+Runner + nightly consolidation landed (AC#2/#3/#4/#5 mechanics).
+
+- apps/mobile/scripts/nightly-e2e.sh is now the single maintained runner. It exits nonzero on missing APK, device-prep failure, backend health exhaustion, install failure, suite failure, smoke failure, or a missing junit report. Verified: a bogus E2E_APK path exits 1.
+- Added docker/docker-compose.e2e.yml (compose project 'zor-e2e', API :3100, PowerSync :8180) and docker/e2e.env. Ports use the !override tag because compose merges port lists additively, which was publishing both :3000 and :3100 and defeating isolation. The overlay needs no docker/.env, so a fresh CI checkout can bring it up.
+- Fixture reset is packages/db db:reset:e2e — all three deleteMany calls are scoped to the test user's id; PersonalRecord must be deleted before Workout because its FK is SetNull rather than Cascade. 23 unit tests pass.
+- Small-screen gate: physical width is read from 'wm size' and density set so effective width lands in 360-412dp, verified live at 384dp. The cleanup trap is installed before the override so a failed gate cannot strand the shared phone at a non-native density.
+- .forgejo/workflows/maestro-nightly.yml now delegates to the runner; six inline steps (device prep, install, preflight, main suite, smoke suite) were deleted. Dashboard counts are parsed from suite.xml/smoke.xml instead of step outputs. EXPO_PUBLIC_API_URL corrected from the decommissioned staging.mettlelift domain to http://100.113.79.51:3100.
+- The duplicate host crontab entry (30 3 * * * nightly-e2e-wait.sh) is removed, so the workflow is the sole entrypoint. Backup at /tmp/crontab.backup-20260813.
+
+Two findings worth carrying forward:
+
+1. CI portability gap. The Forgejo runner shares the host's docker.sock, so 'docker compose up' from a job container publishes ports on the host (good — the phone can reach :3100) but bind mounts like ./powersync.yaml resolve on the host filesystem, where the job container's checkout does not exist. PowerSync would boot with no sync rules. The runner now probes this explicitly and fails with an actionable message rather than surfacing it as a flow failure.
+
+2. apps/mobile/scripts/build-android.sh did not pin its toolchain. Gradle 8.14.3 cannot parse class file major version 69, so a host defaulting to Java 25 failed in semantic analysis before any task ran, and ANDROID_HOME was unset because expo prebuild --clean deletes android/local.properties. The script now resolves JDK 21 and the SDK itself.
 <!-- SECTION:NOTES:END -->

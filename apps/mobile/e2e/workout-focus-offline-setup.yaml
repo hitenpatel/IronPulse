@@ -1,0 +1,49 @@
+appId: com.ironpulse.app
+tags:
+  - orchestrated
+---
+# Flow 7 setup (TASK-23.8): Create the incomplete workout that will be
+# completed offline.  Run BEFORE the runner stops backend services.
+#
+# Runner orchestration:
+#   1. Run this file (leaves the app on the active-workout screen).
+#   2. Runner issues: docker -p zor-e2e compose stop api powersync
+#   3. Runner waits until offline-banner appears, or 30 s.
+#   4. Runner runs workout-focus-offline.yaml (Phase 3).
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Start empty workout and add Barbell Bench Press ─────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+- tapOn:
+    id: "add-exercise-button"
+- extendedWaitUntil:
+    visible:
+      id: "search-input"
+    timeout: 10000
+- tapOn:
+    id: "search-input"
+- inputText: "Barbell Bench Press - Medium"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+    timeout: 10000
+- tapOn:
+    id: "exercise-option-__EXERCISE_BENCH_PRESS__"
+- tapOn:
+    id: "add-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Leave the workout open on the active screen — runner will now stop services.

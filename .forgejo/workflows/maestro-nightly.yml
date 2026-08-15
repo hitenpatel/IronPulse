@@ -193,9 +193,12 @@ jobs:
           # Do NOT set bare E2E=1 — that triggers metro's App.e2e.tsx mock +
           # PowerSync stub (metro.config.js line 23), producing a fake app
           # with no real UI to exercise.
+          # EXPO_PUBLIC_API_URL points at the isolated E2E stack that
+          # nightly-e2e.sh brings up (API on :3100). The old staging domain
+          # (mettlelift.hiten-patel.co.uk) was decommissioned with the rebrand.
           cd apps/mobile
           EXPO_PUBLIC_E2E=1 \
-          EXPO_PUBLIC_API_URL=https://staging.mettlelift.hiten-patel.co.uk \
+          EXPO_PUBLIC_API_URL=http://100.113.79.51:3100 \
             npx expo prebuild --platform android --clean --no-install
 
       - name: Build debug APK (com.ironpulse.app.e2e)
@@ -296,81 +299,6 @@ jobs:
             exit 1
           fi
 
-      - name: Wake device + dismiss daydream + lockscreen
-        env:
-          ADB_PIN: ${{ secrets.ADB_PIN }}
-        shell: bash
-        run: |
-          set -u
-          # Shared device prep script (canonical copy: this repo's
-          # apps/mobile/scripts/adb-device-prep.sh; installed on the runner
-          # host at /home/ubuntu/stack/). Also used by RadioShake's nightly.
-          # It disables daydream/doze (a DreamActivity on top of the keyguard
-          # ate PIN keyevents in earlier runs), disables deviceidle (deep doze
-          # swallows wake keyevents outright), pins the screen on while
-          # charging via stay_on_while_plugged_in=7 so the phone cannot
-          # re-lock mid-suite, wakes with KEYCODE_WAKEUP then POWER, waits for
-          # async Extend Unlock, and falls back to a slow full-height swipe
-          # plus per-digit KEYCODE PIN entry with retries. Exits non-zero
-          # unless dumpsys trust reports deviceLocked=0. Undone in
-          # "Restore device state".
-          OUT_DIR="$PWD" ADB_PIN="${ADB_PIN:-}" \
-            bash /home/ubuntu/stack/adb-device-prep.sh prep 100.69.203.52:5555
-
-      - name: Install fresh debug APK (com.ironpulse.app.e2e)
-        run: |
-          set -eu
-          DEVICE=100.69.203.52:5555
-          APK=apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-          # Every CI host generates its own ~/.android/debug.keystore, so an
-          # install from this runner won't match the signature of whatever's
-          # already on the phone (dev's local keystore, previous runner's
-          # keystore, etc). Uninstall first to clear the signature mismatch;
-          # this is a test phone so the per-app data loss is fine.
-          adb -s $DEVICE uninstall com.ironpulse.app.e2e || true
-          # -t allows test-only flag; -g pre-grants all dangerous perms.
-          adb -s $DEVICE install -t -g "$APK"
-          INSTALLED=$(adb -s $DEVICE shell dumpsys package com.ironpulse.app.e2e | awk -F= '/versionName=/{print $2; exit}')
-          echo "Installed versionName: $INSTALLED"
-          # `-g` on `adb install` skips POST_NOTIFICATIONS on Android 13+ (the
-          # runtime model treats it as user-only). Explicitly grant every perm
-          # the app requests so first launch doesn't pop a system dialog that
-          # the preflight would mistake for a crash.
-          for PERM in \
-            android.permission.POST_NOTIFICATIONS \
-            android.permission.CAMERA \
-            android.permission.ACCESS_FINE_LOCATION \
-            android.permission.ACCESS_COARSE_LOCATION \
-            android.permission.ACCESS_BACKGROUND_LOCATION \
-            android.permission.READ_MEDIA_IMAGES \
-            android.permission.ACTIVITY_RECOGNITION \
-            android.permission.BODY_SENSORS; do
-            adb -s $DEVICE shell pm grant com.ironpulse.app.e2e "$PERM" || true
-          done
-
-      - name: Preflight — app launches without crashing
-        run: |
-          set -eu
-          DEVICE=100.69.203.52:5555
-          adb -s $DEVICE shell am force-stop com.ironpulse.app.e2e
-          adb -s $DEVICE shell monkey -p com.ironpulse.app.e2e -c android.intent.category.LAUNCHER 1
-          # Give React Native / Hermes time to lay out; then check the resumed activity.
-          # If a permission dialog popped (despite the explicit pm grants),
-          # dismiss it once and re-check — the dialog is proof the app is alive.
-          sleep 6
-          RESUMED=$(adb -s $DEVICE shell dumpsys activity activities | grep -m1 ResumedActivity | head -1)
-          echo "Resumed (initial): $RESUMED"
-          if echo "$RESUMED" | grep -q "permissioncontroller"; then
-            adb -s $DEVICE shell input keyevent KEYCODE_BACK
-            sleep 2
-            RESUMED=$(adb -s $DEVICE shell dumpsys activity activities | grep -m1 ResumedActivity | head -1)
-            echo "Resumed (after BACK): $RESUMED"
-          fi
-          if ! echo "$RESUMED" | grep -q "com.ironpulse.app.e2e"; then
-            echo "ERROR: e2e app is not the resumed activity — launch likely crashed. Aborting nightly."
-            exit 1
-          fi
-
       - name: Save user's pre-run media volume
         id: save_state
         run: |
@@ -396,64 +324,82 @@ jobs:
           echo "Media volume after mute attempt:"
           adb -s $DEVICE shell cmd media_session volume --stream 3 --get || true
 
-      - name: Run E2E flows against coexist build (com.ironpulse.app.e2e)
+      - name: Run nightly E2E suite
+        # Delegates device prep/unlock, backend bring-up, fixture reset,
+        # APK install, preflight, main suite, prod smoke and full teardown
+        # to apps/mobile/scripts/nightly-e2e.sh. set +e so the post-suite
+        # cleanup steps (volume restore, device restore, lock release,
+        # artifact upload, dashboard publish) always run even on failure.
+        # The "Fail the run" gate at the end re-raises the exit code.
+        id: e2e
+        env:
+          E2E_APK: ${{ github.workspace }}/apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          E2E_OUT_DIR: ${{ github.workspace }}/e2e-reports
+          ADB_PIN: ${{ secrets.ADB_PIN }}
+        run: |
+          set +e
+          bash apps/mobile/scripts/nightly-e2e.sh
+          echo "runner_rc=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Parse junit results from runner reports
+        # The runner writes suite.xml and smoke.xml (junit format) to
+        # E2E_OUT_DIR. Extract pass/fail counts and failed flow names from
+        # the junit <testsuite> root attributes and <testcase> children so
+        # the dashboard publish and final gate steps can consume them via the
+        # same output names they used before (e2e_pass, e2e_fail, etc.).
         id: e2e_main
+        if: always()
+        env:
+          E2E_OUT_DIR: ${{ github.workspace }}/e2e-reports
         run: |
-          set +e
-          # The committed flow files use `appId: com.ironpulse.app` (the
-          # shipping package). At run time we need to drive the .e2e coexist
-          # build instead. Mirror the approach in apps/mobile/scripts/nightly-e2e.sh:
-          # copy flows into a temp dir, then sed-rewrite the appId line in each
-          # file (anchored to end-of-line so it never double-suffixes). The
-          # committed flows are left untouched.
-          RUN_DIR=/tmp/zor-e2e-run
-          rm -rf "$RUN_DIR"; mkdir -p "$RUN_DIR"
-          cp apps/mobile/e2e/*.yaml "$RUN_DIR"/
-          sed -i 's/^appId: com\.ironpulse\.app$/appId: com.ironpulse.app.e2e/' "$RUN_DIR"/*.yaml
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET, os, sys
 
-          PASS=0; FAIL=0; FAILED_FLOWS=""
-          for flow in apps/mobile/e2e/*.yaml; do
-            name=$(basename "$flow")
-            tmp_flow="$RUN_DIR/$name"
-            echo "::group::$name"
-            adb -s 100.69.203.52:5555 shell am force-stop com.ironpulse.app.e2e
-            maestro --device 100.69.203.52:5555 test "$tmp_flow"
-            if [ $? -eq 0 ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED_FLOWS="$FAILED_FLOWS $name"; fi
-            echo "::endgroup::"
-          done
-          echo "e2e_pass=$PASS" >> "$GITHUB_OUTPUT"
-          echo "e2e_fail=$FAIL" >> "$GITHUB_OUTPUT"
-          echo "e2e_failed_flows=$FAILED_FLOWS" >> "$GITHUB_OUTPUT"
+          out = os.environ.get("E2E_OUT_DIR", "")
+          github_output = os.environ.get("GITHUB_OUTPUT", "")
 
-      - name: Run smoke flows against shipping build (com.ironpulse.app)
-        id: e2e_smoke
-        run: |
-          set +e
-          # Smoke flows are committed against com.ironpulse.app (the shipping
-          # build) directly — no appId rewrite needed. This validates the literal
-          # store artifact boots + authenticates on the real device.
-          # The shipping build must already be installed by the developer (Play
-          # release channel) — CI does not build it. Skip if absent so the
-          # nightly still reports coexist e2e results.
-          if ! adb -s 100.69.203.52:5555 shell pm list packages | grep -q '^package:com.ironpulse.app$'; then
-            echo "::warning::com.ironpulse.app (shipping build) not installed — skipping smoke flows."
-            echo "smoke_pass=0" >> "$GITHUB_OUTPUT"
-            echo "smoke_fail=0" >> "$GITHUB_OUTPUT"
-            echo "smoke_failed_flows=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          PASS=0; FAIL=0; FAILED_FLOWS=""
-          for flow in apps/mobile/e2e-smoke/*.yaml; do
-            name=$(basename "$flow")
-            echo "::group::smoke/$name"
-            adb -s 100.69.203.52:5555 shell am force-stop com.ironpulse.app
-            maestro --device 100.69.203.52:5555 test "$flow"
-            if [ $? -eq 0 ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED_FLOWS="$FAILED_FLOWS $name"; fi
-            echo "::endgroup::"
-          done
-          echo "smoke_pass=$PASS" >> "$GITHUB_OUTPUT"
-          echo "smoke_fail=$FAIL" >> "$GITHUB_OUTPUT"
-          echo "smoke_failed_flows=$FAILED_FLOWS" >> "$GITHUB_OUTPUT"
+          def parse_junit(path):
+              """Return (passed, failed, failed_names) from a junit xml file."""
+              if not os.path.isfile(path):
+                  return 0, 0, []
+              try:
+                  root = ET.parse(path).getroot()
+                  # junit root may be <testsuite> or <testsuites> wrapping one or more
+                  suite = root if root.tag == "testsuite" else root.find("testsuite")
+                  if suite is None:
+                      return 0, 0, []
+                  total   = int(suite.get("tests",    "0") or 0)
+                  failures= int(suite.get("failures", "0") or 0)
+                  errors  = int(suite.get("errors",   "0") or 0)
+                  bad     = failures + errors
+                  passed  = max(0, total - bad)
+                  # Collect names of testcases that contain a <failure> or <error> child
+                  failed_names = [
+                      tc.get("name", "unknown")
+                      for tc in suite.iter("testcase")
+                      if tc.find("failure") is not None or tc.find("error") is not None
+                  ]
+                  return passed, bad, failed_names
+              except Exception as exc:
+                  print(f"WARNING: could not parse {path}: {exc}", file=sys.stderr)
+                  return 0, 0, []
+
+          e2e_pass, e2e_fail, e2e_failed = parse_junit(os.path.join(out, "suite.xml"))
+          smoke_pass, smoke_fail, smoke_failed = parse_junit(os.path.join(out, "smoke.xml"))
+
+          lines = [
+              f"e2e_pass={e2e_pass}",
+              f"e2e_fail={e2e_fail}",
+              f"e2e_failed_flows={' '.join(e2e_failed)}",
+              f"smoke_pass={smoke_pass}",
+              f"smoke_fail={smoke_fail}",
+              f"smoke_failed_flows={' '.join(smoke_failed)}",
+          ]
+          print("\n".join(lines))
+          if github_output:
+              with open(github_output, "a") as fh:
+                  fh.write("\n".join(lines) + "\n")
+          PY
 
       - name: Restore user's pre-run media volume
         if: always()
@@ -495,9 +441,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: maestro-results
-          path: |
-            pre-pin.png
-            pin-debug.png
+          path: ${{ github.workspace }}/e2e-reports/
           if-no-files-found: warn
 
       - name: Publish results to e2e.hiten-patel.co.uk
@@ -507,9 +451,9 @@ jobs:
           E2E_PASS: ${{ steps.e2e_main.outputs.e2e_pass }}
           E2E_FAIL: ${{ steps.e2e_main.outputs.e2e_fail }}
           E2E_FAILED_FLOWS: ${{ steps.e2e_main.outputs.e2e_failed_flows }}
-          SMOKE_PASS: ${{ steps.e2e_smoke.outputs.smoke_pass }}
-          SMOKE_FAIL: ${{ steps.e2e_smoke.outputs.smoke_fail }}
-          SMOKE_FAILED_FLOWS: ${{ steps.e2e_smoke.outputs.smoke_failed_flows }}
+          SMOKE_PASS: ${{ steps.e2e_main.outputs.smoke_pass }}
+          SMOKE_FAIL: ${{ steps.e2e_main.outputs.smoke_fail }}
+          SMOKE_FAILED_FLOWS: ${{ steps.e2e_main.outputs.smoke_failed_flows }}
           RUN_ID: ${{ github.run_number }}
         run: |
           if [ -z "$E2E_INGEST_TOKEN" ]; then
@@ -560,15 +504,23 @@ jobs:
         if: always()
         env:
           E2E_FAIL: ${{ steps.e2e_main.outputs.e2e_fail }}
-          SMOKE_FAIL: ${{ steps.e2e_smoke.outputs.smoke_fail }}
+          SMOKE_FAIL: ${{ steps.e2e_main.outputs.smoke_fail }}
           E2E_PASS: ${{ steps.e2e_main.outputs.e2e_pass }}
-          SMOKE_PASS: ${{ steps.e2e_smoke.outputs.smoke_pass }}
+          SMOKE_PASS: ${{ steps.e2e_main.outputs.smoke_pass }}
           E2E_FLOWS: ${{ steps.e2e_main.outputs.e2e_failed_flows }}
-          SMOKE_FLOWS: ${{ steps.e2e_smoke.outputs.smoke_failed_flows }}
+          SMOKE_FLOWS: ${{ steps.e2e_main.outputs.smoke_failed_flows }}
+          RUNNER_RC: ${{ steps.e2e.outputs.runner_rc }}
         run: |
           set -eu
           if [ "${DEVICE_UNREACHABLE:-}" = "1" ]; then
             echo "::error::Device was unreachable — no flows ran."
+            exit 1
+          fi
+          # Also fail if the runner itself exited nonzero for a reason that
+          # produced no junit output (e.g. device prep failure, backend never
+          # healthy, fixture reset failed, APK not found).
+          if [ "${RUNNER_RC:-0}" != "0" ]; then
+            echo "::error::nightly-e2e.sh exited with rc=${RUNNER_RC} — check run.log in the uploaded artifact."
             exit 1
           fi
           TOTAL=$(( ${E2E_FAIL:-0} + ${SMOKE_FAIL:-0} ))

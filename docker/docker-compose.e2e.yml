@@ -1,0 +1,82 @@
+## Isolated stack for mobile Maestro E2E runs.
+##
+##   docker compose -f docker/docker-compose.yml -f docker/docker-compose.e2e.yml \
+##     --profile sync up -d --wait
+##
+## The top-level `name` puts every container and volume under the `zor-e2e`
+## project, so tearing this down can never touch the shared dev stack (project
+## `docker`) or its pgdata. Ports are offset by +100 from dev for the same
+## reason. The device reaches the API over Tailscale, so NEXTAUTH_URL and
+## NEXT_PUBLIC_POWERSYNC_URL must be the Tailscale address rather than a
+## container hostname — the phone resolves neither `ironpulse` nor `localhost`.
+name: zor-e2e
+
+services:
+  ironpulse:
+    # The base file reads docker/.env for optional integration keys, which only
+    # exists on a developer host. Dropping it keeps this stack self-contained so
+    # CI can bring it up from a fresh checkout; e2e.env supplies everything the
+    # base compose actually requires.
+    env_file: !override []
+    ports: !override
+      - "3100:3000"
+    environment:
+      NEXTAUTH_URL: "http://100.113.79.51:3100"
+      NEXT_PUBLIC_POWERSYNC_URL: "http://100.113.79.51:8180"
+      # sync.getToken hands this to the device as the sync endpoint; without it
+      # the API falls back to http://localhost:8080, which on the phone is the
+      # phone itself — app then sits in offline fallback with empty data.
+      POWERSYNC_URL: "http://100.113.79.51:8180"
+    # Nightly brings this up and tears it down; a restart policy would resurrect
+    # containers after the run and hold the ports.
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  postgres:
+    ports: !override
+      - "5532:5432"
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  redis:
+    ports: !override []
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  minio:
+    ports: !override []
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  mongo:
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  powersync:
+    ports: !override
+      - "8180:80"
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:80/probes/liveness').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12

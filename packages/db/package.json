@@ -11,6 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:seed:dev": "tsx seeds/seed-dev.ts",
+    "db:reset:e2e": "tsx scripts/reset-mobile-e2e.ts",
+    "db:seed:e2e:superset": "tsx scripts/seed-e2e-superset.ts",
     "db:studio": "prisma studio",
     "lint": "tsc --noEmit && eslint src/",
     "postinstall": "prisma generate",

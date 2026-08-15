@@ -1,0 +1,107 @@
+appId: com.ironpulse.app
+---
+# Flow 4 (TASK-23.8): Completed-set edit and conditional Undo.
+#
+# Sub-scenario A: Complete a set → Undo within 5 s → set re-opens.
+# Sub-scenario B: Complete two sets → let Undo window expire →
+#                 tap completed row to edit → dock shows Return to Next Set.
+#
+# Fixture: "E2E — Strength A" template with ≥2 sets on the first exercise.
+# "Undo last set" is an accessibilityLabel (no testID on that button).
+# "Return to next set" is an accessibilityLabel (no testID on that button).
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Load template ───────────────────────────────────────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+- tapOn:
+    id: "templates-chip"
+- extendedWaitUntil:
+    visible: "E2E — Strength A"
+    timeout: 10000
+- tapOn: "E2E — Strength A"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ── Sub-scenario A: Complete Set 1 then Undo within the 5-second window ─────
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "80"
+- tapOn:
+    text: "Repetitions"
+- inputText: "8"
+- tapOn:
+    text: "Complete set"
+# Undo button is available immediately after completion; tap it right away
+- tapOn:
+    text: "Undo last set"
+# Set must be re-opened — dock returns to Complete Set mode
+- assertVisible:
+    text: "Complete set"
+
+# ── Re-complete Set 1 (Undo consumed for this set) ─────────────────────────
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Complete Set 2 ──────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Sub-scenario B: After Undo window expires, tap a completed row to edit ──
+# The row is only editable once the Undo affordance for the last set has
+# expired. Assert on its disappearance rather than sleeping past it.
+- extendedWaitUntil:
+    notVisible: "Undo last set"
+    timeout: 15000
+# Tap the first completed set row by its accessibilityLabel suffix "completed"
+# The label pattern is: "Set N: Xkg × Y reps, completed"
+- tapOn:
+    text: "Set 1: 80kg × 8 reps, completed"
+# Dock must now show Return to Next Set
+- assertVisible:
+    text: "Return to next set"
+# Return to canonical focus
+- tapOn:
+    text: "Return to next set"
+- assertVisible:
+    text: "Complete set"
+
+# ── Finish (remaining sets are untouched — partial-finish sheet expected) ───
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible: "Finish anyway"
+    commands:
+      - tapOn: "Finish anyway"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

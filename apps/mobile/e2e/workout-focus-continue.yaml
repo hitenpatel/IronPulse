@@ -1,0 +1,104 @@
+appId: com.ironpulse.app
+---
+# Flow 6 (TASK-23.8): kill the process mid-workout, relaunch, and resume the
+# newest incomplete workout from the dashboard's Continue card.
+#
+# `killApp` terminates the process without clearing storage, so the local
+# PowerSync database survives exactly as it would after a real OOM kill. The
+# relaunch deliberately omits clearState for the same reason.
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Start an empty workout and add Deadlift ─────────────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+- tapOn:
+    id: "add-exercise-button"
+- extendedWaitUntil:
+    visible:
+      id: "search-input"
+    timeout: 10000
+- tapOn:
+    id: "search-input"
+- inputText: "Barbell Deadlift"
+- extendedWaitUntil:
+    visible:
+      id: "exercise-option-__EXERCISE_DEADLIFT__"
+    timeout: 10000
+- tapOn:
+    id: "exercise-option-__EXERCISE_DEADLIFT__"
+- tapOn:
+    id: "add-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ── Complete one set so the workout has persisted data ──────────────────────
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "120"
+- tapOn:
+    text: "Repetitions"
+- inputText: "5"
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+
+# ── Kill the process mid-rest, then relaunch ────────────────────────────────
+- killApp
+
+- launchApp:
+    clearKeychain: false
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
+- waitForAnimationToEnd
+
+# Dashboard must show the Continue Workout card for the newest incomplete
+# workout.  The workout entry card exposes next-up-hero in continue state.
+- assertVisible:
+    id: "next-up-hero"
+- assertVisible: "Continue Workout"
+
+# Tap Continue
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 20000
+- waitForAnimationToEnd
+
+# Completed set should be visible in the focused exercise (collapsed row).
+# The dock should point to the next incomplete set or show "Complete Set".
+- assertVisible:
+    id: "finish-button"
+- assertVisible:
+    id: "complete-set"
+
+# Finish to clean up
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible: "Finish anyway"
+    commands:
+      - tapOn: "Finish anyway"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000

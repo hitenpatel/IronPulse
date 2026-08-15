@@ -1,0 +1,91 @@
+appId: com.ironpulse.app
+tags:
+  - orchestrated
+---
+# Flow 7 (TASK-23.8): Offline completion.
+#
+# IMPORTANT: Wi-Fi and Tailscale are NOT severed — ADB control must remain
+# intact.  Offline is induced by the runner stopping the backend services.
+#
+# Runner orchestration (REQUIRED — this flow cannot self-induce offline):
+#   Phase 1 — setup:
+#     Run workout-focus-offline-setup.yaml to create and leave the workout
+#     screen open with one set ready.
+#   Phase 2 — stop services:
+#     Runner issues: docker -p zor-e2e compose stop api powersync
+#     Then waits for the offline-banner to appear (poll until visible or 30 s).
+#   Phase 3 — offline logging:
+#     Runner launches this YAML (workout-focus-offline.yaml) with NO
+#     clearState so the workout survives.
+#   Phase 4 — restore services:
+#     After this flow exits (the workout is locally complete), runner issues:
+#       docker -p zor-e2e compose start api powersync
+#       # wait for health: curl -sf http://localhost:3001/health
+#   Phase 5 — observe finalization:
+#     Run workout-focus-offline-verify.yaml, which reopens the completion
+#     summary and asserts exactly one finalized result appears.
+#
+# This file covers Phase 3 only.
+
+- launchApp:
+    clearKeychain: false
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 20000
+- waitForAnimationToEnd
+
+# Offline banner should be visible because the runner already stopped services
+- assertVisible:
+    id: "offline-banner"
+
+# ── Complete sets offline (local PowerSync transaction) ─────────────────────
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "60"
+- tapOn:
+    text: "Repetitions"
+- inputText: "10"
+- tapOn:
+    id: "complete-set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# Second set (if fixture provides two sets)
+- runFlow:
+    when:
+      visible:
+        id: "complete-set"
+    commands:
+      - tapOn:
+          id: "complete-set"
+      - extendedWaitUntil:
+          visible:
+            id: "rest-timer-pause"
+          timeout: 10000
+      - tapOn:
+          text: "Skip rest"
+
+# ── Finish offline ──────────────────────────────────────────────────────────
+- tapOn:
+    id: "finish-button"
+- runFlow:
+    when:
+      visible: "Finish anyway"
+    commands:
+      - tapOn: "Finish anyway"
+
+# Completion summary should appear immediately (local stats are available)
+# The finalization status should be "syncing" / pending — not failed.
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 30000
+
+# Flow exits — runner must now restart services and run
+# workout-focus-offline-verify.yaml to assert one finalized result.

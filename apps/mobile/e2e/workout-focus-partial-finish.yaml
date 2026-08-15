@@ -1,0 +1,87 @@
+appId: com.ironpulse.app
+---
+# Flow 8 (TASK-23.8): Partial finish with a mix of entered and untouched sets.
+#
+# Scenario:
+#   - Load "E2E — Strength A" (two exercises, two sets each).
+#   - Complete only one set on Exercise 1 (entered + touched values).
+#   - Leave Exercise 1 Set 2 and both Exercise 2 sets entirely untouched.
+#   - Tap Finish → partial-finish sheet appears.
+#   - Tap "Return to workout" → workout stays open.
+#   - Tap Finish again → tap "Finish workout anyway" → lands on dashboard.
+#
+# workout-finish-sheet.tsx uses accessibilityLabels only (no testIDs).
+
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- runFlow: _login.yaml
+
+# ── Load template ───────────────────────────────────────────────────────────
+- tapOn:
+    id: "next-up-hero"
+- extendedWaitUntil:
+    visible:
+      id: "add-exercise-button"
+    timeout: 20000
+- tapOn:
+    id: "templates-chip"
+- extendedWaitUntil:
+    visible: "E2E — Strength A"
+    timeout: 10000
+- tapOn: "E2E — Strength A"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 15000
+- waitForAnimationToEnd
+
+# ── Complete only Set 1 of Exercise 1 ──────────────────────────────────────
+- tapOn:
+    text: "Weight in kilograms"
+- inputText: "80"
+- tapOn:
+    text: "Repetitions"
+- inputText: "8"
+- tapOn:
+    text: "Complete set"
+- extendedWaitUntil:
+    visible:
+      id: "rest-timer-pause"
+    timeout: 10000
+- tapOn:
+    text: "Skip rest"
+
+# ── Tap Finish without completing remaining sets ────────────────────────────
+- tapOn:
+    id: "finish-button"
+
+# Partial-finish sheet must appear because incomplete sets with entered data exist
+- extendedWaitUntil:
+    visible:
+      text: "Finish workout anyway"
+    timeout: 10000
+- assertVisible:
+    text: "Return to workout"
+
+# ── Return to workout ───────────────────────────────────────────────────────
+- tapOn:
+    text: "Return to workout"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+
+# ── Finish anyway ───────────────────────────────────────────────────────────
+- tapOn:
+    id: "finish-button"
+- extendedWaitUntil:
+    visible:
+      text: "Finish workout anyway"
+    timeout: 10000
+- tapOn:
+    text: "Finish workout anyway"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
