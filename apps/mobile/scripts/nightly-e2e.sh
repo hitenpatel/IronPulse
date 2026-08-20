@@ -171,9 +171,12 @@ docker run --rm -v "$REPO/docker/sync-rules.yaml:/probe:ro" \
   || fail "docker daemon cannot see $REPO/docker — run this on the host that owns the daemon, or bind the checkout into the job container at the same path"
 
 log "starting zor-e2e stack (api :3100, powersync :8180)"
-# Output goes to the run log rather than /dev/null: a dependency that never
-# turns healthy is reported only here, and swallowing it turns a compose
-# failure into a misleading "service not answering" further down.
+# Compose output goes to BOTH stdout and run.log via tee: last four nightlies
+# failed inside `up --build`, but the failure reason lived only in run.log —
+# which is uploaded as an artifact whose download URL is not fetchable outside
+# the web UI. Duplicating to stdout lands the actual error in the job log.
+# `pipefail` is on, so the compose rc is what tee's pipeline exits with.
+#
 # Services are listed explicitly: `--wait` with no arguments also waits on the
 # one-shot minio-init and reports its clean exit as a failure. depends_on still
 # pulls the init containers in.
@@ -181,9 +184,17 @@ log "starting zor-e2e stack (api :3100, powersync :8180)"
 # of packages/db baked into its image, so a stale image silently reverts schema
 # changes made in the checkout — which then surfaces as a seed/query error far
 # from the cause. Layer cache makes this a no-op when nothing changed.
-( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" up -d --build --wait --wait-timeout 300 \
-    postgres redis minio mongo ironpulse powersync ) \
-  >>"$OUT/run.log" 2>&1 || fail "zor-e2e stack did not come up (see $OUT/run.log)"
+if ! ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" up -d --build --wait --wait-timeout 300 \
+    postgres redis minio mongo ironpulse powersync ) 2>&1 | tee -a "$OUT/run.log"; then
+  log "compose bring-up failed — dumping per-service state + last 100 lines of each container's logs"
+  ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" ps -a ) 2>&1 | tee -a "$OUT/run.log" || true
+  for svc in postgres redis minio mongo ironpulse powersync; do
+    log "--- logs: $svc ---"
+    ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" logs --tail=100 --no-color "$svc" ) 2>&1 \
+      | tee -a "$OUT/run.log" || true
+  done
+  fail "zor-e2e stack did not come up (see $OUT/run.log + inline dump above)"
+fi
 BACKEND_UP=0
 for i in $(seq 1 20); do
   if curl -fsS --max-time 10 "$E2E_API/api/health" >/dev/null 2>&1; then
