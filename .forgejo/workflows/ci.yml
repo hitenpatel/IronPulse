@@ -124,6 +124,15 @@ jobs:
             nextjs-${{ runner.os }}-
       - name: Build web app
         run: pnpm --filter @zor/web build
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: |
+            apps/web/.next
+            apps/web/public
+          retention-days: 1
+          include-hidden-files: true
 
   # ── Lighthouse CI: web performance + a11y budgets ──
   lighthouse:
@@ -139,8 +148,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build web app
-        run: pnpm --filter @zor/web build
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: apps/web
       - name: Run Lighthouse CI
         run: |
           # Run lighthouse against locally-served build
@@ -209,8 +221,11 @@ jobs:
           pnpm --filter @zor/db db:seed:dev
       - name: Install Playwright browsers
         run: pnpm --filter @zor/web exec playwright install --with-deps chromium
-      - name: Build web app
-        run: pnpm --filter @zor/web build
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: apps/web
       - name: Start API server
         # next.config.ts sets output: "standalone", which means `next start`
         # silently no-ops (Next prints a warning then never accepts requests).
