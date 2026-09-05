@@ -1,0 +1,8 @@
+Clash Display font files in this directory are the Clash Display typeface
+published by the Indian Type Foundry (ITF) via Fontshare and are licensed
+under the ITF Free Font License (ITF FFL). The unmodified license text is
+available at https://www.fontshare.com/licenses/itf-ffl.
+
+Files self-hosted here to avoid a third-party runtime dependency on
+fontshare.com and the associated privacy/latency cost of loading fonts
+from an external CDN. Source: https://www.fontshare.com/fonts/clash-display

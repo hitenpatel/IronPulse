@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "@/styles/globals.css";
 import { Providers } from "@/components/providers";
 import { WebVitalsReporter } from "@/components/web-vitals-reporter";
@@ -9,12 +10,14 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Space Grotesk as display font (closest Google Fonts match to Clash Display)
-// TODO: Replace with local Clash Display font files when available
-const displayFont = Space_Grotesk({
-  subsets: ["latin"],
+const displayFont = localFont({
   variable: "--font-clash-display",
-  weight: ["500", "600", "700"],
+  display: "swap",
+  src: [
+    { path: "../../public/fonts/clash-display/ClashDisplay-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../../public/fonts/clash-display/ClashDisplay-Semibold.woff2", weight: "600", style: "normal" },
+    { path: "../../public/fonts/clash-display/ClashDisplay-Bold.woff2", weight: "700", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {

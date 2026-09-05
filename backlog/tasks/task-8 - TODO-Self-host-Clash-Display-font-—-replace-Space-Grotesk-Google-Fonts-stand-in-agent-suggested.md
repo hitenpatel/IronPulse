@@ -3,10 +3,10 @@ id: TASK-8
 title: >-
   TODO: Self-host Clash Display font — replace Space Grotesk Google Fonts
   stand-in (agent-suggested)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-05 18:13'
 labels:
   - agent-suggested
   - gdpr
@@ -64,3 +64,9 @@ high — directly evidenced by a 37-day-old actionable TODO with a clear owner (
 ---
 *Filed by IronPulse Product Owner · agent-suggested · weekly Sunday sweep*
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Self-hosted Clash Display Medium/Semibold/Bold under apps/web/public/fonts/clash-display/ (3 woff2 files, ~45KB total) from the Fontshare CDN. Switched apps/web/src/app/layout.tsx from next/font/google (Space_Grotesk stand-in) to next/font/local pointing at those files, dropped the aged TODO. Tailwind config already reads --font-clash-display so no downstream changes. Build green: next/font/local emits the three woff2 files under .next/static/media/ with content-hashed filenames. LICENSE.txt at apps/web/public/fonts/clash-display/LICENSE.txt attributes the ITF Free Font License and Fontshare source.
+<!-- SECTION:NOTES:END -->
