@@ -125,7 +125,7 @@ jobs:
       - name: Build web app
         run: pnpm --filter @zor/web build
       - name: Upload web build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: web-build
           path: |
@@ -149,7 +149,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Download web build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: web-build
           path: apps/web
@@ -159,7 +159,7 @@ jobs:
           pnpm --filter @zor/web exec lhci autorun --config=../../lighthouserc.json || echo "Lighthouse assertions failed (advisory)"
       - name: Upload Lighthouse report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: lighthouse-report
           path: |
@@ -222,7 +222,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @zor/web exec playwright install --with-deps chromium
       - name: Download web build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: web-build
           path: apps/web
@@ -256,7 +256,7 @@ jobs:
           echo "=== /tmp/web-server.log ==="
           cat /tmp/web-server.log || echo "(no log)"
           echo "=== end ==="
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: playwright-report
