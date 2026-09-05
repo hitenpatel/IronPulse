@@ -1,10 +1,10 @@
 ---
 id: TASK-16
 title: 'test-blocked: haptics.ts trigger mapping untestable in ESM environment'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-05 17:00'
 labels:
   - bug
   - testing
@@ -39,3 +39,9 @@ The `tryTrigger()` helper uses a dynamic `require()` call within a try/catch. Vi
 - Refactoring non-haptics test infrastructure
 - Adding other missing mobile tests
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Applied the same require-shim pattern used in lib/notifications.ts: read require from globalThis explicitly (falling back to a real Metro require at runtime), so tests can stub it with vi.stubGlobal in ESM. Rewrote lib/__tests__/haptics.test.ts to cover the enum-to-trigger-string mappings for impactAsync (Light/Medium/Heavy + default + unknown), notificationAsync (Success/Warning/Error + default + unknown) and selectionAsync, plus the no-op fallback branches (no require, thrown trigger, missing trigger fn). 29 assertions green, full mobile vitest suite 336/336.
+<!-- SECTION:NOTES:END -->

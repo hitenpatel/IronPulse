@@ -17,7 +17,15 @@ export enum NotificationFeedbackType {
 
 function tryTrigger(type: string) {
   try {
-    const HapticFeedback = require("react-native-haptic-feedback").default;
+    // Prefer an injected global `require` (tests) over Metro's runtime
+    // require; a bare `require` reference is a ReferenceError under ESM
+    // (Vitest) and cannot be intercepted by test stubs. Mirrors the same
+    // pattern used in ./notifications.ts.
+    const req =
+      (globalThis as { require?: (id: string) => unknown }).require ??
+      (typeof require === "function" ? require : null);
+    if (!req) return;
+    const HapticFeedback = (req("react-native-haptic-feedback") as { default?: { trigger?: (t: string) => void } }).default;
     HapticFeedback?.trigger?.(type);
   } catch {
     // Native module not available — no-op
