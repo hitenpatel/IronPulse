@@ -338,8 +338,8 @@ jobs:
           # pnpm setup mirrors other jobs
           corepack enable
           pnpm install --frozen-lockfile
-          pnpm --filter @mettlelift/web exec playwright install --with-deps chromium
-          BASE_URL=https://staging.mettlelift.hiten-patel.co.uk pnpm --filter @mettlelift/web exec playwright test e2e/auth-login.spec.ts e2e/goals.spec.ts
+          pnpm --filter @zor/web exec playwright install --with-deps chromium
+          BASE_URL=https://staging.mettlelift.hiten-patel.co.uk pnpm --filter @zor/web exec playwright test e2e/auth-login.spec.ts e2e/goals.spec.ts
         env:
           TEST_USER_PASSWORD: ${{ secrets.STAGING_TEST_USER_PASSWORD }}
 

@@ -3,10 +3,10 @@ id: TASK-14
 title: >-
   staging unhealthy: /api/health returned 404 — staging unreachable for QA sweep
   2026-05-10
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-05 16:54'
 labels:
   - agent-suggested
   - bug
@@ -69,3 +69,9 @@ Staging deployment failure prevents QA test execution and blocks verification of
 ---
 *Filed by IronPulse QA · agent-suggested · weekly Sunday sweep · 2026-05-10*
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Verified staging health passes at the current hostname staging.mettlelift.hiten-patel.co.uk (200 with services db/redis/s3 all ok). Old hostname staging.ironpulse.hiten-patel.co.uk was retired during rebrand — task chased dead DNS. Also fixed a live ci.yml bug at deploy-staging.Smoke: pnpm --filter @mettlelift/web -> @zor/web (package was renamed but the two smoke playwright lines were not updated).
+<!-- SECTION:NOTES:END -->
