@@ -1,10 +1,10 @@
 ---
 id: TASK-28
 title: Nightly Maestro on Pixel (chained after RadioShake)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 07:24'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-05 18:04'
 labels:
   - ci
   - mobile
@@ -37,3 +37,9 @@ Flow structure: 45 flat flows in apps/mobile/e2e + 3 in apps/mobile/e2e-smoke. R
 
 Reference: /home/ubuntu/dev/RadioShake/.forgejo/workflows/maestro-nightly.yml. Copy adb setup, PIN entry, locale save/restore, media mute, lock coordination, results ingest, change-detection preflight verbatim; swap gradle target + package id (com.mettlelift.app.e2e) + flow paths.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Already implemented in .forgejo/workflows/maestro-nightly.yml. Cross-check vs task description: schedule cron '30 3 * * *' (line 8, 03:30 UTC as specified); changes preflight job skips scheduled runs when HEAD is unchanged since the last successful scheduled run of this same workflow (lines 12-56); runs on arm64-dind runner (same Oracle arm-vm as RadioShake); builds locally via expo prebuild + gradle assembleRelease (recommended strategy 2, lines 187-232); Pixel 9 Pro XL at 100.69.203.52:5555 over Tailscale ADB; package id com.ironpulse.app.e2e post-rebrand (line 191); lock coordination at /home/ubuntu/stack/pixel-e2e-lock with owner=zor (lines 240-434) — task description said /tmp/pixel-e2e-lock but the actual location moved to the shared mount in commit d2405d0. Recent work (commits c7eaa37, d2405d0, b487ff7, 8e2ef06) repaired the pipeline; the powersync bind-mount fix from this session should be validated by manual dispatch run 540 already in flight.
+<!-- SECTION:NOTES:END -->
