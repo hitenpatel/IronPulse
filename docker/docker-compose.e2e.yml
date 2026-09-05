@@ -68,6 +68,17 @@ services:
           memory: 512m
 
   powersync:
+    # The bind mounts in the base compose file resolve on the DOCKER DAEMON's
+    # filesystem. Under the arm64-dind Forgejo runner the daemon lives on the
+    # host while the checkout lives inside the job container, so those paths
+    # don't exist for the daemon and Docker auto-creates empty directories —
+    # PowerSync then dies with EISDIR reading /app/powersync.yaml. Build a
+    # tiny image that bakes both configs in, so no bind mount is needed.
+    build:
+      context: .
+      dockerfile: powersync/Dockerfile
+    image: zor-e2e-powersync:local
+    volumes: !override []
     ports: !override
       - "8180:80"
     restart: "no"

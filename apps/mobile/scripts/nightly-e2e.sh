@@ -166,8 +166,12 @@ esac
 # the host's docker.sock the checkout is invisible to the daemon, so those
 # mounts silently become empty directories and PowerSync boots with no sync
 # rules. Probe for that here rather than debugging it as a flow failure.
+# NOTE: `test -s` returns true for a non-empty directory too, so the previous
+# version silently passed when Docker auto-created empty dirs on the host in
+# place of missing files. `test -f` is what we actually want here — regular
+# file only.
 docker run --rm -v "$REPO/docker/sync-rules.yaml:/probe:ro" \
-  --entrypoint test alpine -s /probe >/dev/null 2>&1 \
+  --entrypoint test alpine -f /probe >/dev/null 2>&1 \
   || fail "docker daemon cannot see $REPO/docker — run this on the host that owns the daemon, or bind the checkout into the job container at the same path"
 
 log "starting zor-e2e stack (api :3100, powersync :8180)"
