@@ -155,9 +155,20 @@ PYEOF
     TUNNEL_PID=$!
     MAESTRO_DEVICE="127.0.0.1:$TUNNEL_PORT"
     sleep 1
-    adb connect "$MAESTRO_DEVICE" >>"$OUT/run.log" 2>&1
-    adb -s "$MAESTRO_DEVICE" get-state 2>/dev/null | grep -q device \
-      || fail "loopback tunnel serial $MAESTRO_DEVICE not usable (port $TUNNEL_PORT busy?)"
+    # Tee adb + tunnel diagnostics to stdout so a bind/connect failure is
+    # visible in the CI job log directly rather than only in the artifact
+    # (see [[feedback_forgejo_artifact_download]]).
+    log "adb connect $MAESTRO_DEVICE"
+    adb connect "$MAESTRO_DEVICE" 2>&1 | tee -a "$OUT/run.log"
+    log "adb get-state on $MAESTRO_DEVICE"
+    adb -s "$MAESTRO_DEVICE" get-state 2>&1 | tee -a "$OUT/run.log"
+    if ! adb -s "$MAESTRO_DEVICE" get-state 2>/dev/null | grep -q device; then
+      log "tunnel not usable — python listener + local port state:"
+      ps -o pid,cmd -p "$TUNNEL_PID" 2>&1 | tee -a "$OUT/run.log" || true
+      (ss -ltnp | grep ":$TUNNEL_PORT" || netstat -ltnp 2>/dev/null | grep ":$TUNNEL_PORT" || echo "no ss/netstat listener on $TUNNEL_PORT") 2>&1 | tee -a "$OUT/run.log"
+      tail -20 "$OUT/run.log" 2>&1 | tee -a "$OUT/run.log" || true
+      fail "loopback tunnel serial $MAESTRO_DEVICE not usable (port $TUNNEL_PORT busy?)"
+    fi
     log "maestro serial: $MAESTRO_DEVICE (tunnel pid $TUNNEL_PID -> $DEVICE)"
     ;;
 esac
