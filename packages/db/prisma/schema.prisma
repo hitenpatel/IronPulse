@@ -73,6 +73,7 @@ model User {
   notifications           Notification[]
   workoutFinalizations    WorkoutFinalization[]
   notificationOutbox      NotificationOutbox[]
+  webhookEvents           WebhookEvent[]
 
   @@map("users")
 }
@@ -410,7 +411,43 @@ model DeviceConnection {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, provider])
+  @@unique([provider, providerAccountId], name: "provider_provider_account_id_unique")
   @@map("device_connections")
+}
+
+// ─── Webhook Events Queue ─────────────────────────────
+
+enum WebhookEventStatus {
+  pending
+  processing
+  succeeded
+  skipped_no_connection
+  dlq
+}
+
+model WebhookEvent {
+  id                    String              @id @default(cuid())
+  provider              String              @db.VarChar(16)
+  externalId            String              @map("external_id") @db.VarChar(128)
+  userId                String?             @map("user_id") @db.Uuid
+  payload               Json
+  receivedAt            DateTime            @default(now()) @map("received_at")
+  status                WebhookEventStatus  @default(pending)
+  attempts              Int                 @default(0)
+  lastError             String?             @map("last_error") @db.Text
+  lastAttemptAt         DateTime?           @map("last_attempt_at")
+  processingStartedAt   DateTime?           @map("processing_started_at")
+  processingOwner       String?             @map("processing_owner") @db.VarChar(64)
+  nextAttemptAt         DateTime            @default(now()) @map("next_attempt_at")
+  completedAt           DateTime?           @map("completed_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([status, processingStartedAt])
+  @@index([userId])
+  @@unique([provider, externalId], name: "provider_external_id_unique")
+  @@map("webhook_events")
 }
 
 // ─── Progress Photos ──────────────────────────────────
