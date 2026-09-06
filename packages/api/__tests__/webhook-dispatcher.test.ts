@@ -218,6 +218,19 @@ describe("dispatchWebhookEvent — oura", () => {
       data: { lastSyncedAt: expect.any(Date) },
     });
   });
+
+  it("returns skipped_no_connection for an unrecognized data_type even with a live connection", async () => {
+    const conn = { id: "conn1", userId: "u1", syncEnabled: true };
+    const db = fakeDb([{ where: { provider: "oura", providerAccountId: "u1" }, result: conn }]);
+    const unknownPayload = { event_type: "create", data_type: "activity", user_id: "u1", event_date: "2026-09-06" };
+
+    const result = await dispatchWebhookEvent({ provider: "oura", payload: unknownPayload, db });
+
+    expect(result).toEqual({ kind: "skipped_no_connection" });
+    expect(importers.importOuraSleep).not.toHaveBeenCalled();
+    expect(importers.importOuraReadiness).not.toHaveBeenCalled();
+    expect(db.deviceConnection.update).not.toHaveBeenCalled();
+  });
 });
 
 // ---------- Withings ----------
