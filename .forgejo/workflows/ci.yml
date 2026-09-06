@@ -124,6 +124,16 @@ jobs:
             nextjs-${{ runner.os }}-
       - name: Build web app
         run: pnpm --filter @zor/web build
+      - name: Trim web build for artifact
+        # Forgejo's artifact backend chokes on multi-GB uploads; the raw
+        # .next tree is ~1.7 GB, dominated by .next/cache (1.4 GB — a
+        # per-machine incremental build cache, useless to other jobs) and
+        # .next/standalone/node_modules (~150 MB — recreated by downstream
+        # jobs' own pnpm install). Trim both before upload; keeps the
+        # artifact around ~70 MB, well within tolerated size.
+        run: |
+          rm -rf apps/web/.next/cache
+          rm -rf apps/web/.next/standalone/node_modules
       - name: Upload web build
         uses: actions/upload-artifact@v3
         with:
