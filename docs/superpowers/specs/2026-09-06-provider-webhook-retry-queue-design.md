@@ -16,11 +16,30 @@ or replay a dropped event.
 
 ## Goals
 
-- Every inbound webhook event survives the request that delivered it.
-- Transient failures self-heal via bounded retries.
-- Terminal failures surface a Sentry incident with enough context to act.
-- An operator can replay a dead-lettered event by hand from a documented curl command.
+- Every inbound webhook event that we accept (past filter + signature check +
+  zod parse) is persisted before the request returns, so the delivery survives
+  even if the importer or the process dies.
+- Transient failures self-heal via bounded retries (six attempts, exponential
+  backoff, DLQ at the sixth failure).
+- Terminal failures surface at most one Sentry incident per DLQ transition,
+  posted AFTER the DLQ commit, with `{provider, externalId, eventId, attempts}`
+  in Sentry `extra`.
+- An operator can replay a `dlq` or `skipped_no_connection` row by hand from
+  a documented curl command.
 - No new deployment surface (no new container, no new managed service).
+
+**Non-goals for the delivery invariant** (documented so nobody assumes them):
+- Filtered events (Strava `update`, Polar `PING`, empty Garmin batches, Oura
+  no-op event types) return 200 with no row on purpose.
+- Events for missing/disabled connections land as `skipped_no_connection`
+  terminal state, replayable after reconnection.
+- User-deletion cascade removes queued rows via `onDelete: Cascade` on the
+  `userId` FK; that is the intended GDPR behavior.
+- Importers themselves have known partial-failure weaknesses (Strava/Garmin
+  create a session before fetching route data and swallow route-fetch errors,
+  Oura readiness is best-effort). A successful dispatch does not guarantee
+  every downstream artefact landed. Hardening those is a separate ticket per
+  provider.
 
 ## Non-goals
 
@@ -115,11 +134,17 @@ model WebhookEvent {
 - `@@unique([provider, externalId])` gives duplicate-delivery immunity for
   all providers. Withings-specific caveat below.
 
-**Withings dedupe trade-off (user-approved).** A second Withings delivery with the
-same `grpid` but changed state is discarded, same failure mode as today. If this
-proves noisy in practice, the follow-up fix is per-day dedupe
-(`(provider, externalId, DATE(received_at))`) or the dispatcher re-reads live state
-on every dispatch. Documented as an accepted limitation, not a bug.
+**Withings dedupe trade-off (user-approved).** Withings notifications carry only
+`(userid, appli, startdate, enddate)` — no per-event id. `externalId` is the
+sha256 of the canonical inbound payload; two identical POSTs deduplicate,
+but two POSTs describing the same measurement window with different bytes are
+two rows (safer default — no data loss). `grpid` referenced in
+`packages/api/src/lib/withings.ts` lives on the measure groups FETCHED after
+the notification, not on the notification itself, so it cannot be used as a
+dedupe key at ingest. If notification-hash dedupe proves noisy, the follow-up
+fix is per-day dedupe (`(provider, appli, userid, DATE(received_at))`) or
+dropping the unique constraint for Withings and letting the dispatcher re-read
+live state on every dispatch.
 
 ### Webhook handler contract
 
@@ -269,7 +294,8 @@ returns JSON without touching queue state:
 
 ```
 {
-  "oldestPendingAgeSec": 42,
+  "dueCount": 1,
+  "oldestDueAgeSec": 42,
   "pendingCount": 3,
   "processingCount": 0,
   "dlqCount": 1,
@@ -277,9 +303,16 @@ returns JSON without touching queue state:
 }
 ```
 
+`dueCount` and `oldestDueAgeSec` restrict to `status='pending' AND
+next_attempt_at <= now()` — the actionable backlog. A row correctly
+scheduled hours in the future during backoff sits in `pendingCount` but
+does NOT contribute to `dueCount`, so a legitimate long backoff does
+not trip a "stuck queue" alert.
+
 Uptime Kuma probes THIS endpoint, not the worker, so a probe cannot itself
 cause the worker to advance the queue. Runbook thresholds:
-`oldestPendingAgeSec > 300` → warn; `dlqCount` change → alert.
+`oldestDueAgeSec > 300` → warn (worker behind on due work);
+`dlqCount` change → alert.
 
 ### Dispatcher
 
@@ -369,8 +402,8 @@ New page under Iron Pulse book (id 19): "Webhook event replay". Sections:
 
 ## Test strategy
 
-**Unit** (vitest, per package; tests live under `packages/api/src/lib/__tests__/`
-to match `packages/api/vitest.config.ts` include pattern):
+**Unit** (vitest, per package; tests live under `packages/api/__tests__/`
+to match `packages/api/vitest.config.ts` include pattern `["__tests__/**/*.test.ts"]`):
 
 - `webhook-dispatcher.test.ts` — mock each importer + DeviceConnection lookup;
   assert routing, `skipped_no_connection` return on missing/disabled connection,
