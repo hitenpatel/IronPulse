@@ -161,18 +161,9 @@ esac
 # 2. Test backend — bring up just for this run, tear down after (volumes kept,
 # so the seeded test users persist; the entrypoint re-runs idempotent db push +
 # base seed on each boot, seed:dev data survives in the pgdata volume).
-# The compose file bind-mounts ./powersync.yaml and ./sync-rules.yaml, which the
-# daemon resolves on ITS OWN filesystem. Under a Forgejo job container sharing
-# the host's docker.sock the checkout is invisible to the daemon, so those
-# mounts silently become empty directories and PowerSync boots with no sync
-# rules. Probe for that here rather than debugging it as a flow failure.
-# NOTE: `test -s` returns true for a non-empty directory too, so the previous
-# version silently passed when Docker auto-created empty dirs on the host in
-# place of missing files. `test -f` is what we actually want here — regular
-# file only.
-docker run --rm -v "$REPO/docker/sync-rules.yaml:/probe:ro" \
-  --entrypoint test alpine -f /probe >/dev/null 2>&1 \
-  || fail "docker daemon cannot see $REPO/docker — run this on the host that owns the daemon, or bind the checkout into the job container at the same path"
+# PowerSync configs (powersync.yaml, sync-rules.yaml) are now baked into
+# the e2e-only image built via docker/powersync/Dockerfile — no bind mount,
+# so daemon-visibility of the checkout no longer matters. Probe removed.
 
 log "starting zor-e2e stack (api :3100, powersync :8180)"
 # Compose output goes to BOTH stdout and run.log via tee: last four nightlies
