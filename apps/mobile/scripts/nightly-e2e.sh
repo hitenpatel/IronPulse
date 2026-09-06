@@ -18,7 +18,11 @@
 set -uo pipefail
 
 # Explicit PATH so this works under cron's minimal environment.
-export PATH="$HOME/.maestro/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
+# Prepend to the caller's PATH (not overwrite) — CI runners install pnpm and
+# other tooling to non-standard locations (pnpm/action-setup@v4 puts it at
+# $PNPM_HOME); overwriting PATH here strips those and makes `pnpm` etc.
+# invisible to the seed / fixture steps below.
+export PATH="$HOME/.maestro/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-arm64}"
 
 DEVICE="${E2E_DEVICE:-100.69.203.52:5555}"
