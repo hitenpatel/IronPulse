@@ -1,15 +1,10 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, WebhookEventStatus } from "@zor/db";
 import { db } from "@zor/db";
-import { importGarminActivity } from "@zor/api/src/lib/garmin";
+import { garminWebhookSchema } from "@zor/api/src/lib/webhook-schemas";
+import { hashPayload } from "@zor/api/src/lib/webhook-external-id";
 import { captureError } from "@zor/api/src/lib/capture-error";
-
-interface GarminWebhookPayload {
-  activityDetails?: Array<{
-    userId: string;
-    activityId: number;
-  }>;
-}
 
 /**
  * Constant-time comparison of hex-encoded signatures. Avoids early-exit
@@ -45,42 +40,43 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: GarminWebhookPayload;
+  let parsed;
   try {
-    body = JSON.parse(rawBody) as GarminWebhookPayload;
+    parsed = garminWebhookSchema.parse(JSON.parse(rawBody));
   } catch {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  const activities = body.activityDetails ?? [];
+  if (!parsed.activityDetails || parsed.activityDetails.length === 0) {
+    return NextResponse.json({ ok: true });
+  }
 
-  for (const activity of activities) {
-    // Fire-and-forget background processing
-    (async () => {
-      try {
-        const connection = await db.deviceConnection.findFirst({
-          where: {
-            provider: "garmin",
-            providerAccountId: String(activity.userId),
-          },
-        });
+  const externalId = hashPayload(parsed);
 
-        if (!connection || !connection.syncEnabled) return;
-
-        await importGarminActivity(activity.activityId, connection, db);
-
-        await db.deviceConnection.update({
-          where: { id: connection.id },
-          data: { lastSyncedAt: new Date() },
-        });
-      } catch (err) {
-        console.error(
-          `Webhook: failed to import Garmin activity ${activity.activityId}:`,
-          err,
-        );
-        await captureError(err, { provider: "garmin", webhook: "activity", activityId: String(activity.activityId) });
-      }
-    })();
+  // A batch may span multiple users; do not attribute the queue row to any
+  // one user. The worker's Garmin branch resolves connection per activity at
+  // dispatch time.
+  try {
+    await db.webhookEvent.create({
+      data: {
+        provider: "garmin",
+        externalId,
+        payload: parsed as unknown as Prisma.InputJsonValue,
+        userId: null,
+        status: WebhookEventStatus.pending,
+        nextAttemptAt: new Date(),
+      },
+    });
+  } catch (err) {
+    const p = err as Prisma.PrismaClientKnownRequestError;
+    if (
+      p?.code === "P2002" &&
+      Array.isArray(p.meta?.target) &&
+      (p.meta.target as string[]).includes("provider_external_id_unique")
+    ) {
+      return NextResponse.json({ ok: true });
+    }
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
