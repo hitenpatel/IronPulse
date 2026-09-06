@@ -31,6 +31,7 @@ export async function POST(req: Request) {
 
   const db = getDb();
   const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Each table is deleted independently so a failure on one (e.g. a
   // migration mid-flight) doesn't block cleanup of the others.
@@ -39,6 +40,15 @@ export async function POST(req: Request) {
     db.emailChangeToken.deleteMany({ where: { expiresAt: { lt: now } } }),
     db.passwordResetToken.deleteMany({ where: { expiresAt: { lt: now } } }),
     db.passkeyChallenge.deleteMany({ where: { expiresAt: { lt: now } } }),
+    db.webhookEvent.deleteMany({
+      where: { status: "succeeded", completedAt: { lt: thirtyDaysAgo } },
+    }),
+    db.webhookEvent.deleteMany({
+      where: {
+        status: "skipped_no_connection",
+        completedAt: { lt: thirtyDaysAgo },
+      },
+    }),
   ]);
 
   const tableNames = [
@@ -46,6 +56,8 @@ export async function POST(req: Request) {
     "emailChangeToken",
     "passwordResetToken",
     "passkeyChallenge",
+    "webhookEventSucceeded",
+    "webhookEventSkipped",
   ] as const;
 
   const deleted: Record<string, number> = {};

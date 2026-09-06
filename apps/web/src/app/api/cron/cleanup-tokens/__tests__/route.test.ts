@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockDeleteMany = vi.fn();
+const mockWebhookDeleteMany = vi.fn();
 const mockPrismaInstance = {
   magicLinkToken: { deleteMany: mockDeleteMany },
   emailChangeToken: { deleteMany: mockDeleteMany },
   passwordResetToken: { deleteMany: mockDeleteMany },
   passkeyChallenge: { deleteMany: mockDeleteMany },
+  webhookEvent: { deleteMany: mockWebhookDeleteMany },
 };
 
 vi.mock("@zor/db", () => ({
@@ -33,6 +35,7 @@ describe("POST /api/cron/cleanup-tokens", () => {
   beforeEach(() => {
     vi.stubEnv("CRON_SECRET", SECRET);
     mockDeleteMany.mockResolvedValue({ count: 0 });
+    mockWebhookDeleteMany.mockResolvedValue({ count: 0 });
   });
 
   afterEach(() => {
@@ -144,6 +147,62 @@ describe("POST /api/cron/cleanup-tokens", () => {
     expect(captureError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ context: "cron.cleanup-tokens" }),
+    );
+  });
+
+  it("deletes succeeded webhook_events older than 30 days", async () => {
+    mockWebhookDeleteMany
+      .mockResolvedValueOnce({ count: 1 }) // succeeded
+      .mockResolvedValueOnce({ count: 0 }); // skipped_no_connection
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.deleted.webhookEventSucceeded).toBe(1);
+    expect(mockWebhookDeleteMany).toHaveBeenNthCalledWith(1, {
+      where: { status: "succeeded", completedAt: { lt: expect.any(Date) } },
+    });
+  });
+
+  it("deletes skipped_no_connection webhook_events older than 30 days", async () => {
+    mockWebhookDeleteMany
+      .mockResolvedValueOnce({ count: 0 }) // succeeded
+      .mockResolvedValueOnce({ count: 1 }); // skipped_no_connection
+
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.deleted.webhookEventSkipped).toBe(1);
+    expect(mockWebhookDeleteMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        status: "skipped_no_connection",
+        completedAt: { lt: expect.any(Date) },
+      },
+    });
+  });
+
+  it("only targets succeeded and skipped_no_connection webhook_events, never dlq", async () => {
+    const { POST } = await import("../route");
+    await POST(makeRequest());
+
+    expect(mockWebhookDeleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: "succeeded" }),
+      }),
+    );
+    expect(mockWebhookDeleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: "skipped_no_connection" }),
+      }),
+    );
+    expect(mockWebhookDeleteMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: "dlq" }),
+      }),
     );
   });
 
