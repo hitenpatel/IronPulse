@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { WebhookEventStatus } from "@zor/db";
 import { db } from "@zor/db";
+import { timingSafeStringEq } from "@/lib/timing-safe-string-eq";
 
 const ELIGIBLE_STATUSES = new Set<string>(Object.values(WebhookEventStatus));
 const CURSOR_RE = /^[A-Za-z0-9_-]{20,}$/;
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const provided =
     request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!secret || provided !== secret) {
+  if (!secret || !timingSafeStringEq(provided, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@zor/db";
+import { timingSafeStringEq } from "@/lib/timing-safe-string-eq";
 
 type ReplayedRow = {
   id: string;
@@ -19,7 +20,7 @@ export async function POST(
   const secret = process.env.CRON_SECRET;
   const provided =
     request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!secret || provided !== secret) {
+  if (!secret || !timingSafeStringEq(provided, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
