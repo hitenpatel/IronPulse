@@ -1,0 +1,1725 @@
+# Provider Webhook Retry Queue Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace fire-and-forget provider webhook handlers with a durable Postgres-backed retry queue that guarantees each inbound event is delivered to its importer at least once, bounds retries, dead-letters terminal failures with a Sentry incident, and exposes a curl-callable manual replay path.
+
+**Architecture:** New `webhook_events` table is the queue. A minute-cadence `/api/cron/webhook-worker` route reclaims stale claims, claims a batch under `FOR UPDATE SKIP LOCKED`, and dispatches OUTSIDE the claim transaction via `packages/api/src/lib/webhook-dispatcher.ts`. Six-attempt exponential backoff, DLQ on the sixth failure, one Sentry incident per DLQ transition. Admin list + replay endpoints share `CRON_SECRET`.
+
+**Tech Stack:** Next.js 15 App Router (`apps/web`), Prisma (`packages/db`, Postgres), `@zor/api` server-side lib, Vitest (integration tests hit a real Postgres via `packages/api/__tests__/setup.ts`), `@sentry/nextjs` via the existing `captureError` helper, `zod` for handler-side validation.
+
+## Global Constraints
+
+- Spec: `docs/superpowers/specs/2026-09-06-provider-webhook-retry-queue-design.md` — read before implementation. Every task must satisfy the spec as written.
+- Providers in scope (5): `strava`, `garmin`, `oura`, `withings`, `polar`.
+- Tests for `packages/api` live under `packages/api/__tests__/*.test.ts` (flat), not colocated with source — matches `packages/api/vitest.config.ts` include pattern.
+- Tests for `apps/web` routes live under `apps/web/src/app/api/<route>/__tests__/route.test.ts` — mirrors `apps/web/src/app/api/garmin/webhook/__tests__/route.test.ts`.
+- Prisma migration MUST be created via `pnpm --filter @zor/db exec prisma migrate dev --name webhook_events_queue` against a local dev Postgres so migration history is recorded; production applies via `prisma migrate deploy` (`docker/remote-deploy.sh:24`), NOT `db:push`.
+- Column names are snake_case via `@map(...)`; Prisma model uses camelCase fields. Every SQL example in this plan uses the snake_case column names as they land in Postgres.
+- No feature flag. No back-fill. The old fire-and-forget block is deleted in the same PR as the new queue.
+- Commit style: conventional commits, lowercase subject (repo's commitlint config rejects sentence-case). Each task ends with a commit.
+
+## File Structure
+
+Create:
+- `packages/db/prisma/migrations/<timestamp>_webhook_events_queue/migration.sql` — Prisma-generated
+- `packages/api/src/lib/webhook-backoff.ts`
+- `packages/api/src/lib/webhook-external-id.ts`
+- `packages/api/src/lib/webhook-schemas.ts`
+- `packages/api/src/lib/webhook-dispatcher.ts`
+- `packages/api/src/lib/webhook-worker.ts` (worker algorithm as a library function)
+- `packages/api/__tests__/webhook-backoff.test.ts`
+- `packages/api/__tests__/webhook-external-id.test.ts`
+- `packages/api/__tests__/webhook-schemas.test.ts`
+- `packages/api/__tests__/webhook-dispatcher.test.ts`
+- `packages/api/__tests__/webhook-worker.test.ts` (integration; real Postgres)
+- `apps/web/src/app/api/cron/webhook-worker/route.ts` + `__tests__/route.test.ts`
+- `apps/web/src/app/api/cron/webhook-worker/status/route.ts` + `__tests__/route.test.ts`
+- `apps/web/src/app/api/admin/webhook-events/route.ts` + `__tests__/route.test.ts`
+- `apps/web/src/app/api/admin/webhook-events/[id]/replay/route.ts` + `__tests__/route.test.ts`
+- `apps/web/src/app/api/strava/webhook/__tests__/route.test.ts` (new)
+- `apps/web/src/app/api/oura/webhook/__tests__/route.test.ts` (new)
+- `apps/web/src/app/api/withings/webhook/__tests__/route.test.ts` (new)
+- `apps/web/src/app/api/polar/webhook/__tests__/route.test.ts` (new)
+
+Modify:
+- `packages/db/prisma/schema.prisma` — add `WebhookEventStatus` enum + `WebhookEvent` model + `User.webhookEvents` inverse relation.
+- `apps/web/src/app/api/strava/webhook/route.ts` — replace fire-and-forget with INSERT.
+- `apps/web/src/app/api/garmin/webhook/route.ts` — keep signature verify + parse; replace fire-and-forget with INSERT.
+- `apps/web/src/app/api/oura/webhook/route.ts` — replace fire-and-forget with INSERT.
+- `apps/web/src/app/api/withings/webhook/route.ts` — replace fire-and-forget with INSERT.
+- `apps/web/src/app/api/polar/webhook/route.ts` — replace fire-and-forget with INSERT.
+- `apps/web/src/app/api/garmin/webhook/__tests__/route.test.ts` — assert row inserted, no importer call.
+- `apps/web/src/app/api/cron/cleanup-tokens/route.ts` — add one line to the `Promise.allSettled` array for succeeded-row retention.
+
+---
+
+### Task 1: Prisma schema + migration
+
+**Files:**
+- Modify: `packages/db/prisma/schema.prisma`
+- Create: `packages/db/prisma/migrations/<timestamp>_webhook_events_queue/migration.sql` (generated by prisma migrate dev)
+
+**Interfaces:**
+- Consumes: none
+- Produces: `WebhookEvent` and `WebhookEventStatus` on the `@zor/db` PrismaClient — every subsequent task depends on these.
+
+- [ ] **Step 1: Add enum + model to `packages/db/prisma/schema.prisma`**
+
+Insert after the existing `DeviceConnection` model (around line 397):
+
+```prisma
+enum WebhookEventStatus {
+  pending
+  processing
+  succeeded
+  skipped_no_connection
+  dlq
+}
+
+model WebhookEvent {
+  id                    String              @id @default(cuid())
+  provider              String              @db.VarChar(16)
+  externalId            String              @map("external_id") @db.VarChar(128)
+  userId                String?             @map("user_id") @db.Uuid
+  payload               Json
+  receivedAt            DateTime            @default(now()) @map("received_at")
+  status                WebhookEventStatus  @default(pending)
+  attempts              Int                 @default(0)
+  lastError             String?             @map("last_error") @db.Text
+  lastAttemptAt         DateTime?           @map("last_attempt_at")
+  processingStartedAt   DateTime?           @map("processing_started_at")
+  processingOwner       String?             @map("processing_owner") @db.VarChar(64)
+  nextAttemptAt         DateTime            @default(now()) @map("next_attempt_at")
+  completedAt           DateTime?           @map("completed_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([status, processingStartedAt])
+  @@index([userId])
+  @@unique([provider, externalId], name: "provider_external_id_unique")
+  @@map("webhook_events")
+}
+```
+
+Add the inverse relation on `User` (around line 20 in the `User` model, in the relations block):
+
+```prisma
+  webhookEvents WebhookEvent[]
+```
+
+- [ ] **Step 2: Generate migration against a fresh local Postgres**
+
+Ensure a local dev DB is running (see `docker-compose.dev.yml`), then:
+
+```bash
+pnpm --filter @zor/db exec prisma migrate dev --name webhook_events_queue
+```
+
+Expected: a new directory `packages/db/prisma/migrations/<timestamp>_webhook_events_queue/` containing `migration.sql`. Verify the SQL contains `CREATE TYPE "WebhookEventStatus"` before `CREATE TABLE "webhook_events"`.
+
+- [ ] **Step 3: Regenerate client and verify types**
+
+```bash
+pnpm --filter @zor/db exec prisma generate
+```
+
+Verify a fresh TypeScript check catches the new model:
+
+```bash
+pnpm --filter @zor/db build
+node -e "const {PrismaClient} = require('@zor/db'); const c = new PrismaClient(); console.log(typeof c.webhookEvent)"
+```
+
+Expected: `object` (the delegate exists).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add packages/db/prisma/schema.prisma packages/db/prisma/migrations
+git commit -m "feat(db): add webhook_events queue table for task-4"
+```
+
+---
+
+### Task 2: Backoff schedule (pure function, TDD)
+
+**Files:**
+- Create: `packages/api/src/lib/webhook-backoff.ts`
+- Create: `packages/api/__tests__/webhook-backoff.test.ts`
+
+**Interfaces:**
+- Consumes: none
+- Produces: `nextAttemptDelayMs(attempts: number): number | null` — `null` = DLQ. Consumed by Task 6 (worker).
+
+- [ ] **Step 1: Write the failing test**
+
+Create `packages/api/__tests__/webhook-backoff.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { nextAttemptDelayMs } from "../src/lib/webhook-backoff";
+
+describe("nextAttemptDelayMs", () => {
+  it("returns 1 minute after the 1st failed attempt", () => {
+    expect(nextAttemptDelayMs(1)).toBe(60_000);
+  });
+  it("returns 5 minutes after the 2nd failed attempt", () => {
+    expect(nextAttemptDelayMs(2)).toBe(5 * 60_000);
+  });
+  it("returns 30 minutes after the 3rd failed attempt", () => {
+    expect(nextAttemptDelayMs(3)).toBe(30 * 60_000);
+  });
+  it("returns 2 hours after the 4th failed attempt", () => {
+    expect(nextAttemptDelayMs(4)).toBe(2 * 60 * 60_000);
+  });
+  it("returns 6 hours after the 5th failed attempt", () => {
+    expect(nextAttemptDelayMs(5)).toBe(6 * 60 * 60_000);
+  });
+  it("returns null (dead-letter) after the 6th failed attempt", () => {
+    expect(nextAttemptDelayMs(6)).toBeNull();
+  });
+  it("returns null for any attempts count above 6", () => {
+    expect(nextAttemptDelayMs(7)).toBeNull();
+    expect(nextAttemptDelayMs(100)).toBeNull();
+  });
+  it("throws for non-positive attempts", () => {
+    expect(() => nextAttemptDelayMs(0)).toThrow();
+    expect(() => nextAttemptDelayMs(-1)).toThrow();
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+pnpm --filter @zor/api test webhook-backoff
+```
+
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement**
+
+Create `packages/api/src/lib/webhook-backoff.ts`:
+
+```ts
+const GAPS_MS: readonly number[] = [
+  1 * 60_000,
+  5 * 60_000,
+  30 * 60_000,
+  2 * 60 * 60_000,
+  6 * 60 * 60_000,
+];
+
+export function nextAttemptDelayMs(attempts: number): number | null {
+  if (!Number.isInteger(attempts) || attempts < 1) {
+    throw new Error(`nextAttemptDelayMs: attempts must be a positive integer, got ${attempts}`);
+  }
+  if (attempts > GAPS_MS.length) return null;
+  return GAPS_MS[attempts - 1];
+}
+
+export const MAX_ATTEMPTS = GAPS_MS.length + 1; // 6 total attempts; DLQ on the 6th failure.
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+```bash
+pnpm --filter @zor/api test webhook-backoff
+```
+
+Expected: 8 tests pass.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/api/src/lib/webhook-backoff.ts packages/api/__tests__/webhook-backoff.test.ts
+git commit -m "feat(api): webhook retry backoff schedule for task-4"
+```
+
+---
+
+### Task 3: External ID helper (pure function, TDD)
+
+**Files:**
+- Create: `packages/api/src/lib/webhook-external-id.ts`
+- Create: `packages/api/__tests__/webhook-external-id.test.ts`
+
+**Interfaces:**
+- Consumes: Node `crypto`.
+- Produces:
+  - `hashPayload(payload: unknown): string` — 64-char hex sha256 of the canonical JSON stringification of the payload.
+  - Used by Tasks 10–14 when a provider event has no native id.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `packages/api/__tests__/webhook-external-id.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { hashPayload } from "../src/lib/webhook-external-id";
+
+describe("hashPayload", () => {
+  it("returns a 64-char hex string", () => {
+    const h = hashPayload({ foo: "bar" });
+    expect(h).toMatch(/^[0-9a-f]{64}$/);
+  });
+  it("is deterministic for the same input", () => {
+    expect(hashPayload({ a: 1, b: 2 })).toBe(hashPayload({ a: 1, b: 2 }));
+  });
+  it("is stable under key reordering", () => {
+    expect(hashPayload({ a: 1, b: 2 })).toBe(hashPayload({ b: 2, a: 1 }));
+  });
+  it("differs for different payloads", () => {
+    expect(hashPayload({ a: 1 })).not.toBe(hashPayload({ a: 2 }));
+  });
+  it("handles nested objects and arrays", () => {
+    const h1 = hashPayload({ arr: [1, 2, { x: "y" }] });
+    const h2 = hashPayload({ arr: [1, 2, { x: "y" }] });
+    expect(h1).toBe(h2);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+pnpm --filter @zor/api test webhook-external-id
+```
+
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement**
+
+Create `packages/api/src/lib/webhook-external-id.ts`:
+
+```ts
+import { createHash } from "node:crypto";
+
+function canonicalize(v: unknown): unknown {
+  if (v === null || typeof v !== "object") return v;
+  if (Array.isArray(v)) return v.map(canonicalize);
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(v as Record<string, unknown>).sort()) {
+    out[k] = canonicalize((v as Record<string, unknown>)[k]);
+  }
+  return out;
+}
+
+export function hashPayload(payload: unknown): string {
+  return createHash("sha256").update(JSON.stringify(canonicalize(payload))).digest("hex");
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+```bash
+pnpm --filter @zor/api test webhook-external-id
+```
+
+Expected: 5 tests pass.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/api/src/lib/webhook-external-id.ts packages/api/__tests__/webhook-external-id.test.ts
+git commit -m "feat(api): stable payload hash for webhook external id fallback"
+```
+
+---
+
+### Task 4: Per-provider zod schemas (TDD)
+
+**Files:**
+- Create: `packages/api/src/lib/webhook-schemas.ts`
+- Create: `packages/api/__tests__/webhook-schemas.test.ts`
+
+**Interfaces:**
+- Consumes: `zod` (already a dep of `@zor/api`).
+- Produces (all `z.ZodType`):
+  - `stravaWebhookSchema` — accepts `{ object_type, aspect_type, object_id: number, owner_id: number }`.
+  - `garminWebhookSchema` — accepts `{ activityDetails?: Array<{ userId: string, activityId: number }> }`.
+  - `ouraWebhookSchema` — accepts `{ event_type: string, data_type: string, object_id?: string, user_id?: string }`.
+  - `withingsWebhookSchema` — accepts application/x-www-form-urlencoded shape as parsed by the existing route (`userid`, `appli`, `startdate?`, `enddate?`).
+  - `polarWebhookSchema` — accepts `{ event: string, user_id?: number, entity_id?: string }` (union with `event: "PING"`).
+- Also produces one small helper for each provider that extracts the provider account id and native external id from a parsed payload, or returns `null` external id when a hash fallback is needed:
+  - `stravaEventKey(p)` → `{ providerAccountId: string, externalId: string }` (owner_id → account, object_id → external).
+  - `garminEventKey(p)` → `{ providerAccountId: string | null, externalId: string | null }` (batch: use first `activityDetails.userId` if present; externalId = null → caller hashes).
+  - `ouraEventKey(p)` → `{ providerAccountId: string | null, externalId: string | null }` (user_id → account; object_id → external if present).
+  - `withingsEventKey(p)` → `{ providerAccountId: string, externalId: string | null }` (userid → account; no native event id → caller hashes).
+  - `polarEventKey(p)` → `{ providerAccountId: string | null, externalId: string | null }` (user_id → account when present; entity_id → external if present).
+
+- [ ] **Step 1: Write the failing test**
+
+Create `packages/api/__tests__/webhook-schemas.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import {
+  stravaWebhookSchema, garminWebhookSchema, ouraWebhookSchema,
+  withingsWebhookSchema, polarWebhookSchema,
+  stravaEventKey, garminEventKey, ouraEventKey,
+  withingsEventKey, polarEventKey,
+} from "../src/lib/webhook-schemas";
+
+describe("stravaWebhookSchema", () => {
+  it("accepts a well-formed create event", () => {
+    const p = { object_type: "activity", aspect_type: "create", object_id: 42, owner_id: 7 };
+    expect(stravaWebhookSchema.safeParse(p).success).toBe(true);
+  });
+  it("rejects missing owner_id", () => {
+    const p = { object_type: "activity", aspect_type: "create", object_id: 42 };
+    expect(stravaWebhookSchema.safeParse(p).success).toBe(false);
+  });
+});
+
+describe("stravaEventKey", () => {
+  it("maps owner_id -> providerAccountId and object_id -> externalId", () => {
+    const p = stravaWebhookSchema.parse({ object_type: "activity", aspect_type: "create", object_id: 42, owner_id: 7 });
+    expect(stravaEventKey(p)).toEqual({ providerAccountId: "7", externalId: "42" });
+  });
+});
+
+describe("garminWebhookSchema", () => {
+  it("accepts a batch and an empty batch", () => {
+    expect(garminWebhookSchema.safeParse({ activityDetails: [{ userId: "u", activityId: 1 }] }).success).toBe(true);
+    expect(garminWebhookSchema.safeParse({ activityDetails: [] }).success).toBe(true);
+    expect(garminWebhookSchema.safeParse({}).success).toBe(true);
+  });
+});
+
+describe("garminEventKey", () => {
+  it("uses the first activity's userId as providerAccountId; externalId null (hash fallback)", () => {
+    const p = garminWebhookSchema.parse({ activityDetails: [{ userId: "u1", activityId: 1 }] });
+    expect(garminEventKey(p)).toEqual({ providerAccountId: "u1", externalId: null });
+  });
+  it("returns nulls for an empty batch", () => {
+    const p = garminWebhookSchema.parse({ activityDetails: [] });
+    expect(garminEventKey(p)).toEqual({ providerAccountId: null, externalId: null });
+  });
+});
+
+describe("ouraEventKey", () => {
+  it("maps user_id and object_id when present", () => {
+    const p = ouraWebhookSchema.parse({ event_type: "create", data_type: "sleep", object_id: "sl_1", user_id: "u_1" });
+    expect(ouraEventKey(p)).toEqual({ providerAccountId: "u_1", externalId: "sl_1" });
+  });
+});
+
+describe("withingsEventKey", () => {
+  it("maps userid and returns null externalId", () => {
+    const p = withingsWebhookSchema.parse({ userid: "42", appli: "1" });
+    expect(withingsEventKey(p)).toEqual({ providerAccountId: "42", externalId: null });
+  });
+});
+
+describe("polarWebhookSchema", () => {
+  it("accepts PING event without user_id", () => {
+    expect(polarWebhookSchema.safeParse({ event: "PING" }).success).toBe(true);
+  });
+});
+
+describe("polarEventKey", () => {
+  it("maps user_id and entity_id when present", () => {
+    const p = polarWebhookSchema.parse({ event: "EXERCISE", user_id: 9, entity_id: "abc" });
+    expect(polarEventKey(p)).toEqual({ providerAccountId: "9", externalId: "abc" });
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+```bash
+pnpm --filter @zor/api test webhook-schemas
+```
+
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement**
+
+Create `packages/api/src/lib/webhook-schemas.ts`:
+
+```ts
+import { z } from "zod";
+
+export const stravaWebhookSchema = z.object({
+  object_type: z.string(),
+  aspect_type: z.string(),
+  object_id: z.number(),
+  owner_id: z.number(),
+});
+export type StravaWebhookEvent = z.infer<typeof stravaWebhookSchema>;
+
+export function stravaEventKey(p: StravaWebhookEvent) {
+  return { providerAccountId: String(p.owner_id), externalId: String(p.object_id) };
+}
+
+export const garminWebhookSchema = z.object({
+  activityDetails: z.array(z.object({
+    userId: z.string(),
+    activityId: z.number(),
+  })).optional(),
+});
+export type GarminWebhookEvent = z.infer<typeof garminWebhookSchema>;
+
+export function garminEventKey(p: GarminWebhookEvent) {
+  const first = p.activityDetails?.[0];
+  return {
+    providerAccountId: first?.userId ?? null,
+    externalId: null,   // hash the whole batch for dedupe
+  };
+}
+
+export const ouraWebhookSchema = z.object({
+  event_type: z.string(),
+  data_type: z.string(),
+  object_id: z.string().optional(),
+  user_id: z.string().optional(),
+});
+export type OuraWebhookEvent = z.infer<typeof ouraWebhookSchema>;
+
+export function ouraEventKey(p: OuraWebhookEvent) {
+  return {
+    providerAccountId: p.user_id ?? null,
+    externalId: p.object_id ?? null,
+  };
+}
+
+export const withingsWebhookSchema = z.object({
+  userid: z.string(),
+  appli: z.string(),
+  startdate: z.string().optional(),
+  enddate: z.string().optional(),
+});
+export type WithingsWebhookEvent = z.infer<typeof withingsWebhookSchema>;
+
+export function withingsEventKey(p: WithingsWebhookEvent) {
+  return { providerAccountId: p.userid, externalId: null };
+}
+
+export const polarWebhookSchema = z.object({
+  event: z.string(),
+  user_id: z.number().optional(),
+  entity_id: z.string().optional(),
+});
+export type PolarWebhookEvent = z.infer<typeof polarWebhookSchema>;
+
+export function polarEventKey(p: PolarWebhookEvent) {
+  return {
+    providerAccountId: p.user_id !== undefined ? String(p.user_id) : null,
+    externalId: p.entity_id ?? null,
+  };
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+```bash
+pnpm --filter @zor/api test webhook-schemas
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/api/src/lib/webhook-schemas.ts packages/api/__tests__/webhook-schemas.test.ts
+git commit -m "feat(api): per-provider webhook schemas and key extractors"
+```
+
+---
+
+### Task 5: Dispatcher
+
+**Files:**
+- Create: `packages/api/src/lib/webhook-dispatcher.ts`
+- Create: `packages/api/__tests__/webhook-dispatcher.test.ts`
+- Reference (READ, do not modify): `packages/api/src/lib/strava.ts`, `garmin.ts`, `oura.ts`, `withings.ts`, `polar.ts`
+
+**Interfaces:**
+- Consumes:
+  - `@zor/db` PrismaClient (`DeviceConnection` model).
+  - The five existing importer entry points already exported from `@zor/api/src/lib/{strava,garmin,oura,withings,polar}`.
+  - `stravaEventKey/…/polarEventKey` from Task 4 (to derive `providerAccountId`).
+- Produces:
+  ```ts
+  type DispatchOutcome = { kind: "succeeded" } | { kind: "skipped_no_connection" };
+  async function dispatchWebhookEvent(args: {
+    provider: "strava"|"garmin"|"oura"|"withings"|"polar",
+    payload: unknown,   // JSON-parsed; caller has zod-validated at insert time
+    db: PrismaClient,   // caller-owned Prisma
+  }): Promise<DispatchOutcome>;   // throws on genuine import failure
+  ```
+- Consumed by: Task 6 (worker).
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `packages/api/__tests__/webhook-dispatcher.test.ts`. Test each provider branch by mocking its importer and asserting: (a) connection lookup uses the correct `providerAccountId`, (b) missing/disabled connection → returns `{ kind: "skipped_no_connection" }` with no importer call, (c) success returns `{ kind: "succeeded" }` and updates `deviceConnection.lastSyncedAt`, (d) importer throw propagates. Example for Strava (repeat the shape for each provider — the engineer must NOT skip providers just because "the pattern is the same"):
+
+```ts
+import { describe, expect, it, vi, beforeEach } from "vitest";
+
+const importStravaActivity = vi.fn();
+const importGarminActivity = vi.fn();
+const importOuraData = vi.fn();
+const importWithingsMeasures = vi.fn();
+const importPolarActivity = vi.fn();
+
+vi.mock("../src/lib/strava", () => ({ importStravaActivity }));
+vi.mock("../src/lib/garmin", () => ({ importGarminActivity }));
+vi.mock("../src/lib/oura", () => ({ importOuraData }));
+vi.mock("../src/lib/withings", () => ({ importWithingsMeasures }));
+vi.mock("../src/lib/polar", () => ({ importPolarActivity }));
+
+import { dispatchWebhookEvent } from "../src/lib/webhook-dispatcher";
+
+function fakeDb(connection: unknown) {
+  return {
+    deviceConnection: {
+      findFirst: vi.fn().mockResolvedValue(connection),
+      update: vi.fn().mockResolvedValue({}),
+    },
+  } as any;
+}
+
+beforeEach(() => {
+  importStravaActivity.mockReset(); importGarminActivity.mockReset();
+  importOuraData.mockReset(); importWithingsMeasures.mockReset();
+  importPolarActivity.mockReset();
+});
+
+describe("strava branch", () => {
+  const payload = { object_type: "activity", aspect_type: "create", object_id: 42, owner_id: 7 };
+  it("returns skipped_no_connection when no connection", async () => {
+    const db = fakeDb(null);
+    const r = await dispatchWebhookEvent({ provider: "strava", payload, db });
+    expect(r).toEqual({ kind: "skipped_no_connection" });
+    expect(importStravaActivity).not.toHaveBeenCalled();
+  });
+  it("returns skipped_no_connection when syncEnabled=false", async () => {
+    const db = fakeDb({ id: "c1", syncEnabled: false });
+    const r = await dispatchWebhookEvent({ provider: "strava", payload, db });
+    expect(r).toEqual({ kind: "skipped_no_connection" });
+  });
+  it("calls importer + updates lastSyncedAt on success", async () => {
+    const conn = { id: "c1", syncEnabled: true };
+    const db = fakeDb(conn);
+    importStravaActivity.mockResolvedValue(undefined);
+    const r = await dispatchWebhookEvent({ provider: "strava", payload, db });
+    expect(r).toEqual({ kind: "succeeded" });
+    expect(importStravaActivity).toHaveBeenCalledWith(42, conn, db);
+    expect(db.deviceConnection.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { lastSyncedAt: expect.any(Date) } });
+  });
+  it("propagates importer errors", async () => {
+    const db = fakeDb({ id: "c1", syncEnabled: true });
+    importStravaActivity.mockRejectedValue(new Error("boom"));
+    await expect(dispatchWebhookEvent({ provider: "strava", payload, db })).rejects.toThrow("boom");
+  });
+});
+
+// Repeat the four-test structure above for garmin, oura, withings, polar.
+// For garmin the batch dispatcher must loop and short-circuit on the first
+// activity failure so the worker treats the whole batch as one retryable
+// unit; assert one importer call per activityDetails entry, and one final
+// deviceConnection.update.
+// For oura + withings + polar, mirror the shape (payload fixtures listed
+// below) and adapt argument names.
+
+const ouraPayload = { event_type: "create", data_type: "sleep", object_id: "sl_1", user_id: "u_1" };
+const withingsPayload = { userid: "42", appli: "1" };
+const polarPayload = { event: "EXERCISE", user_id: 9, entity_id: "abc" };
+const garminPayload = { activityDetails: [{ userId: "u1", activityId: 1 }, { userId: "u1", activityId: 2 }] };
+```
+
+Write the additional describe blocks in full (do NOT leave the "repeat the shape" comment as a placeholder — copy the four-test block per provider with the right importer + payload + `providerAccountId`).
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+```bash
+pnpm --filter @zor/api test webhook-dispatcher
+```
+
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement**
+
+Create `packages/api/src/lib/webhook-dispatcher.ts`. Copy the connection-lookup + `lastSyncedAt` update pattern from each of the current webhook routes verbatim into the appropriate branch. Skeleton:
+
+```ts
+import type { PrismaClient } from "@zor/db";
+import { importStravaActivity } from "./strava";
+import { importGarminActivity } from "./garmin";
+import { importOuraData } from "./oura";
+import { importWithingsMeasures } from "./withings";
+import { importPolarActivity } from "./polar";
+import {
+  stravaWebhookSchema, garminWebhookSchema, ouraWebhookSchema,
+  withingsWebhookSchema, polarWebhookSchema,
+  stravaEventKey, garminEventKey, ouraEventKey, withingsEventKey, polarEventKey,
+} from "./webhook-schemas";
+
+export type DispatchOutcome = { kind: "succeeded" } | { kind: "skipped_no_connection" };
+
+async function findConn(db: PrismaClient, provider: string, providerAccountId: string) {
+  return db.deviceConnection.findFirst({ where: { provider, providerAccountId } });
+}
+
+async function markSynced(db: PrismaClient, connId: string) {
+  await db.deviceConnection.update({ where: { id: connId }, data: { lastSyncedAt: new Date() } });
+}
+
+export async function dispatchWebhookEvent(args: {
+  provider: "strava" | "garmin" | "oura" | "withings" | "polar";
+  payload: unknown;
+  db: PrismaClient;
+}): Promise<DispatchOutcome> {
+  const { provider, payload, db } = args;
+  switch (provider) {
+    case "strava": {
+      const p = stravaWebhookSchema.parse(payload);
+      const { providerAccountId } = stravaEventKey(p);
+      const conn = await findConn(db, "strava", providerAccountId);
+      if (!conn || !conn.syncEnabled) return { kind: "skipped_no_connection" };
+      await importStravaActivity(p.object_id, conn, db);
+      await markSynced(db, conn.id);
+      return { kind: "succeeded" };
+    }
+    case "garmin": {
+      const p = garminWebhookSchema.parse(payload);
+      const { providerAccountId } = garminEventKey(p);
+      if (!providerAccountId) return { kind: "skipped_no_connection" }; // empty batch
+      const conn = await findConn(db, "garmin", providerAccountId);
+      if (!conn || !conn.syncEnabled) return { kind: "skipped_no_connection" };
+      for (const a of p.activityDetails ?? []) {
+        await importGarminActivity(a.activityId, conn, db);
+      }
+      await markSynced(db, conn.id);
+      return { kind: "succeeded" };
+    }
+    case "oura": {
+      const p = ouraWebhookSchema.parse(payload);
+      const { providerAccountId } = ouraEventKey(p);
+      if (!providerAccountId) return { kind: "skipped_no_connection" };
+      const conn = await findConn(db, "oura", providerAccountId);
+      if (!conn || !conn.syncEnabled) return { kind: "skipped_no_connection" };
+      await importOuraData(p, conn, db);
+      await markSynced(db, conn.id);
+      return { kind: "succeeded" };
+    }
+    case "withings": {
+      const p = withingsWebhookSchema.parse(payload);
+      const { providerAccountId } = withingsEventKey(p);
+      const conn = await findConn(db, "withings", providerAccountId);
+      if (!conn || !conn.syncEnabled) return { kind: "skipped_no_connection" };
+      await importWithingsMeasures(p, conn, db);
+      await markSynced(db, conn.id);
+      return { kind: "succeeded" };
+    }
+    case "polar": {
+      const p = polarWebhookSchema.parse(payload);
+      const { providerAccountId } = polarEventKey(p);
+      if (!providerAccountId) return { kind: "skipped_no_connection" }; // e.g. PING sneaked past filter
+      const conn = await findConn(db, "polar", providerAccountId);
+      if (!conn || !conn.syncEnabled) return { kind: "skipped_no_connection" };
+      if (!p.entity_id) return { kind: "skipped_no_connection" };
+      await importPolarActivity(p.entity_id, conn, db);
+      await markSynced(db, conn.id);
+      return { kind: "succeeded" };
+    }
+  }
+}
+```
+
+Adjust the argument shapes to match each existing importer's real signature — read `packages/api/src/lib/{strava,garmin,oura,withings,polar}.ts` and mirror what the current webhook route passes. If any importer requires additional inputs (e.g. Withings needs the notification date window), pass them through from the parsed payload; do not invent new arguments.
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+```bash
+pnpm --filter @zor/api test webhook-dispatcher
+```
+
+Expected: all provider branches green.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/api/src/lib/webhook-dispatcher.ts packages/api/__tests__/webhook-dispatcher.test.ts
+git commit -m "feat(api): webhook dispatcher across five providers"
+```
+
+---
+
+### Task 6: Worker algorithm + integration test (real Postgres)
+
+**Files:**
+- Create: `packages/api/src/lib/webhook-worker.ts`
+- Create: `packages/api/__tests__/webhook-worker.test.ts`
+
+**Interfaces:**
+- Consumes: Task 2 (`nextAttemptDelayMs`, `MAX_ATTEMPTS`), Task 5 (`dispatchWebhookEvent`), `@zor/db` PrismaClient, `captureError` from `./capture-error`.
+- Produces:
+  - `async function runWebhookWorkerTick(args: { db: PrismaClient, ownerToken: string, batchSize?: number, stalenessMs?: number }): Promise<{ reclaimed: number, processed: number, succeeded: number, skipped: number, failed: number, dlq: number }>`.
+  - `async function getWebhookWorkerStatus(db: PrismaClient): Promise<{ oldestPendingAgeSec: number | null, pendingCount: number, processingCount: number, dlqCount: number, oldestProcessingAgeSec: number | null }>`.
+- Consumed by: Tasks 7 (cron route) and 8 (status route).
+
+- [ ] **Step 1: Write the failing integration tests**
+
+Create `packages/api/__tests__/webhook-worker.test.ts`. Skeleton (write each test in full):
+
+```ts
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PrismaClient } from "@zor/db";
+import { runWebhookWorkerTick, getWebhookWorkerStatus } from "../src/lib/webhook-worker";
+
+vi.mock("../src/lib/webhook-dispatcher", () => ({
+  dispatchWebhookEvent: vi.fn(),
+}));
+vi.mock("../src/lib/capture-error", () => ({
+  captureError: vi.fn(),
+}));
+
+import { dispatchWebhookEvent } from "../src/lib/webhook-dispatcher";
+import { captureError } from "../src/lib/capture-error";
+
+const db = new PrismaClient();
+const OWNER = "test-owner-1";
+
+async function insertPending(overrides: Partial<{ provider: string; externalId: string; payload: object; nextAttemptAt: Date; attempts: number }> = {}) {
+  return db.webhookEvent.create({
+    data: {
+      provider: overrides.provider ?? "strava",
+      externalId: overrides.externalId ?? `e_${Math.random().toString(36).slice(2)}`,
+      payload: overrides.payload ?? {},
+      nextAttemptAt: overrides.nextAttemptAt ?? new Date(),
+      attempts: overrides.attempts ?? 0,
+    },
+  });
+}
+
+beforeEach(async () => {
+  await db.webhookEvent.deleteMany({});
+  vi.mocked(dispatchWebhookEvent).mockReset();
+  vi.mocked(captureError).mockReset();
+});
+
+afterEach(async () => {
+  await db.webhookEvent.deleteMany({});
+});
+
+describe("runWebhookWorkerTick", () => {
+  it("processes a pending row and marks it succeeded", async () => {
+    const row = await insertPending();
+    vi.mocked(dispatchWebhookEvent).mockResolvedValue({ kind: "succeeded" });
+    const s = await runWebhookWorkerTick({ db, ownerToken: OWNER });
+    expect(s.processed).toBe(1);
+    expect(s.succeeded).toBe(1);
+    const updated = await db.webhookEvent.findUnique({ where: { id: row.id } });
+    expect(updated?.status).toBe("succeeded");
+    expect(updated?.attempts).toBe(1);
+    expect(updated?.completedAt).not.toBeNull();
+  });
+
+  it("marks skipped_no_connection when dispatcher returns skipped", async () => {
+    const row = await insertPending();
+    vi.mocked(dispatchWebhookEvent).mockResolvedValue({ kind: "skipped_no_connection" });
+    await runWebhookWorkerTick({ db, ownerToken: OWNER });
+    const updated = await db.webhookEvent.findUnique({ where: { id: row.id } });
+    expect(updated?.status).toBe("skipped_no_connection");
+  });
+
+  it("re-schedules with backoff on failure below the retry budget", async () => {
+    const row = await insertPending();
+    vi.mocked(dispatchWebhookEvent).mockRejectedValue(new Error("boom"));
+    const before = Date.now();
+    await runWebhookWorkerTick({ db, ownerToken: OWNER });
+    const updated = await db.webhookEvent.findUnique({ where: { id: row.id } });
+    expect(updated?.status).toBe("pending");
+    expect(updated?.attempts).toBe(1);
+    expect(updated?.lastError).toBe("boom");
+    // nextAttemptAt ≈ before + 60_000ms (±2s slop for query time)
+    const dt = (updated!.nextAttemptAt.getTime()) - before;
+    expect(dt).toBeGreaterThanOrEqual(58_000);
+    expect(dt).toBeLessThanOrEqual(62_000);
+  });
+
+  it("moves to dlq on the sixth failure and posts exactly one Sentry incident", async () => {
+    const row = await insertPending({ attempts: 5 });
+    vi.mocked(dispatchWebhookEvent).mockRejectedValue(new Error("terminal"));
+    await runWebhookWorkerTick({ db, ownerToken: OWNER });
+    const updated = await db.webhookEvent.findUnique({ where: { id: row.id } });
+    expect(updated?.status).toBe("dlq");
+    expect(updated?.attempts).toBe(6);
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(captureError).mock.calls[0][1]).toMatchObject({
+      provider: "strava",
+      eventId: row.id,
+      attempts: 6,
+    });
+  });
+
+  it("reclaims stale claimed rows (processing_started_at > stalenessMs ago)", async () => {
+    const row = await insertPending();
+    await db.webhookEvent.update({
+      where: { id: row.id },
+      data: {
+        status: "processing",
+        processingStartedAt: new Date(Date.now() - 11 * 60_000),
+        processingOwner: "dead-owner",
+        attempts: 1,
+      },
+    });
+    vi.mocked(dispatchWebhookEvent).mockResolvedValue({ kind: "succeeded" });
+    const s = await runWebhookWorkerTick({ db, ownerToken: OWNER, stalenessMs: 10 * 60_000 });
+    expect(s.reclaimed).toBe(1);
+    expect(s.processed).toBe(1);
+    const updated = await db.webhookEvent.findUnique({ where: { id: row.id } });
+    expect(updated?.status).toBe("succeeded");
+    // attempts preserved from before reclaim (1) then incremented on this tick (2)
+    expect(updated?.attempts).toBe(2);
+  });
+
+  it("ownership guard: stale worker completing a row it no longer owns is a no-op", async () => {
+    const row = await insertPending();
+    await db.webhookEvent.update({
+      where: { id: row.id },
+      data: { status: "processing", processingOwner: "other-owner", processingStartedAt: new Date() },
+    });
+    // A tick with our OWNER should see 0 pending, 0 processed. The row belongs
+    // to other-owner and hasn't gone stale, so we do not touch it.
+    const s = await runWebhookWorkerTick({ db, ownerToken: OWNER });
+    expect(s.processed).toBe(0);
+    const still = await db.webhookEvent.findUnique({ where: { id: row.id } });
+    expect(still?.status).toBe("processing");
+    expect(still?.processingOwner).toBe("other-owner");
+  });
+
+  it("respects batchSize and orders by receivedAt asc", async () => {
+    const a = await insertPending({ externalId: "a" });
+    const b = await insertPending({ externalId: "b" });
+    const c = await insertPending({ externalId: "c" });
+    vi.mocked(dispatchWebhookEvent).mockResolvedValue({ kind: "succeeded" });
+    const s = await runWebhookWorkerTick({ db, ownerToken: OWNER, batchSize: 2 });
+    expect(s.processed).toBe(2);
+    const [aRow, bRow, cRow] = await Promise.all([a, b, c].map(r => db.webhookEvent.findUnique({ where: { id: r.id } })));
+    expect(aRow?.status).toBe("succeeded");
+    expect(bRow?.status).toBe("succeeded");
+    expect(cRow?.status).toBe("pending");
+  });
+
+  it("skips pending rows whose nextAttemptAt is in the future", async () => {
+    const future = new Date(Date.now() + 10 * 60_000);
+    await insertPending({ nextAttemptAt: future });
+    const s = await runWebhookWorkerTick({ db, ownerToken: OWNER });
+    expect(s.processed).toBe(0);
+  });
+});
+
+describe("getWebhookWorkerStatus", () => {
+  it("returns zero counts on an empty table", async () => {
+    const s = await getWebhookWorkerStatus(db);
+    expect(s).toEqual({ oldestPendingAgeSec: null, pendingCount: 0, processingCount: 0, dlqCount: 0, oldestProcessingAgeSec: null });
+  });
+
+  it("reports pending count and oldest pending age", async () => {
+    await insertPending();
+    await new Promise(r => setTimeout(r, 1100));
+    const s = await getWebhookWorkerStatus(db);
+    expect(s.pendingCount).toBe(1);
+    expect(s.oldestPendingAgeSec).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT change queue state (invariant)", async () => {
+    await insertPending();
+    const before = await db.webhookEvent.count();
+    await getWebhookWorkerStatus(db);
+    const after = await db.webhookEvent.count();
+    expect(after).toBe(before);
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+```bash
+pnpm --filter @zor/api test webhook-worker
+```
+
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement `packages/api/src/lib/webhook-worker.ts`**
+
+Follow the spec's Worker section exactly. Skeleton:
+
+```ts
+import type { PrismaClient } from "@zor/db";
+import { Prisma } from "@zor/db";
+import { dispatchWebhookEvent } from "./webhook-dispatcher";
+import { captureError } from "./capture-error";
+import { nextAttemptDelayMs, MAX_ATTEMPTS } from "./webhook-backoff";
+
+const DEFAULT_BATCH = 25;
+const DEFAULT_STALENESS_MS = 10 * 60_000;
+
+export async function runWebhookWorkerTick(args: {
+  db: PrismaClient;
+  ownerToken: string;
+  batchSize?: number;
+  stalenessMs?: number;
+}) {
+  const { db, ownerToken } = args;
+  const batchSize = args.batchSize ?? DEFAULT_BATCH;
+  const stalenessMs = args.stalenessMs ?? DEFAULT_STALENESS_MS;
+
+  // Phase A: reclaim stale claims.
+  const staleCutoff = new Date(Date.now() - stalenessMs);
+  const reclaimed = await db.$executeRaw`
+    UPDATE webhook_events
+       SET status = 'pending', processing_owner = NULL, processing_started_at = NULL
+     WHERE status = 'processing' AND processing_started_at < ${staleCutoff}
+  `;
+
+  // Phase B: claim a batch, then dispatch OUTSIDE the tx.
+  const claimed = await db.$transaction(async (tx) => {
+    // Postgres CTE + FOR UPDATE SKIP LOCKED + UPDATE ... FROM claimed RETURNING *.
+    return tx.$queryRaw<Array<{ id: string; provider: string; payload: unknown; attempts: number }>>`
+      WITH claimed AS (
+        SELECT id FROM webhook_events
+         WHERE status = 'pending' AND next_attempt_at <= now()
+         ORDER BY received_at ASC
+         LIMIT ${batchSize}
+         FOR UPDATE SKIP LOCKED
+      )
+      UPDATE webhook_events e
+         SET status = 'processing',
+             attempts = e.attempts + 1,
+             last_attempt_at = now(),
+             processing_started_at = now(),
+             processing_owner = ${ownerToken}
+        FROM claimed
+       WHERE e.id = claimed.id
+       RETURNING e.id, e.provider, e.payload, e.attempts;
+    `;
+  });
+
+  let succeeded = 0, skipped = 0, failed = 0, dlq = 0;
+  for (const row of claimed) {
+    try {
+      const outcome = await dispatchWebhookEvent({
+        provider: row.provider as any,
+        payload: row.payload,
+        db,
+      });
+      const status = outcome.kind === "succeeded" ? "succeeded" : "skipped_no_connection";
+      const n = await db.$executeRaw`
+        UPDATE webhook_events
+           SET status = ${status}::"WebhookEventStatus",
+               completed_at = now(), last_error = NULL,
+               processing_owner = NULL, processing_started_at = NULL
+         WHERE id = ${row.id} AND processing_owner = ${ownerToken}
+      `;
+      if (n > 0) {
+        if (outcome.kind === "succeeded") succeeded++; else skipped++;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (row.attempts >= MAX_ATTEMPTS) {
+        const n = await db.$executeRaw`
+          UPDATE webhook_events
+             SET status = 'dlq', last_error = ${msg}, completed_at = now(),
+                 processing_owner = NULL, processing_started_at = NULL
+           WHERE id = ${row.id} AND processing_owner = ${ownerToken}
+        `;
+        if (n > 0) {
+          dlq++;
+          await captureError(err, {
+            provider: row.provider,
+            eventId: row.id,
+            attempts: row.attempts,
+          });
+        }
+      } else {
+        const delay = nextAttemptDelayMs(row.attempts);
+        // delay is non-null here because row.attempts < MAX_ATTEMPTS.
+        const next = new Date(Date.now() + (delay ?? 0));
+        const n = await db.$executeRaw`
+          UPDATE webhook_events
+             SET status = 'pending', next_attempt_at = ${next}, last_error = ${msg},
+                 processing_owner = NULL, processing_started_at = NULL
+           WHERE id = ${row.id} AND processing_owner = ${ownerToken}
+        `;
+        if (n > 0) failed++;
+      }
+    }
+  }
+
+  return { reclaimed: Number(reclaimed), processed: claimed.length, succeeded, skipped, failed, dlq };
+}
+
+export async function getWebhookWorkerStatus(db: PrismaClient) {
+  const [pending, processing, dlq] = await Promise.all([
+    db.webhookEvent.findMany({ where: { status: "pending" }, orderBy: { receivedAt: "asc" }, take: 1, select: { receivedAt: true } }),
+    db.webhookEvent.findMany({ where: { status: "processing" }, orderBy: { processingStartedAt: "asc" }, take: 1, select: { processingStartedAt: true } }),
+    db.webhookEvent.count({ where: { status: "dlq" } }),
+  ]);
+  const [pendingCount, processingCount] = await Promise.all([
+    db.webhookEvent.count({ where: { status: "pending" } }),
+    db.webhookEvent.count({ where: { status: "processing" } }),
+  ]);
+  const now = Date.now();
+  return {
+    pendingCount,
+    processingCount,
+    dlqCount: dlq,
+    oldestPendingAgeSec: pending[0] ? Math.floor((now - pending[0].receivedAt.getTime()) / 1000) : null,
+    oldestProcessingAgeSec: processing[0]?.processingStartedAt
+      ? Math.floor((now - processing[0].processingStartedAt.getTime()) / 1000)
+      : null,
+  };
+}
+```
+
+Note about `MAX_ATTEMPTS`: `row.attempts` in the worker reflects the count AFTER the increment inside the claim UPDATE. So `attempts >= MAX_ATTEMPTS` here means "the just-run attempt was the 6th (and last)". Cross-check with Task 2's constant.
+
+- [ ] **Step 4: Run integration tests**
+
+```bash
+pnpm --filter @zor/api test webhook-worker
+```
+
+Expected: all tests pass. If the `stalenessMs` test flakes because `processing_started_at` was set to `new Date(...)` via Prisma but the raw SQL reclaimer compares against a JS `Date`, add a 1s tolerance in the test rather than in the reclaimer.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/api/src/lib/webhook-worker.ts packages/api/__tests__/webhook-worker.test.ts
+git commit -m "feat(api): webhook worker tick and status query"
+```
+
+---
+
+### Task 7: Cron worker route
+
+**Files:**
+- Create: `apps/web/src/app/api/cron/webhook-worker/route.ts`
+- Create: `apps/web/src/app/api/cron/webhook-worker/__tests__/route.test.ts`
+- Reference: `apps/web/src/app/api/cron/cleanup-tokens/route.ts` (for the CRON_SECRET guard pattern)
+
+**Interfaces:**
+- Consumes: `runWebhookWorkerTick` from Task 6, `CRON_SECRET` env.
+- Produces: `GET /api/cron/webhook-worker` returning `{ reclaimed, processed, succeeded, skipped, failed, dlq }` JSON on 200, `{ error: "Unauthorized" }` on 401 if the bearer secret is missing/wrong.
+
+- [ ] **Step 1: Read existing cron route for auth pattern**
+
+```bash
+grep -n "CRON_SECRET\|Authorization\|Bearer" apps/web/src/app/api/cron/cleanup-tokens/route.ts
+```
+
+Copy the exact guard shape (env-name, header name, response shape) so all cron routes stay consistent.
+
+- [ ] **Step 2: Write the failing test**
+
+Create `apps/web/src/app/api/cron/webhook-worker/__tests__/route.test.ts`:
+
+```ts
+import { describe, expect, it, vi, beforeEach } from "vitest";
+vi.mock("@zor/db", () => ({ db: {} }));
+vi.mock("@zor/api/src/lib/webhook-worker", () => ({
+  runWebhookWorkerTick: vi.fn(),
+  getWebhookWorkerStatus: vi.fn(),
+}));
+import { runWebhookWorkerTick } from "@zor/api/src/lib/webhook-worker";
+import { GET } from "../route";
+
+const SECRET = "test-cron-secret";
+beforeEach(() => {
+  process.env.CRON_SECRET = SECRET;
+  vi.mocked(runWebhookWorkerTick).mockReset();
+});
+
+function req(headers: Record<string, string> = {}) {
+  return new Request("https://x/api/cron/webhook-worker", { method: "GET", headers });
+}
+
+describe("GET /api/cron/webhook-worker", () => {
+  it("401 without bearer", async () => {
+    const r = await GET(req());
+    expect(r.status).toBe(401);
+    expect(runWebhookWorkerTick).not.toHaveBeenCalled();
+  });
+  it("401 with wrong bearer", async () => {
+    const r = await GET(req({ Authorization: "Bearer wrong" }));
+    expect(r.status).toBe(401);
+  });
+  it("200 + tick counts with correct bearer", async () => {
+    vi.mocked(runWebhookWorkerTick).mockResolvedValue({ reclaimed: 0, processed: 2, succeeded: 2, skipped: 0, failed: 0, dlq: 0 });
+    const r = await GET(req({ Authorization: `Bearer ${SECRET}` }));
+    expect(r.status).toBe(200);
+    await expect(r.json()).resolves.toEqual({ reclaimed: 0, processed: 2, succeeded: 2, skipped: 0, failed: 0, dlq: 0 });
+  });
+});
+```
+
+- [ ] **Step 3: Run test to verify it fails**
+
+```bash
+pnpm --filter @zor/web test cron/webhook-worker
+```
+
+Expected: FAIL — route not found.
+
+- [ ] **Step 4: Implement**
+
+Create `apps/web/src/app/api/cron/webhook-worker/route.ts`:
+
+```ts
+import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { db } from "@zor/db";
+import { runWebhookWorkerTick } from "@zor/api/src/lib/webhook-worker";
+
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  if (!secret || provided !== secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const ownerToken = `${process.pid}-${randomUUID()}`;
+  const counts = await runWebhookWorkerTick({ db, ownerToken });
+  return NextResponse.json(counts);
+}
+```
+
+- [ ] **Step 5: Run tests + commit**
+
+```bash
+pnpm --filter @zor/web test cron/webhook-worker
+git add apps/web/src/app/api/cron/webhook-worker/route.ts apps/web/src/app/api/cron/webhook-worker/__tests__/route.test.ts
+git commit -m "feat(web): cron endpoint /api/cron/webhook-worker"
+```
+
+---
+
+### Task 8: Status endpoint
+
+**Files:**
+- Create: `apps/web/src/app/api/cron/webhook-worker/status/route.ts`
+- Create: `apps/web/src/app/api/cron/webhook-worker/status/__tests__/route.test.ts`
+
+**Interfaces:**
+- Consumes: `getWebhookWorkerStatus` from Task 6.
+- Produces: `GET /api/cron/webhook-worker/status` — same CRON_SECRET guard, returns status JSON. MUST NOT advance queue state.
+
+- [ ] **Step 1: Write the failing test**
+
+Mirror Task 7's test shape but assert the status body and that `runWebhookWorkerTick` is never called. Also assert 401 when unauthorized.
+
+```ts
+import { describe, expect, it, vi, beforeEach } from "vitest";
+vi.mock("@zor/db", () => ({ db: {} }));
+vi.mock("@zor/api/src/lib/webhook-worker", () => ({
+  runWebhookWorkerTick: vi.fn(),
+  getWebhookWorkerStatus: vi.fn(),
+}));
+import { getWebhookWorkerStatus, runWebhookWorkerTick } from "@zor/api/src/lib/webhook-worker";
+import { GET } from "../route";
+
+const SECRET = "test-cron-secret";
+beforeEach(() => { process.env.CRON_SECRET = SECRET; vi.mocked(getWebhookWorkerStatus).mockReset(); vi.mocked(runWebhookWorkerTick).mockReset(); });
+
+describe("GET /api/cron/webhook-worker/status", () => {
+  it("401 without bearer", async () => {
+    const r = await GET(new Request("https://x/api/cron/webhook-worker/status"));
+    expect(r.status).toBe(401);
+  });
+  it("returns status JSON with correct bearer and does not advance queue", async () => {
+    vi.mocked(getWebhookWorkerStatus).mockResolvedValue({
+      oldestPendingAgeSec: 42, pendingCount: 3, processingCount: 0, dlqCount: 1, oldestProcessingAgeSec: null,
+    });
+    const r = await GET(new Request("https://x/api/cron/webhook-worker/status", { headers: { Authorization: `Bearer ${SECRET}` } }));
+    expect(r.status).toBe(200);
+    await expect(r.json()).resolves.toMatchObject({ pendingCount: 3, dlqCount: 1 });
+    expect(runWebhookWorkerTick).not.toHaveBeenCalled();
+  });
+});
+```
+
+- [ ] **Step 2: Run + fail**
+
+```bash
+pnpm --filter @zor/web test cron/webhook-worker/status
+```
+
+- [ ] **Step 3: Implement**
+
+Create `apps/web/src/app/api/cron/webhook-worker/status/route.ts`:
+
+```ts
+import { NextResponse } from "next/server";
+import { db } from "@zor/db";
+import { getWebhookWorkerStatus } from "@zor/api/src/lib/webhook-worker";
+
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  if (!secret || provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(await getWebhookWorkerStatus(db));
+}
+```
+
+- [ ] **Step 4: Run tests + commit**
+
+```bash
+pnpm --filter @zor/web test cron/webhook-worker/status
+git add apps/web/src/app/api/cron/webhook-worker/status
+git commit -m "feat(web): webhook-worker status endpoint for kuma probe"
+```
+
+---
+
+### Task 9: Admin list + replay endpoints
+
+**Files:**
+- Create: `apps/web/src/app/api/admin/webhook-events/route.ts` (list)
+- Create: `apps/web/src/app/api/admin/webhook-events/[id]/replay/route.ts`
+- Create: `apps/web/src/app/api/admin/webhook-events/__tests__/route.test.ts`
+- Create: `apps/web/src/app/api/admin/webhook-events/[id]/replay/__tests__/route.test.ts`
+
+**Interfaces:**
+- Consumes: `@zor/db` PrismaClient, `CRON_SECRET`.
+- Produces:
+  - `GET /api/admin/webhook-events?status=<s>&limit=<n>&cursor=<id>` — bearer-guarded. Returns `{ items, nextCursor }`. Default `status=dlq`, `limit=50` (cap 200).
+  - `POST /api/admin/webhook-events/[id]/replay` — bearer-guarded. Resets a `dlq` or `skipped_no_connection` row to `pending`, `attempts=0`, `nextAttemptAt=now()`, clears `lastError`, `processingOwner`, `processingStartedAt`. Returns updated row or 404.
+
+- [ ] **Step 1: Write the failing tests**
+
+For list: 401 without bearer; 200 with; filters by status; respects `limit` cap; returns `nextCursor` when there is more.
+
+For replay: 401 without bearer; 404 for missing id; 404 for `succeeded` row (not eligible); 200 for `dlq` row → status now `pending`, attempts=0, `lastError=null`; 200 for `skipped_no_connection` row → same reset shape.
+
+Follow the Task 7 test shape (mock `@zor/db`, import `POST` / `GET` from `../route`).
+
+- [ ] **Step 2: Run + fail**
+
+- [ ] **Step 3: Implement**
+
+List (`apps/web/src/app/api/admin/webhook-events/route.ts`):
+
+```ts
+import { NextResponse } from "next/server";
+import { db } from "@zor/db";
+
+const ELIGIBLE_STATUSES = ["pending", "processing", "succeeded", "skipped_no_connection", "dlq"] as const;
+
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  if (!secret || provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const url = new URL(request.url);
+  const rawStatus = url.searchParams.get("status") ?? "dlq";
+  const status = (ELIGIBLE_STATUSES as readonly string[]).includes(rawStatus) ? rawStatus : "dlq";
+  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 50), 1), 200);
+  const cursor = url.searchParams.get("cursor") ?? undefined;
+
+  const items = await db.webhookEvent.findMany({
+    where: { status: status as any },
+    orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
+    take: limit + 1,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+  });
+  const hasMore = items.length > limit;
+  const page = hasMore ? items.slice(0, limit) : items;
+  return NextResponse.json({ items: page, nextCursor: hasMore ? page[page.length - 1].id : null });
+}
+```
+
+Replay (`apps/web/src/app/api/admin/webhook-events/[id]/replay/route.ts`):
+
+```ts
+import { NextResponse } from "next/server";
+import { db } from "@zor/db";
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const secret = process.env.CRON_SECRET;
+  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  if (!secret || provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await params;
+  const [count] = await db.$transaction([
+    db.webhookEvent.updateMany({
+      where: { id, status: { in: ["dlq", "skipped_no_connection"] } },
+      data: { status: "pending", attempts: 0, nextAttemptAt: new Date(), lastError: null, processingOwner: null, processingStartedAt: null, completedAt: null },
+    }),
+  ]);
+  if (count.count === 0) return NextResponse.json({ error: "Not found or not eligible" }, { status: 404 });
+  const row = await db.webhookEvent.findUnique({ where: { id } });
+  return NextResponse.json({ item: row });
+}
+```
+
+- [ ] **Step 4: Run tests + commit**
+
+```bash
+pnpm --filter @zor/web test admin/webhook-events
+git add apps/web/src/app/api/admin/webhook-events
+git commit -m "feat(web): admin list + replay endpoints for webhook events"
+```
+
+---
+
+### Task 10: Rewrite Strava webhook route
+
+**Files:**
+- Modify: `apps/web/src/app/api/strava/webhook/route.ts`
+- Create: `apps/web/src/app/api/strava/webhook/__tests__/route.test.ts`
+
+**Interfaces:**
+- Consumes: `stravaWebhookSchema`, `stravaEventKey`, `hashPayload`, `@zor/db`.
+- Produces: `POST` inserts one `webhook_events` row per legitimate `activity`/`create` event; returns 200 always for filtered no-ops; 400 for zod failure; 500 for DB insert failure. `GET` (hub.challenge handshake) unchanged.
+
+- [ ] **Step 1: Write the failing test**
+
+Cases:
+- valid `activity`/`create` payload → 200, one row inserted with `provider="strava"`, `externalId="42"`, `payload=<parsed body>`, `status="pending"`, `userId` resolved when a matching DeviceConnection exists (null otherwise).
+- non-create aspect (`aspect_type="update"`) or non-activity → 200, no row.
+- malformed body (missing `owner_id`) → 400, no row.
+- DB insert throw → 500, no row from client's perspective.
+- duplicate delivery: two POSTs same `(provider, externalId)` → 200 both times, only one row.
+- GET handshake: valid `hub.verify_token` returns the challenge; invalid returns 403.
+
+- [ ] **Step 2: Run + fail**
+
+- [ ] **Step 3: Implement the new route body**
+
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@zor/db";
+import { stravaWebhookSchema, stravaEventKey } from "@zor/api/src/lib/webhook-schemas";
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const mode = searchParams.get("hub.mode");
+  const challenge = searchParams.get("hub.challenge");
+  const verifyToken = searchParams.get("hub.verify_token");
+  if (mode === "subscribe" && verifyToken === process.env.STRAVA_WEBHOOK_VERIFY_TOKEN) {
+    return NextResponse.json({ "hub.challenge": challenge });
+  }
+  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+}
+
+export async function POST(request: NextRequest) {
+  let parsed;
+  try {
+    parsed = stravaWebhookSchema.parse(await request.json());
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+  if (parsed.object_type !== "activity" || parsed.aspect_type !== "create") {
+    return NextResponse.json({ ok: true });
+  }
+  const { providerAccountId, externalId } = stravaEventKey(parsed);
+  const conn = await db.deviceConnection.findFirst({
+    where: { provider: "strava", providerAccountId }, select: { userId: true },
+  });
+  try {
+    await db.webhookEvent.create({
+      data: {
+        provider: "strava", externalId, payload: parsed as any,
+        userId: conn?.userId ?? null, status: "pending", nextAttemptAt: new Date(),
+      },
+    });
+  } catch (err: any) {
+    // P2002 = unique constraint => duplicate delivery, treat as success.
+    if (err?.code === "P2002") return NextResponse.json({ ok: true });
+    throw err;
+  }
+  return NextResponse.json({ ok: true });
+}
+```
+
+Note: no `try/catch` around a fire-and-forget block; no `importStravaActivity` call; no `captureError` in the route. Delivery failures now surface through the worker.
+
+- [ ] **Step 4: Run tests + commit**
+
+```bash
+pnpm --filter @zor/web test strava/webhook
+git add apps/web/src/app/api/strava/webhook
+git commit -m "feat(web): strava webhook enqueues to webhook_events"
+```
+
+---
+
+### Task 11: Rewrite Garmin webhook route
+
+**Files:**
+- Modify: `apps/web/src/app/api/garmin/webhook/route.ts`
+- Modify: `apps/web/src/app/api/garmin/webhook/__tests__/route.test.ts` (existing)
+
+**Interfaces:**
+- Consumes: existing `signaturesMatch` (KEEP), `garminWebhookSchema`, `garminEventKey`, `hashPayload`, `@zor/db`.
+- Produces: `POST` verifies HMAC on the raw body FIRST (unchanged); then parses, filters empty batches, inserts one row per request, returns 200; 401 for bad signature; 503 if `GARMIN_WEBHOOK_SECRET` missing; 400 for zod failure; 500 for DB insert failure.
+
+- [ ] **Step 1: Update the existing test to assert the new behaviour**
+
+Existing tests mock `importGarminActivity`. Rewrite so the test asserts:
+- valid signed request with a legitimate activityDetails batch → 200, one row inserted, `importGarminActivity` NOT called (dispatched later by worker).
+- invalid signature → 401, no row.
+- missing secret env → 503, no row.
+- empty `activityDetails` batch → 200, no row.
+- malformed body (activityDetails elements missing `activityId`) → 400, no row.
+- duplicate delivery: second request with identical raw body → 200, still exactly one row (hash-based externalId is deterministic under Task 3's canonicalization).
+
+Preserve the existing `signedRequest` helper — the signature story is unchanged.
+
+- [ ] **Step 2: Run + fail**
+
+- [ ] **Step 3: Implement the new POST body**
+
+Keep the existing secret check + `signaturesMatch` block verbatim. Replace the parse/importer section with:
+
+```ts
+let parsed;
+try {
+  parsed = garminWebhookSchema.parse(JSON.parse(rawBody));
+} catch {
+  return NextResponse.json({ error: "Bad request" }, { status: 400 });
+}
+if (!parsed.activityDetails || parsed.activityDetails.length === 0) {
+  return NextResponse.json({ ok: true });
+}
+const { providerAccountId } = garminEventKey(parsed);
+const externalId = hashPayload(parsed);
+const conn = providerAccountId
+  ? await db.deviceConnection.findFirst({
+      where: { provider: "garmin", providerAccountId }, select: { userId: true },
+    })
+  : null;
+try {
+  await db.webhookEvent.create({
+    data: {
+      provider: "garmin", externalId, payload: parsed as any,
+      userId: conn?.userId ?? null, status: "pending", nextAttemptAt: new Date(),
+    },
+  });
+} catch (err: any) {
+  if (err?.code === "P2002") return NextResponse.json({ ok: true });
+  throw err;
+}
+return NextResponse.json({ ok: true });
+```
+
+- [ ] **Step 4: Run tests + commit**
+
+```bash
+pnpm --filter @zor/web test garmin/webhook
+git add apps/web/src/app/api/garmin/webhook
+git commit -m "feat(web): garmin webhook enqueues signed batches to webhook_events"
+```
+
+---
+
+### Task 12: Rewrite Oura webhook route
+
+**Files:**
+- Modify: `apps/web/src/app/api/oura/webhook/route.ts`
+- Create: `apps/web/src/app/api/oura/webhook/__tests__/route.test.ts`
+
+**Interfaces:** parallel to Task 10 (Strava). Use `ouraWebhookSchema`, `ouraEventKey`. External id = `object_id` if present; otherwise `hashPayload(parsed)`.
+
+- [ ] **Step 1:** Write the tests. Cover the current no-op filters (which `event_type`/`data_type` combinations the existing route drops without action — copy the filter list verbatim from the current `route.ts` before rewriting).
+- [ ] **Step 2:** Run + fail.
+- [ ] **Step 3:** Implement — parse-then-INSERT shape identical to Strava; preserve the existing subscription-verification GET handler unchanged.
+- [ ] **Step 4:** Run tests + commit.
+
+```bash
+pnpm --filter @zor/web test oura/webhook
+git add apps/web/src/app/api/oura/webhook
+git commit -m "feat(web): oura webhook enqueues to webhook_events"
+```
+
+---
+
+### Task 13: Rewrite Withings webhook route
+
+**Files:**
+- Modify: `apps/web/src/app/api/withings/webhook/route.ts`
+- Create: `apps/web/src/app/api/withings/webhook/__tests__/route.test.ts`
+
+**Interfaces:** parallel to Task 10 with two Withings-specific concerns:
+1. Body is `application/x-www-form-urlencoded`, not JSON — parse via `request.formData()`, then feed the object to `withingsWebhookSchema`.
+2. Preserve the existing HEAD handler unchanged (Withings pings it for liveness).
+3. External id is always `hashPayload(parsed)` (no native event id).
+
+- [ ] **Step 1:** Write the tests. Include a HEAD-request test asserting the response headers/status match today's behaviour (read the current route first).
+- [ ] **Step 2:** Run + fail.
+- [ ] **Step 3:** Implement.
+- [ ] **Step 4:** Run tests + commit.
+
+```bash
+pnpm --filter @zor/web test withings/webhook
+git add apps/web/src/app/api/withings/webhook
+git commit -m "feat(web): withings webhook enqueues to webhook_events"
+```
+
+---
+
+### Task 14: Rewrite Polar webhook route
+
+**Files:**
+- Modify: `apps/web/src/app/api/polar/webhook/route.ts`
+- Create: `apps/web/src/app/api/polar/webhook/__tests__/route.test.ts`
+
+**Interfaces:** parallel to Task 10. Use `polarWebhookSchema`, `polarEventKey`. Skip `event === "PING"` (return 200 without insert). External id = `entity_id` when present; otherwise fall back to `hashPayload(parsed)` for defensive correctness even though PING is already filtered.
+
+- [ ] **Step 1:** Write the tests. Include a `PING` case asserting 200 with no row.
+- [ ] **Step 2:** Run + fail.
+- [ ] **Step 3:** Implement.
+- [ ] **Step 4:** Run tests + commit.
+
+```bash
+pnpm --filter @zor/web test polar/webhook
+git add apps/web/src/app/api/polar/webhook
+git commit -m "feat(web): polar webhook enqueues to webhook_events"
+```
+
+---
+
+### Task 15: Retention line in cleanup cron
+
+**Files:**
+- Modify: `apps/web/src/app/api/cron/cleanup-tokens/route.ts`
+- Modify: `apps/web/src/app/api/cron/cleanup-tokens/__tests__/route.test.ts`
+
+**Interfaces:** none new.
+
+- [ ] **Step 1: Extend the existing test**
+
+Add a case: a `webhook_events` row with `status="succeeded"` and `completed_at = now() - 40 days` is deleted; a `status="succeeded"` row 5 days old is kept; a `status="dlq"` row 90 days old is kept.
+
+- [ ] **Step 2: Run + fail**
+
+- [ ] **Step 3: Add one line to the `Promise.allSettled` array**
+
+```ts
+db.webhookEvent.deleteMany({
+  where: { status: "succeeded", completedAt: { lt: thirtyDaysAgo } },
+}),
+```
+
+Define `thirtyDaysAgo` alongside the existing `now` constant.
+
+- [ ] **Step 4: Run tests + commit**
+
+```bash
+pnpm --filter @zor/web test cron/cleanup-tokens
+git add apps/web/src/app/api/cron/cleanup-tokens
+git commit -m "chore(web): retention of succeeded webhook_events after 30 days"
+```
+
+---
+
+### Task 16: Full-suite regression check
+
+**Files:** none modified.
+
+**Interfaces:** none.
+
+- [ ] **Step 1: Typecheck the whole repo**
+
+```bash
+pnpm -w typecheck
+```
+
+Expected: no new errors. If `@zor/db` types are stale in another package, re-run `pnpm --filter @zor/db build` and retry.
+
+- [ ] **Step 2: Run full API + web vitest suites**
+
+```bash
+pnpm --filter @zor/api test
+pnpm --filter @zor/web test
+```
+
+Expected: all existing tests + all new tests green.
+
+- [ ] **Step 3: Lint**
+
+```bash
+pnpm -w lint
+```
+
+Expected: green.
+
+- [ ] **Step 4: Commit (no-op safety commit if needed)**
+
+If any lint/format fix was applied:
+
+```bash
+git add -A
+git commit -m "chore: lint fixes after task-4 webhook queue work"
+```
+
+---
+
+### Task 17: BookStack runbook + deployment cron wiring
+
+**Files:** none in-repo (documentation + deploy).
+
+**Interfaces:** operator-facing docs + deploy config.
+
+- [ ] **Step 1: Author the runbook page in BookStack**
+
+Under Iron Pulse book (id 19), create page "Webhook event replay" with the sections listed in the spec's Runbook section:
+
+1. What lives here
+2. Find the failing event (Sentry + SQL)
+3. Fix the underlying cause first
+4. Replay (curl example — see below)
+5. Bulk operations (retention SQL, DLQ triage)
+6. Monitoring (Uptime Kuma probe on `/api/cron/webhook-worker/status`)
+7. When to escalate
+
+Curl example to include verbatim:
+
+```bash
+# List DLQ events
+curl -sS -H "Authorization: Bearer $CRON_SECRET" \
+  "https://api.zor.hiten-patel.co.uk/api/admin/webhook-events?status=dlq&limit=50" | jq
+
+# Replay one
+curl -sS -X POST -H "Authorization: Bearer $CRON_SECRET" \
+  "https://api.zor.hiten-patel.co.uk/api/admin/webhook-events/<id>/replay" | jq
+```
+
+Use `curl -X POST` per BookStack API pattern from `~/.claude/CLAUDE.md` global instructions.
+
+- [ ] **Step 2: Register the cron ticks in staging and prod**
+
+On each environment's cron scheduler (currently one crontab per environment host per project memory `reference_deploy_topology.md`), add:
+
+```cron
+* * * * * curl -fsS -o /dev/null -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/webhook-worker
+```
+
+Verify by tailing the cron scheduler log for the first fire in each environment.
+
+- [ ] **Step 3: Add Uptime Kuma monitor**
+
+Add a HTTP monitor targeting `/api/cron/webhook-worker/status` in Kuma:
+- Header: `Authorization: Bearer $CRON_SECRET`
+- Interval: 60s
+- Assertion: HTTP 200
+- (Optional) Keyword match on the response body to catch a growing pending count once the JSON keys stabilise.
+
+- [ ] **Step 4: Verify end-to-end**
+
+- Publish a synthetic event by inserting a `webhook_events` row directly in staging with a bogus provider payload, then watch the worker log processing.
+- Manually POST to a webhook route in staging, confirm a row appears.
+- Manually corrupt one event so it DLQs after retries; confirm a Sentry incident lands and the row is visible via the admin list endpoint.
+- Replay via curl; confirm it succeeds and no new Sentry incident fires.
+
+- [ ] **Step 5: Close the ticket**
+
+```bash
+backlog task edit 4 --plain --status Done --notes "Implemented per docs/superpowers/plans/2026-09-06-provider-webhook-retry-queue.md. Verified in staging: worker ticks, DLQ transition posts Sentry incident, admin replay resets and re-drives. BookStack runbook 'Webhook event replay' created under book 19. Cron ticks registered in staging + prod; Uptime Kuma monitor on /api/cron/webhook-worker/status."
+git add backlog/tasks/task-4*
+git commit -m "chore(backlog): close task-4 provider webhook retry queue"
+```
