@@ -213,9 +213,13 @@ E2E_DATABASE_URL="${E2E_DATABASE_URL:-postgresql://zor_e2e:zor_e2e@localhost:553
 # its data is already present — so this is a no-op on every run but the first
 # boot of a fresh pgdata volume.
 log "ensuring dev seed users"
+# Tee seed output to both run.log AND stdout so a seed failure is
+# visible in the CI job log directly; the artifact download path on
+# Forgejo is not reliable (see [[feedback_forgejo_artifact_download]]).
 ( cd "$REPO" && DATABASE_URL="$E2E_DATABASE_URL" \
-  pnpm --filter @zor/db db:seed:dev ) \
-  >>"$OUT/run.log" 2>&1 || fail "dev seed failed (see $OUT/run.log)"
+  pnpm --filter @zor/db db:seed:dev ) 2>&1 \
+  | tee -a "$OUT/run.log" \
+  || fail "dev seed failed (see $OUT/run.log + inline dump above)"
 
 # Deterministic fixture state — resets only the designated test user's workout
 # graph, leaving the exercise library and other users intact.
@@ -225,8 +229,9 @@ adb -s "$DEVICE" shell am force-stop "$E2E_PKG" >/dev/null 2>&1 || true
 log "resetting e2e workout fixtures"
 E2E_IDS="$OUT/fixture-ids.json"
 ( cd "$REPO" && DATABASE_URL="$E2E_DATABASE_URL" E2E_IDS_OUT="$E2E_IDS" \
-  pnpm --filter @zor/db db:reset:e2e ) \
-  >>"$OUT/run.log" 2>&1 || fail "e2e fixture reset failed (see $OUT/run.log)"
+  pnpm --filter @zor/db db:reset:e2e ) 2>&1 \
+  | tee -a "$OUT/run.log" \
+  || fail "e2e fixture reset failed (see $OUT/run.log + inline dump above)"
 [ -s "$E2E_IDS" ] || fail "fixture reset produced no id manifest at $E2E_IDS"
 
 # 3. Install the e2e build (coexists with the prod app).

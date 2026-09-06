@@ -182,7 +182,13 @@ jobs:
           # Pull in @zor/mobile and all its workspace dependencies
           # (packages/shared, packages/api-types, etc.) so that the Expo
           # prebuild has every import available.
-          pnpm install --frozen-lockfile --filter @zor/mobile...
+          # @zor/mobile... covers the prebuild + APK build.
+          # @zor/db... covers the runner-side dev seed + fixture reset
+          # (nightly-e2e.sh runs `pnpm --filter @zor/db db:seed:dev` and
+          # `db:reset:e2e`, which need tsx + prisma + bcryptjs from the
+          # db package's own dependency tree — those are NOT transitive
+          # deps of @zor/mobile).
+          pnpm install --frozen-lockfile --filter @zor/mobile... --filter @zor/db...
 
       - name: Expo prebuild (android, e2e variant)
         run: |
