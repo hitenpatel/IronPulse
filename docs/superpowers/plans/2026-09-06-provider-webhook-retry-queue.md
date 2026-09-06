@@ -6,7 +6,7 @@
 
 **Architecture:** New `webhook_events` table is the queue. A minute-cadence `/api/cron/webhook-worker` route reclaims stale claims, then claims a small batch (5 rows max) under `FOR UPDATE SKIP LOCKED` and dispatches those rows IN PARALLEL (concurrency = batch size) OUTSIDE the claim transaction via `packages/api/src/lib/webhook-dispatcher.ts`. Sequential dispatch is intentionally avoided so the per-row lease never expires before its dispatch begins. `attempts` is incremented on FAILURE only (not on claim) so worker crashes do not burn the retry budget. Ownership tokens on completion writes stop a resurrected old worker from overwriting a reclaimed row. Six-attempt exponential backoff, DLQ on the sixth failure, one Sentry incident per DLQ transition posted AFTER the DLQ commit. Admin list + replay endpoints share `CRON_SECRET`.
 
-**Tech Stack:** Next.js 15 App Router (`apps/web`), Prisma (`packages/db`, Postgres), `@zor/api` server-side lib, Vitest (integration tests hit a real Postgres — the URL is expected in `DATABASE_URL` at test time; existing `packages/api/__tests__/retention.test.ts` is the canonical real-DB test example to mirror), `@sentry/nextjs` via the existing `captureError` helper, `zod` for handler-side validation.
+**Tech Stack:** Next.js 15 App Router (`apps/web`), Prisma (`packages/db`, Postgres), `@zor/api` server-side lib, Vitest (integration tests hit a real Postgres — the URL is expected in `DATABASE_URL` at test time; ~~existing `packages/api/__tests__/retention.test.ts` is the canonical real-DB test example to mirror~~ **[Task 0 amendment, 2026-09-06]: `retention.test.ts` uses a fully mocked `db` (a hand-rolled `makeDb()` returning `vi.fn()` stubs) — it is NOT a real-Postgres test and has no `PrismaClient`/`DATABASE_URL`/`$disconnect` usage at all. The actual real-DB pattern lives in `packages/api/__tests__/integration.test.ts` (and equivalently `workout-finalization-e2e.test.ts`, `db-connectivity.test.ts`): top-level `const db = new PrismaClient();`, `beforeAll(() => db.$connect())`, `afterAll(() => db.$disconnect())`. Task 6 must mirror `integration.test.ts`, not `retention.test.ts`.**), `@sentry/nextjs` via the existing `captureError` helper, `zod` for handler-side validation.
 
 ## Global Constraints
 
@@ -887,7 +887,7 @@ Algorithm (locked from spec + Codex reconciliation):
 
 - [ ] **Step 1: Confirm real-DB test pattern (Task 0 §4)**
 
-Re-read `packages/api/__tests__/retention.test.ts` for the `PrismaClient` construction pattern used in this repo and copy it verbatim; ensure `afterAll(async () => { await db.$disconnect(); })` is present.
+**[Task 0 amendment, 2026-09-06]: `retention.test.ts` turned out to be a fully mocked-`db` unit test (no `PrismaClient`, no `DATABASE_URL`, no `$disconnect` — see task-0-report.md). It is not the real-Postgres pattern.** Re-read `packages/api/__tests__/integration.test.ts` instead for the `PrismaClient` construction pattern used in this repo (top-level `const db = new PrismaClient();`, `beforeAll(async () => { await db.$connect(); })`, `afterAll(async () => { await db.$disconnect(); })`) and copy it verbatim.
 
 - [ ] **Step 2: Write the failing integration tests**
 
