@@ -1,26 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, WebhookEventStatus } from "@zor/db";
 import { db } from "@zor/db";
-import {
-  ensureWithingsFreshToken,
-  fetchWithingsApi,
-  importWithingsMeasures,
-} from "@zor/api/src/lib/withings";
-import { captureError } from "@zor/api/src/lib/capture-error";
-
-/**
- * Withings webhook notification payload.
- * Withings sends POST with application/x-www-form-urlencoded body.
- *
- * - appli 1  = Weight / Body measurements
- * - appli 44 = Sleep
- * - appli 4  = Blood pressure
- */
-interface WithingsNotification {
-  userid: string;
-  appli: number;
-  startdate: number;
-  enddate: number;
-}
+import { withingsWebhookSchema, withingsEventKey } from "@zor/api/src/lib/webhook-schemas";
+import { hashPayload } from "@zor/api/src/lib/webhook-external-id";
 
 // HEAD is used by Withings to verify webhook URL availability
 export async function HEAD() {
@@ -34,68 +16,54 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
+  const raw: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    raw[key] = String(value);
+  }
 
-  const notification: WithingsNotification = {
-    userid: formData.get("userid") as string,
-    appli: Number(formData.get("appli")),
-    startdate: Number(formData.get("startdate")),
-    enddate: Number(formData.get("enddate")),
-  };
+  let parsed;
+  try {
+    parsed = withingsWebhookSchema.parse(raw);
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
 
-  // Only process body measurement notifications (appli 1 and 4)
-  if (notification.appli !== 1 && notification.appli !== 4) {
+  // Only process body measurement notifications (appli 1) and blood
+  // pressure (appli 4). Other types (e.g. 44 = sleep) are out of scope today.
+  if (parsed.appli !== 1 && parsed.appli !== 4) {
     return NextResponse.json({ ok: true });
   }
 
-  // Fire-and-forget background processing
-  (async () => {
-    try {
-      const connection = await db.deviceConnection.findFirst({
-        where: {
-          provider: "withings",
-          providerAccountId: notification.userid,
-        },
-      });
+  const { providerAccountId } = withingsEventKey(parsed);
+  const externalId = hashPayload(parsed);
 
-      if (!connection || !connection.syncEnabled) return;
+  const conn = await db.deviceConnection.findFirst({
+    where: { provider: "withings", providerAccountId },
+    select: { userId: true },
+  });
 
-      const accessToken = await ensureWithingsFreshToken(connection, db);
-
-      const response = await fetchWithingsApi<{
-        status: number;
-        body: {
-          measuregrps: Array<{
-            grpid: number;
-            date: number;
-            measures: Array<{ value: number; type: number; unit: number }>;
-            category: number;
-          }>;
-        };
-      }>("/measure", accessToken, {
-        action: "getmeas",
-        meastype: "1,6,8,76,88,77,10,9",
-        startdate: notification.startdate,
-        enddate: notification.enddate,
-      });
-
-      await importWithingsMeasures(
-        response.body.measuregrps,
-        connection.userId,
-        db,
-      );
-
-      await db.deviceConnection.update({
-        where: { id: connection.id },
-        data: { lastSyncedAt: new Date() },
-      });
-    } catch (err) {
-      console.error(
-        `Webhook: failed to import Withings measures for user ${notification.userid}:`,
-        err,
-      );
-      await captureError(err, { provider: "withings", webhook: "measures", userId: notification.userid });
+  try {
+    await db.webhookEvent.create({
+      data: {
+        provider: "withings",
+        externalId,
+        payload: parsed as unknown as Prisma.InputJsonValue,
+        userId: conn?.userId ?? null,
+        status: WebhookEventStatus.pending,
+        nextAttemptAt: new Date(),
+      },
+    });
+  } catch (err) {
+    const p = err as Prisma.PrismaClientKnownRequestError;
+    if (
+      p?.code === "P2002" &&
+      Array.isArray(p.meta?.target) &&
+      (p.meta.target as string[]).includes("provider_external_id_unique")
+    ) {
+      return NextResponse.json({ ok: true });
     }
-  })();
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
