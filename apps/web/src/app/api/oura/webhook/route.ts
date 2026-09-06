@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, WebhookEventStatus } from "@zor/db";
 import { db } from "@zor/db";
-import { importOuraSleep, importOuraReadiness } from "@zor/api/src/lib/oura";
-import { captureError } from "@zor/api/src/lib/capture-error";
+import { ouraWebhookSchema, ouraEventKey } from "@zor/api/src/lib/webhook-schemas";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -14,55 +14,47 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 
-interface OuraWebhookEvent {
-  event_type: string;
-  data_type: string;
-  user_id: string;
-  event_date: string;
-}
-
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as OuraWebhookEvent;
+  let parsed;
+  try {
+    parsed = ouraWebhookSchema.parse(await request.json());
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
 
-  if (!["sleep", "daily_readiness"].includes(body.data_type)) {
+  if (!["sleep", "daily_readiness"].includes(parsed.data_type)) {
     return NextResponse.json({ ok: true });
   }
 
-  // Fire-and-forget background processing
-  (async () => {
-    try {
-      const connection = await db.deviceConnection.findFirst({
-        where: {
-          provider: "oura",
-          providerAccountId: body.user_id,
-        },
-      });
+  const { providerAccountId, externalId } = ouraEventKey(parsed);
 
-      if (!connection || !connection.syncEnabled) return;
+  const conn = await db.deviceConnection.findFirst({
+    where: { provider: "oura", providerAccountId },
+    select: { userId: true },
+  });
 
-      const eventDate = body.event_date;
-      // Fetch a window around the event date to catch any late-arriving data
-      const startDate = eventDate;
-      const endDate = eventDate;
-
-      if (body.data_type === "sleep") {
-        await importOuraSleep(connection, db, startDate, endDate);
-      } else if (body.data_type === "daily_readiness") {
-        await importOuraReadiness(connection, db, startDate, endDate);
-      }
-
-      await db.deviceConnection.update({
-        where: { id: connection.id },
-        data: { lastSyncedAt: new Date() },
-      });
-    } catch (err) {
-      console.error(
-        `Webhook: failed to import Oura ${body.data_type} for ${body.event_date}:`,
-        err,
-      );
-      await captureError(err, { provider: "oura", webhook: body.data_type, eventDate: body.event_date });
+  try {
+    await db.webhookEvent.create({
+      data: {
+        provider: "oura",
+        externalId,
+        payload: parsed as unknown as Prisma.InputJsonValue,
+        userId: conn?.userId ?? null,
+        status: WebhookEventStatus.pending,
+        nextAttemptAt: new Date(),
+      },
+    });
+  } catch (err) {
+    const p = err as Prisma.PrismaClientKnownRequestError;
+    if (
+      p?.code === "P2002" &&
+      Array.isArray(p.meta?.target) &&
+      (p.meta.target as string[]).includes("provider_external_id_unique")
+    ) {
+      return NextResponse.json({ ok: true });
     }
-  })();
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
