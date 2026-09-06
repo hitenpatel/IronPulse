@@ -1,49 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, WebhookEventStatus } from "@zor/db";
 import { db } from "@zor/db";
-import { importPolarActivity } from "@zor/api/src/lib/polar";
-import { captureError } from "@zor/api/src/lib/capture-error";
-
-interface PolarWebhookEvent {
-  event: string;
-  user_id: string;
-  entity_id: string;
-  timestamp: string;
-  url: string;
-}
+import { polarWebhookSchema, polarEventKey } from "@zor/api/src/lib/webhook-schemas";
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as PolarWebhookEvent;
+  let parsed;
+  try {
+    parsed = polarWebhookSchema.parse(await request.json());
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
 
-  if (body.event !== "EXERCISE") {
+  if (parsed.event !== "EXERCISE") {
     return NextResponse.json({ ok: true });
   }
 
-  // Fire-and-forget background processing
-  (async () => {
-    try {
-      const connection = await db.deviceConnection.findFirst({
-        where: {
-          provider: "polar",
-          providerAccountId: String(body.user_id),
-        },
-      });
+  const { providerAccountId, externalId } = polarEventKey(parsed);
 
-      if (!connection || !connection.syncEnabled) return;
+  const conn = await db.deviceConnection.findFirst({
+    where: { provider: "polar", providerAccountId },
+    select: { userId: true },
+  });
 
-      await importPolarActivity(body.entity_id, connection, db);
-
-      await db.deviceConnection.update({
-        where: { id: connection.id },
-        data: { lastSyncedAt: new Date() },
-      });
-    } catch (err) {
-      console.error(
-        `Webhook: failed to import Polar exercise ${body.entity_id}:`,
-        err,
-      );
-      await captureError(err, { provider: "polar", webhook: "exercise", exerciseId: body.entity_id });
+  try {
+    await db.webhookEvent.create({
+      data: {
+        provider: "polar",
+        externalId,
+        payload: parsed as unknown as Prisma.InputJsonValue,
+        userId: conn?.userId ?? null,
+        status: WebhookEventStatus.pending,
+        nextAttemptAt: new Date(),
+      },
+    });
+  } catch (err) {
+    const p = err as Prisma.PrismaClientKnownRequestError;
+    if (
+      p?.code === "P2002" &&
+      Array.isArray(p.meta?.target) &&
+      (p.meta.target as string[]).includes("provider_external_id_unique")
+    ) {
+      return NextResponse.json({ ok: true });
     }
-  })();
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
