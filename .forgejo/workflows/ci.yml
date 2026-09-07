@@ -289,13 +289,25 @@ jobs:
     needs: [ci-gate]
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=home-server_frontend
-          buildkitd-config-inline: |
-            [registry."forgejo:3000"]
-              http = true
-              insecure = true
+      - name: Persistent builder with state on the idle NAS disk
+        # /volume2 (docker data-root, every other NAS service) is IO-saturated;
+        # a single COPY took 9 min there. /volume1 is a separate, near-idle
+        # spindle, so the buildkit state volume is bind-mounted from it. The
+        # builder container is reused across runs (buildx create adopts an
+        # existing container of the same name) so the local layer cache
+        # survives between builds.
+        run: |
+          VOL=buildx_buildkit_zor-amd640_state
+          docker volume inspect "$VOL" >/dev/null 2>&1 || docker volume create \
+            --opt type=none --opt o=bind --opt device=/volume1/homes/hitenp/buildkit-amd64 "$VOL"
+          cat > /tmp/buildkitd.toml <<'EOF'
+          [registry."forgejo:3000"]
+            http = true
+            insecure = true
+          EOF
+          docker buildx create --name zor-amd64 --driver docker-container \
+            --driver-opt network=home-server_frontend --buildkitd-config /tmp/buildkitd.toml --use
+          docker buildx inspect --bootstrap zor-amd64
       - name: Registry auth for in-network push
         # docker/login-action goes through the NAS daemon, which has no
         # insecure-registries entry for forgejo:3000; write the auth file
@@ -318,6 +330,7 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
+          builder: zor-amd64
           platforms: linux/amd64
           push: true
           provenance: false
@@ -331,6 +344,7 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
+          builder: zor-amd64
           platforms: linux/amd64
           push: false
           provenance: false
