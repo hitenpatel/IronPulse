@@ -22,13 +22,13 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - waitForAnimationToEnd
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Password & Passkeys is the last row in the App section, near the very
+# bottom of a Profile screen that keeps growing — scroll until it's visible.
+- scrollUntilVisible:
+    element:
+      text: "Password & Passkeys"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Password & Passkeys"
 - extendedWaitUntil:
     visible:

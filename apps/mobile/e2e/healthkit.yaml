@@ -21,13 +21,22 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - tapOn: "Profile"
-# Scroll Profile to reach App section (Connected apps lives near the bottom)
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
 - waitForAnimationToEnd
+# Connected apps is in the App section, near the bottom of a Profile screen
+# that keeps growing — scroll until the row itself is visible.
+- scrollUntilVisible:
+    element:
+      text: "Connected apps"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Connected apps"
+# NEEDS HUMAN DECISION: Apple Health only renders when Platform.OS === "ios"
+# (see the `platform: "ios"` gate on the apple_health entry in PROVIDERS,
+# app/settings/integrations.tsx) — it is filtered out of both the
+# "Connected" and "Available" lists on Android entirely. This suite's shared
+# E2E device (Pixel, reference_pixel_e2e_device) is Android-only, so
+# "Apple Health" cannot ever be visible here regardless of selector
+# correctness. This flow can only pass on an iOS runner/simulator; left
+# as-is (selectors are otherwise correct) pending a decision on whether to
+# skip it on Android CI or add an iOS lane.
 - assertVisible: "Apple Health"

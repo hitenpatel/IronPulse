@@ -36,16 +36,25 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn:
     id: "add-exercise-button"
+# Picker is now ExerciseMultiPicker (components/workout/exercise-multi-picker.tsx):
+# search field testID is "search-input" (not "exercise-search-input"), and
+# result rows are testID `exercise-option-{id}` (a DB-generated uuid, not
+# tappable by name) — tap the result by its visible label instead.
 - extendedWaitUntil:
     visible:
-      id: "exercise-search-input"
+      id: "search-input"
     timeout: 10000
-- inputText: "Bench"
-- extendedWaitUntil:
-    visible: "Bench Press"
-    timeout: 10000
+# The E2E seed fixture util (packages/db/scripts/reset-mobile-e2e-utils.ts,
+# REQUIRED_EXERCISE_NAMES) guarantees "Barbell Bench Press - Medium Grip" is
+# present — there is no exercise literally named "Bench Press" in
+# packages/db/seeds/exercises.json, so match the real full name.
 - tapOn:
-    id: "exercise-item-bench-press"
+    id: "search-input"
+- inputText: "Barbell Bench Press"
+- extendedWaitUntil:
+    visible: "Barbell Bench Press - Medium Grip"
+    timeout: 10000
+- tapOn: "Barbell Bench Press - Medium Grip"
 - extendedWaitUntil:
     visible: "Finish"
     timeout: 15000

@@ -68,6 +68,7 @@ export function WorkoutSessionHeader({
     >
       {/* Cancel */}
       <Pressable
+        testID="cancel-workout-button"
         accessibilityLabel="Cancel workout"
         accessibilityRole="button"
         onPress={onCancel}

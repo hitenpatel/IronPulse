@@ -29,7 +29,17 @@ appId: com.ironpulse.app
 - extendedWaitUntil:
     visible: "Run"
     timeout: 10000
-- tapOn: "Back"
+- tapOn: "Run"
+# Tapping an activity moves to the "How do you want to log your run?" step,
+# which has its own in-screen "Back" link — but that only clears the
+# selected type and stays on this screen. The actual exit-to-dashboard
+# control is the X close button in the header (app/cardio/type-picker.tsx),
+# which previously had no testID; added testID="cardio-picker-close" there.
+- extendedWaitUntil:
+    visible: "Track with GPS"
+    timeout: 10000
+- tapOn:
+    id: "cardio-picker-close"
 - extendedWaitUntil:
     visible:
       id: "greeting"

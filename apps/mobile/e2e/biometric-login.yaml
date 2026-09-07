@@ -26,10 +26,17 @@ appId: com.ironpulse.app
 # Sign out and verify login screen loads
 - waitForAnimationToEnd
 - tapOn: "Profile"
-- extendedWaitUntil:
-    visible: "Sign out"
-    timeout: 10000
-- tapOn: "Sign out"
+- waitForAnimationToEnd
+# Sign out is below every menu section — this flow previously had no
+# scrolling at all, so "Sign out" was never actually on screen. Scroll to
+# the button (testID "sign-out-button") before waiting for/tapping it.
+- scrollUntilVisible:
+    element:
+      id: "sign-out-button"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "sign-out-button"
 - extendedWaitUntil:
     visible:
       id: "email-input"

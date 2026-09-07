@@ -123,6 +123,7 @@ export default function SummaryScreen() {
             <Icon size={36} color={colors.success} />
           </View>
           <Text
+            testID="cardio-type"
             style={{
               fontSize: 24,
               fontWeight: "bold",

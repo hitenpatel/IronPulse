@@ -20,19 +20,46 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - waitForAnimationToEnd
+# Profile editing moved off the Profile tab entirely in the redesign: the
+# Profile screen (app/(tabs)/profile.tsx) is now a read-only hero + nav-row
+# list, and Name/Unit-System editing lives on the separate Settings screen
+# (app/settings/index.tsx), reached via the gear icon (testID
+# "profile-settings"). Settings has no "Email" field at all (email isn't
+# editable) and no "Connected apps"/"Sign out" controls — those stay on the
+# Profile screen itself. Journey re-derived accordingly.
 - tapOn: "Profile"
 - extendedWaitUntil:
     visible:
       id: "profile-heading"
     timeout: 10000
+- tapOn:
+    id: "profile-settings"
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 10000
 - assertVisible: "Name"
-- assertVisible: "Email"
-- assertVisible: "Units"
+- assertVisible: "Unit System"
 - assertVisible: "metric"
 - assertVisible: "imperial"
 - tapOn: "imperial"
 - waitForAnimationToEnd
 - tapOn: "metric"
 - waitForAnimationToEnd
+- back
+- extendedWaitUntil:
+    visible:
+      id: "profile-heading"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Connected apps"
+    direction: DOWN
+    timeout: 15000
 - assertVisible: "Connected apps"
-- assertVisible: "Sign out"
+- scrollUntilVisible:
+    element:
+      id: "sign-out-button"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: "sign-out-button"

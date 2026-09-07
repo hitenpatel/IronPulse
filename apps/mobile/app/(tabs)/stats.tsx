@@ -120,6 +120,7 @@ export default function StatsScreen() {
         <View style={{ paddingHorizontal: spacing.gutter }}>
           <TopBar
             title="Stats"
+            testID="stats-heading"
             right={
               <SegmentedControl<Range>
                 dense

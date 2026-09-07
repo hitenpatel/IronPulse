@@ -1,5 +1,17 @@
 appId: com.ironpulse.app
 ---
+# NEEDS HUMAN DECISION (TASK-19 e2e rewrite, 2026-09-07):
+# The body-weight / body-fat logging UI this flow exercises no longer exists
+# anywhere in the app. The redesigned Stats screen (app/(tabs)/stats.tsx) has
+# no "weight-input" / "body-fat-input" / "log-weight" / "logged-weight"
+# testIDs, and a repo-wide grep for those testIDs and for
+# body_weight/bodyweight logging turns up nothing except the unrelated
+# "Body weight" GOAL TYPE in app/goals/index.tsx (a target, not a log entry).
+# Either the feature was intentionally dropped during the redesign and this
+# flow (and weight-log.yaml) should be deleted, or it needs to be rebuilt
+# somewhere (e.g. as part of Stats or a dedicated body-metrics screen) before
+# this flow can be fixed. Left as-is (still broken) pending that decision —
+# not deleted per TASK-19 instructions.
 - launchApp:
     clearKeychain: true
     clearState: true

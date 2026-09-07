@@ -22,13 +22,24 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Exercises"
 - waitForAnimationToEnd
-- assertVisible: "Exercises"
-# Tap first exercise in the list to open detail
+- assertVisible:
+    id: "exercises-heading"
+# The old `tapOn: {index: 0, text: ".*"}` was too fragile — with the
+# TopBar/search/filter chips also rendering text, index 0 doesn't reliably
+# land on the first exercise row and the screen never actually navigates.
+# Search for a known exercise by name (same idiom as workout-empty.yaml)
+# and tap its row directly instead.
+# "Barbell Bench Press - Medium Grip" is the exact seeded name (see
+# packages/db/scripts/reset-mobile-e2e-utils.ts REQUIRED_EXERCISE_NAMES) —
+# there is no exercise literally named "Bench Press".
 - tapOn:
-    index: 0
-    text: ".*"
+    id: "exercises-search-input"
+- inputText: "Barbell Bench Press"
 - extendedWaitUntil:
-    visible:
-      text: "Personal Records"
+    visible: "Barbell Bench Press - Medium Grip"
+    timeout: 10000
+- tapOn: "Barbell Bench Press - Medium Grip"
+- extendedWaitUntil:
+    visible: "Personal Records"
     timeout: 10000
 - assertVisible: "Recent Sets"

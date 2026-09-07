@@ -34,7 +34,10 @@ appId: com.ironpulse.app
 - assertVisible:
     id: "next-up-hero"
 - assertVisible: "Start workout"
-- assertVisible: "-day streak"
+# Streak card text is "{count}-day streak" — Maestro requires a full match,
+# so the bare substring never matches; wildcard it (see calendar.yaml for
+# the same pattern used on the tapOn side).
+- assertVisible: ".*-day streak"
 - assertVisible: "Sessions"
 - assertVisible: "Volume"
 - assertVisible: "Time"

@@ -34,11 +34,23 @@ appId: com.ironpulse.app
     visible: "Finish"
     timeout: 10000
 - waitForAnimationToEnd
-- tapOn: "Cancel"
+# The header Cancel control (components/workout/workout-session-header.tsx)
+# is now an icon-only X button — it has no visible "Cancel" text, only
+# accessibilityLabel "Cancel workout" (added testID "cancel-workout-button").
+# There is also no "Discard" text anywhere: confirming discards a native
+# Alert.alert("Cancel Workout", "Are you sure? All data will be lost.", ...)
+# with buttons "Keep Going" / "Cancel Workout" (destructive) — see
+# hooks/use-active-workout-session.ts handleCancel. The dialog title and the
+# destructive button share the exact same text, so disambiguate by index
+# (title renders first, the tappable button second).
+- tapOn:
+    id: "cancel-workout-button"
 - extendedWaitUntil:
-    visible: "Discard"
+    visible: "Cancel Workout"
     timeout: 10000
-- tapOn: "Discard"
+- tapOn:
+    text: "Cancel Workout"
+    index: 1
 - extendedWaitUntil:
     visible:
       id: "greeting"

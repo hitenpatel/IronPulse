@@ -22,11 +22,15 @@ appId: com.ironpulse.app
     timeout: 60000
 - tapOn: "Profile"
 - waitForAnimationToEnd
-# Achievements is in the Training section — scroll to reveal reliably.
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Achievements is in the Training section — the Profile screen has grown
+# (Communication + Training x7 rows) since this flow was last tuned, so a
+# fixed swipe count is no longer reliable. Scroll until the row itself
+# is on screen, then tap it directly.
+- scrollUntilVisible:
+    element:
+      text: "Achievements"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Achievements"
 - extendedWaitUntil:
     visible:
