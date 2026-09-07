@@ -6,3 +6,23 @@ services:
     environment:
       SCHEMA_MANAGEMENT: "external"
       NEXTAUTH_URL: "https://staging.mettlelift.hiten-patel.co.uk"
+
+  # Per-minute tick for the provider webhook worker. DSM has no user crontab
+  # and hitenp has no root, so the scheduler lives in the stack.
+  webhook-cron:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    depends_on:
+      - ironpulse
+    environment:
+      CRON_SECRET: ${CRON_SECRET:?}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        while true; do
+          curl -sS -m 55 -o /dev/null -w 'webhook-worker %{http_code}\n' \
+            -H "Authorization: Bearer $$CRON_SECRET" \
+            http://ironpulse:3000/api/cron/webhook-worker || true
+          sleep 60
+        done
