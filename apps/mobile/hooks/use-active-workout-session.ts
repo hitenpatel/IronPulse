@@ -19,6 +19,7 @@ import * as Haptics from "@/lib/haptics";
 import { maybeRequestReview } from "@/lib/review-prompt";
 import { completeWorkoutLocally } from "@/lib/workout-local-completion";
 import { renameWorkout, discardWorkout } from "@/lib/workout-session-repository";
+import { endWorkoutEfficiencySession } from "@/lib/workout-efficiency-telemetry";
 
 export interface WorkoutRow {
   id: string;
@@ -156,6 +157,8 @@ export function useActiveWorkoutSession(
         onPress: async () => {
           if (!workoutId) return;
           await discardWorkout(db, workoutId);
+          // TASK-24: workout discarded — stop tracking this session.
+          endWorkoutEfficiencySession();
           navigation.goBack();
         },
       },
@@ -176,6 +179,9 @@ export function useActiveWorkoutSession(
       return;
     }
 
+    // TASK-24: workout finished from the header's Finish action — stop
+    // tracking this session.
+    endWorkoutEfficiencySession();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     maybeRequestReview().catch(() => {});
 

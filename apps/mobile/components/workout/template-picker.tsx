@@ -13,6 +13,10 @@ import {
   startWorkoutFromTemplateAtomic,
   DuplicateActiveWorkoutError,
 } from "@/lib/workout-start";
+import {
+  startWorkoutEfficiencySession,
+  computeIsNewAthlete,
+} from "@/lib/workout-efficiency-telemetry";
 
 interface Props {
   open: boolean;
@@ -60,6 +64,7 @@ export function TemplatePicker({ open, onClose }: Props) {
       const { workoutId } = await startEmptyWorkoutAtomic(db as any, user!.id, {
         discardExisting,
       });
+      void computeIsNewAthlete(db as any).then(startWorkoutEfficiencySession);
       onClose();
       navigation.navigate("WorkoutActive", { workoutId });
     } catch (err) {
@@ -81,6 +86,7 @@ export function TemplatePicker({ open, onClose }: Props) {
         template.id,
         { discardExisting },
       );
+      void computeIsNewAthlete(db as any).then(startWorkoutEfficiencySession);
       onClose();
       navigation.navigate("WorkoutActive", { workoutId });
     } catch (err) {

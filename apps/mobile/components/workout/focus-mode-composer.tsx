@@ -58,6 +58,12 @@ import {
 import { loadSessionState, saveSessionState, clearSessionState } from "../../lib/workout-session-storage";
 import * as Haptics from "@/lib/haptics";
 import { maybeRequestReview } from "@/lib/review-prompt";
+import {
+  recordWorkoutInteraction,
+  recordWorkoutKeystroke,
+  recordWorkoutSetCompleted,
+  endWorkoutEfficiencySession,
+} from "@/lib/workout-efficiency-telemetry";
 
 import { FocusedExerciseCard } from "./focused-exercise-card";
 import { WorkoutQueue, type QueueItem } from "./workout-queue";
@@ -204,6 +210,11 @@ export function FocusModeComposer({
 
   function handleFieldChange(field: "weight" | "reps" | "rpe", value: string) {
     if (!focusedSetId) return;
+    // TASK-24: this is a text-entry keystroke (TextInput onChangeText), NOT
+    // a foreground tap — explicitly routed to recordWorkoutKeystroke() so it
+    // never contributes to the interaction count. Do not call
+    // recordWorkoutInteraction() here.
+    recordWorkoutKeystroke();
     setDrafts((prev) => {
       const base = prev.get(focusedSetId) ?? currentDraft;
       const updated = touchField(base, field, value);
@@ -224,6 +235,9 @@ export function FocusModeComposer({
   // ── Complete set ──────────────────────────────────────────────────────────
   const handleComplete = useCallback(async () => {
     if (!focusedSetId || savingState === "saving" || savingState === "slow") return;
+
+    // TASK-24: Complete Set / Retry tap — a foreground control interaction.
+    recordWorkoutInteraction();
 
     const draft = currentDraft;
     const parsed = parseDraftForCommit(draft, (() => {
@@ -253,6 +267,10 @@ export function FocusModeComposer({
       // Clear slow timer
       if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
       setSavingState("idle");
+
+      // TASK-24: the set-completion write has committed — record the
+      // efficiency event (fire-and-forget, no health data).
+      recordWorkoutSetCompleted();
 
       // Advance progression anchor
       progressionAnchorRef.current = focusedSetId;
@@ -308,6 +326,8 @@ export function FocusModeComposer({
   // ── Undo ──────────────────────────────────────────────────────────────────
   const handleUndo = useCallback(async () => {
     if (!undoState || Date.now() > undoState.expiresAt) return;
+    // TASK-24: Undo tap — a foreground control interaction.
+    recordWorkoutInteraction();
     setUndoState(null);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     // Reopen rest timer if it was started by this completion
@@ -343,6 +363,9 @@ export function FocusModeComposer({
       );
 
       await clearSessionState(userId, workout.id);
+      // TASK-24: workout finished — stop tracking this session so it can't
+      // bleed into whatever workout the athlete starts next.
+      endWorkoutEfficiencySession();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       maybeRequestReview().catch(() => {});
 
@@ -483,7 +506,12 @@ export function FocusModeComposer({
             draft={currentDraft}
             previousPerformance={prevPerf}
             onFieldChange={handleFieldChange}
-            onCompletedSetTap={(sid) => setEditingCompletedSetId(sid)}
+            onCompletedSetTap={(sid) => {
+              // TASK-24: tap-to-review a completed set — a foreground
+              // control interaction.
+              recordWorkoutInteraction();
+              setEditingCompletedSetId(sid);
+            }}
             saving={savingState === "saving" || savingState === "slow"}
           />
         )}
@@ -512,10 +540,18 @@ export function FocusModeComposer({
         savingState={savingState}
         onComplete={handleComplete}
         onUndo={handleUndo}
-        onAddExercise={onAddExercise}
+        onAddExercise={() => {
+          // TASK-24: Add Exercise tap — a foreground control interaction.
+          recordWorkoutInteraction();
+          onAddExercise();
+        }}
         onDiscard={onCancel}
         onRetry={handleComplete}
-        onReturnToNext={() => setEditingCompletedSetId(null)}
+        onReturnToNext={() => {
+          // TASK-24: Return to Next Set tap — a foreground control interaction.
+          recordWorkoutInteraction();
+          setEditingCompletedSetId(null);
+        }}
       />
 
       {/* Finish sheet */}
