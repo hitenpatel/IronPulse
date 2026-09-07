@@ -4,7 +4,7 @@
 
 Full redesign of **Mettle Lift**, a fitness tracking app targeting Android. Covers the complete daily loop — login, home, live workout, stats, nutrition, sleep, goals — across **13 screens**. The design is deliberately unified: one visual system, one typographic voice, consistent chrome. It replaces a fragmented prior app that felt like "six apps glued together."
 
-Primary device target: **Pixel 7** (412×892 logical @ 2.625× DPR, shown at 300×636 in the gallery) and **Pixel 7 Pro** (360×780 logical shown at 360×780). The design should scale cleanly from ~360dp up to 412dp width; no tablet layout needed in this pass.
+Primary device target: **Pixel 7** (412×892 logical @ 2.625× DPR, shown at 300×636 in the gallery) and **Pixel 7 Pro** (360×780 logical shown at 360×780). The design must scale cleanly across real phones, from ~360dp up to ~450dp width (the Pixel 9 Pro XL used by the nightly E2E run is 448dp wide and is exercised at native density — no display override); no tablet layout needed in this pass.
 
 ## About the Design Files
 

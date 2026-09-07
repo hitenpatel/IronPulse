@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-09 03:52'
-updated_date: '2026-08-13 09:59'
+updated_date: '2026-09-07 08:51'
 labels:
   - mobile
   - test
@@ -40,10 +40,12 @@ Make device-level workout verification deterministic and failure-sensitive after
 - [ ] #2 The nightly runner uses the IronPulse checkout and current APK and bundle identifiers and exits nonzero on missing artifact, backend-health, install, smoke, or suite failure
 - [ ] #3 The scheduled nightly entrypoint exists and invokes the maintained runner and report location
 - [ ] #4 The E2E stack uses an isolated PowerSync/backend profile and resets only the designated test user's workout graph
-- [ ] #5 A fresh real-app Android artifact is exercised on a verified 360–412dp target; the connected larger device may supplement but not replace small-screen evidence
-- [ ] #6 Offline tests preserve ADB control by stopping the isolated backend services rather than severing Wi-Fi or Tailscale
-- [ ] #7 The runner is proven to fail on an intentionally broken copied flow and all nine repaired workout flows then pass
-- [ ] #8 iOS remains an explicit macOS or EAS release gate until an automated runner is available
+- [ ] #5 Offline tests preserve ADB control by stopping the isolated backend services rather than severing Wi-Fi or Tailscale
+- [ ] #6 The runner is proven to fail on an intentionally broken copied flow and all nine repaired workout flows then pass
+- [ ] #7 iOS remains an explicit macOS or EAS release gate until an automated runner is available
+- [ ] #8 Automated Android flows run on the connected Pixel at native density (448dp); no wm density/size override. Supported width claim is ~360-450dp; small-screen (~360dp) automated evidence tracked in a separate task
+- [ ] #9 Automated Android flows run on the connected Pixel at native density (448dp); no wm density/size override. Supported width claim is ~360-450dp; small-screen (~360dp) automated evidence tracked in a separate task
+- [ ] #10 Automated Android flows run on the connected Pixel at native density (448dp) with no wm density/size override; supported width claim is ~360-450dp and small-screen automated evidence is tracked in TASK-29
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -111,4 +113,8 @@ Two findings worth carrying forward:
 1. CI portability gap. The Forgejo runner shares the host's docker.sock, so 'docker compose up' from a job container publishes ports on the host (good — the phone can reach :3100) but bind mounts like ./powersync.yaml resolve on the host filesystem, where the job container's checkout does not exist. PowerSync would boot with no sync rules. The runner now probes this explicitly and fails with an actionable message rather than surfacing it as a flow failure.
 
 2. apps/mobile/scripts/build-android.sh did not pin its toolchain. Gradle 8.14.3 cannot parse class file major version 69, so a host defaulting to Java 25 failed in semantic analysis before any task ran, and ANDROID_HOME was unset because expo prebuild --clean deletes android/local.properties. The script now resolves JDK 21 and the SDK itself.
+
+2026-09-07: dropped the 360-412dp density-override gate. Suite now runs at the Pixel's native 448dp; claim in designs/claude-design-handoff/README.md and the focus-mode spec widened to ~360-450dp. Also fixed the APK: -Preact-native.internal.bundleForVariant was a no-op, so the nightly APK had no JS bundle since 08-12 (2a54352).
+
+2026-09-07: dropped the 360-412dp density-override gate. Suite now runs at the Pixel's native 448dp; claim in designs/claude-design-handoff/README.md and the focus-mode spec widened to ~360-450dp. Also fixed the APK: -Preact-native.internal.bundleForVariant was a no-op, so the nightly APK had no JS bundle since 08-12 (2a54352).
 <!-- SECTION:NOTES:END -->

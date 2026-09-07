@@ -71,24 +71,28 @@ adb -s "$DEVICE" shell dumpsys window 2>/dev/null \
 adb -s "$DEVICE" shell screencap -p /sdcard/_e2e_pre.png 2>/dev/null
 adb -s "$DEVICE" pull /sdcard/_e2e_pre.png "$OUT/pre-suite.png" 2>/dev/null | tail -1 | tee -a "$OUT/run.log"
 
-# 1b. Small-screen gate. The layouts must be evidenced at 360-412dp; the
-# connected Pixel 9 Pro XL is 1008px @ 360dpi = 448dp, wider than any phone we
-# claim to support. Override density rather than resolution — resizing the
-# framebuffer forces a surface recreate that some Compose/RN surfaces survive
-# badly, whereas a density change is a plain configuration change.
-#
-#   target_density = physical_width_px * 160 / target_dp
-#   1008 * 160 / 384dp = 420dpi
-#
-# Restored by the EXIT trap so the shared phone is left as found. The trap is
-# installed *before* the override, so a failed gate can't strand the device at a
-# non-native density — RadioShake's nightly drives the same phone.
+# 1b. Run at the device's native density. The connected Pixel 9 Pro XL is
+# 1008px @ 360dpi = 448dp wide; the app claims to work across real phones
+# (~360dp to ~450dp) rather than a narrow design-gallery band, so the suite
+# exercises the hardware as shipped. No `wm density` / `wm size` override —
+# an override that outlives a killed job leaves the owner's daily driver
+# scaled wrong (seen 2026-09-07 after a cancelled run). Record what we ran on
+# so the report is honest about which width it evidences.
+PHYS="$(adb -s "$DEVICE" shell wm size | grep -oE '[0-9]+x[0-9]+' | head -1 | tr -d '\r')"
+PHYS_DPI="$(adb -s "$DEVICE" shell wm density | grep -oE 'Physical density: [0-9]+' | grep -oE '[0-9]+$')"
+[ -n "$PHYS" ] && [ -n "$PHYS_DPI" ] || fail "could not read 'wm size' / 'wm density'"
+if adb -s "$DEVICE" shell wm density | grep -q 'Override density'; then
+  log "WARNING: stale density override found on $DEVICE — resetting to physical"
+  adb -s "$DEVICE" shell wm density reset >/dev/null 2>&1
+fi
+adb -s "$DEVICE" shell wm size | grep -q 'Override size' && adb -s "$DEVICE" shell wm size reset >/dev/null 2>&1
+EFFECTIVE_DP=$(( ${PHYS%%x*} * 160 / PHYS_DPI ))
+log "device: ${PHYS}px @ ${PHYS_DPI}dpi = ${EFFECTIVE_DP}dp wide (native, no override)"
+echo "$EFFECTIVE_DP" > "$OUT/device-dp"
+
 MAESTRO_DEVICE="$DEVICE"
 TUNNEL_PID=""
 cleanup() {
-  log "restoring device density"
-  adb -s "$DEVICE" shell wm density reset >/dev/null 2>&1
-  adb -s "$DEVICE" shell wm size reset >/dev/null 2>&1
   log "stopping zor-e2e stack (volumes preserved)"
   ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" down >/dev/null 2>&1 )
   if [ -n "$TUNNEL_PID" ]; then
@@ -98,17 +102,6 @@ cleanup() {
   bash "$PREP" restore "$DEVICE" 2>&1 | tee -a "$OUT/run.log"
 }
 trap cleanup EXIT
-
-TARGET_DP="${E2E_TARGET_DP:-384}"
-PHYS_W="$(adb -s "$DEVICE" shell wm size | grep -oE '[0-9]+x' | tr -d 'x' | tr -d '\r')"
-[ -n "$PHYS_W" ] || fail "could not read physical width from 'wm size'"
-TARGET_DENSITY=$(( PHYS_W * 160 / TARGET_DP ))
-adb -s "$DEVICE" shell wm density "$TARGET_DENSITY" >/dev/null 2>&1
-EFFECTIVE_DP=$(( PHYS_W * 160 / TARGET_DENSITY ))
-log "small-screen gate: ${PHYS_W}px @ ${TARGET_DENSITY}dpi = ${EFFECTIVE_DP}dp"
-if [ "$EFFECTIVE_DP" -lt 360 ] || [ "$EFFECTIVE_DP" -gt 412 ]; then
-  fail "effective width ${EFFECTIVE_DP}dp outside the required 360-412dp gate"
-fi
 
 # 1c. Maestro's embedded dadb adb client cannot drive a non-loopback network
 # serial: every request dies with `Command failed (tcp:N): closed` before the
@@ -397,5 +390,5 @@ RC=0
 [ -f "$OUT/suite.xml" ] || { log "main suite produced no junit report"; RC=1; }
 [ -f "$OUT/smoke.xml" ] || { log "prod smoke produced no junit report"; RC=1; }
 log "=== done (exit $RC) ==="
-# density reset, backend teardown and stayon restore handled by the EXIT trap
+# backend teardown and stayon restore handled by the EXIT trap
 exit $RC

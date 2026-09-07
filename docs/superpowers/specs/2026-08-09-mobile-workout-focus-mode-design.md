@@ -372,7 +372,7 @@ Use mono/tabular numerals for weight, reps, elapsed time, and rest countdown. In
 
 ### Device-level flows
 
-Run the automated Android flows on a verified 360–412dp target over ADB/Tailscale, using a safe display override or another device/emulator when the connected ~448dp Pixel is the only hardware available. Run iOS flows through an available macOS/EAS runner when one is configured; until then, iOS is an explicit manual release gate rather than a claim this ARM server can verify automatically.
+Run the automated Android flows on the connected Pixel over ADB/Tailscale at its native density (448dp wide; no `wm density`/`wm size` override — the app must accommodate real devices as shipped, and an override that outlives a killed job leaves the shared phone mis-scaled). The supported phone width claim is ~360dp to ~450dp; the nightly evidences the wide end on hardware, and the ~360dp end is covered by design-time review until a small-screen emulator or device is available to the runner (tracked separately). Revised 2026-09-07 — earlier text required a 360–412dp override target. Run iOS flows through an available macOS/EAS runner when one is configured; until then, iOS is an explicit manual release gate rather than a claim this ARM server can verify automatically.
 
 1. Start empty → multi-add exercises → log → rest → finish.
 2. Start template → accept previous values → complete repeated sets quickly.
