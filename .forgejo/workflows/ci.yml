@@ -273,58 +273,106 @@ jobs:
           path: apps/web/playwright-report/
           retention-days: 7
 
-  build-image:
-    name: Build & Push Image
-    # Runs on the Oracle arm64 host under QEMU amd64 emulation (~90min). The
-    # NAS-native amd64-dind runner is faster (~10min) but its push hangs on
-    # the router NAT hairpin (NAS resolves git.hiten-patel.co.uk to the public
-    # IP). Switching back requires a /etc/hosts entry on the NAS mapping
-    # git.hiten-patel.co.uk to 192.168.1.24 (see TASK-27).
+  # Multi-arch image: one native build per architecture, then a manifest
+  # merge. Emulating amd64 under QEMU on the arm64 host does not work — pnpm
+  # crashes on Ubuntu's qemu 8.2 and `next build` (SWC) SIGSEGVs on qemu 10.
+  build-image-amd64:
+    name: Build Image (amd64)
+    # NAS x86_64 runner (label amd64-dind). It cannot push to
+    # git.hiten-patel.co.uk: the NAS resolves that name to the public IP and
+    # the router NAT hairpin drops large uploads (HTTP 499 mid-layer). The
+    # buildkit container is attached to the Forgejo docker network instead and
+    # pushes to forgejo:3000 over plain HTTP — same registry, same repo, so the
+    # merge job below can reference the tag by the public name.
+    runs-on: amd64-dind
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    needs: [ci-gate]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=home-server_frontend
+          buildkitd-config-inline: |
+            [registry."forgejo:3000"]
+              http = true
+              insecure = true
+      - name: Registry auth for in-network push
+        # docker/login-action goes through the NAS daemon, which has no
+        # insecure-registries entry for forgejo:3000; write the auth file
+        # directly — buildx forwards it to buildkit.
+        run: |
+          mkdir -p ~/.docker
+          printf '{"auths":{"forgejo:3000":{"auth":"%s"}}}' \
+            "$(printf '%s:%s' "$REGISTRY_USER" "$REGISTRY_TOKEN" | base64 -w0)" > ~/.docker/config.json
+        env:
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+            SKIP_TYPECHECK_ON_BUILD=1
+          tags: forgejo:3000/hiten/mettlelift:sha-${{ github.sha }}-amd64
+          cache-from: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64
+          cache-to: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64,mode=max
+
+  build-image-arm64:
+    name: Build Image (arm64)
     runs-on: arm64-dind
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     needs: [ci-gate]
     steps:
       - uses: actions/checkout@v4
-      - name: Swap in modern QEMU for amd64 emulation
-        # Ubuntu's packaged qemu-user handler (x86_64-binfmt-P) SIGSEGVs on
-        # the pnpm linuxstatic binary ("QEMU internal SIGSEGV {code=MAPERR}",
-        # exit 139). tonistiigi/binfmt ships qemu 10.x which runs it fine.
-        # binfmt_misc is host-global via the shared docker.sock, so this
-        # persists until the host reboots; re-run every job to self-heal.
-        run: |
-          docker run --rm --privileged tonistiigi/binfmt:qemu-v10.2.3 --uninstall qemu-x86_64 || true
-          docker run --rm --privileged tonistiigi/binfmt:qemu-v10.2.3 --install amd64
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           registry: git.hiten-patel.co.uk
           username: ${{ secrets.REGISTRY_USER }}
           password: ${{ secrets.REGISTRY_TOKEN }}
-      - name: Compute tag prefix
-        id: meta
-        run: |
-          # main pushes tag both prod-<sha> and staging-<sha> so the Manual
-          # Deploy workflow can soak a main commit on staging before prod.
-          IMG=git.hiten-patel.co.uk/hiten/mettlelift
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tags=$IMG:prod-${{ github.sha }},$IMG:staging-${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tags=$IMG:staging-${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
-          # amd64 for the NAS staging host (QEMU on this arm64 runner), arm64
-          # native for the Oracle prod host. Single manifest, both pulls work.
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
           push: true
+          provenance: false
           build-args: |
             BUILD_SHA=${{ github.sha }}
             SKIP_TYPECHECK_ON_BUILD=1
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache
-          cache-to: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache,mode=max
+          tags: git.hiten-patel.co.uk/hiten/mettlelift:sha-${{ github.sha }}-arm64
+          cache-from: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache-arm64
+          cache-to: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache-arm64,mode=max
+
+  build-image:
+    name: Publish Multi-arch Image
+    runs-on: arm64-dind
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    needs: [build-image-amd64, build-image-arm64]
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: git.hiten-patel.co.uk
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+      - name: Merge per-arch manifests
+        run: |
+          # main pushes tag both prod-<sha> and staging-<sha> so the Manual
+          # Deploy workflow can soak a main commit on staging before prod.
+          IMG=git.hiten-patel.co.uk/hiten/mettlelift
+          SHA=${{ github.sha }}
+          TAGS=(-t "$IMG:staging-$SHA")
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS+=(-t "$IMG:prod-$SHA")
+          fi
+          docker buildx imagetools create "${TAGS[@]}" "$IMG:sha-$SHA-amd64" "$IMG:sha-$SHA-arm64"
+          docker buildx imagetools inspect "$IMG:staging-$SHA" | grep -E 'Platform:' | tee /dev/stderr | grep -q 'linux/amd64'
+          docker buildx imagetools inspect "$IMG:staging-$SHA" | grep -q 'linux/arm64'
 
   deploy-staging:
     name: Deploy Staging
