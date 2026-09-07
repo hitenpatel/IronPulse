@@ -216,17 +216,22 @@ jobs:
           # past the job timeout (last run OOT at 2h during :app:buildCMakeDebug
           # [armeabi-v7a] after ~1h emulated x86_64 NDK builds).
           #
-          # bundleForVariant=debug bakes the JS bundle into the debug APK. Without
-          # it the APK fetches from Metro at runtime, which is fragile in a pnpm
-          # monorepo (Metro's server root becomes the workspace and the expo
-          # virtual entry URL 404s under sourcePaths=url-server). The nightly
-          # runs against staging, so a self-contained APK is more reliable than
-          # standing up a Metro server in the runner container.
+          # The JS bundle is baked into the debug APK by the android-e2e-bundle
+          # config plugin (plugins/android-e2e-bundle.js, active under
+          # EXPO_PUBLIC_E2E=1), which empties `react { debuggableVariants }` in
+          # the prebuilt app/build.gradle. Without it the APK fetches JS from
+          # Metro at runtime and every flow dies on "Unable to load script".
+          # The former `-Preact-native.internal.bundleForVariant=debug` flag was
+          # not a real gradle-plugin property and silently did nothing.
+          grep -q '^\s*debuggableVariants = \[\]' app/build.gradle \
+            || { echo "::error::android-e2e-bundle plugin did not patch app/build.gradle"; exit 1; }
           ./gradlew :app:assembleDebug \
             -PreactNativeArchitectures=arm64-v8a \
-            -Preact-native.internal.bundleForVariant=debug \
             -Pandroid.aapt2FromMavenOverride="$ANDROID_HOME/build-tools/36.0.0/aapt2"
           ls -la app/build/outputs/apk/debug/app-debug.apk
+          # Fail here, not 40 flows later, if the bundle is missing.
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q 'assets/index.android.bundle' \
+            || { echo "::error::app-debug.apk has no assets/index.android.bundle"; exit 1; }
 
       - name: Install trusted ADB key (avoids on-device USB-debug prompt)
         env:

@@ -56,6 +56,7 @@ module.exports = ({ config }) => ({
     "./plugins/android-cleartext",
     "./plugins/android-gradle-memory",
     "./plugins/android-release-signing",
+    "./plugins/android-e2e-bundle",
     "expo-notifications",
   ],
 });
