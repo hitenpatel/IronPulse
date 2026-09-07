@@ -278,81 +278,64 @@ jobs:
   # crashes on Ubuntu's qemu 8.2 and `next build` (SWC) SIGSEGVs on qemu 10.
   build-image-amd64:
     name: Build Image (amd64)
-    # NAS x86_64 runner (label amd64-dind). It cannot push to
-    # git.hiten-patel.co.uk: the NAS resolves that name to the public IP and
-    # the router NAT hairpin drops large uploads (HTTP 499 mid-layer). The
-    # buildkit container is attached to the Forgejo docker network instead and
-    # pushes to forgejo:3000 over plain HTTP — same registry, same repo, so the
-    # merge job below can reference the tag by the public name.
+    # NAS x86_64 runner (label amd64-dind). Two NAS constraints shape this job:
+    #  - kernel 4.4 has no overlayfs, so a buildx docker-container builder
+    #    falls back to the "native" snapshotter (full copy per layer) and a
+    #    single FROM took 47 min. The daemon's own BuildKit uses the aufs
+    #    graphdriver and is fast, so the build runs through the mounted
+    #    docker socket with plain `docker build`.
+    #  - the daemon cannot push to git.hiten-patel.co.uk: the NAS resolves it
+    #    to the public IP and the router NAT hairpin drops large uploads
+    #    (HTTP 499 mid-layer). A socat container (forgejo-registry-proxy)
+    #    publishes 127.0.0.1:3000 on the NAS host and forwards to
+    #    forgejo:3000; 127.0.0.0/8 is an insecure registry by default, so the
+    #    daemon pushes over plain HTTP without daemon.json changes (no root on
+    #    the NAS). Same registry, same repo, so the merge job references the
+    #    tag by the public name.
     runs-on: amd64-dind
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     needs: [ci-gate]
+    env:
+      REG: 127.0.0.1:3000/hiten/mettlelift
     steps:
       - uses: actions/checkout@v4
-      - name: Persistent builder with state on the idle NAS disk
-        # /volume2 (docker data-root, every other NAS service) is IO-saturated;
-        # a single COPY took 9 min there. /volume1 is a separate, near-idle
-        # spindle, so the buildkit state volume is bind-mounted from it. The
-        # builder container is reused across runs (buildx create adopts an
-        # existing container of the same name) so the local layer cache
-        # survives between builds.
+      - name: Loopback proxy to the Forgejo registry
         run: |
-          VOL=buildx_buildkit_zor-amd640_state
-          docker volume inspect "$VOL" >/dev/null 2>&1 || docker volume create \
-            --opt type=none --opt o=bind --opt device=/volume1/homes/hitenp/buildkit-amd64 "$VOL"
-          cat > /tmp/buildkitd.toml <<'EOF'
-          [registry."forgejo:3000"]
-            http = true
-            insecure = true
-          EOF
-          docker buildx create --name zor-amd64 --driver docker-container \
-            --driver-opt network=home-server_frontend --buildkitd-config /tmp/buildkitd.toml --use
-          docker buildx inspect --bootstrap zor-amd64
-      - name: Registry auth for in-network push
-        # docker/login-action goes through the NAS daemon, which has no
-        # insecure-registries entry for forgejo:3000; write the auth file
-        # directly — buildx forwards it to buildkit.
-        run: |
-          mkdir -p ~/.docker
-          printf '{"auths":{"forgejo:3000":{"auth":"%s"}}}' \
-            "$(printf '%s:%s' "$REGISTRY_USER" "$REGISTRY_TOKEN" | base64 -w0)" > ~/.docker/config.json
+          if ! docker ps --format '{{.Names}}' | grep -qx forgejo-registry-proxy; then
+            docker rm -f forgejo-registry-proxy 2>/dev/null || true
+            docker run -d --restart unless-stopped --name forgejo-registry-proxy \
+              --network home-server_frontend -p 127.0.0.1:3000:3000 \
+              alpine/socat tcp-listen:3000,fork,reuseaddr tcp:forgejo:3000
+          fi
+      - name: Registry login
+        run: echo "$REGISTRY_TOKEN" | docker login 127.0.0.1:3000 -u "$REGISTRY_USER" --password-stdin
         env:
           REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
-      # Image push and cache export are two steps on purpose: in one step
-      # buildkit uploads the image layers and the cache layers concurrently,
-      # and the two streams carry the same blobs. Forgejo's registry races on
-      # concurrent uploads of one digest ("offset mismatch between file and
-      # model", HTTP 500). The second step is a full cache hit, so it only
-      # writes the cache manifest plus any blob the first step did not.
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          builder: zor-amd64
-          platforms: linux/amd64
-          push: true
-          provenance: false
-          build-args: |
-            BUILD_SHA=${{ github.sha }}
-            SKIP_TYPECHECK_ON_BUILD=1
-          tags: forgejo:3000/hiten/mettlelift:sha-${{ github.sha }}-amd64
-          cache-from: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64
-      - name: Export build cache
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          builder: zor-amd64
-          platforms: linux/amd64
-          push: false
-          provenance: false
-          build-args: |
-            BUILD_SHA=${{ github.sha }}
-            SKIP_TYPECHECK_ON_BUILD=1
-          cache-from: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64
-          cache-to: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64,mode=max
+      - name: Build (daemon BuildKit, aufs)
+        # buildcache-amd64 is the previous image with inline cache metadata;
+        # the daemon's local build cache covers the common case anyway.
+        run: |
+          docker pull "$REG:buildcache-amd64" || true
+          DOCKER_BUILDKIT=1 docker build --progress=plain -f docker/Dockerfile \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --build-arg BUILD_SHA=${{ github.sha }} \
+            --build-arg SKIP_TYPECHECK_ON_BUILD=1 \
+            --cache-from "$REG:buildcache-amd64" \
+            -t "$REG:sha-${{ github.sha }}-amd64" -t "$REG:buildcache-amd64" .
+      - name: Push
+        run: |
+          docker push "$REG:sha-${{ github.sha }}-amd64"
+          docker push "$REG:buildcache-amd64"
+      - name: Prune old local tags
+        # Keep buildcache-amd64 (layer cache); drop per-sha tags and dangling
+        # layers so the 2 GB images do not pile up on the NAS.
+        if: always()
+        run: |
+          docker images --format '{{.Repository}}:{{.Tag}}' "$REG" \
+            | grep ':sha-' | grep -v "sha-${{ github.sha }}-amd64" \
+            | xargs -r docker rmi >/dev/null 2>&1 || true
+          docker image prune -f >/dev/null 2>&1 || true
 
   build-image-arm64:
     name: Build Image (arm64)
