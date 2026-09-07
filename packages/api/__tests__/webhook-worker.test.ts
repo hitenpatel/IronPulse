@@ -67,6 +67,7 @@ describe("runWebhookWorkerTick — failure paths", () => {
     const dt = updated!.nextAttemptAt.getTime() - before;
     expect(dt).toBeGreaterThanOrEqual(58_000);
     expect(dt).toBeLessThanOrEqual(62_000);
+    expect(capture.captureError).not.toHaveBeenCalled();
   });
 
   it("moves to dlq on the sixth failure and posts exactly one Sentry incident with externalId", async () => {
@@ -82,6 +83,7 @@ describe("runWebhookWorkerTick — failure paths", () => {
       externalId: "ext-x-1",
       eventId: row.id,
       attempts: 6,
+      lastError: "terminal",
     });
   });
 });

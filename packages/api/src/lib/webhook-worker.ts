@@ -109,6 +109,7 @@ export async function runWebhookWorkerTick(args: {
             externalId: row.external_id,
             eventId: row.id,
             attempts: nextAttempts,
+            lastError: msg,
           });
         }
       } else {
