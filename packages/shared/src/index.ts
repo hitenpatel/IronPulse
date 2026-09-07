@@ -24,6 +24,7 @@ export * from "./schemas/nutrition";
 export * from "./schemas/sleep";
 export * from "./schemas/goal";
 export * from "./schemas/notification";
+export * from "./schemas/injury";
 export * from "./hr-zones";
 export * from "./streaks";
 export * from "./warmup";
