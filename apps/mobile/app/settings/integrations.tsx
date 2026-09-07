@@ -42,11 +42,9 @@ import {
   syncFromGoogleFit,
   getGoogleFitLastSync,
 } from "@/lib/googlefit";
-import { Config } from "@/lib/config";
+import { getApiUrl } from "@/lib/server";
 import { colors, fonts, radii, spacing } from "@/lib/theme";
 import { BigNum, Button, Chip, TopBar, UppercaseLabel } from "@/components/ui";
-
-const API_BASE_URL = Config.API_URL;
 
 interface Connection {
   id: string;
@@ -224,7 +222,7 @@ export default function IntegrationsScreen() {
   };
 
   const handleOAuthConnect = (provider: ProviderKey) => {
-    Linking.openURL(`${API_BASE_URL}/api/${provider.replace("_", "-")}/connect`);
+    Linking.openURL(`${getApiUrl()}/api/${provider.replace("_", "-")}/connect`);
   };
 
   const confirmDisconnect = (provider: ProviderKey, label: string) => {
@@ -444,7 +442,7 @@ export default function IntegrationsScreen() {
                 marginTop: 8,
               }}
             >
-              OAuth connections redirect you to {new URL(API_BASE_URL).host} to authorise.
+              OAuth connections redirect you to {new URL(getApiUrl()).host} to authorise.
             </Text>
           </>
         )}

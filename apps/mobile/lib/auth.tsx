@@ -10,6 +10,7 @@ import type { SessionUser } from "@zor/shared";
 
 import { trpc } from "./trpc";
 import { isBiometricEnabled, isBiometricAvailable, authenticateWithBiometric, disableBiometric } from "./biometric";
+import { hydrateServerUrl } from "./server";
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -44,6 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function restore() {
       try {
+        // Must resolve before any trpc call below (or the App.tsx gate that
+        // reads hasServerUrl() once isLoading flips false) — otherwise a
+        // self-hosted user's first request of the session could race
+        // against the SecureStore read and briefly hit the cloud default.
+        await hydrateServerUrl();
+
         const storedToken = await SecureStore.getItemAsync("auth-token");
         const storedUser = await SecureStore.getItemAsync("auth-user");
 

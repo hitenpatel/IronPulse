@@ -1,10 +1,8 @@
 import { AppSchema, BackendConnector } from "@zor/sync";
 import * as SecureStore from "@/lib/secure-store";
 
-import { Config } from "./config";
+import { getApiUrl } from "./server";
 import { captureError } from "./telemetry";
-
-const API_URL = Config.API_URL;
 
 interface PowerSyncHandle {
   // Loose because PowerSync's typed handle differs between versions and
@@ -91,7 +89,28 @@ export function onPowerSyncFallback(
 
 export function createMobileConnector(): BackendConnector {
   return new BackendConnector({
-    baseUrl: API_URL,
+    // Read at construction time, not module load — RootNavigator recreates
+    // the connector (see App.tsx) whenever `user` or the active server URL
+    // changes, so this always reflects the currently selected server.
+    baseUrl: getApiUrl(),
     getAuthToken: () => SecureStore.getItemAsync("auth-token"),
   });
+}
+
+/**
+ * Disconnects PowerSync and wipes its local SQLite cache. Used by the
+ * Settings → Server "change server" flow — switching servers means the
+ * cached rows belong to a different backend and must not leak into the
+ * new one.
+ *
+ * Safe to call even if PowerSync never initialised (fallback stub, or
+ * `getPowerSyncDatabase()` never called) — it's a best-effort no-op then.
+ */
+export async function clearPowerSyncCache(): Promise<void> {
+  if (!handle || handle.isFallback) return;
+  try {
+    await handle.db.disconnectAndClear();
+  } catch (err) {
+    captureError(err, { source: "powersync.clearCache" });
+  }
 }

@@ -40,12 +40,122 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "react-native";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { Config } from "./lib/config";
+import { setApiUrl, validateServerUrl } from "./lib/server";
 
 import React from "react";
 
 const AuthStackNav = createNativeStackNavigator();
 const RootStackNav = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// ─── Server Picker (pre-auth gate) ─────────────────────────────────
+// Mirrors the real app/(auth)/server-picker.tsx closely enough for Maestro
+// to drive it, using the same lib/server.ts (not stubbed in E2E builds —
+// only @powersync/* and @zor/sync are stubbed, see metro.config.js).
+
+function E2EServerPickerScreen({ navigation }: any) {
+  const [mode, setMode] = useState<"choice" | "self-hosted">("choice");
+  const [url, setUrl] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleUseCloud = async () => {
+    setChecking(true);
+    try {
+      await setApiUrl(Config.DEFAULT_API_URL);
+      navigation.goBack();
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    if (!url.trim()) {
+      setError("Enter a server address");
+      return;
+    }
+    setChecking(true);
+    setError(null);
+    try {
+      const result = await validateServerUrl(url);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      await setApiUrl(result.url);
+      navigation.goBack();
+    } catch {
+      setError("Couldn't reach that address");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <View style={styles.authContainer}>
+      <Text style={styles.logo}>Zor</Text>
+      <Text style={styles.subtext}>Where's your data?</Text>
+      {mode === "choice" ? (
+        <View testID="server-picker-choice">
+          <Pressable
+            testID="server-picker-use-cloud"
+            style={[styles.primaryBtn, checking && { opacity: 0.6 }]}
+            onPress={handleUseCloud}
+            disabled={checking}
+          >
+            <Text style={styles.primaryBtnText}>
+              {checking ? "Connecting..." : "Use Zor Cloud"}
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="server-picker-self-hosted"
+            style={{ marginTop: 12, alignSelf: "center" }}
+            onPress={() => {
+              setError(null);
+              setMode("self-hosted");
+            }}
+            disabled={checking}
+          >
+            <Text style={{ color: "#0077FF", fontSize: 13, fontWeight: "500" }}>
+              Self-hosted (enter URL)
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View testID="server-picker-self-hosted-form">
+          <TextInput
+            testID="server-picker-url-input"
+            style={styles.input}
+            placeholder="myserver.example.com"
+            placeholderTextColor="#4E6180"
+            value={url}
+            onChangeText={(text) => {
+              setUrl(text);
+              setError(null);
+            }}
+            autoCapitalize="none"
+            keyboardType="url"
+            editable={!checking}
+          />
+          {error ? (
+            <Text testID="server-picker-error" style={{ color: "#EF4444", fontSize: 13, marginBottom: 8 }}>
+              {error}
+            </Text>
+          ) : null}
+          <Pressable
+            testID="server-picker-connect"
+            style={[styles.primaryBtn, checking && { opacity: 0.6 }]}
+            onPress={handleConnect}
+            disabled={checking}
+          >
+            <Text style={styles.primaryBtnText}>{checking ? "Checking..." : "Connect"}</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
 
 // ─── Inline Auth Screens ──────────────────────────────────────────
 
@@ -119,6 +229,13 @@ function E2ELoginScreen({ navigation }: any) {
         style={{ marginTop: 12, alignSelf: "center" }}
       >
         <Text style={{ color: "#0077FF", fontSize: 13, fontWeight: "500" }}>Forgot password?</Text>
+      </Pressable>
+      <Pressable
+        testID="change-server-link"
+        onPress={() => navigation.navigate("ServerPicker")}
+        style={{ marginTop: 8, alignSelf: "center" }}
+      >
+        <Text style={{ color: "#8899B4", fontSize: 12, fontWeight: "500" }}>Change server</Text>
       </Pressable>
     </View>
   );
@@ -1014,6 +1131,7 @@ function AuthNavigator() {
       <AuthStackNav.Screen name="Login" component={E2ELoginScreen} />
       <AuthStackNav.Screen name="Signup" component={E2ESignupScreen} />
       <AuthStackNav.Screen name="ForgotPassword" component={E2EForgotPasswordScreen} />
+      <AuthStackNav.Screen name="ServerPicker" component={E2EServerPickerScreen} />
     </AuthStackNav.Navigator>
   );
 }
@@ -1091,7 +1209,16 @@ function RootNavigator() {
 }
 
 // ─── App Entry ────────────────────────────────────────────────────
-
+//
+// Deliberately NOT gated on hasServerUrl() here (unlike the real App.tsx).
+// Every existing Maestro flow launches with `clearKeychain: true` +
+// `clearState: true` and waits straight for "email-input" — gating this
+// harness the way the real app gates would show ServerPicker first on
+// every one of those ~24 flows and break them all. The picker is instead
+// reachable from the login screen via the "change-server-link" testID
+// (see E2ELoginScreen below), which is enough surface for
+// e2e/server-picker.yaml to exercise the real picker + cloud path without
+// touching the other flows' expected boot sequence.
 export default function App() {
   return (
     <View style={{ flex: 1 }}>

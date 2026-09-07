@@ -16,6 +16,7 @@ import {
   LogOut,
   MessageSquare,
   Moon,
+  Server,
   Settings as SettingsIcon,
   Shield,
   Target,
@@ -238,6 +239,7 @@ export default function ProfileScreen() {
         { label: "Connected apps", screen: "SettingsIntegrations", icon: Zap, tone: "blue" },
         { label: "Subscription", screen: "SettingsSubscription", icon: Shield, tone: "purple" },
         { label: "Password & Passkeys", screen: "SecuritySettings", icon: Shield, tone: "mono" },
+        { label: "Server", screen: "SettingsServer", icon: Server, tone: "mono" },
       ],
     },
   ];

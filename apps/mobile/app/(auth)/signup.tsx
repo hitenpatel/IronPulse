@@ -186,7 +186,7 @@ export default function SignupScreen() {
             By creating an account you agree to our{" "}
             <Text
               style={{ color: C.primary, textDecorationLine: "underline" }}
-              onPress={() => Linking.openURL(`${Config.API_URL}/terms`)}
+              onPress={() => Linking.openURL(`${Config.DEFAULT_API_URL}/terms`)}
               testID="signup-terms-link"
             >
               Terms
@@ -194,7 +194,7 @@ export default function SignupScreen() {
             {" and "}
             <Text
               style={{ color: C.primary, textDecorationLine: "underline" }}
-              onPress={() => Linking.openURL(`${Config.API_URL}/privacy`)}
+              onPress={() => Linking.openURL(`${Config.DEFAULT_API_URL}/privacy`)}
               testID="signup-privacy-link"
             >
               Privacy Policy

@@ -19,6 +19,7 @@ import { ThemeProvider } from "./lib/theme-context";
 import { trpc } from "./lib/trpc";
 import { captureError } from "./lib/telemetry";
 import { configureTextDefaults } from "./lib/text-defaults";
+import { hasServerUrl, onServerUrlChange } from "./lib/server";
 
 // Apply before any component renders — makes iOS Dynamic Type + Android
 // font-scale work while capping growth at 1.3× so the v2 layouts don't
@@ -35,6 +36,7 @@ import LoginScreen from "./app/(auth)/login";
 import SignupScreen from "./app/(auth)/signup";
 import OnboardingScreen from "./app/(auth)/onboarding";
 import ForgotPasswordScreen from "./app/(auth)/forgot-password";
+import ServerPickerScreen from "./app/(auth)/server-picker";
 
 // Tabs
 import DashboardScreen from "./app/(tabs)/index";
@@ -63,6 +65,7 @@ import CardioDetailScreen from "./app/history/cardio-detail/[id]";
 import SettingsScreen from "./app/settings/index";
 import IntegrationsScreen from "./app/settings/integrations";
 import SubscriptionScreen from "./app/settings/subscription";
+import SettingsServerScreen from "./app/settings/server";
 
 // Messages
 import MessagesScreen from "./app/messages/index";
@@ -136,6 +139,7 @@ export type RootStackParamList = {
   Settings: undefined;
   SettingsIntegrations: undefined;
   SettingsSubscription: undefined;
+  SettingsServer: undefined;
   // Messages
   Messages: undefined;
   MessageThread: { userId: string };
@@ -286,6 +290,13 @@ function RootNavigator() {
   const { user, isLoading } = useAuth();
   const [db] = useState(psDb);
   const [powersyncReady] = useState(true);
+  // Bumped on every setApiUrl() call — forces the server-picker gate below to
+  // re-check hasServerUrl() (first launch) and the PowerSync effect below to
+  // reconnect with a freshly-baseUrl'd connector (server changed later via
+  // Settings → Server).
+  const [serverTick, setServerTick] = useState(0);
+
+  useEffect(() => onServerUrlChange(() => setServerTick((t) => t + 1)), []);
 
   // Connect/disconnect PowerSync based on auth state
   useEffect(() => {
@@ -334,7 +345,7 @@ function RootNavigator() {
         }
       })();
     }
-  }, [user, db, powersyncReady]);
+  }, [user, db, powersyncReady, serverTick]);
 
   if (isLoading) {
     return (
@@ -343,6 +354,13 @@ function RootNavigator() {
         <Text style={{ color: "#F0F4F8", marginTop: 16, fontSize: 16 }} testID="loading-text">Loading Zor...</Text>
       </View>
     );
+  }
+
+  // First launch (or a fresh install with no legacy auth-token): no server
+  // has been chosen yet. Gate ahead of the auth check below — there's no
+  // point showing Login for a server we haven't picked.
+  if (!hasServerUrl()) {
+    return <ServerPickerScreen onServerReady={() => setServerTick((t) => t + 1)} />;
   }
 
   const needsAuth = !user;
@@ -440,6 +458,11 @@ function RootNavigator() {
           name="SettingsSubscription"
           component={SubscriptionScreen}
           options={{ headerShown: true, title: "Subscription", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="SettingsServer"
+          component={SettingsServerScreen}
+          options={{ headerShown: true, title: "Server", ...HEADER_STYLE }}
         />
 
         {/* Messages */}
