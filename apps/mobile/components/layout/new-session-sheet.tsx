@@ -22,6 +22,10 @@ import {
   startEmptyWorkoutAtomic,
   DuplicateActiveWorkoutError,
 } from "@/lib/workout-start";
+import {
+  startWorkoutEfficiencySession,
+  computeIsNewAthlete,
+} from "@/lib/workout-efficiency-telemetry";
 
 interface Props {
   open: boolean;
@@ -141,8 +145,16 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
     [],
   );
 
+  // Begin TASK-24 efficiency telemetry for the session about to become
+  // active. Fire-and-forget: the cohort lookup runs against the local
+  // PowerSync cache and must never delay navigation.
+  const beginEfficiencySession = () => {
+    void computeIsNewAthlete(db as any).then(startWorkoutEfficiencySession);
+  };
+
   const handleContinue = () => {
     if (!activeWorkout) return;
+    beginEfficiencySession();
     onClose();
     navigation.navigate("WorkoutActive", { workoutId: activeWorkout.id });
   };
@@ -155,6 +167,7 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
 
     try {
       const { workoutId } = await startEmptyWorkoutAtomic(db as any, user?.id ?? "");
+      beginEfficiencySession();
       onClose();
       navigation.navigate("WorkoutActive", { workoutId });
     } catch (err) {
@@ -174,6 +187,7 @@ export function NewSessionSheet({ open, onClose, onStartWorkout, onLogCardio }: 
                     user?.id ?? "",
                     { discardExisting: true },
                   );
+                  beginEfficiencySession();
                   onClose();
                   navigation.navigate("WorkoutActive", { workoutId });
                 } catch {

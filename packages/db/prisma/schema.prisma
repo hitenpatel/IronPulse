@@ -777,3 +777,26 @@ model Goal {
   @@index([userId, status])
   @@map("goals")
 }
+
+// ─── Workout logging efficiency telemetry (TASK-24) ─────
+//
+// Deliberately has NO relation to User and NO user-identifying column.
+// Rows are structurally anonymous: a client-generated opaque session id
+// plus a handful of scalar counters/durations. This is intentional even
+// though the reporting mutation is called from an authenticated session —
+// authentication is used only for spam/rate-limit control (see
+// rateLimitedProcedure in trpc.ts), never persisted here. Never add a
+// userId, exercise, weight, rep, RPE, or notes column to this model.
+model WorkoutEfficiencyEvent {
+  id                    String   @id @default(uuid()) @db.Uuid
+  sessionId             String   @map("session_id") @db.Uuid
+  isFirstCompletedSet   Boolean  @map("is_first_completed_set")
+  interactionCount      Int      @map("interaction_count")
+  msSinceSessionStart   Int?     @map("ms_since_session_start")
+  isNewAthlete          Boolean? @map("is_new_athlete")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("workout_efficiency_events")
+}
