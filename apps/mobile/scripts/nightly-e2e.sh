@@ -221,7 +221,13 @@ curl -fsS --max-time 10 http://100.113.79.51:8180/probes/liveness >/dev/null 2>&
   || fail "powersync not answering on http://100.113.79.51:8180"
 log "powersync healthy"
 
-E2E_DATABASE_URL="${E2E_DATABASE_URL:-postgresql://zor_e2e:zor_e2e@localhost:5532/zor_e2e}"
+# The e2e postgres binds host port 5532 (docker-compose.e2e.yml:40). A local
+# dev laptop reaches it via `localhost:5532`; a CI runner container reaches
+# the SAME port via the host's Tailscale IP (matches the E2E_API + powersync
+# probes above). E2E_DB_HOST is overridable so a dev laptop can point back to
+# localhost with `E2E_DB_HOST=localhost`.
+E2E_DB_HOST="${E2E_DB_HOST:-100.113.79.51}"
+E2E_DATABASE_URL="${E2E_DATABASE_URL:-postgresql://zor_e2e:zor_e2e@${E2E_DB_HOST}:5532/zor_e2e}"
 
 # The container entrypoint only runs the base seed (exercise library). The test
 # users (test@example.com etc.) come from the dev seed, which skips itself when
