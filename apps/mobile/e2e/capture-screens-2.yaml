@@ -2,62 +2,96 @@ appId: com.ironpulse.app
 ---
 # Second pass. App is already logged in; starts from wherever and taps into
 # remaining profile rows. Screenshots land in cwd.
+#
+# Profile-row labels below are matched against the raw text in
+# app/(tabs)/profile.tsx's `sections` array (case-sensitive, e.g. "My
+# program" not "My Program", "Progress photos" not "Progress Photos",
+# "Find a coach" not "Find a Coach", "Export data" not "Export Data").
+# Each drill-in resets scroll to the top of the Profile ScrollView first,
+# since the rows visited jump between sections in both directions.
 
 - launchApp
 - tapOn: "Profile"
 - waitForAnimationToEnd
 - takeScreenshot: 06-profile-top
 
-# Scroll down so later rows become tappable.
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
-
+# Nutrition (Recovery section)
+- scrollUntilVisible:
+    element:
+      text: "Nutrition"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Nutrition"
 - waitForAnimationToEnd
 - takeScreenshot: 10-nutrition
 - back
 - waitForAnimationToEnd
 
+# Sleep (Recovery section)
+- scrollUntilVisible:
+    element:
+      text: "Sleep"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Sleep"
 - waitForAnimationToEnd
 - takeScreenshot: 11-sleep
 - back
 - waitForAnimationToEnd
 
-- tapOn: "Progress Photos"
+# Progress Photos — Profile row label is "Progress photos" (lowercase p)
+- scrollUntilVisible:
+    element:
+      text: "Progress photos"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Progress photos"
 - waitForAnimationToEnd
 - takeScreenshot: 11b-progress-photos
 - back
 - waitForAnimationToEnd
 
-- tapOn: "My Program"
+# My Program — Profile row label is "My program" (lowercase p); Training is
+# above Recovery, so reset to the top before scrolling down to it.
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "My program"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "My program"
 - waitForAnimationToEnd
 - takeScreenshot: 12-program
 - back
 - waitForAnimationToEnd
 
-# Scroll further to expose APP section
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
-
-- tapOn: "Workout Templates"
+# Workout Templates — Profile row label is "Workout templates" (lowercase t)
+- scrollUntilVisible:
+    element:
+      text: "Workout templates"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Workout templates"
 - waitForAnimationToEnd
 - takeScreenshot: 13-templates
 - back
 - waitForAnimationToEnd
 
-# Scroll Profile to reach App section (Connected apps lives near the bottom)
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Connected apps (App section, near the bottom)
+- scrollUntilVisible:
+    element:
+      text: "Connected apps"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Connected apps"
 - waitForAnimationToEnd
 - takeScreenshot: 14-integrations
@@ -68,25 +102,59 @@ appId: com.ironpulse.app
 - back
 - waitForAnimationToEnd
 
-- tapOn: "Find a Coach"
+# Find a Coach — Profile row label is "Find a coach" (lowercase c); Social is
+# above App, so reset to the top first.
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Find a coach"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Find a coach"
 - waitForAnimationToEnd
 - takeScreenshot: 16-coaches
 - back
 - waitForAnimationToEnd
 
+# Settings (App section, below Find a coach)
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Settings"
 - waitForAnimationToEnd
 - takeScreenshot: 17-settings
 - back
 - waitForAnimationToEnd
 
-# Scroll further down for data/security section
+# Export Data — Profile row label is "Export data" (lowercase d); Data is
+# above App, so reset to the top first.
 - swipe:
-    direction: UP
-    duration: 500
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
 - waitForAnimationToEnd
-
-- tapOn: "Export Data"
+- scrollUntilVisible:
+    element:
+      text: "Export data"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Export data"
 - waitForAnimationToEnd
 - takeScreenshot: 19-export
 - back

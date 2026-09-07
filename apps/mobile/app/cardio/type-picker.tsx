@@ -100,6 +100,7 @@ export default function TypePickerScreen() {
             Start Cardio
           </Text>
           <Pressable
+            testID="cardio-picker-close"
             onPress={() => navigation.goBack()}
             style={{
               width: 32,

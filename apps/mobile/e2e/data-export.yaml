@@ -22,20 +22,24 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - waitForAnimationToEnd
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Export data is in the Data section, well below Communication + Training x7
+# + Recovery + Social x4 — scroll until the row itself is visible rather than
+# guessing a fixed swipe count.
+- scrollUntilVisible:
+    element:
+      text: "Export data"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Export data"
 - extendedWaitUntil:
     visible:
       text: "Export Data"
     timeout: 10000
-- assertVisible: "CSV"
-- assertVisible: "JSON"
+# Format toggle renders the raw "csv"/"json" strings with a CSS-only
+# textTransform:"uppercase" — the accessible text is still lowercase
+# (app/settings/export.tsx), so match the raw case.
+- assertVisible: "csv"
+- assertVisible: "json"
 - assertVisible: "Workout History"
 - assertVisible: "Cardio Sessions"
 - assertVisible: "Body Metrics"

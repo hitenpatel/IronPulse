@@ -90,6 +90,7 @@ export default function ExercisesScreen() {
       <View style={{ paddingHorizontal: spacing.gutter }}>
         <TopBar
           title="Exercises"
+          testID="exercises-heading"
           right={
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable hitSlop={6} accessibilityLabel="Filters" style={iconBtn}>
@@ -125,6 +126,7 @@ export default function ExercisesScreen() {
         >
           <Search size={14} color={colors.text4} />
           <TextInput
+            testID="exercises-search-input"
             style={{
               flex: 1,
               color: colors.text,

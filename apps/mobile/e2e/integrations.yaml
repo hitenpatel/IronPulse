@@ -22,14 +22,13 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - waitForAnimationToEnd
-# Scroll Profile to reach App section (Connected apps lives near the bottom)
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Connected apps is in the App section, near the bottom of a Profile screen
+# that keeps growing — scroll until the row itself is visible.
+- scrollUntilVisible:
+    element:
+      text: "Connected apps"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Connected apps"
 - extendedWaitUntil:
     visible: "Strava"

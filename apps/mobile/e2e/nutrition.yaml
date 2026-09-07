@@ -22,17 +22,28 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - waitForAnimationToEnd
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Nutrition is in the Recovery section, below Communication + Training x7 —
+# scroll until the row is visible rather than a fixed swipe count.
+- scrollUntilVisible:
+    element:
+      text: "Nutrition"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Nutrition"
+# Calorie hero always renders; it's a reliable arrival landmark.
 - extendedWaitUntil:
-    visible:
-      text: "Log Meal"
+    visible: ".*cal"
     timeout: 10000
+# The meal-type chips (Breakfast/Lunch/Dinner/Snack) only render once the log
+# form is open (app/nutrition/index.tsx `formOpen` state, default false) — the
+# "+" toggle's accessibilityLabel is "Log meal" (raw case; the UppercaseLabel
+# heading inside the form renders the same string with CSS-only uppercase).
+- tapOn: "Log meal"
 - assertVisible: "Breakfast"
 - assertVisible: "Lunch"
 - assertVisible: "Dinner"
 - assertVisible: "Snack"
-- assertVisible: "Today's Meals"
+# There is no "Today's Meals" heading. The logged-meals list is titled
+# "Entries", but only renders once `meals.length > 0` (app/nutrition/index.tsx)
+# — not guaranteed on a freshly-seeded test account, so don't assert on it.
+# The meal-type chips above already prove the log-meal UI is reachable.

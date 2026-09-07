@@ -2,13 +2,21 @@ appId: com.ironpulse.app
 ---
 # Populate the active workout with a real exercise so the screenshot is useful
 # for design iteration (empty state isn't — this is the screen users live in).
+#
+# The Dashboard's "Next Up" hero renders lowercase "Start workout" — tap by
+# testID "next-up-hero" instead. The add-exercise control's visible label
+# changes once the workout has an exercise: workout-empty-state.tsx shows
+# "Add Exercise" (Title Case) with zero exercises, but
+# workout-action-dock.tsx (used once >=1 exercise exists) shows "+ Exercise".
+# Both share testID "add-exercise-button".
 
 - launchApp
 - waitForAnimationToEnd
 
 - tapOn: "Home"
 - waitForAnimationToEnd
-- tapOn: "Start Workout"
+- tapOn:
+    id: "next-up-hero"
 - waitForAnimationToEnd
 
 - tapOn: "Add Exercise"
@@ -21,8 +29,10 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - takeScreenshot: 05d-active-workout-with-exercise
 
-# Add another to get a superset-eligible view
-- tapOn: "Add Exercise"
+# Add another to get a superset-eligible view — the button now reads
+# "+ Exercise" (workout-action-dock.tsx), not "Add Exercise".
+- tapOn:
+    id: "add-exercise-button"
 - waitForAnimationToEnd
 - hideKeyboard
 - tapOn: "90/90 Hamstring"

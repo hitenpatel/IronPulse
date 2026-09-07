@@ -24,12 +24,16 @@ appId: com.ironpulse.app
 # now reads "Upload progress photos" (sentence case too).
 - tapOn: "Profile"
 - waitForAnimationToEnd
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Progress photos"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Progress photos"
+# app/progress-photos/index.tsx renders the full sentence "Upload progress
+# photos from the web app to start tracking visual change over time." —
+# Maestro requires a full match, so wildcard the tail.
 - extendedWaitUntil:
     visible:
-      text: "Upload progress photos"
+      text: ".*Upload progress photos.*"
     timeout: 10000

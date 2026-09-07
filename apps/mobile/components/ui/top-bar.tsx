@@ -10,9 +10,11 @@ interface TopBarProps {
   right?: React.ReactNode;
   /** `lg` for big screens; defaults small. */
   size?: "sm" | "lg";
+  /** Test id applied to the title `Text` — lets E2E flows assert arrival on a screen. */
+  testID?: string;
 }
 
-export function TopBar({ title, onBack, right, size = "sm" }: TopBarProps) {
+export function TopBar({ title, onBack, right, size = "sm", testID }: TopBarProps) {
   const fontSize = size === "lg" ? 26 : onBack ? 18 : 22;
   return (
     <View
@@ -42,6 +44,7 @@ export function TopBar({ title, onBack, right, size = "sm" }: TopBarProps) {
         </Pressable>
       ) : null}
       <Text
+        testID={testID}
         numberOfLines={1}
         style={{
           flex: 1,

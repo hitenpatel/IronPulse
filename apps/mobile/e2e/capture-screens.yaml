@@ -4,6 +4,16 @@ appId: com.ironpulse.app
 # Logs in as athlete@test.com, navigates through every major screen,
 # takes a screenshot at each step. Screenshots land in the cwd as
 # ${name}.png via takeScreenshot.
+#
+# Profile-row labels below are matched against the raw text in
+# app/(tabs)/profile.tsx's `sections` array (case-sensitive, e.g. "My
+# program" not "My Program", "Export data" not "Export Data"). Because this
+# flow hops between rows in many different sections (Communication,
+# Training, Recovery, Social, Data, App) rather than visiting them top to
+# bottom, each drill-in first scrolls back to the top of the Profile
+# ScrollView and then scrolls down to the specific row — a single
+# scrollUntilVisible(DOWN) from wherever the previous "back" left the scroll
+# position isn't reliable when the next target is actually higher up.
 
 - launchApp:
     clearKeychain: true
@@ -60,43 +70,93 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - takeScreenshot: 07-profile-scrolled
 
-# Goals
+# Goals (Training section)
+- scrollUntilVisible:
+    element:
+      text: "Goals"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Goals"
 - waitForAnimationToEnd
 - takeScreenshot: 08-goals
 - back
 
-# Notifications
+# Notifications (Communication section — back at the top)
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
 - tapOn: "Notifications"
 - waitForAnimationToEnd
 - takeScreenshot: 09-notifications
 - back
 
-# Nutrition
+# Nutrition (Recovery section)
+- scrollUntilVisible:
+    element:
+      text: "Nutrition"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Nutrition"
 - waitForAnimationToEnd
 - takeScreenshot: 10-nutrition
 - back
 
-# Sleep
+# Sleep (Recovery section)
+- scrollUntilVisible:
+    element:
+      text: "Sleep"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Sleep"
 - waitForAnimationToEnd
 - takeScreenshot: 11-sleep
 - back
 
-# Program
-- tapOn: "My Program"
+# Program — Profile row label is "My program" (lowercase p)
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "My program"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "My program"
 - waitForAnimationToEnd
 - takeScreenshot: 12-program
 - back
 
-# Workout Templates
-- tapOn: "Workout Templates"
+# Workout Templates — Profile row label is "Workout templates" (lowercase t)
+- scrollUntilVisible:
+    element:
+      text: "Workout templates"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Workout templates"
 - waitForAnimationToEnd
 - takeScreenshot: 13-templates
 - back
 
-# Connected apps
+# Connected apps (App section, near the bottom)
+- scrollUntilVisible:
+    element:
+      text: "Connected apps"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Connected apps"
 - waitForAnimationToEnd
 - takeScreenshot: 14-integrations
@@ -106,25 +166,60 @@ appId: com.ironpulse.app
 - takeScreenshot: 15-integrations-scrolled
 - back
 
-# Settings
+# Settings (App section)
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Settings"
 - waitForAnimationToEnd
 - takeScreenshot: 16-settings
 - back
 
-# Security
+# Security — Profile row label is "Password & Passkeys"
+- scrollUntilVisible:
+    element:
+      text: "Password & Passkeys"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Password & Passkeys"
 - waitForAnimationToEnd
 - takeScreenshot: 17-security
 - back
 
-# Export Data
-- tapOn: "Export Data"
+# Export Data — Profile row label is "Export data" (lowercase d)
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Export data"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Export data"
 - waitForAnimationToEnd
 - takeScreenshot: 18-export
 - back
 
-# Messages
+# Messages (Communication section — back at the top)
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
 - tapOn: "Messages"
 - waitForAnimationToEnd
 - takeScreenshot: 19-messages

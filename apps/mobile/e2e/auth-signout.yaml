@@ -22,18 +22,18 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - waitForAnimationToEnd
-# Sign out lives below the Danger zone, past every menu section — scroll fully.
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
-- tapOn: "Sign out"
+# Sign out lives below the Danger zone, past every menu section — the
+# Profile screen keeps growing (Communication + Training x7 + Recovery +
+# Social x4 + Data + App + biometric toggle + danger zone), so scroll until
+# the button (testID "sign-out-button") is actually on screen rather than
+# guessing a swipe count.
+- scrollUntilVisible:
+    element:
+      id: "sign-out-button"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "sign-out-button"
 - extendedWaitUntil:
     visible:
       id: "email-input"

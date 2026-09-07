@@ -21,13 +21,15 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - tapOn: "Profile"
-# Scroll Profile to reach App section (Connected apps lives near the bottom)
-- swipe:
-    direction: UP
-    duration: 500
-- swipe:
-    direction: UP
-    duration: 500
 - waitForAnimationToEnd
+# Connected apps is in the App section, near the bottom of a Profile screen
+# that keeps growing — scroll until the row itself is visible.
+- scrollUntilVisible:
+    element:
+      text: "Connected apps"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Connected apps"
+# Google Fit only renders when Platform.OS === "android" (see PROVIDERS in
+# app/settings/integrations.tsx) — correct on this Android test device.
 - assertVisible: "Google Fit"

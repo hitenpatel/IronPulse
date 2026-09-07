@@ -307,6 +307,7 @@ export default function ProfileScreen() {
 
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text
+                testID="profile-heading"
                 numberOfLines={1}
                 style={{
                   fontFamily: fonts.displaySemi,

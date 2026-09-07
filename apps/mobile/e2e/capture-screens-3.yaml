@@ -2,6 +2,12 @@ appId: com.ironpulse.app
 ---
 # Third pass — highest-priority screen per design brief: the active workout.
 # Also grabs notifications (bell), messages (via coach flow), subscription.
+#
+# Profile-row labels are matched against the raw text in
+# app/(tabs)/profile.tsx's `sections` array (case-sensitive, e.g. "Import
+# workouts" not "Import Workouts"). The Dashboard's "Next Up" hero card
+# renders lowercase "Start workout" (components/workout/workout-entry-card.tsx)
+# — tapped by its testID "next-up-hero" instead of matching that fragile copy.
 
 - launchApp
 - waitForAnimationToEnd
@@ -11,8 +17,9 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - takeScreenshot: 02b-dashboard-home
 
-# Tap the big blue + FAB to start a workout
-- tapOn: "Start Workout"
+# Tap the Next Up hero to start a workout
+- tapOn:
+    id: "next-up-hero"
 - waitForAnimationToEnd
 - takeScreenshot: 05-active-workout-empty
 
@@ -26,30 +33,49 @@ appId: com.ironpulse.app
 - back
 - waitForAnimationToEnd
 
-# Subscription screen
+# Subscription screen (App section)
 - tapOn: "Profile"
 - waitForAnimationToEnd
-- swipe:
-    direction: UP
-- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Subscription"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Subscription"
 - waitForAnimationToEnd
 - takeScreenshot: 21-subscription
 - back
 - waitForAnimationToEnd
 
-# Coaching settings
+# Coaching (Social section — above App, reset to top first)
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Coaching"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Coaching"
 - waitForAnimationToEnd
 - takeScreenshot: 22-coaching
 - back
 - waitForAnimationToEnd
 
-# Import workouts screen
-- swipe:
-    direction: UP
-- waitForAnimationToEnd
-- tapOn: "Import Workouts"
+# Import Workouts — Profile row label is "Import workouts" (lowercase w)
+- scrollUntilVisible:
+    element:
+      text: "Import workouts"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Import workouts"
 - waitForAnimationToEnd
 - takeScreenshot: 23-import
 - back

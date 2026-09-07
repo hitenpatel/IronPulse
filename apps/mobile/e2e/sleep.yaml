@@ -22,17 +22,26 @@ appId: com.ironpulse.app
 - waitForAnimationToEnd
 - tapOn: "Profile"
 - waitForAnimationToEnd
-- swipe:
-    direction: UP
-    duration: 500
-- waitForAnimationToEnd
+# Sleep is in the Recovery section, below Communication + Training x7 —
+# scroll until the row is visible.
+- scrollUntilVisible:
+    element:
+      text: "Sleep"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Sleep"
+# "Last night" hero always renders — a reliable, data-independent landmark.
 - extendedWaitUntil:
-    visible:
-      text: "Log Sleep"
+    visible: "Last night"
     timeout: 10000
+# Quality options (Poor/Fair/Good/Excellent) only render once the log form is
+# open (app/sleep/index.tsx `formOpen` state, default false) — the "+"
+# toggle's accessibilityLabel is "Log sleep" (raw case).
+- tapOn: "Log sleep"
 - assertVisible: "Poor"
 - assertVisible: "Fair"
 - assertVisible: "Good"
 - assertVisible: "Excellent"
-- assertVisible: "Recent Sleep"
+# There is no "Recent Sleep" heading — "Quality" is the real label directly
+# above these options, and confirms the form rendered correctly.
+- assertVisible: "Quality"

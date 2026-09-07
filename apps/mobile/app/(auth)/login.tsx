@@ -245,7 +245,10 @@ export default function LoginScreen() {
               >
                 Password
               </Text>
-              <Pressable onPress={() => navigation.navigate("ForgotPassword")}>
+              <Pressable
+                testID="forgot-password-link"
+                onPress={() => navigation.navigate("ForgotPassword")}
+              >
                 <Text
                   style={{
                     fontSize: 10,
@@ -366,6 +369,7 @@ export default function LoginScreen() {
 
         {/* Bottom sign-up link pushed to bottom */}
         <Pressable
+          testID="signup-link"
           style={{ marginTop: "auto", paddingTop: 28 }}
           onPress={() => navigation.navigate("Signup")}
         >

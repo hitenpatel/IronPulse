@@ -20,7 +20,17 @@ appId: com.ironpulse.app
       id: "greeting"
     timeout: 60000
 - waitForAnimationToEnd
-- tapOn: "Workout History"
+# The Profile row that used to say "Workout History" is now "Records"
+# (app/(tabs)/profile.tsx), but the Dashboard's "Recent" section has its own
+# unconditional "View all" link straight to the same HistoryWorkouts screen
+# (app/(tabs)/index.tsx) — a more direct entry point than drilling into
+# Profile, so use that instead.
+- scrollUntilVisible:
+    element:
+      text: "View all"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "View all"
 - extendedWaitUntil:
     visible: "Workouts"
     timeout: 10000
