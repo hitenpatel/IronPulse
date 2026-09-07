@@ -307,7 +307,14 @@ jobs:
         env:
           REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
-      - uses: docker/build-push-action@v6
+      # Image push and cache export are two steps on purpose: in one step
+      # buildkit uploads the image layers and the cache layers concurrently,
+      # and the two streams carry the same blobs. Forgejo's registry races on
+      # concurrent uploads of one digest ("offset mismatch between file and
+      # model", HTTP 500). The second step is a full cache hit, so it only
+      # writes the cache manifest plus any blob the first step did not.
+      - name: Build and push image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
@@ -318,6 +325,18 @@ jobs:
             BUILD_SHA=${{ github.sha }}
             SKIP_TYPECHECK_ON_BUILD=1
           tags: forgejo:3000/hiten/mettlelift:sha-${{ github.sha }}-amd64
+          cache-from: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64
+      - name: Export build cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          push: false
+          provenance: false
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+            SKIP_TYPECHECK_ON_BUILD=1
           cache-from: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64
           cache-to: type=registry,ref=forgejo:3000/hiten/mettlelift:buildcache-amd64,mode=max
 
@@ -334,7 +353,14 @@ jobs:
           registry: git.hiten-patel.co.uk
           username: ${{ secrets.REGISTRY_USER }}
           password: ${{ secrets.REGISTRY_TOKEN }}
-      - uses: docker/build-push-action@v6
+      # Image push and cache export are two steps on purpose: in one step
+      # buildkit uploads the image layers and the cache layers concurrently,
+      # and the two streams carry the same blobs. Forgejo's registry races on
+      # concurrent uploads of one digest ("offset mismatch between file and
+      # model", HTTP 500). The second step is a full cache hit, so it only
+      # writes the cache manifest plus any blob the first step did not.
+      - name: Build and push image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
@@ -345,6 +371,18 @@ jobs:
             BUILD_SHA=${{ github.sha }}
             SKIP_TYPECHECK_ON_BUILD=1
           tags: git.hiten-patel.co.uk/hiten/mettlelift:sha-${{ github.sha }}-arm64
+          cache-from: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache-arm64
+      - name: Export build cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/arm64
+          push: false
+          provenance: false
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+            SKIP_TYPECHECK_ON_BUILD=1
           cache-from: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache-arm64
           cache-to: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache-arm64,mode=max
 
