@@ -369,7 +369,12 @@ jobs:
             SKIP_TYPECHECK_ON_BUILD=1
           tags: git.hiten-patel.co.uk/hiten/mettlelift:sha-${{ github.sha }}-arm64
           cache-from: type=registry,ref=git.hiten-patel.co.uk/hiten/mettlelift:buildcache-arm64
+      # Cache export races on Forgejo's registry (parallel blob PUTs return
+      # HTTP 500 "offset mismatch between file and model"). The image tag is
+      # already published by the step above; a failed cache export must not
+      # fail the job or the multi-arch publish will skip.
       - name: Export build cache
+        continue-on-error: true
         uses: docker/build-push-action@v6
         with:
           context: .
