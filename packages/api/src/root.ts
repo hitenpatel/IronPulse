@@ -23,6 +23,7 @@ import { searchRouter } from "./routers/search";
 import { achievementRouter } from "./routers/achievement";
 import { nutritionRouter } from "./routers/nutrition";
 import { sleepRouter } from "./routers/sleep";
+import { injuryRouter } from "./routers/injury";
 import { goalRouter } from "./routers/goal";
 import { notificationRouter } from "./routers/notification";
 import { telemetryRouter } from "./routers/telemetry";
@@ -54,6 +55,7 @@ export const appRouter = createTRPCRouter({
   achievement: achievementRouter,
   nutrition: nutritionRouter,
   sleep: sleepRouter,
+  injury: injuryRouter,
   goal: goalRouter,
   notification: notificationRouter,
   telemetry: telemetryRouter,
