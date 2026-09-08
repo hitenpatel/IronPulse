@@ -7,6 +7,13 @@ const transformIgnoreAllowlist = [
   "@powersync",
   "expo(-.*)?",
   "@expo(-.*)?",
+  // superjson ships ESM only. It reaches the workout component tests
+  // transitively: focus-mode-composer -> lib/workout-efficiency-telemetry
+  // -> lib/trpc -> superjson.
+  // ...and superjson's own ESM-only dependency chain.
+  "superjson",
+  "copy-anything",
+  "is-what",
 ];
 
 /** @type {import('jest').Config} */
