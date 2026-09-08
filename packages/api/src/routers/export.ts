@@ -123,6 +123,9 @@ export const exportRouter = createTRPCRouter({
       follows,
       deviceConnections,
       coachProfile,
+      injuryLogs,
+      recoveryActivities,
+      exerciseRestrictions,
     ] = await Promise.all([
       ctx.db.user.findUniqueOrThrow({
         where: { id: userId },
@@ -234,6 +237,18 @@ export const exportRouter = createTRPCRouter({
       ctx.db.coachProfile.findUnique({
         where: { userId },
       }),
+      ctx.db.injuryLog.findMany({
+        where: { userId },
+        orderBy: { injuredAt: "desc" },
+      }),
+      ctx.db.recoveryActivity.findMany({
+        where: { userId },
+        orderBy: { performedAt: "desc" },
+      }),
+      ctx.db.exerciseRestriction.findMany({
+        where: { userId },
+        orderBy: { expiresAt: "desc" },
+      }),
     ]);
 
     const exportData = {
@@ -259,6 +274,9 @@ export const exportRouter = createTRPCRouter({
       workoutTemplates,
       follows,
       deviceConnections,
+      injuryLogs,
+      recoveryActivities,
+      exerciseRestrictions,
     };
 
     return {

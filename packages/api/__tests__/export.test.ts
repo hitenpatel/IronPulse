@@ -222,6 +222,83 @@ describe("export.allData", () => {
     expect(parsed.deviceConnections).toEqual([]);
   });
 
+  it("includes the caller's injuries, recovery activities and restrictions", async () => {
+    const injury = await db.injuryLog.create({
+      data: {
+        userId: user.id,
+        injuredAt: new Date("2026-08-01"),
+        injuryType: "strain",
+        severity: 5,
+        bodyParts: ["hamstrings"],
+      },
+    });
+    await db.recoveryActivity.create({
+      data: {
+        userId: user.id,
+        injuryId: injury.id,
+        performedAt: new Date("2026-08-02"),
+        modality: "ice",
+      },
+    });
+    await db.exerciseRestriction.create({
+      data: {
+        userId: user.id,
+        injuryId: injury.id,
+        muscleGroups: ["hamstrings"],
+        startsAt: new Date("2026-08-01"),
+        expiresAt: new Date("2026-09-01"),
+      },
+    });
+
+    const caller = exportCaller({ user });
+    const result = await caller.allData();
+    const parsed = JSON.parse(result.data);
+
+    expect(parsed.injuryLogs).toHaveLength(1);
+    expect(parsed.injuryLogs[0].id).toBe(injury.id);
+    expect(parsed.recoveryActivities).toHaveLength(1);
+    expect(parsed.recoveryActivities[0].injuryId).toBe(injury.id);
+    expect(parsed.exerciseRestrictions).toHaveLength(1);
+    expect(parsed.exerciseRestrictions[0].muscleGroups).toEqual(["hamstrings"]);
+  });
+
+  it("excludes another user's injuries, recovery activities and restrictions", async () => {
+    const foreignInjury = await db.injuryLog.create({
+      data: {
+        userId: otherUser.id,
+        injuredAt: new Date("2026-08-01"),
+        injuryType: "impact",
+        severity: 7,
+        bodyParts: ["shoulder"],
+      },
+    });
+    await db.recoveryActivity.create({
+      data: {
+        userId: otherUser.id,
+        injuryId: foreignInjury.id,
+        performedAt: new Date("2026-08-02"),
+        modality: "rest_day",
+      },
+    });
+    await db.exerciseRestriction.create({
+      data: {
+        userId: otherUser.id,
+        injuryId: foreignInjury.id,
+        muscleGroups: ["deltoids"],
+        startsAt: new Date("2026-08-01"),
+        expiresAt: new Date("2026-09-01"),
+      },
+    });
+
+    const caller = exportCaller({ user });
+    const result = await caller.allData();
+    const parsed = JSON.parse(result.data);
+
+    expect(parsed.injuryLogs).toHaveLength(0);
+    expect(parsed.recoveryActivities).toHaveLength(0);
+    expect(parsed.exerciseRestrictions).toHaveLength(0);
+  });
+
   it("excludes another user's data from the archive", async () => {
     await seedWorkout(otherUser.id, "Not Mine");
     await db.goal.create({

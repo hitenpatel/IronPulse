@@ -30,7 +30,8 @@ export function createTestUser(overrides?: Partial<SessionUser>): SessionUser {
 export async function cleanupTestData(db: PrismaClient) {
   // User cascade handles: workouts (→ workout exercises → sets),
   // cardio sessions (→ route points, laps), body metrics, personal records,
-  // workout templates (→ template exercises → template sets), accounts
+  // workout templates (→ template exercises → template sets), accounts,
+  // injury logs (→ recovery activities, exercise restrictions)
   await db.user.deleteMany();
   // Global exercises (isCustom=false) aren't cascade-deleted
   await db.exercise.deleteMany();
