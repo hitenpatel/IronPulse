@@ -3,10 +3,11 @@ id: TASK-19
 title: >-
   test(mobile): 35 e2e flows reference removed/renamed UI — rewrite against
   current screens
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-07-24 05:59'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-07 20:59'
 labels:
   - testing
   - mobile
@@ -67,3 +68,17 @@ auth-signin, active-workout-redesign, goals, notifications, stats-redesign, sync
 
 See feedback_redesign_references.md: redesign tickets must QA against designs/claude-design-handoff, not the old app.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Rewrote the 35 stale flows against current screens; merged to main as c8d9cf3 (36 files: 27 flow YAMLs, 9 app/component files).
+
+Selectors were derived from the current screen source rather than guessed, and nine missing testIDs were added to components so flows stop matching fragile copy: profile-heading (app/(tabs)/profile.tsx:310), stats-heading (via a new TopBar testID prop), exercises-heading and exercises-search-input, signup-link and forgot-password-link (app/(auth)/login.tsx), cancel-workout-button (components/workout/workout-session-header.tsx:71), cardio-type (app/cardio/summary.tsx:126), cardio-picker-close (app/cardio/type-picker.tsx:103).
+
+Several flows needed a real rewrite, not a rename: profile-edit (Profile no longer has edit fields — the journey now goes through Settings), cardio-cancel (Back only clears the selection; the close control is a separate button), workout-cancel (Cancel is icon-only and raises a native Alert), nutrition and sleep (log forms are collapsed behind a toggle by default), history-navigation and workout-history-detail (the Profile row was renamed to Records, so the flow now enters from the dashboard View all link).
+
+Verification so far is static only: tsc --noEmit clean apart from one pre-existing TS7016 error, all 54 flow YAMLs parse, every selector grep-verified against source, apps/mobile vitest 340 passed and jest 69 passed. No device commands were run — the shared Pixel is owned by another process. The real gate is the nightly Maestro run; do not treat the acceptance criteria as met until that reports.
+
+Three flows need a human decision rather than a rewrite, tracked as TASK-31: body-fat-log.yaml and weight-log.yaml test a body-weight/body-fat logging UI that no longer exists anywhere in the app, healthkit.yaml cannot pass on the Android-only shared device because Apple Health is filtered out by platform, and workout-focus-offline-verify.yaml still taps the stale 'Workout History' row.
+<!-- SECTION:NOTES:END -->

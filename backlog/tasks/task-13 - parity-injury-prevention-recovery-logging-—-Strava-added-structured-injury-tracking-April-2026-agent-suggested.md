@@ -3,10 +3,11 @@ id: TASK-13
 title: >-
   parity: injury prevention & recovery logging — Strava added structured injury
   tracking April 2026 (agent-suggested)
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-07 21:06'
 labels:
   - agent-ready
   - agent-suggested

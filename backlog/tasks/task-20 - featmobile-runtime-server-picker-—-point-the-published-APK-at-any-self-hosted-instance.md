@@ -3,10 +3,11 @@ id: TASK-20
 title: >-
   feat(mobile): runtime server picker — point the published APK at any
   self-hosted instance
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-07-24 05:59'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-08 02:04'
 labels:
   - agent-ready
   - feature
@@ -94,3 +95,22 @@ This blocks the self-host-first launch strategy: we want a single APK that promp
 
 Self-host-first public launch. The web app already works on mobile responsively, so this is the last piece for "one published APK, BYO backend".
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Two rounds: initial implementation, then a code review (opus) that returned REQUEST CHANGES with three real bugs, then fixes. Merged to main as 518702b.
+
+The reviewer cleared the riskiest design decision: tRPC v11 types httpBatchLink's url as string | URL, so the ticket's own suggested `url: () => ...` would not compile. The implementation wraps the client in a Proxy that rebuilds it when getApiUrl() changes; the review confirmed in-flight requests complete against the old client, the auth header and superjson transformer cannot be dropped (single createClient factory, token read inside the per-request closure), and batching is unaffected.
+
+Bugs found and fixed:
+1. A keychain read failure was indistinguishable from 'no value stored', so hydrateServerUrl took the legacy-cloud branch and OVERWROTE a self-hosted user's stored URL, then pointed their bearer token at the cloud. secure-store.ts now exposes getItemResult() returning found/absent/error; the migration branch runs only on genuine absence, and a read error fails closed to the picker.
+2. server-picker.tsx only called setApiUrl(); it now clears auth-token and auth-user first, so the screen is safe regardless of how it is reached.
+3. settings/server.tsx wiped the PowerSync cache BEFORE signOut(), so a signOut rejection left the local DB destroyed, the user signed in and PowerSync unable to reconnect. Order is now signOut, setApiUrl, then cache wipe last — nothing destructive happens until the switch is known to have succeeded.
+
+Also fixed: the validator followed redirects silently and stored the pre-redirect URL (mutations would break after a green health check, since OkHttp downgrades POST to GET on 301/302/303) — it now stores response.url; the scheme regex accepted file:// and ftp:// which would crash settings/integrations.tsx during render — narrowed to https?; the picker warns when the address is unencrypted http://; and serverTick was dropped from the PowerSync effect deps, where it was inert and its comment claimed otherwise.
+
+Verified on merged main from apps/mobile: vitest 34 files / 397 tests passing, jest 9 suites / 75 tests passing.
+
+Separate breakage this merge exposed, fixed on main directly: TASK-24 wired lib/workout-efficiency-telemetry into focus-mode-composer and use-active-workout-session, dragging lib/trpc and its ESM-only chain (superjson, copy-anything, is-what) into the jest component tests. Both workout suites failed to run until those packages were added to jest.config.cjs's transform allowlist.
+<!-- SECTION:NOTES:END -->

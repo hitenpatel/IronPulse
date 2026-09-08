@@ -3,10 +3,11 @@ id: TASK-7
 title: >-
   test-coverage: API router coverage gap — program, achievement, export,
   retention and 5 more untested routers (agent-suggested)
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-07 20:39'
 labels:
   - agent-suggested
   - 'module:testing-and-quality'
@@ -70,3 +71,28 @@ high — gap is observable and the test harness already exists for similar route
 ---
 *Filed by IronPulse Product Owner · agent-suggested · weekly Sunday sweep*
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Read existing harness (__tests__/helpers.ts, setup.ts) and a model test (goal.test.ts) for conventions.
+2. Read routers program.ts, achievement.ts, export.ts to enumerate procedures and auth gates.
+3. Write __tests__/program.test.ts: creation happy path, athlete assignment, non-coach rejection, update, delete.
+4. Write __tests__/achievement.test.ts: checkAndUnlock idempotency, each badge condition, per-user badge list.
+5. Write __tests__/export.test.ts: CSV shape, JSON shape, ownership isolation.
+6. Run pnpm --filter @zor/api test; fix until green. No router refactors.
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Verified on merged main: pnpm --filter @zor/api test → Test Files 67 passed (67), Tests 823 passed (823). The three new files alone: achievement 18, export 12, program 11 = 41 tests passing. Lint: tsc --noEmit clean, eslint 7 pre-existing warnings in untouched files.
+
+Environment fix required along the way: the shared local Postgres had drifted — migration 20260813120000_denormalize_user_id_for_powersync was recorded as applied in _prisma_migrations but the user_id columns and triggers were missing from workout_exercises, exercise_sets, laps, template_exercises and template_sets. Any workoutExercise/exerciseSet insert failed with P2022, which was already breaking pre-existing tests (workout.test.ts), not just the new ones. That migration's SQL is idempotent and was re-run against the local DB. No migration files or application code were changed.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Added packages/api/__tests__/{program,achievement,export}.test.ts — 41 integration tests on the existing real-Postgres harness, no new mocking patterns. program: create, athlete assignment, coach-gating on create/assign/update/delete, cross-coach ownership. achievement: checkAndUnlock idempotency, each badge condition, notification-outbox dedup, per-user list. export: CSV and JSON shape for workouts/cardio/bodyMetrics plus per-endpoint ownership isolation and allData GDPR scoping. Verified with pnpm --filter @zor/api test on merged main: 67 files, 823 tests passing. Merged to main as 9203f68. Out-of-scope routers (retention, challenge, template, import, nutrition, sleep) remain untested by design.
+<!-- SECTION:FINAL_SUMMARY:END -->
