@@ -37,9 +37,12 @@ test.describe("Recovery Page", () => {
 
     await page.getByRole("button", { name: /^log injury$/i }).click();
 
-    // Assert it appears in the list.
-    const injuryRow = page.getByText(bodyPart, { exact: false });
-    await expect(injuryRow).toBeVisible({ timeout: 10_000 });
+    // Assert it appears in the list. The list re-renders after the mutation
+    // settles, so scope to .first() and re-resolve the locator on each retry
+    // rather than holding a handle that may detach.
+    await expect(
+      page.getByText(bodyPart, { exact: false }).first()
+    ).toBeVisible({ timeout: 10_000 });
 
     // Open its detail page. The row uses a Next.js client-side <Link>, which
     // updates history without firing a "load" event — page.waitForURL's
@@ -54,11 +57,14 @@ test.describe("Recovery Page", () => {
     // fetch silently fails and the click has no visible effect. Retrying the
     // click recovers once the dev server's auto-restart completes; this does
     // not relax the assertion, which still requires the detail page to load.
-    await injuryRow.scrollIntoViewIfNeeded();
     let navigated = false;
     for (let attempt = 0; attempt < 4 && !navigated; attempt++) {
-      await injuryRow.click();
+      // Re-resolve on each attempt: the list can rerender between retries and
+      // detach a previously-held handle, which caused
+      // "Element is not attached to the DOM" on scroll/click.
+      const row = page.getByText(bodyPart, { exact: false }).first();
       try {
+        await row.click({ timeout: 5_000 });
         await expect(page).toHaveURL(/\/recovery\/[^/]+$/, { timeout: 5_000 });
         navigated = true;
       } catch {
