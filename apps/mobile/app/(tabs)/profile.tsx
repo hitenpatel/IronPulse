@@ -13,6 +13,7 @@ import {
   Download,
   Dumbbell,
   Heart,
+  HeartPulse,
   LogOut,
   MessageSquare,
   Moon,
@@ -49,6 +50,13 @@ interface NavItem {
   screen: keyof RootStackParamList;
   icon: React.ComponentType<{ size?: number; color?: string }>;
   tone: "blue" | "green" | "amber" | "purple" | "mono";
+  /**
+   * Stable testID for Maestro. Needed for items whose label collides with
+   * another visible string on the same screen (e.g. "Recovery" the nav
+   * item vs. "Recovery" the section header it lives under) — matching by
+   * text alone would be ambiguous.
+   */
+  testID?: string;
 }
 
 interface Section {
@@ -214,6 +222,13 @@ export default function ProfileScreen() {
       items: [
         { label: "Nutrition", screen: "Nutrition", icon: Utensils, tone: "green" },
         { label: "Sleep", screen: "Sleep", icon: Moon, tone: "purple" },
+        {
+          label: "Recovery",
+          screen: "Recovery",
+          icon: HeartPulse,
+          tone: "purple",
+          testID: "profile-recovery-link",
+        },
       ],
     },
     {
@@ -397,6 +412,7 @@ export default function ProfileScreen() {
                   return (
                     <Row
                       key={`${section.title}-${item.label}`}
+                      testID={item.testID}
                       leading={<IconCmp size={18} />}
                       leadingTone={item.tone}
                       title={item.label}
