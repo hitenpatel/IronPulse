@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X, Check, Filter } from "lucide-react-native";
 
 import type { ExerciseRow } from "@zor/sync";
+import { isExerciseRestricted } from "@zor/shared";
 import { filterExercises, dedupeSelection, activeFilterCount } from "../../lib/exercise-picker-state";
 
 // ── Colour tokens (mirroring add-exercise.tsx until theme is shared) ────────
@@ -43,6 +44,41 @@ const colors = {
 
 export type PickerView = "recent" | "favorites" | "all";
 
+// An active exercise restriction, as returned by trpc.injury.listRestrictions.
+export interface ExercisePickerRestriction {
+  id: string;
+  injuryId: string;
+  muscleGroups: string[];
+  note?: string | null;
+}
+
+// The past injury behind a restriction (TASK-13: "shows past injuries" is a
+// separate half of the acceptance criterion from "marks exercises as
+// restricted" — a badge alone doesn't satisfy it, see the "Why is this
+// restricted?" affordance below).
+export interface ExercisePickerInjurySummary {
+  injuryType: string;
+  bodyParts: string[];
+}
+
+/**
+ * `Exercise.primaryMuscles`/`secondaryMuscles` are `String[]` in Postgres but
+ * PowerSync serializes array columns to a JSON-encoded string column on the
+ * SQLite side (see `ExerciseRow.primary_muscles`). Mirrors the identical
+ * `parseJsonArray` helper in `apps/mobile/app/exercises/[id].tsx`.
+ */
+function parseMuscles(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export interface ExerciseMultiPickerProps {
   // Data from the parent (already resolved via PowerSync hooks)
   allExercises: ExerciseRow[];
@@ -54,6 +90,11 @@ export interface ExerciseMultiPickerProps {
   isLoadingRecent?: boolean;
   errorAll?: boolean;
   isOffline?: boolean;
+
+  // Active exercise restrictions and the injuries behind them (TASK-13 Task
+  // 6). Optional and default empty so existing callers/tests are unaffected.
+  restrictions?: ExercisePickerRestriction[];
+  injuriesById?: Record<string, ExercisePickerInjurySummary>;
 
   // Callbacks
   onAdd(selectedIds: string[]): void;
@@ -147,61 +188,131 @@ interface ExerciseRowItemProps {
   exercise: ExerciseRow;
   selected: boolean;
   onPress(): void;
+  restricted?: boolean;
+  restrictionReasons?: string[];
+  injurySummaries?: string[];
 }
 
-function ExerciseRowItem({ exercise, selected, onPress }: ExerciseRowItemProps) {
+function ExerciseRowItem({
+  exercise,
+  selected,
+  onPress,
+  restricted = false,
+  restrictionReasons = [],
+  injurySummaries = [],
+}: ExerciseRowItemProps) {
+  const [infoExpanded, setInfoExpanded] = useState(false);
+
   return (
-    <Pressable
-      testID={`exercise-option-${exercise.id}`}
-      onPress={onPress}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={exercise.name}
+    <View
       style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
         backgroundColor: selected ? `${colors.blue}18` : "transparent",
       }}
     >
-      {/* Checkbox */}
-      <View
+      <Pressable
+        testID={`exercise-option-${exercise.id}`}
+        onPress={onPress}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={exercise.name}
         style={{
-          width: 22,
-          height: 22,
-          borderRadius: 6,
-          borderWidth: 1.5,
-          borderColor: selected ? colors.blue : colors.mutedFg,
-          backgroundColor: selected ? colors.blue : "transparent",
-          justifyContent: "center",
+          flexDirection: "row",
           alignItems: "center",
-          marginRight: 12,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
         }}
       >
-        {selected && <Check size={13} color={colors.primary} strokeWidth={3} />}
-      </View>
-
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "600" }}>
-          {exercise.name}
-        </Text>
-        <View style={{ flexDirection: "row", gap: 6, marginTop: 2 }}>
-          {exercise.primary_muscles ? (
-            <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
-              {exercise.primary_muscles}
-            </Text>
-          ) : null}
-          {exercise.equipment ? (
-            <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
-              · {exercise.equipment}
-            </Text>
-          ) : null}
+        {/* Checkbox */}
+        <View
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            borderWidth: 1.5,
+            borderColor: selected ? colors.blue : colors.mutedFg,
+            backgroundColor: selected ? colors.blue : "transparent",
+            justifyContent: "center",
+            alignItems: "center",
+            marginRight: 12,
+          }}
+        >
+          {selected && <Check size={13} color={colors.primary} strokeWidth={3} />}
         </View>
-      </View>
-    </Pressable>
+
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "600" }}>
+              {exercise.name}
+            </Text>
+            {restricted && (
+              <View
+                testID="exercise-restricted-badge"
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 10,
+                  backgroundColor: `${colors.danger}22`,
+                }}
+              >
+                <Text style={{ color: colors.danger, fontSize: 11, fontWeight: "600" }}>
+                  Restricted
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={{ flexDirection: "row", gap: 6, marginTop: 2 }}>
+            {exercise.primary_muscles ? (
+              <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
+                {exercise.primary_muscles}
+              </Text>
+            ) : null}
+            {exercise.equipment ? (
+              <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
+                · {exercise.equipment}
+              </Text>
+            ) : null}
+          </View>
+          {restricted && restrictionReasons.length > 0 && (
+            <Text style={{ color: colors.danger, fontSize: 12, marginTop: 2 }}>
+              {restrictionReasons.join(", ")}
+            </Text>
+          )}
+        </View>
+      </Pressable>
+
+      {restricted && (
+        <Pressable
+          testID={`restriction-info-toggle-${exercise.id}`}
+          onPress={() => setInfoExpanded((v) => !v)}
+          style={{ paddingHorizontal: 16, paddingBottom: 10, marginLeft: 34 }}
+        >
+          <Text style={{ color: colors.mutedFg, fontSize: 12, textDecorationLine: "underline" }}>
+            Why is this restricted?
+          </Text>
+        </Pressable>
+      )}
+
+      {restricted && infoExpanded && (
+        <View
+          testID={`restriction-info-${exercise.id}`}
+          style={{ paddingHorizontal: 16, paddingBottom: 10, marginLeft: 34, gap: 2 }}
+        >
+          {injurySummaries.length > 0 ? (
+            injurySummaries.map((summary, i) => (
+              <Text key={i} style={{ color: colors.mutedFg, fontSize: 12 }}>
+                {summary}
+              </Text>
+            ))
+          ) : (
+            <Text style={{ color: colors.mutedFg, fontSize: 12 }}>
+              From a past injury
+            </Text>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -219,6 +330,8 @@ export function ExerciseMultiPicker({
   isLoadingRecent,
   errorAll,
   isOffline,
+  restrictions = [],
+  injuriesById = {},
   onAdd,
   onClose,
   onRetry,
@@ -451,14 +564,38 @@ export function ExerciseMultiPicker({
                 </Text>
               </View>
             ) : (
-              filtered.map((item) => (
-                <ExerciseRowItem
-                  key={item.id}
-                  exercise={item}
-                  selected={selectedIds.includes(item.id)}
-                  onPress={() => handleToggle(item.id)}
-                />
-              ))
+              filtered.map((item) => {
+                const exerciseMuscles = {
+                  primaryMuscles: parseMuscles(item.primary_muscles),
+                  secondaryMuscles: parseMuscles(item.secondary_muscles),
+                };
+                const { restricted, reasons } = isExerciseRestricted(
+                  exerciseMuscles,
+                  restrictions,
+                );
+                const matchingRestrictions = restrictions.filter(
+                  (r) => isExerciseRestricted(exerciseMuscles, [r]).restricted,
+                );
+                const injurySummaries = matchingRestrictions.map((r) => {
+                  const injury = injuriesById[r.injuryId];
+                  const base = injury
+                    ? `From a ${injury.injuryType} (${injury.bodyParts.join(", ")})`
+                    : "From a past injury";
+                  return r.note ? `${base} — ${r.note}` : base;
+                });
+
+                return (
+                  <ExerciseRowItem
+                    key={item.id}
+                    exercise={item}
+                    selected={selectedIds.includes(item.id)}
+                    onPress={() => handleToggle(item.id)}
+                    restricted={restricted}
+                    restrictionReasons={reasons}
+                    injurySummaries={injurySummaries}
+                  />
+                );
+              })
             )}
           </ScrollView>
         </>
