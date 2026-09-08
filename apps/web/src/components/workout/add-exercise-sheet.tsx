@@ -1,15 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Dumbbell } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Dumbbell,
+  ShieldAlert,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { useDebouncedCallback } from "@/hooks/use-debounced-mutation";
 import { trpc } from "@/lib/trpc/client";
+import { isExerciseRestricted } from "@zor/shared";
+import { formatUTCDate } from "@/lib/format";
 
 interface AddExerciseSheetProps {
   workoutId: string;
@@ -27,6 +37,7 @@ export function AddExerciseSheet({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [adding, setAdding] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const debouncedSetSearch = useDebouncedCallback(
     (value: string) => setDebouncedSearch(value),
@@ -37,6 +48,7 @@ export function AddExerciseSheet({
     if (!open) {
       setSearch("");
       setDebouncedSearch("");
+      setExpandedId(null);
     }
   }, [open]);
 
@@ -45,9 +57,22 @@ export function AddExerciseSheet({
     { enabled: open }
   );
 
+  // Active restrictions and the injuries behind them — both fetched once per
+  // open, so the picker can show "Restricted" badges AND (TASK-13's other
+  // half of this acceptance criterion) which past injury caused each one.
+  const restrictionsQuery = trpc.injury.listRestrictions.useQuery(
+    {},
+    { enabled: open }
+  );
+  const injuriesQuery = trpc.injury.list.useQuery({ limit: 100 }, { enabled: open });
+
   const addExerciseMutation = trpc.workout.addExercise.useMutation();
 
   const exercises = exerciseQuery.data?.data ?? [];
+  const restrictions = restrictionsQuery.data?.data ?? [];
+  const injuriesById = new Map(
+    (injuriesQuery.data?.data ?? []).map((i: any) => [i.id, i])
+  );
   const isLoading = exerciseQuery.isLoading;
 
   function handleSearchChange(value: string) {
@@ -110,25 +135,97 @@ export function AddExerciseSheet({
             </p>
           ) : (
             <div className="space-y-1">
-              {exercises.map((ex: any) => (
-                <button
-                  key={ex.id}
-                  onClick={() => handleAdd(ex.id)}
-                  disabled={adding}
-                  className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-muted/50 disabled:opacity-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                    <Dumbbell className="h-5 w-5 text-muted-foreground" />
+              {exercises.map((ex: any) => {
+                const exerciseMuscles = {
+                  primaryMuscles: ex.primaryMuscles ?? [],
+                  secondaryMuscles: ex.secondaryMuscles ?? [],
+                };
+                const { restricted, reasons } = isExerciseRestricted(
+                  exerciseMuscles,
+                  restrictions
+                );
+                const matchingRestrictions = restrictions.filter(
+                  (r: any) => isExerciseRestricted(exerciseMuscles, [r]).restricted
+                );
+                const isExpanded = expandedId === ex.id;
+
+                return (
+                  <div key={ex.id}>
+                    <button
+                      onClick={() => handleAdd(ex.id)}
+                      disabled={adding}
+                      className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-muted/50 disabled:opacity-50"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                        <Dumbbell className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{ex.name}</p>
+                          {restricted && (
+                            <Badge
+                              variant="destructive"
+                              data-testid="exercise-restricted-badge"
+                            >
+                              Restricted
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {ex.category ?? ex.equipment ?? ""}
+                          {restricted && reasons.length > 0
+                            ? ` · ${reasons.join(", ")}`
+                            : ""}
+                        </p>
+                      </div>
+                      <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+
+                    {restricted && (
+                      <div className="pl-14 pb-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedId((prev) => (prev === ex.id ? null : ex.id))
+                          }
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <ShieldAlert className="h-3 w-3" />
+                          Why is this restricted?
+                          {isExpanded ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                        </button>
+                        {isExpanded && (
+                          <ul
+                            className="mt-1 space-y-1"
+                            data-testid={`restriction-reasons-${ex.id}`}
+                          >
+                            {matchingRestrictions.map((r: any) => {
+                              const injury = injuriesById.get(r.injuryId);
+                              return (
+                                <li
+                                  key={r.id}
+                                  className="text-xs capitalize text-muted-foreground"
+                                >
+                                  {injury
+                                    ? `From a ${injury.injuryType} (${injury.bodyParts.join(
+                                        ", "
+                                      )}) logged ${formatUTCDate(injury.injuredAt)}`
+                                    : "From a past injury"}
+                                  {r.note ? ` — ${r.note}` : ""}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{ex.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {ex.category ?? ex.equipment ?? ""}
-                    </p>
-                  </div>
-                  <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

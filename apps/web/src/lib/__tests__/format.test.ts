@@ -6,6 +6,8 @@ import {
   formatRelativeDate,
   formatVolume,
   getGreeting,
+  dateInputToUTCMidnight,
+  formatUTCDate,
 } from "../format";
 
 describe("formatDuration", () => {
@@ -78,5 +80,45 @@ describe("getGreeting", () => {
   it("returns a greeting string", () => {
     const result = getGreeting();
     expect(result).toMatch(/^Good (morning|afternoon|evening)$/);
+  });
+});
+
+describe("dateInputToUTCMidnight", () => {
+  it("parses a date-only input string to UTC midnight", () => {
+    const result = dateInputToUTCMidnight("2026-09-01");
+    expect(result.toISOString()).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  it("is not affected by the runtime's local timezone (non-UTC case)", () => {
+    // Regression for the injury/recovery/restriction date bug: appending
+    // "T00:00:00" without an offset parses as *local* midnight, which
+    // would serialize to a different UTC calendar day for timezones on
+    // either side of UTC. Asserting on getUTC* accessors, not local
+    // getters, proves the value lands on the intended UTC day regardless
+    // of which timezone this test happens to run in.
+    const result = dateInputToUTCMidnight("2026-01-15");
+    expect(result.getUTCFullYear()).toBe(2026);
+    expect(result.getUTCMonth()).toBe(0);
+    expect(result.getUTCDate()).toBe(15);
+    expect(result.getUTCHours()).toBe(0);
+  });
+
+  it("handles a December 31 date without rolling into the next year", () => {
+    const result = dateInputToUTCMidnight("2026-12-31");
+    expect(result.toISOString()).toBe("2026-12-31T00:00:00.000Z");
+  });
+});
+
+describe("formatUTCDate", () => {
+  it("renders the UTC calendar day even for a date whose local rendering would differ", () => {
+    // 2026-09-01T00:00:00.000Z is Aug 31 evening in US timezones and Sep 1
+    // morning east of UTC — formatUTCDate must always say Sep 1.
+    expect(formatUTCDate(new Date("2026-09-01T00:00:00.000Z"))).toBe(
+      "Sep 1, 2026"
+    );
+  });
+
+  it("accepts a string date", () => {
+    expect(formatUTCDate("2026-01-15T00:00:00.000Z")).toBe("Jan 15, 2026");
   });
 });

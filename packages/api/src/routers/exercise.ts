@@ -72,6 +72,26 @@ export const exerciseRouter = createTRPCRouter({
       return { data: dataWithRanges, nextCursor };
     }),
 
+  // Returns the distinct muscle strings that actually exist on Exercise rows,
+  // combining primaryMuscles and secondaryMuscles. Consumed by the web
+  // restriction editor so a restriction's muscleGroups can only ever be
+  // spelled the way exercises are — free text here would let a restriction
+  // silently fail to match any exercise (see the muscle vocabulary amendment
+  // in docs/superpowers/plans/2026-09-07-injury-recovery-logging.md).
+  muscleVocabulary: publicProcedure.query(async ({ ctx }) => {
+    const exercises = await ctx.db.exercise.findMany({
+      select: { primaryMuscles: true, secondaryMuscles: true },
+    });
+    const muscles = new Set<string>();
+    for (const e of exercises) {
+      for (const m of [...e.primaryMuscles, ...e.secondaryMuscles]) {
+        const trimmed = m.trim();
+        if (trimmed) muscles.add(trimmed);
+      }
+    }
+    return { muscles: Array.from(muscles).sort((a, b) => a.localeCompare(b)) };
+  }),
+
   getById: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

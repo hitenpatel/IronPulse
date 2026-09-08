@@ -10,6 +10,7 @@ import {
   Dumbbell,
   Activity,
   Calendar,
+  HeartPulse,
   Library,
   Copy,
   CalendarCheck,
@@ -68,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
       { icon: Library, label: "Exercises", href: "/exercises" },
       { icon: Copy, label: "Templates", href: "/templates" },
       { icon: CalendarCheck, label: "My Program", href: "/program" },
+      { icon: HeartPulse, label: "Recovery", href: "/recovery" },
     ],
   },
   {

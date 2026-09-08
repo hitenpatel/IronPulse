@@ -286,3 +286,87 @@ describe("ExerciseMultiPicker — filter panel", () => {
     expect(getByText("Add 1 Exercise")).toBeTruthy();
   });
 });
+
+describe("ExerciseMultiPicker — restriction badges (TASK-13 Task 6)", () => {
+  // primary_muscles/secondary_muscles are JSON-encoded arrays on the wire
+  // (PowerSync serializes Postgres String[] columns this way) — see
+  // parseMuscles in exercise-multi-picker.tsx.
+  const RESTRICTED_EXERCISES: ExerciseRow[] = [
+    makeEx("ex-squat", "Barbell Squat", {
+      primary_muscles: JSON.stringify(["quadriceps"]),
+      secondary_muscles: JSON.stringify(["glutes"]),
+      equipment: "Barbell",
+    }),
+    makeEx("ex-curl", "Dumbbell Curl", {
+      primary_muscles: JSON.stringify(["biceps"]),
+      secondary_muscles: JSON.stringify([]),
+      equipment: "Dumbbell",
+    }),
+  ];
+
+  const RESTRICTIONS = [
+    {
+      id: "restriction-1",
+      injuryId: "injury-1",
+      muscleGroups: ["quadriceps"],
+      note: "no squats",
+    },
+  ];
+
+  const INJURIES_BY_ID = {
+    "injury-1": { injuryType: "strain", bodyParts: ["quadriceps"] },
+  };
+
+  it("shows a restricted badge for an exercise whose muscle is restricted", async () => {
+    const { getByTestId } = await renderPicker({
+      allExercises: RESTRICTED_EXERCISES,
+      restrictions: RESTRICTIONS,
+      injuriesById: INJURIES_BY_ID,
+    });
+    await fireEvent.press(getByTestId("tab-all"));
+    expect(getByTestId("exercise-restricted-badge")).toBeTruthy();
+  });
+
+  it("does not show a badge for a non-matching exercise", async () => {
+    const { getByTestId, queryAllByTestId } = await renderPicker({
+      allExercises: RESTRICTED_EXERCISES,
+      restrictions: RESTRICTIONS,
+      injuriesById: INJURIES_BY_ID,
+    });
+    await fireEvent.press(getByTestId("tab-all"));
+    // Only the squat (quadriceps) is restricted, not the curl (biceps).
+    expect(queryAllByTestId("exercise-restricted-badge")).toHaveLength(1);
+  });
+
+  it("does not show any badge when there are no active restrictions", async () => {
+    const { getByTestId, queryAllByTestId } = await renderPicker({
+      allExercises: RESTRICTED_EXERCISES,
+      restrictions: [],
+    });
+    await fireEvent.press(getByTestId("tab-all"));
+    expect(queryAllByTestId("exercise-restricted-badge")).toHaveLength(0);
+  });
+
+  it("surfaces the source injury behind the restriction when expanded", async () => {
+    const { getByTestId, getByText, getAllByText } = await renderPicker({
+      allExercises: RESTRICTED_EXERCISES,
+      restrictions: RESTRICTIONS,
+      injuriesById: INJURIES_BY_ID,
+    });
+    await fireEvent.press(getByTestId("tab-all"));
+    await fireEvent.press(getByTestId("restriction-info-toggle-ex-squat"));
+    expect(getByText(/strain/i)).toBeTruthy();
+    expect(getAllByText(/no squats/i).length).toBeGreaterThan(0);
+  });
+
+  it("keeps the exercise selectable — badges are informational, not a block", async () => {
+    const { getByTestId, getByText } = await renderPicker({
+      allExercises: RESTRICTED_EXERCISES,
+      restrictions: RESTRICTIONS,
+      injuriesById: INJURIES_BY_ID,
+    });
+    await fireEvent.press(getByTestId("tab-all"));
+    await fireEvent.press(getByTestId("exercise-option-ex-squat"));
+    expect(getByText("Add 1 Exercise")).toBeTruthy();
+  });
+});
