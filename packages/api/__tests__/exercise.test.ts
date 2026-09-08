@@ -202,6 +202,40 @@ describe("exercise.getById", () => {
   });
 });
 
+describe("exercise.muscleVocabulary", () => {
+  it("returns the distinct, trimmed, sorted muscle strings across primary and secondary muscles", async () => {
+    await db.exercise.createMany({
+      data: [
+        {
+          name: "Squat",
+          category: "compound",
+          primaryMuscles: ["quadriceps", " glutes "],
+          secondaryMuscles: ["hamstrings"],
+          isCustom: false,
+        },
+        {
+          name: "Bench Press",
+          category: "compound",
+          primaryMuscles: ["chest"],
+          secondaryMuscles: ["glutes"],
+          isCustom: false,
+        },
+      ],
+    });
+
+    const caller = exerciseCaller();
+    const result = await caller.muscleVocabulary();
+
+    expect(result.muscles).toEqual(["chest", "glutes", "hamstrings", "quadriceps"]);
+  });
+
+  it("returns an empty list when there are no exercises", async () => {
+    const caller = exerciseCaller();
+    const result = await caller.muscleVocabulary();
+    expect(result.muscles).toEqual([]);
+  });
+});
+
 describe("exercise.create", () => {
   it("creates a custom exercise for authenticated user", async () => {
     const user = createTestUser();

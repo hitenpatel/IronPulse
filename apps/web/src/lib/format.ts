@@ -42,3 +42,34 @@ export function getGreeting(): string {
   if (hour < 18) return "Good afternoon";
   return "Good evening";
 }
+
+/**
+ * Converts a `<input type="date">` value ("YYYY-MM-DD") to a Date at UTC
+ * midnight for that calendar day.
+ *
+ * `@db.Date` columns (injuredAt, resolvedAt, performedAt, startsAt,
+ * expiresAt) truncate to a date in UTC. Submitting `new Date(value +
+ * "T00:00:00")` (no offset) parses as *local* midnight, which lands on the
+ * wrong calendar day once serialized to UTC for a user east or west of UTC —
+ * e.g. "2026-09-01" at UTC-5 becomes 2026-09-01T05:00:00Z, which is fine, but
+ * at UTC+10 it becomes 2026-08-31T14:00:00Z, one day early. Always build the
+ * Date explicitly in UTC instead.
+ */
+export function dateInputToUTCMidnight(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+/**
+ * Formats a `@db.Date` value (already UTC midnight) using its UTC calendar
+ * date, so it renders the same day regardless of the viewer's timezone.
+ */
+export function formatUTCDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
