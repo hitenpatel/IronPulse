@@ -6,9 +6,15 @@
  *
  * Falls back to Expo-style env vars for backward compatibility,
  * then to sensible defaults.
+ *
+ * DEFAULT_API_URL is only the *fallback* server — the managed cloud
+ * instance. The server a running app actually talks to is resolved at
+ * runtime via `getApiUrl()` in `@/lib/server`, which layers a user-picked
+ * (or SecureStore-persisted) server URL on top of this default. Do not
+ * read this value directly for API calls — use `getApiUrl()` instead.
  */
 export const Config = {
-  API_URL:
+  DEFAULT_API_URL:
     process.env.API_URL ??
     process.env.EXPO_PUBLIC_API_URL ??
     "https://ironpulse.hiten-patel.co.uk",

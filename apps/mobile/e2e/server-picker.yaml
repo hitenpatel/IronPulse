@@ -1,0 +1,44 @@
+appId: com.ironpulse.app
+---
+# Covers TASK-20: runtime server picker + cloud path.
+#
+# The picker itself isn't gated in front of every launch in the E2E build
+# (see App.e2e.tsx's App() comment) — doing so would show ServerPicker
+# before "email-input" on every one of the other Maestro flows, which all
+# `clearKeychain` + `clearState`. Instead it's reachable from the login
+# screen via "change-server-link", which is enough surface to exercise the
+# real ServerPicker component (lib/server.ts validateServerUrl + setApiUrl)
+# end to end, then complete a normal cloud sign-in.
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "change-server-link"
+- extendedWaitUntil:
+    visible:
+      id: "server-picker-choice"
+    timeout: 10000
+- tapOn:
+    id: "server-picker-use-cloud"
+# Successful "Use Cloud" pops back to Login.
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 15000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
