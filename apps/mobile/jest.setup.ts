@@ -1,6 +1,11 @@
 // Reanimated ships a Jest mock that no-ops its worklets.
 require("react-native-reanimated/mock");
 
+// Gesture Handler ships an equivalent — without it, importing the package
+// (e.g. transitively via App.tsx's GestureHandlerRootView) throws a
+// TurboModuleRegistry invariant under Jest's non-native environment.
+require("react-native-gesture-handler/jestSetup");
+
 // Provide stable safe-area insets so components that read them get
 // deterministic values instead of undefined during test render.
 jest.mock("react-native-safe-area-context", () => {

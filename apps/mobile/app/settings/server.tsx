@@ -64,9 +64,17 @@ export default function SettingsServerScreen() {
             style: "destructive",
             onPress: async () => {
               try {
-                await clearPowerSyncCache();
+                // Order matters: sign out first, then activate the new
+                // server, and only THEN wipe the local PowerSync cache.
+                // signOut() and setApiUrl() can genuinely reject (SecureStore
+                // writes are not swallowed here); if either does, nothing
+                // destructive has happened yet — the old session and old
+                // server's local cache are both still intact and the user
+                // can just retry. Only once we're certain the switch itself
+                // succeeded do we discard the now-stale local data.
                 await signOut();
                 await setApiUrl(result.url);
+                await clearPowerSyncCache();
               } catch {
                 Alert.alert("Error", "Failed to switch servers. Please try again.");
               }

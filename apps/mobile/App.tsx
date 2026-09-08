@@ -290,10 +290,14 @@ function RootNavigator() {
   const { user, isLoading } = useAuth();
   const [db] = useState(psDb);
   const [powersyncReady] = useState(true);
-  // Bumped on every setApiUrl() call — forces the server-picker gate below to
-  // re-check hasServerUrl() (first launch) and the PowerSync effect below to
-  // reconnect with a freshly-baseUrl'd connector (server changed later via
-  // Settings → Server).
+  // Bumped on every setApiUrl() call, purely to force a re-render so the
+  // server-picker gate below re-checks hasServerUrl() after the first-launch
+  // picker sets one. NOT a dependency of the PowerSync effect below: by the
+  // time Settings → Server calls setApiUrl() it has already signed the user
+  // out (see app/settings/server.tsx), so `user` is already null and that
+  // effect's body is a no-op regardless of this tick. The actual reconnect
+  // with the new server's connector happens on the next sign-in, driven by
+  // the `user` dependency.
   const [serverTick, setServerTick] = useState(0);
 
   useEffect(() => onServerUrlChange(() => setServerTick((t) => t + 1)), []);
@@ -345,7 +349,7 @@ function RootNavigator() {
         }
       })();
     }
-  }, [user, db, powersyncReady, serverTick]);
+  }, [user, db, powersyncReady]);
 
   if (isLoading) {
     return (

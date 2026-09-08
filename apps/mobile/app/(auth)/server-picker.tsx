@@ -3,7 +3,10 @@ import { ActivityIndicator, Linking, Pressable, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Config } from "@/lib/config";
+import * as SecureStore from "@/lib/secure-store";
 import {
+  isInsecureServerUrl,
+  normalizeServerUrl,
   setApiUrl,
   validateServerUrl,
   type ServerValidationResult,
@@ -30,6 +33,16 @@ export default function ServerPickerScreen({ onServerReady }: ServerPickerScreen
   const [error, setError] = useState<string | null>(null);
 
   async function commitAndContinue(chosenUrl: string) {
+    // This screen can be reached with a stale session still in SecureStore
+    // (e.g. a keychain read failure on `server-url` bounces an otherwise
+    // signed-in self-hosted user back here — see lib/server.ts's
+    // hydrateServerUrl). Whatever the user picks next must not inherit a
+    // foreign server's bearer token, so clear any existing session before
+    // activating the new server URL — same invariant settings/server.tsx
+    // enforces via signOut(), kept minimal here since this screen renders
+    // before we know whether AuthProvider's own restore has settled.
+    await SecureStore.deleteItemAsync("auth-token");
+    await SecureStore.deleteItemAsync("auth-user");
     await setApiUrl(chosenUrl);
     onServerReady();
   }
@@ -68,6 +81,13 @@ export default function ServerPickerScreen({ onServerReady }: ServerPickerScreen
   function handleLearnMore() {
     Linking.openURL(SELF_HOST_DOCS_URL);
   }
+
+  // Plain, upfront — http:// genuinely works for a LAN self-host (see
+  // plugins/android-cleartext.js) and we're not blocking it, but the user
+  // should know it's unencrypted before they type a password on the next
+  // screen.
+  const showsInsecureWarning =
+    url.trim().length > 0 && isInsecureServerUrl(normalizeServerUrl(url));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -146,6 +166,15 @@ export default function ServerPickerScreen({ onServerReady }: ServerPickerScreen
               keyboardType="url"
               editable={!checking}
             />
+            {showsInsecureWarning ? (
+              <Text
+                testID="server-picker-insecure-warning"
+                style={{ color: colors.amber, fontSize: 12.5, fontFamily: fonts.bodyMedium }}
+              >
+                This is an unencrypted (http://) connection — fine on a
+                trusted local network, avoid it over the public internet.
+              </Text>
+            ) : null}
             {error ? (
               <Text
                 testID="server-picker-error"

@@ -1,17 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SecureReadResult } from "../secure-store";
 
 vi.mock("@/lib/secure-store", () => ({
   getItemAsync: vi.fn(),
   setItemAsync: vi.fn(),
   deleteItemAsync: vi.fn(),
+  getItemResult: vi.fn(),
 }));
 
 import * as SecureStore from "@/lib/secure-store";
 
-const mockGetItem = vi.mocked(SecureStore.getItemAsync);
+const mockGetItemResult = vi.mocked(SecureStore.getItemResult);
 const mockSetItem = vi.mocked(SecureStore.setItemAsync);
 
 const CLOUD_DEFAULT = "https://ironpulse.hiten-patel.co.uk";
+
+const ABSENT: SecureReadResult = { status: "absent" };
+const found = (value: string): SecureReadResult => ({ status: "found", value });
+const errored = (error: unknown = new Error("keychain unavailable")): SecureReadResult => ({
+  status: "error",
+  error,
+});
 
 // lib/server.ts holds module-level cache state (cachedUrl / hydrated /
 // hydrationPromise). vi.resetModules() + a fresh dynamic import gives each
@@ -23,7 +32,7 @@ async function loadServer() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetItem.mockResolvedValue(null);
+  mockGetItemResult.mockResolvedValue(ABSENT);
   mockSetItem.mockResolvedValue(undefined);
 });
 
@@ -60,8 +69,8 @@ describe("getApiUrl / hasServerUrl before hydration", () => {
 
 describe("hydrateServerUrl", () => {
   it("restores a previously persisted server-url", async () => {
-    mockGetItem.mockImplementation(async (key: string) =>
-      key === "server-url" ? "https://my-instance.example.com" : null,
+    mockGetItemResult.mockImplementation(async (key: string) =>
+      key === "server-url" ? found("https://my-instance.example.com") : ABSENT,
     );
     const { hydrateServerUrl, getApiUrl, hasServerUrl } = await loadServer();
 
@@ -73,7 +82,7 @@ describe("hydrateServerUrl", () => {
   });
 
   it("returns null (needs picker) on a genuine first launch", async () => {
-    mockGetItem.mockResolvedValue(null);
+    mockGetItemResult.mockResolvedValue(ABSENT);
     const { hydrateServerUrl, hasServerUrl } = await loadServer();
 
     const resolved = await hydrateServerUrl();
@@ -83,10 +92,10 @@ describe("hydrateServerUrl", () => {
   });
 
   it("backwards compat: legacy auth-token with no server-url defaults to the cloud URL and persists it", async () => {
-    mockGetItem.mockImplementation(async (key: string) => {
-      if (key === "server-url") return null;
-      if (key === "auth-token") return "legacy-token-abc";
-      return null;
+    mockGetItemResult.mockImplementation(async (key: string) => {
+      if (key === "server-url") return ABSENT;
+      if (key === "auth-token") return found("legacy-token-abc");
+      return ABSENT;
     });
     const { hydrateServerUrl, getApiUrl, hasServerUrl } = await loadServer();
 
@@ -99,40 +108,96 @@ describe("hydrateServerUrl", () => {
   });
 
   it("is idempotent — only the first call reads SecureStore", async () => {
-    mockGetItem.mockResolvedValue("https://my-instance.example.com");
+    mockGetItemResult.mockResolvedValue(found("https://my-instance.example.com"));
     const { hydrateServerUrl } = await loadServer();
 
     await hydrateServerUrl();
     await hydrateServerUrl();
     await hydrateServerUrl();
 
-    expect(mockGetItem).toHaveBeenCalledTimes(1);
+    expect(mockGetItemResult).toHaveBeenCalledTimes(1);
   });
 
   it("concurrent callers share the same in-flight hydration", async () => {
-    let resolveGetItem: (v: string | null) => void = () => {};
-    mockGetItem.mockImplementation(
+    let resolveGetItem: (v: SecureReadResult) => void = () => {};
+    mockGetItemResult.mockImplementation(
       () => new Promise((resolve) => { resolveGetItem = resolve; }),
     );
     const { hydrateServerUrl } = await loadServer();
 
     const first = hydrateServerUrl();
     const second = hydrateServerUrl();
-    resolveGetItem("https://my-instance.example.com");
+    resolveGetItem(found("https://my-instance.example.com"));
 
     expect(await first).toBe("https://my-instance.example.com");
     expect(await second).toBe("https://my-instance.example.com");
-    expect(mockGetItem).toHaveBeenCalledTimes(1);
+    expect(mockGetItemResult).toHaveBeenCalledTimes(1);
   });
 
-  it("treats a SecureStore read failure as first-launch rather than guessing a server", async () => {
-    mockGetItem.mockRejectedValue(new Error("keychain unavailable"));
+  it("treats a server-url read failure as needs-picker rather than guessing a server", async () => {
+    mockGetItemResult.mockImplementation(async (key: string) =>
+      key === "server-url" ? errored() : ABSENT,
+    );
     const { hydrateServerUrl, hasServerUrl } = await loadServer();
 
     const resolved = await hydrateServerUrl();
 
     expect(resolved).toBeNull();
     expect(hasServerUrl()).toBe(false);
+  });
+
+  it("REGRESSION: a self-hosted user's real server-url must never be overwritten by the cloud default when only that key fails to read (even though auth-token still reads fine)", async () => {
+    // The exact scenario from the review: user self-hosts at
+    // https://gym.example, is signed in (auth-token reads fine), but an OS
+    // upgrade / Auto Backup restore makes the `server-url` keychain entry
+    // specifically unreadable. Silently falling into the legacy-cloud
+    // migration branch here would point them at the cloud AND destroy the
+    // real URL by persisting the cloud default over it.
+    mockGetItemResult.mockImplementation(async (key: string) => {
+      if (key === "server-url") return errored(new Error("keychain locked"));
+      if (key === "auth-token") return found("self-hosted-token-abc");
+      return ABSENT;
+    });
+    const { hydrateServerUrl, getApiUrl, hasServerUrl } = await loadServer();
+
+    const resolved = await hydrateServerUrl();
+
+    expect(resolved).toBeNull();
+    expect(hasServerUrl()).toBe(false);
+    // getApiUrl() still falls back to the cloud default for display/safety
+    // purposes, but nothing was ever WRITTEN — the real value in the
+    // keychain (which we couldn't read this time) survives untouched.
+    expect(getApiUrl()).toBe(CLOUD_DEFAULT);
+    expect(mockSetItem).not.toHaveBeenCalled();
+  });
+
+  it("does not consult the legacy auth-token at all when server-url read fails (fails closed, not just closed-ish)", async () => {
+    const tokenCheck = vi.fn(async () => found("self-hosted-token-abc"));
+    mockGetItemResult.mockImplementation(async (key: string) => {
+      if (key === "server-url") return errored();
+      if (key === "auth-token") return tokenCheck();
+      return ABSENT;
+    });
+    const { hydrateServerUrl } = await loadServer();
+
+    await hydrateServerUrl();
+
+    expect(tokenCheck).not.toHaveBeenCalled();
+  });
+
+  it("fails closed to the picker (not the cloud migration) when server-url is absent but the auth-token read also fails", async () => {
+    mockGetItemResult.mockImplementation(async (key: string) => {
+      if (key === "server-url") return ABSENT;
+      if (key === "auth-token") return errored();
+      return ABSENT;
+    });
+    const { hydrateServerUrl, hasServerUrl } = await loadServer();
+
+    const resolved = await hydrateServerUrl();
+
+    expect(resolved).toBeNull();
+    expect(hasServerUrl()).toBe(false);
+    expect(mockSetItem).not.toHaveBeenCalled();
   });
 });
 
@@ -336,5 +401,75 @@ describe("validateServerUrl", () => {
       reason: "timeout",
       message: "Server didn't respond — check the URL and try again",
     });
+  });
+
+  it("REGRESSION: stores the post-redirect origin, not the pre-redirect one — fetch follows redirects by default", async () => {
+    // A host 301s the bare domain to its real origin. If we persisted the
+    // pre-redirect `url` we asked for, every subsequent tRPC call would
+    // redirect too, and OkHttp/NSURLSession downgrade POST -> GET across a
+    // 301/302/303 — mutations would silently break despite this health
+    // check reporting success.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        url: "https://www.myserver.example.com/api/health",
+        json: async () => ({ status: "ok" }),
+      }),
+    );
+    const { validateServerUrl } = await loadServer();
+
+    const result = await validateServerUrl("myserver.example.com");
+
+    expect(result).toEqual({ ok: true, url: "https://www.myserver.example.com" });
+  });
+
+  it("falls back to the requested url when the fetch response doesn't expose .url", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: "ok" }) }),
+    );
+    const { validateServerUrl } = await loadServer();
+
+    const result = await validateServerUrl("myserver.example.com");
+
+    expect(result).toEqual({ ok: true, url: "https://myserver.example.com" });
+  });
+});
+
+describe("normalizeServerUrl — scheme narrowing", () => {
+  it("only recognises http/https as 'already has a scheme'", async () => {
+    const { normalizeServerUrl } = await loadServer();
+
+    // file:// and ftp:// are NOT passed through — they'd otherwise reach
+    // settings/integrations.tsx's `new URL(getApiUrl()).host` (render
+    // crash) or Linking.openURL with an unexpected scheme.
+    expect(normalizeServerUrl("file:///etc/passwd")).toBe("https://file:///etc/passwd");
+    expect(normalizeServerUrl("ftp://myserver.example.com")).toBe(
+      "https://ftp://myserver.example.com",
+    );
+    expect(normalizeServerUrl("javascript:alert(1)")).toBe("https://javascript:alert(1)");
+  });
+
+  it("still leaves http/https alone", async () => {
+    const { normalizeServerUrl } = await loadServer();
+    expect(normalizeServerUrl("http://myserver.example.com")).toBe(
+      "http://myserver.example.com",
+    );
+    expect(normalizeServerUrl("https://myserver.example.com")).toBe(
+      "https://myserver.example.com",
+    );
+  });
+});
+
+describe("isInsecureServerUrl", () => {
+  it("flags http:// as insecure", async () => {
+    const { isInsecureServerUrl } = await loadServer();
+    expect(isInsecureServerUrl("http://192.168.1.5:3000")).toBe(true);
+  });
+
+  it("does not flag https://", async () => {
+    const { isInsecureServerUrl } = await loadServer();
+    expect(isInsecureServerUrl("https://myserver.example.com")).toBe(false);
   });
 });

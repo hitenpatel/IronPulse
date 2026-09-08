@@ -31,13 +31,25 @@ const listeners = new Set<(url: string) => void>();
 /**
  * Strips whitespace/trailing slashes and prefixes `https://` when the input
  * has no scheme at all (AC: "missing scheme auto-prefixes https").
+ *
+ * Only `http`/`https` are recognised as "already has a scheme" — anything
+ * else (`file://`, `ftp://`, a stray `javascript:`, ...) is treated as
+ * schemeless and gets `https://` prefixed ahead of it instead of being
+ * passed through. That yields a harmless (if malformed) https URL rather
+ * than a value some other consumer (`new URL(getApiUrl()).host` in
+ * settings/integrations.tsx, `Linking.openURL`, ...) wasn't expecting.
  */
 export function normalizeServerUrl(input: string): string {
   const trimmed = input.trim().replace(/\/+$/, "");
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) {
+  if (/^https?:\/\//i.test(trimmed)) {
     return trimmed;
   }
   return `https://${trimmed}`;
+}
+
+/** True when a (normalized) server URL is `http://`, not `https://`. */
+export function isInsecureServerUrl(normalizedUrl: string): boolean {
+  return /^http:\/\//i.test(normalizedUrl);
 }
 
 /**
@@ -65,44 +77,59 @@ export function hasServerUrl(): boolean {
  * App.tsx gate) — only the first call touches SecureStore, later calls
  * resolve immediately from the cached promise.
  *
- * Returns the resolved URL, or `null` if this is a genuine first launch
- * (no stored server URL and no legacy auth token) and the picker should be
- * shown.
+ * Returns the resolved URL, or `null` if the picker should be shown — either
+ * a genuine first launch (no stored server URL and no legacy auth token), or
+ * a keychain read failure we can't safely interpret either way.
  *
  * Backwards compat: an install that already has `auth-token` but predates
  * multi-server support has no `server-url` — default it to the cloud URL
  * and persist that choice so future launches don't need this fallback.
+ *
+ * Read failures are NOT treated as "absent". A transient keychain read
+ * failure on `server-url` (OS upgrade, Auto Backup restore, etc.) must
+ * never fall into the legacy-cloud-migration branch below — that would
+ * silently point a self-hosted user's session at the cloud AND overwrite
+ * their real `server-url` with the cloud default, destroying it. When we
+ * can't tell "absent" from "unreadable", we fail closed to the picker
+ * instead of guessing, and never persist anything.
  */
 export function hydrateServerUrl(): Promise<string | null> {
   if (hydrated) return Promise.resolve(cachedUrl);
   if (hydrationPromise) return hydrationPromise;
 
   hydrationPromise = (async () => {
-    try {
-      const stored = await SecureStore.getItemAsync(SERVER_URL_KEY);
-      if (stored) {
-        cachedUrl = stored;
-        return cachedUrl;
-      }
+    const serverResult = await SecureStore.getItemResult(SERVER_URL_KEY);
 
-      const legacyToken = await SecureStore.getItemAsync(LEGACY_AUTH_TOKEN_KEY);
-      if (legacyToken) {
-        cachedUrl = Config.DEFAULT_API_URL;
-        try {
-          await SecureStore.setItemAsync(SERVER_URL_KEY, cachedUrl);
-        } catch {
-          // Persisting the fallback failed — non-fatal, we'll just re-derive
-          // it the same way next launch.
-        }
-        return cachedUrl;
-      }
-    } catch {
-      // SecureStore read failed — fall through to "needs picker" rather
-      // than silently assuming a server, so we never guess wrong.
-    } finally {
+    if (serverResult.status === "found") {
+      cachedUrl = serverResult.value;
       hydrated = true;
+      return cachedUrl;
     }
-    return cachedUrl; // still null => first launch, caller shows the picker
+
+    if (serverResult.status === "error") {
+      hydrated = true;
+      return null;
+    }
+
+    // serverResult.status === "absent" — genuinely no server-url stored.
+    // Only NOW do we consult the legacy auth-token to distinguish "existing
+    // cloud user" from "first launch". If that read also fails, we again
+    // can't tell either way, so fail closed rather than guess.
+    const tokenResult = await SecureStore.getItemResult(LEGACY_AUTH_TOKEN_KEY);
+    if (tokenResult.status === "found") {
+      cachedUrl = Config.DEFAULT_API_URL;
+      try {
+        await SecureStore.setItemAsync(SERVER_URL_KEY, cachedUrl);
+      } catch {
+        // Persisting the fallback failed — non-fatal, we'll just re-derive
+        // it the same way next launch.
+      }
+      hydrated = true;
+      return cachedUrl;
+    }
+
+    hydrated = true;
+    return null; // first launch (or token read also failed) => show picker
   })();
 
   return hydrationPromise;
@@ -244,7 +271,19 @@ export async function validateServerUrl(rawUrl: string): Promise<ServerValidatio
 
     if (!hasHealthShape(body)) return failure("invalid-response");
 
-    return { ok: true, url };
+    // fetch follows redirects by default. If the host 301s to its real
+    // origin (e.g. bare domain -> www, or http -> https), `response.url` is
+    // the post-redirect location while `url` is what we asked for — and
+    // OkHttp/NSURLSession downgrade POST to GET across a 301/302/303, so a
+    // tRPC mutation aimed at the pre-redirect origin would silently break
+    // even though this health check reported success. Persist the origin
+    // fetch actually landed on, not the one we requested.
+    const resolvedBase =
+      typeof response.url === "string" && response.url
+        ? response.url.replace(/\/api\/health\/?$/, "")
+        : url;
+
+    return { ok: true, url: resolvedBase };
   } finally {
     clearTimeout(timer);
   }
