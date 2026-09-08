@@ -89,6 +89,11 @@ import NutritionScreen from "./app/nutrition/index";
 import SleepScreen from "./app/sleep/index";
 import ProgressPhotosScreen from "./app/progress-photos/index";
 
+// Recovery (injury logging)
+import RecoveryScreen from "./app/recovery/index";
+import RecoveryLogInjuryScreen from "./app/recovery/log-injury";
+import RecoveryInjuryDetailScreen from "./app/recovery/injury-detail";
+
 // Program, Coaches
 import ProgramScreen from "./app/program/index";
 import CoachesBrowseScreen from "./app/coaches/index";
@@ -157,6 +162,10 @@ export type RootStackParamList = {
   Nutrition: undefined;
   Sleep: undefined;
   ProgressPhotos: undefined;
+  // Recovery (injury logging)
+  Recovery: undefined;
+  RecoveryLogInjury: undefined;
+  RecoveryInjuryDetail: { injuryId: string };
   // Program, Coaches
   Program: undefined;
   Coaches: undefined;
@@ -537,6 +546,23 @@ function RootNavigator() {
           name="ProgressPhotos"
           component={ProgressPhotosScreen}
           options={{ headerShown: true, title: "Progress Photos", ...HEADER_STYLE }}
+        />
+
+        {/* Recovery (injury logging) */}
+        <RootStack.Screen
+          name="Recovery"
+          component={RecoveryScreen}
+          options={{ headerShown: true, title: "Recovery", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="RecoveryLogInjury"
+          component={RecoveryLogInjuryScreen}
+          options={{ headerShown: true, title: "Log Injury", ...HEADER_STYLE }}
+        />
+        <RootStack.Screen
+          name="RecoveryInjuryDetail"
+          component={RecoveryInjuryDetailScreen}
+          options={{ headerShown: true, title: "Injury", ...HEADER_STYLE }}
         />
 
         {/* Program, Coaches */}

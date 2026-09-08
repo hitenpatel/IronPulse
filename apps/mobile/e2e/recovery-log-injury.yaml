@@ -1,0 +1,72 @@
+appId: com.ironpulse.app
+---
+- launchApp:
+    clearKeychain: true
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 60000
+- tapOn:
+    id: "email-input"
+- inputText: "test@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible:
+      id: "greeting"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn: "Profile"
+- waitForAnimationToEnd
+# Recovery (injury tracking) is in the "Recovery" nav section, alongside
+# Nutrition and Sleep — its label collides with that section's uppercase
+# header text ("RECOVERY"), so it carries its own testID
+# (app/(tabs)/profile.tsx "profile-recovery-link") rather than being
+# matched by visible copy.
+- scrollUntilVisible:
+    element:
+      id: "profile-recovery-link"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "profile-recovery-link"
+# The "Log injury" button in the TopBar's right slot is a reliable,
+# data-independent landmark that we've arrived on the injury list.
+- extendedWaitUntil:
+    visible:
+      id: "recovery-log-injury-button"
+    timeout: 10000
+- tapOn:
+    id: "recovery-log-injury-button"
+- extendedWaitUntil:
+    visible:
+      id: "injury-type-picker"
+    timeout: 10000
+- tapOn:
+    id: "injury-date-input"
+- inputText: "2026-09-07"
+- tapOn:
+    id: "injury-type-option-strain"
+- tapOn:
+    id: "injury-severity-option-6"
+- tapOn:
+    id: "injury-body-part-input"
+- inputText: "Hamstrings"
+- tapOn:
+    id: "injury-body-part-add-button"
+- assertVisible: "hamstrings ✕"
+- tapOn:
+    id: "recovery-log-injury-submit"
+# On success the form screen navigates back, and the list screen's
+# useFocusEffect refetches — asserting the container is visible again
+# proves we returned to the list (not left on an error banner), and the
+# type text proves the new injury round-tripped through the API.
+- extendedWaitUntil:
+    visible:
+      id: "recovery-injury-list"
+    timeout: 10000
+- assertVisible: "Strain"
