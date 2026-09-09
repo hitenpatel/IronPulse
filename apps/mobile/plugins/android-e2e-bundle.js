@@ -17,26 +17,21 @@
 // amd64 and aborts with "OS not recognized" before hermesc runs. The prebuilt
 // linux64-bin/hermesc is a static x86_64 ELF that runs fine under
 // qemu-user-static (already installed by the CI step "Install qemu-user-static
-// for x86_64 aapt2 emulation on arm64"). We therefore inject an explicit
-// `hermesCommand` pointing at that binary when we detect a linux host, so
-// hermesc runs via qemu emulation. On macOS/EAS builds hermesc is autodetected
-// and we do not inject anything.
+// for x86_64 aapt2 emulation on arm64"). Expo's prebuild template already
+// resolves the hermesc path via require.resolve('react-native/package.json'),
+// then appends "/sdks/hermesc/%OS-BIN%/hermesc". We patch just the %OS-BIN%
+// substitution to "linux64-bin" so the resulting hermesCommand stays a valid
+// absolute path (the Groovy expression is evaluated at configure time). On
+// macOS/EAS builds we leave it untouched so RN autodetects "osx-bin".
 
 const { withAppBuildGradle } = require("expo/config-plugins");
 
 const COMMENTED_DEFAULT =
   /^\s*\/\/\s*debuggableVariants\s*=\s*\[.*\]\s*$/m;
 const REACT_BLOCK_OPEN = /^react\s*\{\s*$/m;
-// Match the expo/RN default template line, which uses a %OS-BIN% substitution
-// resolved by react-native-gradle-plugin's getHermesOSBin() and aborts on
-// linux-arm64. We replace that entire line so no later assignment overrides
-// our absolute path (Groovy last-write-wins inside the react { } block).
-const HERMES_TEMPLATE_LINE = /^\s*hermesCommand\s*=.*%OS-BIN%.*$/m;
-const HERMES_LINUX_LITERAL_LINE =
-  /^\s{4}hermesCommand\s*=\s*"[^"]*hermesc[^"]*"\s*$/m;
-const HERMES_LINUX_PATH =
-  '"../node_modules/react-native/sdks/hermesc/linux64-bin/hermesc"';
-const HERMES_LINUX_LINE = `    hermesCommand = ${HERMES_LINUX_PATH}`;
+// Match the %OS-BIN% substitution inside expo's prebuild template line for
+// hermesCommand. Kept narrow so we only rewrite that one token.
+const OS_BIN_TOKEN = /%OS-BIN%/g;
 
 function patchDebuggableVariants(contents) {
   if (/^\s*debuggableVariants\s*=\s*\[\s*\]\s*$/m.test(contents)) {
@@ -58,22 +53,12 @@ function patchDebuggableVariants(contents) {
 
 function patchHermesCommand(contents, injectHermes) {
   if (!injectHermes) return contents;
-  // If the expo/RN default `%OS-BIN%` line is present, replace it in place so
-  // no later assignment overrides ours. Otherwise, if we've already patched,
-  // leave the file alone. Otherwise, inject a new line after `react {`.
-  if (HERMES_TEMPLATE_LINE.test(contents)) {
-    return contents.replace(HERMES_TEMPLATE_LINE, HERMES_LINUX_LINE);
-  }
-  if (HERMES_LINUX_LITERAL_LINE.test(contents)) return contents;
-  if (!REACT_BLOCK_OPEN.test(contents)) {
-    throw new Error(
-      "android-e2e-bundle: could not find `react {` block in app/build.gradle",
-    );
-  }
-  return contents.replace(
-    REACT_BLOCK_OPEN,
-    `react {\n${HERMES_LINUX_LINE}`,
-  );
+  // Rewrite only the %OS-BIN% token in expo's hermesCommand template line.
+  // The template resolves the hermesc directory absolutely via
+  // require.resolve('react-native/package.json'); we only need to force the
+  // per-OS subdirectory to "linux64-bin" (whose x86_64 binary runs under
+  // qemu-user-static on arm64 hosts).
+  return contents.replace(OS_BIN_TOKEN, "linux64-bin");
 }
 
 function patchAppBuildGradle(contents, options = {}) {
