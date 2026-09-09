@@ -11,14 +11,28 @@
 //
 // Emptying debuggableVariants makes the debug build bundle + hermes-compile
 // like release, while keeping debug signing and the .e2e applicationId.
+//
+// Additionally, on linux-arm64 hosts (the Forgejo runner arm-vm), the
+// react-native gradle plugin's getHermesOSBin() only recognises win/mac/linux-
+// amd64 and aborts with "OS not recognized" before hermesc runs. The prebuilt
+// linux64-bin/hermesc is a static x86_64 ELF that runs fine under
+// qemu-user-static (already installed by the CI step "Install qemu-user-static
+// for x86_64 aapt2 emulation on arm64"). We therefore inject an explicit
+// `hermesCommand` pointing at that binary when we detect a linux host, so
+// hermesc runs via qemu emulation. On macOS/EAS builds hermesc is autodetected
+// and we do not inject anything.
 
 const { withAppBuildGradle } = require("expo/config-plugins");
 
 const COMMENTED_DEFAULT =
   /^\s*\/\/\s*debuggableVariants\s*=\s*\[.*\]\s*$/m;
 const REACT_BLOCK_OPEN = /^react\s*\{\s*$/m;
+const HERMES_COMMAND_LINE =
+  /^\s*hermesCommand\s*=\s*"[^"]*hermesc[^"]*"\s*$/m;
+const HERMES_LINUX_PATH =
+  '"../node_modules/react-native/sdks/hermesc/linux64-bin/hermesc"';
 
-function patchAppBuildGradle(contents) {
+function patchDebuggableVariants(contents) {
   if (/^\s*debuggableVariants\s*=\s*\[\s*\]\s*$/m.test(contents)) {
     return contents;
   }
@@ -34,6 +48,26 @@ function patchAppBuildGradle(contents) {
   throw new Error(
     "android-e2e-bundle: could not find `react {` block in app/build.gradle",
   );
+}
+
+function patchHermesCommand(contents, injectHermes) {
+  if (!injectHermes) return contents;
+  if (HERMES_COMMAND_LINE.test(contents)) return contents;
+  if (!REACT_BLOCK_OPEN.test(contents)) {
+    throw new Error(
+      "android-e2e-bundle: could not find `react {` block in app/build.gradle",
+    );
+  }
+  return contents.replace(
+    REACT_BLOCK_OPEN,
+    `react {\n    hermesCommand = ${HERMES_LINUX_PATH}`,
+  );
+}
+
+function patchAppBuildGradle(contents, options = {}) {
+  const injectHermes =
+    options.injectHermes ?? process.platform === "linux";
+  return patchHermesCommand(patchDebuggableVariants(contents), injectHermes);
 }
 
 module.exports = function androidE2eBundle(config) {

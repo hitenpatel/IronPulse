@@ -24,7 +24,7 @@ android {
 
 describe("android-e2e-bundle plugin", () => {
   it("uncomments debuggableVariants and empties it so debug bundles JS", () => {
-    const out = patchAppBuildGradle(PREBUILD_GRADLE);
+    const out = patchAppBuildGradle(PREBUILD_GRADLE, { injectHermes: false });
     expect(out).toMatch(/^\s*debuggableVariants = \[\]$/m);
     expect(out).not.toMatch(/\/\/\s*debuggableVariants/);
     // the rest of the react block is untouched
@@ -32,21 +32,42 @@ describe("android-e2e-bundle plugin", () => {
   });
 
   it("is idempotent", () => {
-    const once = patchAppBuildGradle(PREBUILD_GRADLE);
-    expect(patchAppBuildGradle(once)).toBe(once);
+    const once = patchAppBuildGradle(PREBUILD_GRADLE, { injectHermes: false });
+    expect(patchAppBuildGradle(once, { injectHermes: false })).toBe(once);
   });
 
   it("injects into a react block that has no commented default", () => {
     const gradle = `react {\n    bundleCommand = "export:embed"\n}\n`;
-    const out = patchAppBuildGradle(gradle);
+    const out = patchAppBuildGradle(gradle, { injectHermes: false });
     expect(out).toBe(
       `react {\n    debuggableVariants = []\n    bundleCommand = "export:embed"\n}\n`,
     );
   });
 
   it("throws when there is no react block to patch", () => {
-    expect(() => patchAppBuildGradle("android {\n}\n")).toThrow(
-      /could not find `react \{` block/,
+    expect(() =>
+      patchAppBuildGradle("android {\n}\n", { injectHermes: false }),
+    ).toThrow(/could not find `react \{` block/);
+  });
+
+  it("injects a linux hermesCommand override when injectHermes is true", () => {
+    const out = patchAppBuildGradle(PREBUILD_GRADLE, { injectHermes: true });
+    expect(out).toContain(
+      'hermesCommand = "../node_modules/react-native/sdks/hermesc/linux64-bin/hermesc"',
     );
+    expect(out).toMatch(/^\s*debuggableVariants = \[\]$/m);
+  });
+
+  it("hermes injection is idempotent", () => {
+    const once = patchAppBuildGradle(PREBUILD_GRADLE, { injectHermes: true });
+    const twice = patchAppBuildGradle(once, { injectHermes: true });
+    const hermesLines = twice.match(/hermesCommand\s*=/g) ?? [];
+    expect(hermesLines.length).toBe(1);
+    expect(twice).toBe(once);
+  });
+
+  it("does not inject hermesCommand when injectHermes is false", () => {
+    const out = patchAppBuildGradle(PREBUILD_GRADLE, { injectHermes: false });
+    expect(out).not.toContain("hermesCommand");
   });
 });
