@@ -58,6 +58,22 @@ describe("android-e2e-bundle plugin", () => {
     expect(out).toMatch(/^\s*debuggableVariants = \[\]$/m);
   });
 
+  it("replaces the expo/RN default %OS-BIN% hermesCommand line so it is not overridden", () => {
+    const gradle = `react {
+    entryFile = file("index.js")
+    hermesCommand = new File("...").getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
+    bundleCommand = "export:embed"
+}
+`;
+    const out = patchAppBuildGradle(gradle, { injectHermes: true });
+    expect(out).not.toContain("%OS-BIN%");
+    const hermesLines = out.match(/hermesCommand\s*=/g) ?? [];
+    expect(hermesLines.length).toBe(1);
+    expect(out).toContain(
+      'hermesCommand = "../node_modules/react-native/sdks/hermesc/linux64-bin/hermesc"',
+    );
+  });
+
   it("hermes injection is idempotent", () => {
     const once = patchAppBuildGradle(PREBUILD_GRADLE, { injectHermes: true });
     const twice = patchAppBuildGradle(once, { injectHermes: true });

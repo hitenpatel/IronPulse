@@ -27,10 +27,16 @@ const { withAppBuildGradle } = require("expo/config-plugins");
 const COMMENTED_DEFAULT =
   /^\s*\/\/\s*debuggableVariants\s*=\s*\[.*\]\s*$/m;
 const REACT_BLOCK_OPEN = /^react\s*\{\s*$/m;
-const HERMES_COMMAND_LINE =
-  /^\s*hermesCommand\s*=\s*"[^"]*hermesc[^"]*"\s*$/m;
+// Match the expo/RN default template line, which uses a %OS-BIN% substitution
+// resolved by react-native-gradle-plugin's getHermesOSBin() and aborts on
+// linux-arm64. We replace that entire line so no later assignment overrides
+// our absolute path (Groovy last-write-wins inside the react { } block).
+const HERMES_TEMPLATE_LINE = /^\s*hermesCommand\s*=.*%OS-BIN%.*$/m;
+const HERMES_LINUX_LITERAL_LINE =
+  /^\s{4}hermesCommand\s*=\s*"[^"]*hermesc[^"]*"\s*$/m;
 const HERMES_LINUX_PATH =
   '"../node_modules/react-native/sdks/hermesc/linux64-bin/hermesc"';
+const HERMES_LINUX_LINE = `    hermesCommand = ${HERMES_LINUX_PATH}`;
 
 function patchDebuggableVariants(contents) {
   if (/^\s*debuggableVariants\s*=\s*\[\s*\]\s*$/m.test(contents)) {
@@ -52,7 +58,13 @@ function patchDebuggableVariants(contents) {
 
 function patchHermesCommand(contents, injectHermes) {
   if (!injectHermes) return contents;
-  if (HERMES_COMMAND_LINE.test(contents)) return contents;
+  // If the expo/RN default `%OS-BIN%` line is present, replace it in place so
+  // no later assignment overrides ours. Otherwise, if we've already patched,
+  // leave the file alone. Otherwise, inject a new line after `react {`.
+  if (HERMES_TEMPLATE_LINE.test(contents)) {
+    return contents.replace(HERMES_TEMPLATE_LINE, HERMES_LINUX_LINE);
+  }
+  if (HERMES_LINUX_LITERAL_LINE.test(contents)) return contents;
   if (!REACT_BLOCK_OPEN.test(contents)) {
     throw new Error(
       "android-e2e-bundle: could not find `react {` block in app/build.gradle",
@@ -60,7 +72,7 @@ function patchHermesCommand(contents, injectHermes) {
   }
   return contents.replace(
     REACT_BLOCK_OPEN,
-    `react {\n    hermesCommand = ${HERMES_LINUX_PATH}`,
+    `react {\n${HERMES_LINUX_LINE}`,
   );
 }
 
