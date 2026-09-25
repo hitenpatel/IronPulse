@@ -1,7 +1,7 @@
 # Zor Critical Test Paths
 
 This file is read by the **Zor QA** agent (Paperclip skill `zor-qa`)
-on its weekly Sunday 06:00 UTC sweep against `https://staging.ironpulse.hiten-patel.co.uk`.
+on its weekly Sunday 06:00 UTC sweep against `https://staging.zor.hiten-patel.co.uk`.
 
 The agent does **not** invent flows. It runs only the Playwright specs listed below,
 in this order, and files Forgejo issues with `regression` + `agent-suggested` labels
@@ -10,9 +10,9 @@ for any failure that reproduces twice in a row.
 ## How the agent runs
 
 ```bash
-git clone https://claude-agent:$FORGEJO_CLAUDE_AGENT_TOKEN@git.hiten-patel.co.uk/hiten/IronPulse.git ./repo
+git clone https://claude-agent:$FORGEJO_CLAUDE_AGENT_TOKEN@git.hiten-patel.co.uk/hiten/Zor.git ./repo
 cd repo && pnpm install --frozen-lockfile
-BASE_URL=https://staging.ironpulse.hiten-patel.co.uk \
+BASE_URL=https://staging.zor.hiten-patel.co.uk \
   pnpm --filter @zor/web exec playwright test \
   apps/web/e2e/{auth,auth-login,auth-signup,onboarding,navigation,sidebar-nav,workouts,exercise-detail,cardio,goals,settings,csrf,trpc-fallback}.spec.ts \
   --reporter=line,json --output=/tmp/playwright-results
@@ -79,7 +79,7 @@ These are intentionally **not** run in the weekly QA sweep.
 
 1. **Retry once.** Real-network flake is real; one retry filters most noise.
 2. **If it still fails:** capture the Playwright screenshot + console log + last network request + the seed account used.
-3. **File a Forgejo issue** in `hiten/IronPulse` with:
+3. **File a Forgejo issue** in `hiten/Zor` with:
    - Title: `regression: <spec> failing on staging — <one-line cause>`
    - Labels: `regression`, `agent-suggested`, plus `tier-1` or `tier-2`
    - Body: failing test name, Playwright error, screenshot URL (uploaded to Paperclip ticket), suspected since-commit (last commit on staging branch before failure first observed)

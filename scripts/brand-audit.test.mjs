@@ -110,6 +110,26 @@ test("rejects near-miss compatibility values even on an approved path", () => {
   assert.equal(result.invalidCompatibility.length, 1);
 });
 
+test("supports an explicit list of exact paths without allowing sibling files", () => {
+  const result = run({
+    files: ["apps/mobile/e2e/one.yaml", "apps/mobile/e2e/unlisted.yaml"],
+    contents: {
+      "apps/mobile/e2e/one.yaml": `appId: ${shippingId}`,
+      "apps/mobile/e2e/unlisted.yaml": `appId: ${shippingId}`,
+    },
+    allowlist: {
+      compatibility: [{
+        paths: ["apps/mobile/e2e/one.yaml", "apps/mobile/e2e/two.yaml"],
+        patterns: [shippingId],
+        reason: "immutable shipping application ID",
+      }],
+    },
+  });
+
+  assert.equal(result.invalidCompatibility.length, 1);
+  assert.equal(result.invalidCompatibility[0].path, "apps/mobile/e2e/unlisted.yaml");
+});
+
 test("skips only exact frozen history paths", () => {
   const result = run({
     files: ["docs/adr/001-old-name.md", "docs/runbooks/current.md"],
@@ -121,6 +141,25 @@ test("skips only exact frozen history paths", () => {
   });
   assert.equal(result.forbiddenLegacy.length, 1);
   assert.match(result.forbiddenLegacy[0].path, /docs\/runbooks\/current\.md/u);
+});
+
+test("preserves historical implementation notes in active backlog tasks", () => {
+  const result = run({
+    files: ["backlog/tasks/task-99 - active.md"],
+    contents: {
+      "backlog/tasks/task-99 - active.md": [
+        "<!-- SECTION:DESCRIPTION:BEGIN -->",
+        "Current Zor work",
+        "<!-- SECTION:DESCRIPTION:END -->",
+        "<!-- SECTION:NOTES:BEGIN -->",
+        `${legacyDisplayName} historical commit evidence`,
+        "<!-- SECTION:NOTES:END -->",
+      ].join("\n"),
+    },
+  });
+
+  assert.deepEqual(result.forbiddenLegacy, []);
+  assert.deepEqual(result.invalidCompatibility, []);
 });
 
 test("recognizes every supported active text format", () => {

@@ -1,4 +1,5 @@
 import { randomUUID } from "@/lib/uuid";
+import { IMMUTABLE_APPLICATION_IDS } from "@zor/shared";
 // Lazy-loaded to avoid parse failures in vitest / Android
 function getPlatformOS(): string {
   try {
@@ -76,7 +77,7 @@ export function makeExternalId(uuid: string): string {
 }
 
 export function shouldSkipImport(sourceBundle: string | undefined): boolean {
-  return sourceBundle === "com.zor.app";
+  return sourceBundle === IMMUTABLE_APPLICATION_IDS[0];
 }
 
 // ---------------------------------------------------------------------------

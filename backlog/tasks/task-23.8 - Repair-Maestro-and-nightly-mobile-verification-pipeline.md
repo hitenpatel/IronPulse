@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-08-09 03:52'
-updated_date: '2026-09-07 08:51'
+updated_date: '2026-09-25 09:30'
 labels:
   - mobile
   - test
@@ -37,7 +37,7 @@ Make device-level workout verification deterministic and failure-sensitive after
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Maestro workout flows use current database-ID-based selectors and deterministic seeded workout state
-- [ ] #2 The nightly runner uses the IronPulse checkout and current APK and bundle identifiers and exits nonzero on missing artifact, backend-health, install, smoke, or suite failure
+- [ ] #2 The nightly runner uses the Zor checkout and current APK and bundle identifiers and exits nonzero on missing artifact, backend-health, install, smoke, or suite failure
 - [ ] #3 The scheduled nightly entrypoint exists and invokes the maintained runner and report location
 - [ ] #4 The E2E stack uses an isolated PowerSync/backend profile and resets only the designated test user's workout graph
 - [ ] #5 Offline tests preserve ADB control by stopping the isolated backend services rather than severing Wi-Fi or Tailscale
@@ -51,15 +51,14 @@ Make device-level workout verification deterministic and failure-sensitive after
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-Surgical native-tree alignment (app.config.js is source of truth for scheme + bundle ID after Zor rebrand):
+Native-tree and runner alignment (app.config.js is the source of truth after the Zor cutover):
 
-1. apps/mobile/android/app/build.gradle: namespace + applicationId com.mettlelift.app -> com.ironpulse.app
-2. apps/mobile/android/settings.gradle: rootProject.name 'Mettle Lift' -> 'Zor'
-3. apps/mobile/android/app/src/main/res/values/strings.xml: app_name 'Mettle Lift' -> 'Zor'
-4. apps/mobile/android/app/src/main/AndroidManifest.xml: replace 'mettlelift' deep-link scheme with two <data> entries for 'zor' and 'ironpulse' (matches app.config.js scheme array)
-5. Rebuild E2E APK: EXPO_PUBLIC_E2E=1 cd apps/mobile/android && ./gradlew assembleRelease (or via build-safe.sh per memory) - required com.ironpulse.app.e2e output
-6. Uninstall stale com.mettlelift.app.e2e from Pixel 100.69.203.52:5555, install fresh com.ironpulse.app.e2e
-7. Rerun prod-smoke flow first (auth-signin) as fastest feedback, then full main suite
+1. Keep Android namespace and applicationId at the immutable shipping identifier `com.ironpulse.app`.
+2. Keep the native project and app display name as Zor.
+3. Register only the `zor` deep-link scheme.
+4. Build the E2E APK with `EXPO_PUBLIC_E2E=1`, producing the immutable coexistence identifier `com.ironpulse.app.e2e`.
+5. Remove stale prior-brand builds from the Pixel, install the current E2E APK, and verify the installed identifier.
+6. Run the production smoke flow first, then the complete Maestro suite.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes

@@ -11,7 +11,7 @@
       "channel": "staging",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging.mettlelift.hiten-patel.co.uk"
+        "EXPO_PUBLIC_API_URL": "https://staging.zor.hiten-patel.co.uk"
       }
     },
     "e2e": {
@@ -29,7 +29,7 @@
       "android": { "buildType": "app-bundle" },
       "ios": { "resourceClass": "m-medium" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ironpulse.hiten-patel.co.uk"
+        "EXPO_PUBLIC_API_URL": "https://zor.hiten-patel.co.uk"
       }
     }
   },

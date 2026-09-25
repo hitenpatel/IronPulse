@@ -13,7 +13,7 @@ import * as SecureStore from "@/lib/secure-store";
 const mockGetItemResult = vi.mocked(SecureStore.getItemResult);
 const mockSetItem = vi.mocked(SecureStore.setItemAsync);
 
-const CLOUD_DEFAULT = "https://ironpulse.hiten-patel.co.uk";
+const CLOUD_DEFAULT = "https://zor.hiten-patel.co.uk";
 
 const ABSENT: SecureReadResult = { status: "absent" };
 const found = (value: string): SecureReadResult => ({ status: "found", value });

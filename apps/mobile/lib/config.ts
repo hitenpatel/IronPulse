@@ -1,3 +1,5 @@
+import { IDENTITY } from "@zor/shared";
+
 /**
  * App configuration — reads from process.env at bundle time.
  *
@@ -17,7 +19,7 @@ export const Config = {
   DEFAULT_API_URL:
     process.env.API_URL ??
     process.env.EXPO_PUBLIC_API_URL ??
-    "https://ironpulse.hiten-patel.co.uk",
+    IDENTITY.origins.production,
 
   GOOGLE_CLIENT_ID:
     process.env.GOOGLE_CLIENT_ID ??

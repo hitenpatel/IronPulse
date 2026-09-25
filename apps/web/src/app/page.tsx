@@ -61,7 +61,7 @@ const plans = [
       "Community support",
     ],
     cta: "Get Started",
-    href: "https://github.com/hiten/IronPulse",
+    href: "https://github.com/hitenpatel/Zor",
     highlighted: false,
   },
   {

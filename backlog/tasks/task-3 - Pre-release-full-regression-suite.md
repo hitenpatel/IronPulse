@@ -5,14 +5,14 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-13 02:29'
+updated_date: '2026-09-25 09:27'
 labels:
   - 'priority:high'
   - testing
 milestone: m-0
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/212'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/212'
 priority: high
 ordinal: 3000
 ---
@@ -20,7 +20,7 @@ ordinal: 3000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #212: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/212
+Imported from Forgejo issue #212: https://git.hiten-patel.co.uk/hiten/Zor/issues/212
 
 ## Context
 

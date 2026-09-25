@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - agent-ready
   - agent-suggested
@@ -17,7 +17,7 @@ labels:
 milestone: m-1
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/368'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/368'
 priority: medium
 type: feature
 ordinal: 9000
@@ -26,17 +26,17 @@ ordinal: 9000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #368: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/368
+Imported from Forgejo issue #368: https://git.hiten-patel.co.uk/hiten/Zor/issues/368
 
 ## Why this surfaced
-BookStack Competitive Watch (Week of 2026-04-27, page 93) notes that FitNotes iOS v3.4.0 (Apr 2026) shipped HealthKit integration + Apple Watch support. IronPulse's mobile app has HealthKit (`apps/mobile/lib/__tests__/healthkit.test.ts`) and Google Fit integration, but no watchOS/WatchKit companion app code was found in the repo.
+BookStack Competitive Watch (Week of 2026-04-27, page 93) notes that FitNotes iOS v3.4.0 (Apr 2026) shipped HealthKit integration + Apple Watch support. Zor's mobile app has HealthKit (`apps/mobile/lib/__tests__/healthkit.test.ts`) and Google Fit integration, but no watchOS/WatchKit companion app code was found in the repo.
 
 ## Observable evidence
 BookStack source: "FitNotes iOS v3.4.1 (Apr 22, 2026): Crash fix on workout delete; SaveAs bug fix. Prior v3.4.0 added HealthKit integration and Apple Watch support."
 
 Code check (2026-05-03): `grep -rn "watch|watchos|watchkit|WKExtension" apps/mobile/` returns only GPS location watcher refs and PowerSync query watchers — no watchOS companion target.
 
-IronPulse mobile uses React Native 0.81 (bare CLI). An Apple Watch companion would require a separate WatchKit/SwiftUI target in the Xcode project.
+Zor mobile uses React Native 0.81 (bare CLI). An Apple Watch companion would require a separate WatchKit/SwiftUI target in the Xcode project.
 
 ## Acceptance criteria
 
@@ -61,5 +61,5 @@ feature
 high — no watchOS code present; competitor shipped this feature in April 2026.
 
 ---
-*Filed by IronPulse Product Owner · agent-suggested · weekly Sunday sweep 2026-05-04*
+*Filed by Zor Product Owner · agent-suggested · weekly Sunday sweep 2026-05-04*
 <!-- SECTION:DESCRIPTION:END -->

@@ -4,7 +4,7 @@ title: Register OAuth developer apps for all integration providers
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - manual-work
   - 'priority:high'
@@ -13,7 +13,7 @@ labels:
 milestone: m-0
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/210'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/210'
 priority: high
 ordinal: 1000
 ---
@@ -21,11 +21,11 @@ ordinal: 1000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #210: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/210
+Imported from Forgejo issue #210: https://git.hiten-patel.co.uk/hiten/Zor/issues/210
 
 ## Context
 
-IronPulse has code for 5 fitness platform integrations (Strava, Garmin Connect, Polar, Withings, Oura) but production OAuth apps need to be registered with each provider to get client IDs and secrets.
+Zor has code for 5 fitness platform integrations (Strava, Garmin Connect, Polar, Withings, Oura) but production OAuth apps need to be registered with each provider to get client IDs and secrets.
 
 ## Acceptance Criteria
 

@@ -4,12 +4,12 @@ title: Dependency Dashboard
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - tech-debt
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/412'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/412'
 priority: medium
 ordinal: 17000
 ---
@@ -17,7 +17,7 @@ ordinal: 17000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #412: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/412
+Imported from Forgejo issue #412: https://git.hiten-patel.co.uk/hiten/Zor/issues/412
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.
 

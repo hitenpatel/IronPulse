@@ -8,7 +8,7 @@ const I = ({ d, children, stroke = 1.6, size = 16, fill = "none" }) => (
 
 const Icons = {
   Logo: ({ size = 18, flat = false }) => (
-    // IRONPULSE v3 — cobalt tile, white dumbbell, lime pulse waveform.
+    // ZOR v3 — cobalt tile, white dumbbell, lime pulse waveform.
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
       <defs>
         <linearGradient id="ip-bg" x1="0" y1="0" x2="1" y2="1">

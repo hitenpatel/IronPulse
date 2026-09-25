@@ -20,7 +20,7 @@ A self-hosted fitness tracking platform combining strength training, GPS cardio,
 # Prerequisites: Node 22+, pnpm 9.15+, Docker
 
 # Clone and run the automated setup
-git clone https://git.hiten-patel.co.uk/hiten/IronPulse.git
+git clone https://git.hiten-patel.co.uk/hiten/Zor.git
 cd Zor
 ./scripts/dev-start.sh
 ```

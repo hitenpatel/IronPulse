@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-07-24 05:59'
-updated_date: '2026-09-08 02:04'
+updated_date: '2026-09-25 09:27'
 labels:
   - agent-ready
   - feature
@@ -16,7 +16,7 @@ labels:
 milestone: m-2
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/450'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/450'
 priority: medium
 type: feature
 ordinal: 20000
@@ -25,13 +25,13 @@ ordinal: 20000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #450: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/450
+Imported from Forgejo issue #450: https://git.hiten-patel.co.uk/hiten/Zor/issues/450
 
 ## Motivation
 
 Today `apps/mobile/lib/config.ts` bakes `API_URL` from `process.env` at bundle time and defaults to the managed cloud URL. The published Play Store / TestFlight APK therefore can't connect to a self-hosted instance — operators have to fork and rebuild with `EXPO_PUBLIC_API_URL=...`.
 
-This blocks the self-host-first launch strategy: we want a single APK that prompts "Use IronPulse Cloud" or "Connect to my server" on first launch.
+This blocks the self-host-first launch strategy: we want a single APK that prompts "Use Zor Cloud" or "Connect to my server" on first launch.
 
 ## Acceptance criteria
 
@@ -67,7 +67,7 @@ This blocks the self-host-first launch strategy: we want a single APK that promp
 |---|---|
 | Missing scheme | (auto-prefix https) |
 | Non-200 from /api/health | "Couldn't reach that address" |
-| 200 but unexpected JSON shape | "Doesn't look like an IronPulse server" |
+| 200 but unexpected JSON shape | "Doesn't look like an Zor server" |
 | TLS error | "TLS error — for local dev, set up Caddy with a real cert" |
 | Timeout (10s) | "Server didn't respond — check the URL and try again" |
 

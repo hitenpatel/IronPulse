@@ -188,10 +188,10 @@ log "starting zor-e2e stack (api :3100, powersync :8180)"
 # changes made in the checkout — which then surfaces as a seed/query error far
 # from the cause. Layer cache makes this a no-op when nothing changed.
 if ! ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" up -d --build --wait --wait-timeout 300 \
-    postgres redis minio mongo ironpulse powersync ) 2>&1 | tee -a "$OUT/run.log"; then
+    postgres redis minio mongo zor powersync ) 2>&1 | tee -a "$OUT/run.log"; then
   log "compose bring-up failed — dumping per-service state + last 100 lines of each container's logs"
   ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" ps -a ) 2>&1 | tee -a "$OUT/run.log" || true
-  for svc in postgres redis minio mongo ironpulse powersync; do
+  for svc in postgres redis minio mongo zor powersync; do
     log "--- logs: $svc ---"
     ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" logs --tail=100 --no-color "$svc" ) 2>&1 \
       | tee -a "$OUT/run.log" || true
@@ -327,14 +327,14 @@ maestro test --udid "$MAESTRO_DEVICE" "$RUN/workout-focus-offline-setup.yaml" \
   >> "$OUT/offline.log" 2>&1 || OFFLINE_RC=1
 
 if [ "$OFFLINE_RC" = "0" ]; then
-  log "offline phase: stopping ironpulse + powersync"
-  ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" stop ironpulse powersync ) >>"$OUT/run.log" 2>&1
+  log "offline phase: stopping zor + powersync"
+  ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" stop zor powersync ) >>"$OUT/run.log" 2>&1
 
   maestro test --udid "$MAESTRO_DEVICE" "$RUN/workout-focus-offline.yaml" \
     >> "$OUT/offline.log" 2>&1 || OFFLINE_RC=1
 
-  log "offline phase: restarting ironpulse + powersync"
-  ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" start ironpulse powersync ) >>"$OUT/run.log" 2>&1
+  log "offline phase: restarting zor + powersync"
+  ( cd "$REPO/docker" && "${E2E_COMPOSE[@]}" start zor powersync ) >>"$OUT/run.log" 2>&1
   BACK=0
   for i in $(seq 1 20); do
     curl -fsS --max-time 10 "$E2E_API/api/health" >/dev/null 2>&1 && { BACK=1; break; }

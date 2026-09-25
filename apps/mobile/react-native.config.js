@@ -2,7 +2,7 @@ module.exports = {
   project: {
     android: {
       sourceDir: './android',
-      packageName: 'com.zor.app',
+      packageName: 'com.ironpulse.app',
     },
     ios: {
       sourceDir: './ios',

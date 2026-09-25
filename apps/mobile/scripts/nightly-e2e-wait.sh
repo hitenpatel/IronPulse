@@ -10,7 +10,7 @@
 set -u
 export PATH="$HOME/.maestro/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
-REPO="${REPO:-/home/ubuntu/dev/IronPulse}"
+REPO="${REPO:-/home/ubuntu/dev/Zor}"
 LOG_DIR="${LOG_DIR:-/home/ubuntu/stack/logs}"
 STATE_DIR="${STATE_DIR:-/home/ubuntu/stack/state}"
 LAST_GREEN_FILE="$STATE_DIR/zor-e2e-last-green.sha"

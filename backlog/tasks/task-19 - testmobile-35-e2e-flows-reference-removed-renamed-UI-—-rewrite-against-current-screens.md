@@ -7,13 +7,13 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-07-24 05:59'
-updated_date: '2026-09-07 20:59'
+updated_date: '2026-09-25 09:27'
 labels:
   - testing
   - mobile
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/446'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/446'
 priority: medium
 ordinal: 19000
 ---
@@ -21,7 +21,7 @@ ordinal: 19000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #446: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/446
+Imported from Forgejo issue #446: https://git.hiten-patel.co.uk/hiten/Zor/issues/446
 
 After the keyguard fix landed in #445, the main e2e suite now reports cleanly. Latest run (2026-06-16 09:48 UTC): 7 passed, 35 failed. **All failures are UI drift — testIDs renamed, screens redesigned, text changed — not regressions.** Prod smoke is 3/3 passing.
 

@@ -201,7 +201,7 @@ jobs:
           # with no real UI to exercise.
           # EXPO_PUBLIC_API_URL points at the isolated E2E stack that
           # nightly-e2e.sh brings up (API on :3100). The old staging domain
-          # (mettlelift.hiten-patel.co.uk) was decommissioned with the rebrand.
+          # The previous staging hostname was decommissioned with the Zor cutover.
           cd apps/mobile
           EXPO_PUBLIC_E2E=1 \
           EXPO_PUBLIC_API_URL=http://100.113.79.51:3100 \
@@ -317,7 +317,7 @@ jobs:
           # Capture STREAM_MUSIC (3) volume so we can restore the user's level
           # after the run. Nightly tests may play media, and we don't want to
           # wake the developer at 03:30.
-          # Note: IronPulse (Expo app) does not use a LocaleManager with
+          # Note: Zor (Expo app) does not use a LocaleManager with
           # SharedPreferences the way RadioShake does, so we skip the prefs-file
           # save/restore. Only the media volume needs preserving.
           VOL=$(adb -s $DEVICE shell settings get system volume_music 2>/dev/null | tr -d '\r')
@@ -486,7 +486,7 @@ jobs:
               "commit_sha": os.environ.get("GITHUB_SHA", ""),
               "commit_message": os.environ.get("COMMIT_MSG") or "",
               "workflow": "maestro-nightly",
-              "run_url": f"https://git.hiten-patel.co.uk/hiten/IronPulse/actions/runs/{os.environ.get('RUN_ID','')}",
+              "run_url": f"https://git.hiten-patel.co.uk/hiten/Zor/actions/runs/{os.environ.get('RUN_ID','')}",
               "tiers": [
                   tier("e2e", "E2E_PASS", "E2E_FAIL", "E2E_FAILED_FLOWS"),
                   tier("e2e-smoke", "SMOKE_PASS", "SMOKE_FAIL", "SMOKE_FAILED_FLOWS"),

@@ -1,17 +1,18 @@
+const IDENTITY = require("../../packages/shared/src/identity.json");
+
 const IS_E2E = process.env.EXPO_PUBLIC_E2E === "1";
-const ANDROID_PACKAGE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
-const IOS_BUNDLE = IS_E2E ? "com.ironpulse.app.e2e" : "com.ironpulse.app";
+const APPLICATION_ID = IDENTITY.immutableCompatibility.applicationIds[Number(IS_E2E)];
 
 module.exports = ({ config }) => ({
   ...config,
   owner: "hiten123",
-  name: IS_E2E ? "Zor E2E" : "Zor",
-  slug: "ironpulse",
+  name: IS_E2E ? `${IDENTITY.product.displayName} E2E` : IDENTITY.product.displayName,
+  slug: "zor",
   version: "1.0.0",
-  scheme: ["zor", "ironpulse"],
+  scheme: IDENTITY.mobile.deepLinkSchemes,
   userInterfaceStyle: "dark",
   ios: {
-    bundleIdentifier: IOS_BUNDLE,
+    bundleIdentifier: APPLICATION_ID,
     supportsTablet: true,
     infoPlist: {
       NSHealthShareUsageDescription:
@@ -25,7 +26,7 @@ module.exports = ({ config }) => ({
     },
   },
   android: {
-    package: ANDROID_PACKAGE,
+    package: APPLICATION_ID,
     adaptiveIcon: {
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
@@ -48,7 +49,7 @@ module.exports = ({ config }) => ({
   },
   extra: {
     eas: {
-      projectId: "a4541ea9-4c09-42bf-8ae6-f12a5ebb81e3",
+      projectId: IDENTITY.mobile.easProjectId,
     },
   },
   plugins: [

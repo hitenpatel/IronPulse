@@ -41,8 +41,10 @@ describe("makeGoogleFitExternalId", () => {
 });
 
 describe("shouldSkipGoogleFitImport", () => {
-  it("skips our package", () =>
-    expect(shouldSkipGoogleFitImport("com.zor.app")).toBe(true));
+  it("skips the immutable shipping package", () => {
+    expect(shouldSkipGoogleFitImport("com.ironpulse.app")).toBe(true);
+    expect(shouldSkipGoogleFitImport("com.zor.app")).toBe(false);
+  });
   it("allows other packages", () =>
     expect(shouldSkipGoogleFitImport("com.google.android.gms")).toBe(false));
   it("allows undefined", () =>

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-08-09 03:04'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - mobile
   - ux
@@ -26,7 +26,7 @@ ordinal: 26000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Make the mobile active-workout experience faster and clearer by centering the current exercise and next set while preserving access to the complete workout. The refinement should retain the existing Mettle Lift visual identity, offline-first behavior, supersets, warm-ups, RPE, editing, and flexible workout order.
+Make the mobile active-workout experience faster and clearer by centering the current exercise and next set while preserving access to the complete workout. The refinement should retain the existing Zor visual identity, offline-first behavior, supersets, warm-ups, RPE, editing, and flexible workout order.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

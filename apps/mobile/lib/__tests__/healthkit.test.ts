@@ -21,7 +21,10 @@ describe("makeExternalId", () => {
 });
 
 describe("shouldSkipImport", () => {
-  it("skips our bundle", () => expect(shouldSkipImport("com.zor.app")).toBe(true));
+  it("skips the immutable shipping bundle", () => {
+    expect(shouldSkipImport("com.ironpulse.app")).toBe(true);
+    expect(shouldSkipImport("com.zor.app")).toBe(false);
+  });
   it("allows other bundles", () => expect(shouldSkipImport("com.apple.health")).toBe(false));
   it("allows undefined", () => expect(shouldSkipImport(undefined)).toBe(false));
 });

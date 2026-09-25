@@ -12,6 +12,7 @@ const CONTROL_FILES = new Set([
   "scripts/brand-history.json",
   "scripts/brand-audit.mjs",
   "scripts/lib/brand-audit.mjs",
+  "scripts/validate-zor-identity.mjs",
 ]);
 
 const LEGACY_PATTERN = /Mettle\s*Lift|mettlelift|IronPulse|ironpulse/giu;
@@ -71,7 +72,9 @@ function exactPatternRanges(line, pattern) {
 
 function allowedRanges(path, line, allowlist) {
   return (allowlist.compatibility ?? [])
-    .filter((entry) => entry.path === path && entry.reason?.trim())
+    .filter((entry) =>
+      (entry.path === path || entry.paths?.includes(path)) && entry.reason?.trim()
+    )
     .flatMap((entry) => entry.patterns.flatMap((pattern) => exactPatternRanges(line, pattern)));
 }
 
@@ -114,7 +117,18 @@ export function auditTrackedFiles({
 
     scannedFiles.push(path);
     const content = readFile(path);
+    let inHistoricalBacklogNotes = false;
     for (const [lineIndex, line] of content.split(/\r?\n/u).entries()) {
+      if (path.startsWith("backlog/tasks/") && line === "<!-- SECTION:NOTES:BEGIN -->") {
+        inHistoricalBacklogNotes = true;
+        continue;
+      }
+      if (path.startsWith("backlog/tasks/") && line === "<!-- SECTION:NOTES:END -->") {
+        inHistoricalBacklogNotes = false;
+        continue;
+      }
+      if (inHistoricalBacklogNotes) continue;
+
       const ranges = allowedRanges(path, line, allowlist);
       const uncovered = occurrences(line).filter(({ index }) => !isCovered(index, ranges));
       if (uncovered.length === 0) continue;

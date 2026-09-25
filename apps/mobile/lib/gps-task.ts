@@ -1,6 +1,7 @@
 import * as TaskManager from "@/lib/task-manager";
 import * as Location from "@/lib/location";
 import * as SQLite from "@/lib/sqlite";
+import { IDENTITY } from "@zor/shared";
 import { insertBufferPoint, initGpsBuffer } from "./gps-buffer";
 
 export const GPS_TASK_NAME = "zor-gps-tracking";
@@ -30,7 +31,7 @@ function wrapDb(db: ReturnType<typeof SQLite.openDatabaseSync>) {
 }
 
 function getBackgroundDb() {
-  if (!bgDb) { bgDb = SQLite.openDatabaseSync("ironpulse.db"); }
+  if (!bgDb) { bgDb = SQLite.openDatabaseSync(IDENTITY.mobile.powerSyncDatabase); }
   return wrapDb(bgDb);
 }
 

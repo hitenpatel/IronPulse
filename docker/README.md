@@ -28,7 +28,7 @@ press history stays on a disk you own.
 You need: a host with Docker Engine 24+ and the Compose v2 plugin.
 
 ```bash
-git clone https://git.hiten-patel.co.uk/hiten/IronPulse.git
+git clone https://git.hiten-patel.co.uk/hiten/Zor.git
 cd Zor/docker
 cp .env.example .env
 
@@ -74,7 +74,7 @@ Every server-side feature, scoped to the users on **your** instance:
 
 ## What's *not* included
 
-- **The published mobile app today still points at the managed cloud.** A runtime "server URL" picker is in flight ([#450](https://git.hiten-patel.co.uk/hiten/IronPulse/issues/450)) — once shipped, the Play Store / TestFlight build will let you point it at your own server with no rebuild. In the meantime:
+- **The published mobile app today still points at the managed cloud.** A runtime "server URL" picker is in flight ([#450](https://git.hiten-patel.co.uk/hiten/Zor/issues/450)) — once shipped, the Play Store / TestFlight build will let you point it at your own server with no rebuild. In the meantime:
   - The **web app is fully responsive** and works great on phones with no changes.
   - Or build your own APK: `EXPO_PUBLIC_API_URL=https://your-domain npx eas-cli build --platform android --profile preview`
 - **Cross-instance social.** Feed, coaching, and challenges only connect users on the same instance. A solo instance is a private island by design — federation may come later.
@@ -145,7 +145,7 @@ NEXTAUTH_URL=https://fitness.example.com
 
 `NEXTAUTH_URL` **must** match the address users actually hit — otherwise sign-in callbacks and passkeys break.
 
-Other reverse-proxy snippets (Traefik, nginx, Cloudflare Tunnel) live in [BookStack](https://docs.hiten-patel.co.uk/books/mettle-lift) — open an issue if you want one added here.
+Other reverse-proxy snippets (Traefik, nginx, Cloudflare Tunnel) live in [BookStack](https://docs.hiten-patel.co.uk/books/zor) — open an issue if you want one added here.
 
 ---
 
@@ -226,7 +226,7 @@ Both workflows SSH to the target host and run [`docker/remote-deploy.sh`](./remo
 
 ## Contributing
 
-Zor is AGPL-3.0. Patches welcome via PR on the [Forgejo repo](https://git.hiten-patel.co.uk/hiten/IronPulse) or the [GitHub mirror](https://github.com/hitenpatel/IronPulse). For non-trivial changes please open an issue first.
+Zor is AGPL-3.0. Patches welcome via PR on the [Forgejo repo](https://git.hiten-patel.co.uk/hiten/Zor) or the [GitHub mirror](https://github.com/hitenpatel/Zor). For non-trivial changes please open an issue first.
 
 The trademark on "Zor" and its logo is reserved — forks must rebrand (see [NOTICE](../NOTICE)).
 

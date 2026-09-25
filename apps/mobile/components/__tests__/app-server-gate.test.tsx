@@ -29,9 +29,9 @@ import { NavigationContainer } from "@react-navigation/native";
 jest.mock("@/lib/server", () => ({
   hasServerUrl: jest.fn(),
   hydrateServerUrl: jest.fn().mockResolvedValue(null),
-  getApiUrl: jest.fn(() => "https://ironpulse.hiten-patel.co.uk"),
+  getApiUrl: jest.fn(() => "https://zor.hiten-patel.co.uk"),
   onServerUrlChange: jest.fn(() => () => {}),
-  setApiUrl: jest.fn().mockResolvedValue("https://ironpulse.hiten-patel.co.uk"),
+  setApiUrl: jest.fn().mockResolvedValue("https://zor.hiten-patel.co.uk"),
   validateServerUrl: jest.fn(),
   normalizeServerUrl: jest.fn((s: string) => s),
   isInsecureServerUrl: jest.fn(() => false),

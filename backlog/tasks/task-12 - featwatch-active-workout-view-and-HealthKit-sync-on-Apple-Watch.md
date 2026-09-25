@@ -4,7 +4,7 @@ title: 'feat(watch): active workout view and HealthKit sync on Apple Watch'
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - agent-ready
   - feature
@@ -13,7 +13,7 @@ labels:
 milestone: m-1
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/386'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/386'
 priority: medium
 type: feature
 ordinal: 12000
@@ -22,7 +22,7 @@ ordinal: 12000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #386: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/386
+Imported from Forgejo issue #386: https://git.hiten-patel.co.uk/hiten/Zor/issues/386
 
 Parent: #368 (Apple Watch companion app — broken into scoped sub-issues)
 Depends on: workout history list view sub-issue

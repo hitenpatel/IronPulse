@@ -4,7 +4,7 @@ title: Alerting on cron failures
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - infrastructure
   - 'priority:low'
@@ -12,7 +12,7 @@ labels:
   - ci
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/322'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/322'
 priority: low
 type: chore
 ordinal: 5000
@@ -21,7 +21,7 @@ ordinal: 5000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #322: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/322
+Imported from Forgejo issue #322: https://git.hiten-patel.co.uk/hiten/Zor/issues/322
 
 ## Context
 

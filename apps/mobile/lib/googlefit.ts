@@ -1,4 +1,5 @@
 import { randomUUID } from "@/lib/uuid";
+import { IMMUTABLE_APPLICATION_IDS } from "@zor/shared";
 // Lazy-loaded to avoid parse failures in vitest / iOS
 function getPlatformOS(): string {
   try {
@@ -76,7 +77,7 @@ export function makeGoogleFitExternalId(dataSourceId: string): string {
 export function shouldSkipGoogleFitImport(
   appPackage: string | undefined
 ): boolean {
-  return appPackage === "com.zor.app";
+  return appPackage === IMMUTABLE_APPLICATION_IDS[0];
 }
 
 // ---------------------------------------------------------------------------

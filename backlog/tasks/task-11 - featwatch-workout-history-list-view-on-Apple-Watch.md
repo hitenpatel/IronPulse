@@ -4,7 +4,7 @@ title: 'feat(watch): workout history list view on Apple Watch'
 status: To Do
 assignee: []
 created_date: '2026-07-24 05:58'
-updated_date: '2026-08-12 15:48'
+updated_date: '2026-09-25 09:27'
 labels:
   - agent-ready
   - feature
@@ -13,7 +13,7 @@ labels:
 milestone: m-1
 dependencies: []
 references:
-  - 'https://git.hiten-patel.co.uk/hiten/IronPulse/issues/385'
+  - 'https://git.hiten-patel.co.uk/hiten/Zor/issues/385'
 priority: medium
 type: feature
 ordinal: 11000
@@ -22,7 +22,7 @@ ordinal: 11000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Imported from Forgejo issue #385: https://git.hiten-patel.co.uk/hiten/IronPulse/issues/385
+Imported from Forgejo issue #385: https://git.hiten-patel.co.uk/hiten/Zor/issues/385
 
 Parent: #368 (Apple Watch companion app — broken into scoped sub-issues)
 Depends on: WatchKit target scaffold (feat(watch): scaffold WatchKit app target)
@@ -40,5 +40,5 @@ First user-visible feature of the Watch app: display recent workouts sourced fro
 ## Out of scope
 - Active/in-progress workout tracking (next sub-issue)
 - Exercise-level detail (sets, reps, weight) — top-level workout summary only
-- Writing data back to IronPulse servers or HealthKit
+- Writing data back to Zor servers or HealthKit
 <!-- SECTION:DESCRIPTION:END -->
