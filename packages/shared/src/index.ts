@@ -34,3 +34,4 @@ export * from "./tools/one-rep-max";
 export * from "./tools/plate-calculator";
 export * from "./tools/deload-suggestion";
 export * from "./schemas/ai-workout";
+export * from "./identity";

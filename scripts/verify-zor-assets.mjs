@@ -3,12 +3,16 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import sharp from "sharp";
 
+import { validateBrandingAssetContract } from "./validate-zor-identity.mjs";
+
 const REQUIRED_SOURCES = [
   "assets/branding/svg/zor-mark.svg",
   "assets/branding/svg/zor-mark-small.svg",
   "assets/branding/svg/zor-lockup-horizontal.svg",
   "assets/branding/svg/zor-lockup-stacked.svg",
 ];
+
+const identity = JSON.parse(readFileSync("packages/shared/src/identity.json", "utf8"));
 
 for (const source of REQUIRED_SOURCES) {
   assert.ok(existsSync(source), "Missing canonical source: " + source);
@@ -74,7 +78,11 @@ const EXPECTED = {
   "assets/branding/generated/zor-mark-24.png": [24, 24, true],
 };
 const manifest = JSON.parse(readFileSync("assets/branding/zor-assets-manifest.json", "utf8"));
-assert.equal(manifest.generator, "zor-assets-v1");
+assert.deepEqual(
+  validateBrandingAssetContract(identity, manifest, REQUIRED_SOURCES),
+  [],
+  "branding assets must match the canonical Zor identity contract",
+);
 
 for (const [path, [width, height, transparent]] of Object.entries(EXPECTED)) {
   assert.ok(existsSync(path), "Missing generated asset: " + path);

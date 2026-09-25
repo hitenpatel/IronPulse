@@ -1,0 +1,65 @@
+{
+  "product": { "displayName": "Zor", "storeName": "Zor Fitness" },
+  "origins": {
+    "production": "https://zor.hiten-patel.co.uk",
+    "staging": "https://staging.zor.hiten-patel.co.uk",
+    "development": "https://zor.local"
+  },
+  "repositories": {
+    "forgejo": "hiten/Zor",
+    "github": "hitenpatel/Zor",
+    "image": "git.hiten-patel.co.uk/hiten/zor"
+  },
+  "infrastructure": {
+    "composeProduction": "zor-prod",
+    "composeStaging": "zor-staging",
+    "service": "zor",
+    "postgresRole": "zor",
+    "postgresDatabase": "zor",
+    "postgresTestDatabase": "zor_test",
+    "minioBucket": "zor",
+    "backupPrefix": "zor_",
+    "deployLock": "/tmp/zor-deploy.lock"
+  },
+  "mobile": {
+    "powerSyncDatabase": "zor.db",
+    "deepLinkSchemes": ["zor"],
+    "easProjectId": "a4541ea9-4c09-42bf-8ae6-f12a5ebb81e3"
+  },
+  "immutableCompatibility": {
+    "applicationIds": ["com.ironpulse.app", "com.ironpulse.app.e2e"],
+    "iapProductIds": [
+      "com.ironpulse.athlete.monthly",
+      "com.ironpulse.athlete.yearly",
+      "com.ironpulse.coach.monthly",
+      "com.ironpulse.coach.yearly"
+    ]
+  },
+  "migrationOnly": {
+    "legacyOrigins": {
+      "https://ironpulse.hiten-patel.co.uk": "https://zor.hiten-patel.co.uk",
+      "https://staging.ironpulse.hiten-patel.co.uk": "https://staging.zor.hiten-patel.co.uk",
+      "https://mettlelift.hiten-patel.co.uk": "https://zor.hiten-patel.co.uk",
+      "https://staging.mettlelift.hiten-patel.co.uk": "https://staging.zor.hiten-patel.co.uk"
+    },
+    "powerSyncDatabase": "ironpulse.db",
+    "repositories": ["hiten/IronPulse", "hitenpatel/IronPulse"],
+    "image": "git.hiten-patel.co.uk/hiten/mettlelift",
+    "composeProjects": ["mettlelift-prod", "mettlelift-staging"],
+    "service": "ironpulse",
+    "postgres": {
+      "role": "ironpulse",
+      "databases": ["ironpulse", "ironpulse_test"]
+    },
+    "minioBucket": "ironpulse",
+    "backupPrefix": "ironpulse_",
+    "deepLinkScheme": "ironpulse",
+    "developmentOrigin": "https://ironpulse.local",
+    "deployLock": "/tmp/mettlelift-deploy.lock",
+    "productionVolumes": [
+      "ironpulse-production_production-pgdata",
+      "ironpulse-production_production-miniodata",
+      "ironpulse-production_production-redisdata"
+    ]
+  }
+}

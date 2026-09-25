@@ -5,6 +5,8 @@
     "branding:generate": "node scripts/generate-zor-assets.mjs",
     "branding:check": "node scripts/verify-zor-assets.mjs",
     "brand:audit": "node scripts/brand-audit.mjs",
+    "identity:check": "node scripts/validate-zor-identity.mjs",
+    "identity:test": "node --test scripts/brand-audit.test.mjs scripts/validate-zor-identity.test.mjs",
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
