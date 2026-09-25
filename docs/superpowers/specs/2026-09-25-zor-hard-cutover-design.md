@@ -1,7 +1,7 @@
 # Zor Hard-Cutover Design
 
 **Date:** 2026-09-25
-**Status:** Approved in conversation; cross-model corrections incorporated; pending written-spec review
+**Status:** Approved; cross-model corrections incorporated
 **Scope:** Complete the Zor rebrand across product, repositories, deployment infrastructure, persistent storage, mobile local storage, documentation, and enforcement tooling.
 
 ## 1. Purpose
@@ -88,7 +88,7 @@ Writes reopen only after validation. Before writes reopen, rollback means revers
 - **MinIO** is authoritative for progress photos and other uploaded objects.
 - **Redis** is expected to contain disposable cache, rate-limit, and Pub/Sub state. Preflight must prove that no durable queue, session, denylist, or irreplaceable state uses Redis before green starts empty.
 - **Mongo/PowerSync server state** is derived from PostgreSQL and is rebuilt rather than copied.
-- **PowerSync client SQLite** may contain unsynced writes and must be migrated in place before the new database is opened.
+- **PowerSync client storage** may contain unsynced writes and must be migrated before the renamed database is opened: SQLite on mobile and IndexedDB on web.
 
 ### 4.3 External systems
 
@@ -133,7 +133,7 @@ Inventory Redis key types, TTLs, and writers before declaring it disposable. Sta
 
 Rebuilding PowerSync changes server bucket generations and can force every client to resynchronize. The rehearsal must measure full-resync load at projected concurrency, establish capacity and rate limits, and prove that existing clients with pending offline writes reconnect, resolve the changed checkpoint safely, upload each mutation once, and reach convergence without duplicate application rows.
 
-The measurable pass gate uses `max(25, 2 × the observed seven-day peak concurrent-client count)` clients, each with at least ten uniquely identifiable pending mutations across workout, set, and cardio data. All queues must drain within five minutes of their reconnect batch, with zero missing mutations, zero duplicate application rows, and zero unresolved client errors. Reopening writes is staged in monitored batches if an all-at-once reconnect would exceed rehearsed capacity.
+The measurable pass gate uses `max(25, 2 × the observed seven-day peak concurrent-client count)` clients, each with at least ten uniquely identifiable pending mutations across workout, set, and cardio data. The observed peak comes from a complete seven-day, 15-second sample of established TCP connections to the running PowerSync container, collected from the container network namespace and rejected if the sample has a gap longer than 60 seconds. All queues must drain within five minutes of their reconnect batch, with zero missing mutations, zero duplicate application rows, and zero unresolved client errors. Reopening writes is staged in monitored batches if an all-at-once reconnect would exceed rehearsed capacity.
 
 ### 5.5 Mobile origin migration
 
@@ -146,7 +146,9 @@ On first start of the updated app, before authentication restoration, tRPC creat
 
 ### 5.6 Mobile SQLite migration
 
-The application currently has two independent database open paths: foreground PowerSync and the OS-awakened background GPS task. Both must call one asynchronous database-readiness gate before opening SQLite. The foreground app completes this gate before constructing its PowerSync provider, and the background task awaits the same gate before opening its raw GPS-buffer handle. No code outside the gate may contain a database filename literal.
+Foreground PowerSync is the only production path that currently opens the real mobile SQLite database. The apparent GPS database path is a no-op adapter; this rebrand must not activate GPS persistence or add `_gps_buffer` to the PowerSync-managed database. Real GPS persistence is separate feature work.
+
+The foreground app completes one asynchronous database-readiness gate before constructing PowerSync, authentication, or networking. A JavaScript singleton promise and a native in-process mutex prevent overlapping calls in one runtime/process; an OS file lock protects cross-process attempts. Database filenames may appear only in the identity manifest, the migration adapter/native module, and exact test fixtures.
 
 The gate uses an inter-task/process-safe migration lock and performs this sequence:
 
@@ -158,9 +160,17 @@ The gate uses an inter-task/process-safe migration lock and performs this sequen
 6. Remove old main/WAL/SHM files only after successful validation and release the migration lock.
 7. If migration fails, retain all source files, report the failure, and refuse to create or open a fresh empty Zor database over the error.
 
-The GPS task must never recreate the old filename, including when the OS launches it without a foreground app process. Automated concurrency tests exercise foreground and background attempts against the same migration lock.
+The native copy runs on an I/O worker rather than the UI thread and reports byte progress to the startup gate. Automated tests exercise duplicate same-process calls, cross-process locking, large databases, interrupted copies, and restart recovery. The source is quiescent because migration runs after the updated binary starts and before any PowerSync handle is constructed; the no-op GPS adapter does not open it.
 
-### 5.7 Repository, registry, and deployment cutover
+Client storage migration is one-way and occurs during the preflight mobile rollout. Rolling server routing back to blue does not rename a migrated client database back to its legacy name.
+
+### 5.7 Web IndexedDB migration
+
+Before constructing the PowerSync SharedWorker, web startup acquires a Web Lock and an IndexedDB version-change barrier on the legacy `IDBBatchAtomicVFS` database. The barrier forces existing tabs/workers to close before the migration snapshots and copies the database into the Zor name while preserving object stores, indexes, keys, ArrayBuffer values, and record counts. The target is not marked active until the source snapshot validates and legacy deletion succeeds.
+
+If another tab or SharedWorker blocks the version-change barrier, startup remains fail-closed with instructions to close other Zor tabs and no target is created. Once the blocker closes, the exclusive transaction snapshots the latest source state, copies it, validates it, deletes the source, and only then activates the destination. An unexpected blocked deletion also keeps the destination unactivated until deletion succeeds. A browser integration test uses two tabs and the real PowerSync worker; a fake IndexedDB unit test alone is insufficient evidence.
+
+### 5.8 Repository, registry, and deployment cutover
 
 - Build and publish both architectures at the Zor registry path, publish the multi-architecture manifest, and verify a pull before repository renames.
 - Rename Forgejo and GitHub repositories and atomically update local remotes, documentation, badges, issue links, workflow URLs, and mirror configuration while the pre-published image remains available.
@@ -168,6 +178,7 @@ The GPS task must never recreate the old filename, including when the OS launche
 - Parameterize public origins where environment-specific values are appropriate, while defaults and examples use canonical Zor values.
 - Replace old backup prefixes and service paths. Old backup archives remain restorable through an explicitly supplied filename, but active discovery and new output use only Zor names.
 - Remove the old deep-link scheme from active app configuration.
+- Inventory every email template, stored notification payload, OAuth redirect registration, and provider callback that can emit the old deep-link scheme. Update emitters before the mobile release and record the accepted expiry/breakage window for already-issued links; the hard-cutover decision does not imply those artifacts disappear automatically.
 
 ## 6. Cutover Sequence
 
@@ -192,7 +203,7 @@ Cleanup is a separate command/phase. Migration and validation tooling cannot inv
 - Logs record identifiers, counts, checksums, versions, timestamps, and outcomes without recording secrets.
 - Re-running a completed data migration or validation phase is safe. External repository, DNS, and provider mutations are detected as already-applied or conflicting before any action.
 - Any mismatch in database integrity, object validation, migration versions, authentication, uploads, or sync blocks DNS cutover or reopening writes.
-- Before writes reopen, rollback restores old routing and blue services.
+- Before writes reopen, server rollback restores old routing and blue services. Client origin/storage migrations delivered during preflight are one-way and remain compatible with blue through the already-live Zor origins.
 - After writes reopen, incidents use roll-forward repair against green. Blue is evidence and emergency recovery material, not an automatically writable fallback.
 - Old infrastructure is not deleted until the seven-day healthy period and a final explicit operator approval.
 
@@ -205,6 +216,8 @@ For retirement purposes, seven healthy days means all of the following hold cont
 - PostgreSQL integrity checks and MinIO manifest checks remain clean;
 - at least one post-cutover PostgreSQL-and-MinIO backup has been restored successfully in isolation.
 
+Retirement evidence is not hand-authored status JSON. A checked-in collector queries the configured health-monitoring, Sentry, scheduled-job, PowerSync backlog, PostgreSQL, MinIO, and restore-evidence sources for the exact seven-day window; it stores the query, source identifier, retrieval time, raw-response SHA-256, and evaluated result. Retirement revalidates live sources where available and rejects missing credentials, gaps, stale windows, or unverifiable operator assertions.
+
 ## 8. Repository Components
 
 ### 8.1 Identity manifest and validator
@@ -215,7 +228,7 @@ The manifest contains canonical and immutable identifiers. Validation checks act
 
 The audit enumerates tracked files rather than walking the working directory. This prevents ignored agent artifacts from causing failures. It recognizes compound environment-example names such as `.env.prod.example`, scans an explicit set of active text/config formats, and has fixture-based tests for tracked-file enumeration, compound filenames, immutable identifiers, and forbidden legacy identifiers.
 
-Known frozen historical paths are explicitly enumerated. There is no heuristic historical classifier. Active backlog items, runbooks, examples, workflows, and deployment files are not historical merely because they live in a documentation directory.
+Known frozen historical paths are explicitly enumerated. There is no heuristic historical classifier. Closed backlog records may be enumerated individually to preserve decision provenance; active backlog items are updated through the repository's task tooling where available. Runbooks, examples, workflows, and deployment files are not historical merely because they live in a documentation directory.
 
 ### 8.3 Migration utilities
 
@@ -248,11 +261,14 @@ Automated tests cover:
 - invalid destination database;
 - repeated startup;
 - pending PowerSync uploads preserved;
-- foreground PowerSync and background GPS attempts serialize against the same migration lock;
+- duplicate same-process startup calls and cross-process attempts serialize against the same migration lock;
+- a large database copies off the UI thread and reports progress;
 - WAL checkpoint succeeds before migration and stale SHM state is not copied;
 - old managed-cloud URL rewritten;
 - self-hosted URL preserved;
 - failure leaves source data untouched.
+
+Web migration tests also cover a source held by the real PowerSync SharedWorker in another browser tab, blocked deletion, fail-closed retry, and a fresh recopy after the worker releases the source.
 
 At least one Android device and one iOS simulator or device run verify the actual filesystem and PowerSync behavior before hosted cutover. Neither platform may defer migration verification until after cutover.
 
