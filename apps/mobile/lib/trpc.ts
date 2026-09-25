@@ -27,22 +27,28 @@ function createClient(url: string) {
 // with what we last built one for, and expose it through a Proxy that
 // forwards every property access to the current client. Existing call
 // sites (`trpc.auth.getSession.query()` etc.) are unaffected.
-let builtForUrl = getApiUrl();
-let client = createClient(builtForUrl);
+type Client = ReturnType<typeof createClient>;
+
+let builtForUrl: string | null = null;
+let client: Client | null = null;
+
+export function isTrpcClientInitialized(): boolean {
+  return client !== null;
+}
 
 function getClient() {
   const url = getApiUrl();
-  if (url !== builtForUrl) {
+  if (!client || url !== builtForUrl) {
     builtForUrl = url;
     client = createClient(url);
   }
   return client;
 }
 
-export const trpc: typeof client = new Proxy({} as typeof client, {
+export const trpc: Client = new Proxy({} as Client, {
   get(_target, prop, receiver) {
     return Reflect.get(getClient() as object, prop, receiver);
   },
-}) as typeof client;
+}) as Client;
 
 export { TRPCClientError };

@@ -8,14 +8,15 @@
  * `onServerUrlChange`).
  *
  * `hydrateServerUrl()` must be awaited once, before anything reads
- * `getApiUrl()` in anger — see the gate in `App.tsx` (`RootNavigator`,
- * before the `needsAuth` branch) and the `await hydrateServerUrl()` at the
- * top of `AuthProvider`'s session-restore effect in `lib/auth.tsx`.
+ * `getApiUrl()` in anger — `StartupGate` does this before mounting auth or
+ * other network consumers.
  */
 import * as SecureStore from "@/lib/secure-store";
+import { MIGRATION_ONLY_ORIGINS } from "@zor/shared";
 import { Config } from "./config";
 
 export const SERVER_URL_KEY = "server-url";
+export const ORIGIN_MIGRATION_KEY = "zor-origin-migration-v1";
 // Pre-multi-server installs only ever wrote this key — its presence with no
 // `server-url` means "existing cloud user", not "first launch".
 const LEGACY_AUTH_TOKEN_KEY = "auth-token";
@@ -45,6 +46,12 @@ export function normalizeServerUrl(input: string): string {
     return trimmed;
   }
   return `https://${trimmed}`;
+}
+
+/** Maps only the managed origins retired by the Zor hard cutover. */
+export function migrateManagedOrigin(input: string): string {
+  const normalized = normalizeServerUrl(input);
+  return MIGRATION_ONLY_ORIGINS[normalized as keyof typeof MIGRATION_ONLY_ORIGINS] ?? normalized;
 }
 
 /** True when a (normalized) server URL is `http://`, not `https://`. */
@@ -77,9 +84,9 @@ export function hasServerUrl(): boolean {
  * App.tsx gate) — only the first call touches SecureStore, later calls
  * resolve immediately from the cached promise.
  *
- * Returns the resolved URL, or `null` if the picker should be shown — either
- * a genuine first launch (no stored server URL and no legacy auth token), or
- * a keychain read failure we can't safely interpret either way.
+ * Returns the resolved URL, or `null` for a genuine first launch where the
+ * picker should be shown. Keychain read/write failures reject so startup can
+ * stop on the retryable fail-closed screen.
  *
  * Backwards compat: an install that already has `auth-token` but predates
  * multi-server support has no `server-url` — default it to the cloud URL
@@ -90,25 +97,39 @@ export function hasServerUrl(): boolean {
  * never fall into the legacy-cloud-migration branch below — that would
  * silently point a self-hosted user's session at the cloud AND overwrite
  * their real `server-url` with the cloud default, destroying it. When we
- * can't tell "absent" from "unreadable", we fail closed to the picker
- * instead of guessing, and never persist anything.
+ * can't tell "absent" from "unreadable", we reject instead of guessing and
+ * never persist anything.
  */
 export function hydrateServerUrl(): Promise<string | null> {
   if (hydrated) return Promise.resolve(cachedUrl);
   if (hydrationPromise) return hydrationPromise;
 
-  hydrationPromise = (async () => {
+  const attempt = (async () => {
     const serverResult = await SecureStore.getItemResult(SERVER_URL_KEY);
 
     if (serverResult.status === "found") {
-      cachedUrl = serverResult.value;
+      const migratedUrl = migrateManagedOrigin(serverResult.value);
+      const urlChanged = migratedUrl !== serverResult.value;
+
+      if (urlChanged) {
+        await SecureStore.setItemAsync(SERVER_URL_KEY, migratedUrl);
+      }
+
+      const markerResult = await SecureStore.getItemResult(ORIGIN_MIGRATION_KEY);
+      if (markerResult.status === "error") {
+        throw new Error(`Could not read ${ORIGIN_MIGRATION_KEY}`, { cause: markerResult.error });
+      }
+      if (urlChanged || markerResult.status !== "found" || markerResult.value !== "complete") {
+        await SecureStore.setItemAsync(ORIGIN_MIGRATION_KEY, "complete");
+      }
+
+      cachedUrl = migratedUrl;
       hydrated = true;
       return cachedUrl;
     }
 
     if (serverResult.status === "error") {
-      hydrated = true;
-      return null;
+      throw new Error(`Could not read ${SERVER_URL_KEY}`, { cause: serverResult.error });
     }
 
     // serverResult.status === "absent" — genuinely no server-url stored.
@@ -117,21 +138,28 @@ export function hydrateServerUrl(): Promise<string | null> {
     // can't tell either way, so fail closed rather than guess.
     const tokenResult = await SecureStore.getItemResult(LEGACY_AUTH_TOKEN_KEY);
     if (tokenResult.status === "found") {
-      cachedUrl = Config.DEFAULT_API_URL;
-      try {
-        await SecureStore.setItemAsync(SERVER_URL_KEY, cachedUrl);
-      } catch {
-        // Persisting the fallback failed — non-fatal, we'll just re-derive
-        // it the same way next launch.
-      }
+      const fallbackUrl = Config.DEFAULT_API_URL;
+      await SecureStore.setItemAsync(SERVER_URL_KEY, fallbackUrl);
+      await SecureStore.setItemAsync(ORIGIN_MIGRATION_KEY, "complete");
+      cachedUrl = fallbackUrl;
       hydrated = true;
       return cachedUrl;
     }
 
+    if (tokenResult.status === "error") {
+      throw new Error(`Could not read ${LEGACY_AUTH_TOKEN_KEY}`, { cause: tokenResult.error });
+    }
+
     hydrated = true;
-    return null; // first launch (or token read also failed) => show picker
+    return null; // genuine first launch => show picker
   })();
 
+  hydrationPromise = attempt.catch((error) => {
+    hydrationPromise = null;
+    hydrated = false;
+    cachedUrl = null;
+    throw error;
+  });
   return hydrationPromise;
 }
 

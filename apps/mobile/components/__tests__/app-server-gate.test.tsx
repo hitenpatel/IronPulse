@@ -23,8 +23,10 @@
  * update HARNESS below to match.
  */
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
+import { Text } from "react-native";
+import { StartupGate } from "../startup-gate";
 
 jest.mock("@/lib/server", () => ({
   hasServerUrl: jest.fn(),
@@ -97,5 +99,54 @@ describe("App.tsx first-launch gate", () => {
 
     expect(screen.getByTestId("email-input")).toBeTruthy();
     expect(screen.queryByTestId("server-picker-choice")).toBeNull();
+  });
+});
+
+describe("StartupGate", () => {
+  it("mounts auth consumers only after origin preparation finishes", async () => {
+    const events: string[] = [];
+    let release: (() => void) | undefined;
+    const prepare = jest.fn(() => new Promise<void>((resolve) => {
+      events.push("origin:read");
+      release = () => {
+        events.push("origin:write", "origin:marked");
+        resolve();
+      };
+    }));
+    function AuthConsumer() {
+      React.useEffect(() => { events.push("auth:mounted"); }, []);
+      return <Text testID="auth-consumer">Ready</Text>;
+    }
+
+    await render(
+      <StartupGate prepare={prepare}>
+        <AuthConsumer />
+      </StartupGate>,
+    );
+
+    expect(screen.queryByTestId("auth-consumer")).toBeNull();
+    await act(async () => { release?.(); });
+    expect(await screen.findByTestId("auth-consumer")).toBeTruthy();
+    expect(events).toEqual(["origin:read", "origin:write", "origin:marked", "auth:mounted"]);
+  });
+
+  it("shows a retryable fail-closed screen without mounting auth consumers", async () => {
+    const prepare = jest
+      .fn<Promise<void>, []>()
+      .mockRejectedValueOnce(new Error("keychain unavailable"))
+      .mockResolvedValueOnce(undefined);
+
+    await render(
+      <StartupGate prepare={prepare}>
+        <Text testID="auth-consumer">Ready</Text>
+      </StartupGate>,
+    );
+
+    expect(await screen.findByText("Zor could not safely prepare local data")).toBeTruthy();
+    expect(screen.queryByTestId("auth-consumer")).toBeNull();
+
+    await act(async () => { fireEvent.press(screen.getByTestId("startup-retry")); });
+    expect(await screen.findByTestId("auth-consumer")).toBeTruthy();
+    expect(prepare).toHaveBeenCalledTimes(2);
   });
 });

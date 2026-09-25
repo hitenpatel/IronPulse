@@ -42,6 +42,14 @@ afterEach(() => {
 });
 
 describe("trpc — dynamic server URL", () => {
+  it("does not construct a client merely by importing the module", async () => {
+    vi.resetModules();
+
+    const { isTrpcClientInitialized } = await import("../trpc");
+
+    expect(isTrpcClientInitialized()).toBe(false);
+  });
+
   it("targets the current server's /api/trpc, carries the Authorization header, and superjson-encodes the input", async () => {
     const fetchMock = vi
       .fn()

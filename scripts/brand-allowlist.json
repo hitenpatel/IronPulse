@@ -101,6 +101,16 @@
       "reason": "Immutable App Store and Play Store product identifiers."
     },
     {
+      "path": "apps/mobile/lib/__tests__/server.test.ts",
+      "patterns": [
+        "https://ironpulse.hiten-patel.co.uk",
+        "https://staging.ironpulse.hiten-patel.co.uk",
+        "https://mettlelift.hiten-patel.co.uk",
+        "https://staging.mettlelift.hiten-patel.co.uk"
+      ],
+      "reason": "Exact regression fixtures for the one-time managed-origin migration map."
+    },
+    {
       "path": "apps/mobile/lib/database-readiness.ts",
       "patterns": ["ironpulse.db"],
       "reason": "One-time source filename for the fail-closed PowerSync client migration."

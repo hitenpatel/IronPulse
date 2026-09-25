@@ -14,6 +14,7 @@ const mockGetItemResult = vi.mocked(SecureStore.getItemResult);
 const mockSetItem = vi.mocked(SecureStore.setItemAsync);
 
 const CLOUD_DEFAULT = "https://zor.hiten-patel.co.uk";
+const ORIGIN_MIGRATION_KEY = "zor-origin-migration-v1";
 
 const ABSENT: SecureReadResult = { status: "absent" };
 const found = (value: string): SecureReadResult => ({ status: "found", value });
@@ -59,6 +60,28 @@ describe("normalizeServerUrl", () => {
   });
 });
 
+describe("migrateManagedOrigin", () => {
+  it.each([
+    ["https://ironpulse.hiten-patel.co.uk", "https://zor.hiten-patel.co.uk"],
+    ["https://staging.ironpulse.hiten-patel.co.uk", "https://staging.zor.hiten-patel.co.uk"],
+    ["https://mettlelift.hiten-patel.co.uk", "https://zor.hiten-patel.co.uk"],
+    ["https://staging.mettlelift.hiten-patel.co.uk", "https://staging.zor.hiten-patel.co.uk"],
+  ])("maps the managed legacy origin %s", async (legacy, canonical) => {
+    const { migrateManagedOrigin } = await loadServer();
+
+    expect(migrateManagedOrigin(legacy)).toBe(canonical);
+    expect(migrateManagedOrigin(`${legacy}/`)).toBe(canonical);
+  });
+
+  it("normalizes but does not remap arbitrary self-hosted origins", async () => {
+    const { migrateManagedOrigin } = await loadServer();
+
+    expect(migrateManagedOrigin(" https://gym.example/ ")).toBe("https://gym.example");
+    expect(migrateManagedOrigin("http://192.168.1.9:3000/"))
+      .toBe("http://192.168.1.9:3000");
+  });
+});
+
 describe("getApiUrl / hasServerUrl before hydration", () => {
   it("falls back to the cloud default and reports no server chosen yet", async () => {
     const { getApiUrl, hasServerUrl } = await loadServer();
@@ -68,7 +91,7 @@ describe("getApiUrl / hasServerUrl before hydration", () => {
 });
 
 describe("hydrateServerUrl", () => {
-  it("restores a previously persisted server-url", async () => {
+  it("restores a previously persisted server-url and marks origin migration complete", async () => {
     mockGetItemResult.mockImplementation(async (key: string) =>
       key === "server-url" ? found("https://my-instance.example.com") : ABSENT,
     );
@@ -79,6 +102,7 @@ describe("hydrateServerUrl", () => {
     expect(resolved).toBe("https://my-instance.example.com");
     expect(getApiUrl()).toBe("https://my-instance.example.com");
     expect(hasServerUrl()).toBe(true);
+    expect(mockSetItem).toHaveBeenCalledWith(ORIGIN_MIGRATION_KEY, "complete");
   });
 
   it("returns null (needs picker) on a genuine first launch", async () => {
@@ -115,14 +139,15 @@ describe("hydrateServerUrl", () => {
     await hydrateServerUrl();
     await hydrateServerUrl();
 
-    expect(mockGetItemResult).toHaveBeenCalledTimes(1);
+    expect(mockGetItemResult.mock.calls.filter(([key]) => key === "server-url")).toHaveLength(1);
   });
 
   it("concurrent callers share the same in-flight hydration", async () => {
     let resolveGetItem: (v: SecureReadResult) => void = () => {};
-    mockGetItemResult.mockImplementation(
-      () => new Promise((resolve) => { resolveGetItem = resolve; }),
-    );
+    mockGetItemResult.mockImplementation((key: string) => {
+      if (key === ORIGIN_MIGRATION_KEY) return Promise.resolve(found("complete"));
+      return new Promise((resolve) => { resolveGetItem = resolve; });
+    });
     const { hydrateServerUrl } = await loadServer();
 
     const first = hydrateServerUrl();
@@ -131,18 +156,16 @@ describe("hydrateServerUrl", () => {
 
     expect(await first).toBe("https://my-instance.example.com");
     expect(await second).toBe("https://my-instance.example.com");
-    expect(mockGetItemResult).toHaveBeenCalledTimes(1);
+    expect(mockGetItemResult.mock.calls.filter(([key]) => key === "server-url")).toHaveLength(1);
   });
 
-  it("treats a server-url read failure as needs-picker rather than guessing a server", async () => {
+  it("rejects a server-url read failure so startup cannot guess a server", async () => {
     mockGetItemResult.mockImplementation(async (key: string) =>
       key === "server-url" ? errored() : ABSENT,
     );
     const { hydrateServerUrl, hasServerUrl } = await loadServer();
 
-    const resolved = await hydrateServerUrl();
-
-    expect(resolved).toBeNull();
+    await expect(hydrateServerUrl()).rejects.toThrow("server-url");
     expect(hasServerUrl()).toBe(false);
   });
 
@@ -160,9 +183,7 @@ describe("hydrateServerUrl", () => {
     });
     const { hydrateServerUrl, getApiUrl, hasServerUrl } = await loadServer();
 
-    const resolved = await hydrateServerUrl();
-
-    expect(resolved).toBeNull();
+    await expect(hydrateServerUrl()).rejects.toThrow("server-url");
     expect(hasServerUrl()).toBe(false);
     // getApiUrl() still falls back to the cloud default for display/safety
     // purposes, but nothing was ever WRITTEN — the real value in the
@@ -180,12 +201,12 @@ describe("hydrateServerUrl", () => {
     });
     const { hydrateServerUrl } = await loadServer();
 
-    await hydrateServerUrl();
+    await expect(hydrateServerUrl()).rejects.toThrow("server-url");
 
     expect(tokenCheck).not.toHaveBeenCalled();
   });
 
-  it("fails closed to the picker (not the cloud migration) when server-url is absent but the auth-token read also fails", async () => {
+  it("rejects when server-url is absent but the legacy auth-token cannot be read", async () => {
     mockGetItemResult.mockImplementation(async (key: string) => {
       if (key === "server-url") return ABSENT;
       if (key === "auth-token") return errored();
@@ -193,11 +214,74 @@ describe("hydrateServerUrl", () => {
     });
     const { hydrateServerUrl, hasServerUrl } = await loadServer();
 
-    const resolved = await hydrateServerUrl();
-
-    expect(resolved).toBeNull();
+    await expect(hydrateServerUrl()).rejects.toThrow("auth-token");
     expect(hasServerUrl()).toBe(false);
     expect(mockSetItem).not.toHaveBeenCalled();
+  });
+
+  it("migrates a managed origin before marking completion and then becomes idempotent", async () => {
+    const stored = new Map<string, string>([
+      ["server-url", "https://ironpulse.hiten-patel.co.uk/"],
+    ]);
+    const events: string[] = [];
+    mockGetItemResult.mockImplementation(async (key: string) => {
+      if (key === "server-url") events.push("origin:read");
+      return stored.has(key) ? found(stored.get(key)!) : ABSENT;
+    });
+    mockSetItem.mockImplementation(async (key: string, value: string) => {
+      events.push(key === "server-url" ? "origin:write" : "origin:marked");
+      stored.set(key, value);
+    });
+    const { hydrateServerUrl } = await loadServer();
+
+    await expect(hydrateServerUrl()).resolves.toBe(CLOUD_DEFAULT);
+    await expect(hydrateServerUrl()).resolves.toBe(CLOUD_DEFAULT);
+
+    expect(events).toEqual(["origin:read", "origin:write", "origin:marked"]);
+    expect(stored.get("server-url")).toBe(CLOUD_DEFAULT);
+    expect(stored.get(ORIGIN_MIGRATION_KEY)).toBe("complete");
+  });
+
+  it("does not mark completion or update memory when the URL write fails", async () => {
+    mockGetItemResult.mockImplementation(async (key: string) =>
+      key === "server-url" ? found("https://ironpulse.hiten-patel.co.uk") : ABSENT,
+    );
+    mockSetItem.mockImplementation(async (key: string) => {
+      if (key === "server-url") throw new Error("URL write failed");
+    });
+    const { getApiUrl, hasServerUrl, hydrateServerUrl } = await loadServer();
+
+    await expect(hydrateServerUrl()).rejects.toThrow("URL write failed");
+
+    expect(mockSetItem).not.toHaveBeenCalledWith(ORIGIN_MIGRATION_KEY, "complete");
+    expect(hasServerUrl()).toBe(false);
+    expect(getApiUrl()).toBe(CLOUD_DEFAULT);
+  });
+
+  it("retries only the marker after a marker write failure", async () => {
+    const stored = new Map<string, string>([
+      ["server-url", "https://ironpulse.hiten-patel.co.uk"],
+    ]);
+    let markerAttempts = 0;
+    mockGetItemResult.mockImplementation(async (key: string) =>
+      stored.has(key) ? found(stored.get(key)!) : ABSENT,
+    );
+    mockSetItem.mockImplementation(async (key: string, value: string) => {
+      if (key === ORIGIN_MIGRATION_KEY && markerAttempts++ === 0) {
+        throw new Error("marker write failed");
+      }
+      stored.set(key, value);
+    });
+    const { hasServerUrl, hydrateServerUrl } = await loadServer();
+
+    await expect(hydrateServerUrl()).rejects.toThrow("marker write failed");
+    expect(stored.get("server-url")).toBe(CLOUD_DEFAULT);
+    expect(stored.has(ORIGIN_MIGRATION_KEY)).toBe(false);
+    expect(hasServerUrl()).toBe(false);
+
+    await expect(hydrateServerUrl()).resolves.toBe(CLOUD_DEFAULT);
+    expect(mockSetItem.mock.calls.filter(([key]) => key === "server-url")).toHaveLength(1);
+    expect(stored.get(ORIGIN_MIGRATION_KEY)).toBe("complete");
   });
 });
 

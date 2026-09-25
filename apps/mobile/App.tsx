@@ -29,6 +29,7 @@ import { useNotificationDeepLink } from "./lib/useNotificationDeepLink";
 import { registerForPushNotifications, addPushTokenListener } from "./lib/notifications";
 import { NewSessionSheet } from "./components/layout/new-session-sheet";
 import { TemplatePicker } from "./components/workout/template-picker";
+import { StartupGate } from "./components/startup-gate";
 
 // ─── Screen imports ──────────────────────────────────────────────
 // Auth
@@ -680,10 +681,12 @@ export default function App() {
       <SafeAreaProvider>
         <ErrorBoundary>
           <ThemeProvider>
-            <AuthProvider>
-              <StatusBar barStyle="light-content" backgroundColor="#060B14" />
-              <RootNavigator />
-            </AuthProvider>
+            <StartupGate>
+              <AuthProvider>
+                <StatusBar barStyle="light-content" backgroundColor="#060B14" />
+                <RootNavigator />
+              </AuthProvider>
+            </StartupGate>
           </ThemeProvider>
         </ErrorBoundary>
       </SafeAreaProvider>
