@@ -109,7 +109,12 @@ describe("StartupGate", () => {
     const prepare = jest.fn(() => new Promise<void>((resolve) => {
       events.push("origin:read");
       release = () => {
-        events.push("origin:write", "origin:marked");
+        events.push(
+          "origin:write",
+          "origin:marked",
+          "database:ready",
+          "powersync:constructed",
+        );
         resolve();
       };
     }));
@@ -127,7 +132,14 @@ describe("StartupGate", () => {
     expect(screen.queryByTestId("auth-consumer")).toBeNull();
     await act(async () => { release?.(); });
     expect(await screen.findByTestId("auth-consumer")).toBeTruthy();
-    expect(events).toEqual(["origin:read", "origin:write", "origin:marked", "auth:mounted"]);
+    expect(events).toEqual([
+      "origin:read",
+      "origin:write",
+      "origin:marked",
+      "database:ready",
+      "powersync:constructed",
+      "auth:mounted",
+    ]);
   });
 
   it("shows a retryable fail-closed screen without mounting auth consumers", async () => {

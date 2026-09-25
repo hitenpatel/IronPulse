@@ -116,6 +116,11 @@
       "reason": "One-time source filename for the fail-closed PowerSync client migration."
     },
     {
+      "path": "apps/mobile/modules/zor-database-files/src/ZorDatabaseFiles.types.ts",
+      "patterns": ["ironpulse.db"],
+      "reason": "Typed native-module contract for the one-time PowerSync client migration source."
+    },
+    {
       "paths": [
         "apps/mobile/lib/powersync.ts",
         "apps/web/src/lib/__tests__/powersync-system.test.ts",

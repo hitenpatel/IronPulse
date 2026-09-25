@@ -30,6 +30,7 @@ import { registerForPushNotifications, addPushTokenListener } from "./lib/notifi
 import { NewSessionSheet } from "./components/layout/new-session-sheet";
 import { TemplatePicker } from "./components/workout/template-picker";
 import { StartupGate } from "./components/startup-gate";
+import { prepareAppStartup } from "./lib/startup";
 
 // ─── Screen imports ──────────────────────────────────────────────
 // Auth
@@ -287,19 +288,15 @@ function NotificationHandler() {
 
 // Initialize PowerSync synchronously so context is always available for hooks
 let PSContext: any = null;
-let psDb: any = null;
 try {
   PSContext = require("@powersync/react").PowerSyncContext;
-  const { getPowerSyncDatabase } = require("./lib/powersync");
-  psDb = getPowerSyncDatabase();
 } catch (err) {
   console.warn("PowerSync init:", err);
 }
 
-function RootNavigator() {
+function RootNavigator({ database }: { database: any }) {
   const { user, isLoading } = useAuth();
-  const [db] = useState(psDb);
-  const [powersyncReady] = useState(true);
+  const db = database;
   // Bumped on every setApiUrl() call, purely to force a re-render so the
   // server-picker gate below re-checks hasServerUrl() after the first-launch
   // picker sets one. NOT a dependency of the PowerSync effect below: by the
@@ -314,7 +311,7 @@ function RootNavigator() {
 
   // Connect/disconnect PowerSync based on auth state
   useEffect(() => {
-    if (!db || !powersyncReady) return;
+    if (!db) return;
     if (user) {
       try {
         const { createMobileConnector } = require("@/lib/powersync");
@@ -359,7 +356,7 @@ function RootNavigator() {
         }
       })();
     }
-  }, [user, db, powersyncReady]);
+  }, [user, db]);
 
   if (isLoading) {
     return (
@@ -681,11 +678,19 @@ export default function App() {
       <SafeAreaProvider>
         <ErrorBoundary>
           <ThemeProvider>
-            <StartupGate>
-              <AuthProvider>
-                <StatusBar barStyle="light-content" backgroundColor="#060B14" />
-                <RootNavigator />
-              </AuthProvider>
+            <StartupGate
+              prepare={async (onProgress) => {
+                const { databaseName } = await prepareAppStartup(onProgress);
+                const { getPowerSyncDatabase } = require("./lib/powersync");
+                return getPowerSyncDatabase(databaseName);
+              }}
+            >
+              {(database) => (
+                <AuthProvider>
+                  <StatusBar barStyle="light-content" backgroundColor="#060B14" />
+                  <RootNavigator database={database} />
+                </AuthProvider>
+              )}
             </StartupGate>
           </ThemeProvider>
         </ErrorBoundary>

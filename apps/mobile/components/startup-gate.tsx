@@ -2,33 +2,45 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { prepareOriginStartup } from "@/lib/startup";
+import type { DatabaseMigrationProgress } from "@/lib/database-readiness";
 
 type StartupState = "loading" | "ready" | "error";
 
-export function StartupGate({
+async function prepareOriginAsResult<Result>(): Promise<Result> {
+  await prepareOriginStartup();
+  return undefined as Result;
+}
+
+export function StartupGate<Result = void>({
   children,
-  prepare = prepareOriginStartup,
+  prepare,
 }: {
-  children: React.ReactNode;
-  prepare?: () => Promise<void>;
+  children: React.ReactNode | ((result: Result) => React.ReactNode);
+  prepare?: (onProgress: (progress: DatabaseMigrationProgress) => void) => Promise<Result>;
 }) {
   const [state, setState] = useState<StartupState>("loading");
+  const [result, setResult] = useState<Result | null>(null);
+  const [progress, setProgress] = useState<DatabaseMigrationProgress | null>(null);
+  const prepareStartup = prepare ?? prepareOriginAsResult<Result>;
 
   const run = useCallback(async () => {
     setState("loading");
     try {
-      await prepare();
+      const prepared = await prepareStartup(setProgress);
+      setResult(prepared);
       setState("ready");
     } catch {
       setState("error");
     }
-  }, [prepare]);
+  }, [prepareStartup]);
 
   useEffect(() => {
     void run();
   }, [run]);
 
-  if (state === "ready") return children;
+  if (state === "ready") {
+    return typeof children === "function" ? children(result as Result) : children;
+  }
 
   if (state === "error") {
     return (
@@ -51,6 +63,11 @@ export function StartupGate({
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#060B14" }}>
       <ActivityIndicator color="#F0F4F8" size="large" />
+      {progress ? (
+        <Text style={{ color: "#F0F4F8", marginTop: 16 }} testID="startup-progress">
+          {progress.phase}: {progress.bytesCopied}/{progress.totalBytes} bytes
+        </Text>
+      ) : null}
     </View>
   );
 }

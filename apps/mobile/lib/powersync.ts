@@ -3,6 +3,7 @@ import * as SecureStore from "@/lib/secure-store";
 
 import { getApiUrl } from "./server";
 import { captureError } from "./telemetry";
+import type { ReadyDatabaseName } from "./database-readiness";
 
 interface PowerSyncHandle {
   // Loose because PowerSync's typed handle differs between versions and
@@ -27,14 +28,14 @@ const fallbackListeners = new Set<(inFallback: boolean) => void>();
  * "Sync paused" banner.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getPowerSyncDatabase(): any {
+export function getPowerSyncDatabase(databaseName: ReadyDatabaseName): any {
   if (handle) return handle.db;
 
   try {
     const { PowerSyncDatabase } = require("@powersync/react-native");
     const db = new PowerSyncDatabase({
       schema: AppSchema,
-      database: { dbFilename: "ironpulse.db" },
+      database: { dbFilename: databaseName },
     });
     // Route ongoing sync errors to Sentry. Different PowerSync versions
     // expose different hooks, so defensively feature-detect rather than
