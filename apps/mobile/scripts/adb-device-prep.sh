@@ -29,11 +29,24 @@
 #     the screen on while charging, so the device cannot re-lock mid-suite.
 #   - KEYCODE_POWER (not KEYCODE_WAKEUP) is required to leave Dozing.
 #   - `input text` is blocked on the secure keyguard; PIN goes in as per-digit
-#     KEYCODE_<n> events after a slow full-height swipe. Fast swipes are
-#     sometimes ignored, and the fingerprint-only AlternateBouncerView eats
-#     digit keyevents — the slow swipe reliably lands on the keypad bouncer.
+#     KEYCODE_<n> events.
 #   - `dumpsys trust` deviceLocked=<0|1> is the ground truth for lock state;
 #     window dumps (mDreamingLockscreen etc) lag and misreport.
+#   - Android 17 (Sept 2026): when the device is locked AND untrusted
+#     (deviceLocked=1), `wm dismiss-keyguard` and KEYCODE_MENU raise the
+#     fingerprint-only AlternateBouncer (SystemUI isAlternateBouncerShowing=true,
+#     focus AlternateBouncerView), never the PIN pad, and digit keyevents go
+#     nowhere. So the locked path never calls dismiss-keyguard. Sequence that
+#     works: STOP_DREAM + KEYCODE_WAKEUP (wait mWakefulness=Awake); BACK if an
+#     AlternateBouncer is up; slow swipe from the plain lockscreen (x=w/2,
+#     ~0.87h -> ~0.22h, sized from `wm size`); wait for SystemUI
+#     isPrimaryBouncerShowingOrWillBeShowing=true; only then type the digits.
+#     The low-light clock dream re-engages within seconds when idle on charge,
+#     hence STOP_DREAM + WAKEUP at the start of every attempt.
+#   - The phone auto-confirms the PIN on the last digit; ENTER is sent only if
+#     still locked afterwards (a stray ENTER lands in the foreground app).
+#   - `wm dismiss-keyguard` is kept only for a TRUSTED device (deviceLocked=0)
+#     whose keyguard is still showing.
 set -u
 
 MODE="${1:-prep}"
@@ -111,15 +124,57 @@ is_locked() { adbd shell dumpsys trust 2>/dev/null | grep -m1 -q 'deviceLocked=1
 
 keyguard_up() { adbd shell dumpsys window 2>/dev/null | grep -m1 -q 'isKeyguardShowing=true'; }
 
-# deviceLocked (dumpsys trust) is the ground truth for whether auth is REQUIRED,
-# but it is NOT the same as the lockscreen being gone: a trusted device (Extend
-# Unlock, trusted place/Wi-Fi) reports deviceLocked=0 while the keyguard is still
-# SHOWING. KEYCODE_HOME does not clear that, so the app under test renders behind
-# the lockscreen and every UI assertion fails. `wm dismiss-keyguard` clears a
-# trusted keyguard outright and raises the PIN bouncer on a secure one.
-adbd shell wm dismiss-keyguard; sleep 1.5
+SYSUI_SVC=com.android.systemui/.SystemUIService
+primary_bouncer_up() {
+  adbd shell dumpsys activity service "$SYSUI_SVC" 2>/dev/null \
+    | grep -m1 -q 'isPrimaryBouncerShowingOrWillBeShowing=true'
+}
+alt_bouncer_up() {
+  adbd shell dumpsys activity service "$SYSUI_SVC" 2>/dev/null \
+    | grep -m1 -q 'isAlternateBouncerShowing=true' && return 0
+  adbd shell dumpsys window 2>/dev/null | grep -m1 'mCurrentFocus' | grep -q 'AlternateBouncerView'
+}
 
+# Dream (low-light clock) re-engages within seconds when idle on charge, and
+# the lockscreen only takes the swipe while the screen is awake.
+wake_screen() {
+  adbd shell am broadcast -a android.intent.action.STOP_DREAM >/dev/null 2>&1 || true
+  adbd shell input keyevent KEYCODE_WAKEUP
+  for _ in 1 2 3 4 5; do
+    is_awake && return 0
+    sleep 1
+  done
+  is_awake
+}
+
+# Swipe geometry from `wm size` (Override size wins over Physical size).
+SW_X=504 SW_Y1=1950 SW_Y2=500
+compute_swipe() {
+  local out dims w h
+  out=$(adbd shell wm size 2>/dev/null | tr -d '\r')
+  dims=$(printf '%s\n' "$out" | sed -n 's/^Override size: *\([0-9][0-9]*x[0-9][0-9]*\).*/\1/p' | head -1)
+  [ -n "$dims" ] || dims=$(printf '%s\n' "$out" | sed -n 's/^Physical size: *\([0-9][0-9]*x[0-9][0-9]*\).*/\1/p' | head -1)
+  w=${dims%x*}; h=${dims#*x}
+  if [[ "$w" =~ ^[0-9]+$ && "$h" =~ ^[0-9]+$ && "$w" -gt 0 && "$h" -gt 0 ]]; then
+    SW_X=$(( w / 2 )); SW_Y1=$(( h * 87 / 100 )); SW_Y2=$(( h * 22 / 100 ))
+  else
+    log "could not parse 'wm size'; using default swipe 504 1950 500"
+  fi
+}
+
+# A trusted device (Extend Unlock, trusted place/Wi-Fi) reports deviceLocked=0
+# while the keyguard is still SHOWING; KEYCODE_HOME does not clear that, so the
+# app under test renders behind the lockscreen. `wm dismiss-keyguard` clears a
+# trusted keyguard outright. It must NOT run while locked: on Android 17 it
+# raises the AlternateBouncer (no PIN pad) instead.
+LOCKED=0
 if is_locked; then
+  LOCKED=1
+elif keyguard_up; then
+  adbd shell wm dismiss-keyguard; sleep 1.5
+fi
+
+if [ "$LOCKED" = 1 ]; then
   PIN="${ADB_PIN:-}"
   if [ -z "$PIN" ] && [ -r "$PIN_FILE" ]; then
     PIN=$(tr -d '\r\n\t ' < "$PIN_FILE")
@@ -129,36 +184,53 @@ if is_locked; then
     snap locked-no-pin
     exit 1
   fi
+  compute_swipe
   for attempt in 1 2 3; do
-    log "unlock attempt $attempt: dismiss-keyguard + ${#PIN}-digit PIN"
-    adbd shell wm dismiss-keyguard; sleep 1
-    # Belt-and-braces: some builds need the swipe to land focus on the keypad.
-    adbd shell input swipe 500 2100 500 200 800
-    sleep 1.5
-    for (( i=0; i<${#PIN}; i++ )); do
-      adbd shell input keyevent "KEYCODE_${PIN:$i:1}"
-      sleep 0.2
-    done
-    # 4-digit PINs auto-submit on Pixel; longer PINs need ENTER.
-    if [ "${#PIN}" -gt 4 ]; then
-      adbd shell input keyevent KEYCODE_ENTER
+    log "unlock attempt $attempt: swipe to PIN bouncer + ${#PIN}-digit PIN"
+    wake_screen || log "attempt $attempt: screen not Awake after wake"
+    if alt_bouncer_up; then
+      log "attempt $attempt: AlternateBouncer showing; BACK to plain lockscreen"
+      adbd shell input keyevent KEYCODE_BACK; sleep 1
     fi
-    sleep 2
-    is_locked || break
-    log "still locked; cycling screen to reset the bouncer"
-    snap "unlock-attempt-$attempt"
-    adbd shell input keyevent KEYCODE_POWER; sleep 1   # screen off
-    adbd shell input keyevent KEYCODE_POWER; sleep 1   # wake again
+    adbd shell input swipe "$SW_X" "$SW_Y1" "$SW_X" "$SW_Y2" 600
+    shown=0
+    for _ in 1 2 3 4 5 6; do
+      sleep 0.5
+      if primary_bouncer_up; then shown=1; break; fi
+    done
+    if [ "$shown" = 0 ]; then
+      log "attempt $attempt: primary PIN bouncer not showing after swipe; not typing PIN"
+      snap "unlock-attempt-$attempt"
+    else
+      for (( i=0; i<${#PIN}; i++ )); do
+        adbd shell input keyevent "KEYCODE_${PIN:$i:1}"
+        sleep 0.2
+      done
+      sleep 1.5
+      # PIN auto-confirms on the last digit; only press ENTER if still locked.
+      if is_locked; then
+        adbd shell input keyevent KEYCODE_ENTER
+        sleep 2
+      fi
+      is_locked || break
+      log "still locked after PIN"
+      snap "unlock-attempt-$attempt"
+    fi
+    # Reset between attempts: BACK + re-wake (power off/on would re-lock and re-dream).
+    adbd shell input keyevent KEYCODE_BACK; sleep 1
+    wake_screen || true
   done
 fi
 
-# Even once auth is satisfied (deviceLocked=0) the keyguard can linger on
-# screen; dismiss it and confirm it is actually gone before proceeding.
-for _ in 1 2 3; do
-  keyguard_up || break
-  adbd shell wm dismiss-keyguard
-  sleep 1
-done
+# Once auth is satisfied (deviceLocked=0) the keyguard can linger on screen;
+# dismiss it and confirm it is gone. Never while still locked (see above).
+if ! is_locked; then
+  for _ in 1 2 3; do
+    keyguard_up || break
+    adbd shell wm dismiss-keyguard
+    sleep 1
+  done
+fi
 
 if is_locked || keyguard_up; then
   log "ERROR: device still locked / keyguard showing after unlock attempts."
